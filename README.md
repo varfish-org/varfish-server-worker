@@ -21,12 +21,39 @@ This worker provides the query functionality.
 **Call**
 
 ```bash
-$ sv-query --result-set-id ID INPUT.vcf.gz OUTPUT.tsv
+$ sv-query --db-base-dir DIR --result-set-id ID QUERY.json INPUT.vcf.gz OUTPUT.tsv
 ```
+
+**Param: `--db-base-dir DIR` (required)**
+
+Directory with the following files (read on startup):
+
+- VarFish Background Database
+    - `bg-inhouse/varfish-sv.tsv.gz` -- VarFish SVs
+- SV databases
+    - `bg-public/gnomad-sv.tsv.gz` -- gnomAD SVs
+    - `bg-public/dbvar-sv.tsv.gz` -- dbVar SVs
+    - `bg-public/dgv-sv.tsv.gz` -- DGV SVs (full set)
+    - `bg-public/dgv-gs-sv.tsv.gz` -- DGV gold standard SVs
+    - `bg-public/exac-cnv.tsv.gz` -- ExAC CNVs
+- TAD boundaries
+    - `tads/dixon-2012-tads-hesc.tsv.gz` -- TAD intervals, hESC from Dixon (2012)
+    - `tads/dixon-2012-tads-imr90.tsv.gz` -- TAD intervals, IMR-90 from Dixon (2012)
+- ENSEMBL Regulatory features
+    - `ensembl/regulatory-build.tsv.gz` -- ENSEMBL regulatory build
+- VISTA enhancers
+    - `vista/vista-enhancer.tsv.gz` -- VISTA enhancers
+- Gene
+    - `genes/gene-intervals.tsv.gz` -- Genes for overlapping genes annotation
+    - `genes/hgnc.tsv.gz` -- HGNC information for genes
 
 **Param: `--result-set-id ID` (required)**
 
 This is written out to the column `svqueryresultset`.
+
+**Input: `QUERY.json`**
+
+JSON file with the serialized query settings from the user.
 
 **Input: `INPUT.vcf.gz`**
 
@@ -35,7 +62,7 @@ This is dumped from the database by the Celery worker.
 
 The file will have a `##reference=GRCh37` or `##reference=GRCh38` header depending on the reference of the case.
 
-The following `INFO` fields will be written out.
+The following `INFO` fields will be interpreted.
 
 - `INFO/END` -- Integer with end position, if applicable.
 - `INFO/POS2` -- Integer with position on second chromosome, if applicable.
@@ -44,7 +71,7 @@ The following `INFO` fields will be written out.
 - `INFO/SV_TYPE` -- String with SV type, e.g., `DEL`
 - `INFO/SV_SUB_TYPE` -- String with SV sub type, e.g., `DEL:ME:SVA`.
 
-The following fields will be writte to the per-sample `FORMAT` fields.
+The following fields will be interpreted from the per-sample `FORMAT` fields.
 
 - `FORMAT/GT` -- String with genotype.
 - `FORMAT/FT` -- Per-genotype filter values.
