@@ -21,17 +21,41 @@ This worker provides the query functionality.
 **Call**
 
 ```bash
-# sv-query --result-set-id INPUT.vcf.gz OUTPUT.tsv
+# sv-query --result-set-id ID INPUT.vcf.gz OUTPUT.tsv
 ```
 
-**Param: `--result-set-id` (required)**
+**Param: `--result-set-id ID` (required)**
 
 This is written out to the column `svqueryresultset`.
 
 **Input: `INPUT.vcf.gz`**
 
 A VCF file with the structural variants.
-This is dumped from the 
+This is dumped from the database by the Celery worker.
+
+The file will have a `##reference=GRCh37` or `##reference=GRCh38` header depending on the reference of the case.
+
+The following `INFO` fields will be written out.
+
+- `INFO/END` -- Integer with end position, if applicable.
+- `INFO/POS2` -- Integer with position on second chromosome, if applicable.
+- `INFO/CHR2` -- String with name of second chromosome.
+- `INFO/CALLER` -- String with caller(s) that found this variant.
+- `INFO/SV_TYPE` -- String with SV type, e.g., `DEL`
+- `INFO/SV_SUB_TYPE` -- String with SV sub type, e.g., `DEL:ME:SVA`.
+
+The following fields will be writte to the per-sample `FORMAT` fields.
+
+- `FORMAT/GT` -- String with genotype.
+- `FORMAT/FT` -- Per-genotype filter values.
+- `FORMAT/GQ` -- Float or integer of Phred-scaled genotype quality.
+- `FORMAT/PEC` -- Integer, total number of covering paired-end reads.
+- `FORMAT/PEV` -- Integer, number of paired-end variant reads.
+- `FORMAT/SRC` -- Integer, total number of covering split reads reads.
+- `FORMAT/SRV` -- Integer, number of variant split-reads.
+- `FORMAT/CN` -- Integer with copy number estimate.
+- `FORMAT/ANC` -- Float with average normalized coverage.
+- `FORMAT/PC` -- Integer with number of supporting points (for CNVs).
 
 **Output: `OUTPUT.tsv`**
 A text file with the query result.
