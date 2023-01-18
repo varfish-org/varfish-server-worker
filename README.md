@@ -21,7 +21,7 @@ This worker provides the query functionality.
 **Call**
 
 ```bash
-# sv-query --result-set-id ID INPUT.vcf.gz OUTPUT.tsv
+$ sv-query --result-set-id ID INPUT.vcf.gz OUTPUT.tsv
 ```
 
 **Param: `--result-set-id ID` (required)**
