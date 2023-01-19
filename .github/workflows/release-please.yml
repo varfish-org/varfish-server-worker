@@ -15,7 +15,7 @@ jobs:
         id: release
         with:
           release-type: rust
-          package-name: varfish-server-workers
+          package-name: varfish-server-worker
 
       - uses: actions/checkout@v2
         if: ${{ steps.release.outputs.release_created }}

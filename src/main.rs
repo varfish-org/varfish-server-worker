@@ -30,7 +30,7 @@ fn main() -> Result<(), anyhow::Error> {
     let term = Term::stderr();
     match &cli.command {
         Commands::SvQuery(args) => {
-            sv_query::run(&term, &cli.common, &args)?;
+            sv_query::run(&term, &cli.common, args)?;
         }
     }
     term.write_line(&format!("All done. Have a nice day!{}", Emoji(" 😃", "")))?;

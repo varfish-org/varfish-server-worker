@@ -1,5 +1,5 @@
 [package]
-name = "varfish-server-workers"
+name = "varfish-server-worker"
 version = "0.1.0"
 authors = ["Manuel Holtgrewe <manuel.holtgrewe@bih-charite.de>"]
 description = "Rust-based workers for varfish-server"
@@ -18,5 +18,5 @@ console = "0.15.5"
 thiserror = "1.0.38"
 
 [[bin]]
-name = "varfish-server-workers"
+name = "varfish-server-worker"
 path = "src/main.rs"

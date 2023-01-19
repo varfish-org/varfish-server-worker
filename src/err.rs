@@ -7,6 +7,7 @@ use std::{
 pub enum AppError {
     // #[error("Internal error")]
     // Internal,
+    #[allow(dead_code)]
     #[error("Invalid path")]
     InvalidPath,
 }
@@ -22,6 +23,7 @@ impl Termination for AppError {
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum ArgError {
+    #[allow(dead_code)]
     #[error("Invalid format in interval")]
     IntervalInvalidFormat,
     #[error("Invalid integer coordinates in interval")]

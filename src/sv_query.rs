@@ -11,9 +11,9 @@ pub struct Args {
 }
 
 pub(crate) fn run(
-    term: &console::Term,
-    common: &CommonArgs,
-    args: &Args,
+    _term: &console::Term,
+    _common: &CommonArgs,
+    _args: &Args,
 ) -> Result<(), anyhow::Error> {
     todo!()
 }
