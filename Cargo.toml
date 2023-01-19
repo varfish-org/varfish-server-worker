@@ -12,10 +12,15 @@ readme = "README.md"
 
 [dependencies]
 anyhow = { version = "1.0.68", features = ["backtrace"] }
+bio = "1.1.0"
 clap = { version = "4.1.1", features = ["derive"] }
 clap-verbosity-flag = "2.0.0"
 console = "0.15.5"
+csv = "1.1.6"
+flate2 = "1.0.25"
+serde = { version = "1.0.152", features = ["serde_derive"] }
 thiserror = "1.0.38"
+thousands = "0.2.0"
 
 [[bin]]
 name = "varfish-server-worker"
