@@ -54,7 +54,7 @@ pub struct BgSvFileRecord {
 
 impl BgSvFileRecord {
     /// Convert on-disk record from TSV to in-memory record.
-    pub fn to_in_memory(self) -> BgSvRecord {
+    pub fn to_in_memory(&self) -> BgSvRecord {
         BgSvRecord {
             begin: self.start - 1,
             end: self.end,
@@ -86,23 +86,23 @@ pub struct Args {
     pub output_vcf: String,
 }
 
-const CHROMS: &'static [&'static str] = &[
+const CHROMS: &[&str] = &[
     "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17",
     "18", "19", "20", "21", "22", "X", "Y", "M",
 ];
 
 pub fn build_chrom_map() -> HashMap<String, usize> {
     let mut result = HashMap::new();
-    for i in 0..25 {
-        result.insert(CHROMS[i].to_owned(), i);
-        result.insert(format!("chr{}", CHROMS[i]).to_owned(), i);
+    for (i, &chrom_name) in CHROMS.iter().enumerate() {
+        result.insert(chrom_name.to_owned(), i);
+        result.insert(format!("chr{}", chrom_name).to_owned(), i);
     }
     result.insert("MT".to_owned(), 24);
     result.insert("chrMT".to_owned(), 24);
-    return result;
+    result
 }
 
-fn load_bg_svs(
+fn load_bg_sv_records(
     args: &Args,
     term: &console::Term,
     chrom_map: HashMap<String, usize>,
@@ -126,7 +126,7 @@ fn load_bg_svs(
         let record: BgSvFileRecord = result?;
         let idx = *chrom_map
             .get(&record.chromosome)
-            .expect(&format!("unknown chromosome {}", &record.chromosome));
+            .unwrap_or_else(|| panic!("unknown chromosome {}", &record.chromosome));
         rec_by_contig[idx].push(record.to_in_memory());
     }
     term.write_line(&format!(
@@ -136,9 +136,9 @@ fn load_bg_svs(
     Ok(rec_by_contig)
 }
 
-fn fun_name(
+fn build_bg_sv_tree(
     term: &console::Term,
-    rec_by_contig: &Vec<Vec<BgSvRecord>>,
+    rec_by_contig: &[Vec<BgSvRecord>],
 ) -> Result<Vec<ArrayBackedIntervalTree<i32, usize>>, anyhow::Error> {
     term.write_line("Building trees...")?;
     let mut trees: Vec<ArrayBackedIntervalTree<i32, usize>> = Vec::new();
@@ -176,8 +176,8 @@ pub(crate) fn run(
 
     let chrom_map = build_chrom_map();
 
-    let bg_sv_recs_by_config = load_bg_svs(args, term, chrom_map)?;
-    let _bg_sv_trees = fun_name(term, &bg_sv_recs_by_config)?;
+    let bg_sv_records_by_config = load_bg_sv_records(args, term, chrom_map)?;
+    let _bg_sv_trees = build_bg_sv_tree(term, &bg_sv_records_by_config)?;
 
     Ok(())
 }
