@@ -79,6 +79,7 @@ fn build_bg_sv_tree<Record: BeginEnd>(
         for (i, record) in contig_records.iter().enumerate() {
             tree.insert((record.begin())..(record.end()), i);
         }
+        tree.index();
         trees.push(tree);
         term.write_line(&format!(
             "  time for {} ({} intervals): {:?}",
