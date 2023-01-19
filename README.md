@@ -21,7 +21,12 @@ This worker provides the query functionality.
 **Call**
 
 ```bash
-$ sv-query --db-base-dir DIR --result-set-id ID QUERY.json INPUT.vcf.gz OUTPUT.tsv
+$ sv-query \
+    --db-base-dir DIR \
+    --result-set-id ID \
+    --query-json QUERY.json \
+    --input-vcf INPUT.vcf.gz \
+    --output-vcf OUTPUT.tsv
 ```
 
 **Param: `--db-base-dir DIR` (required)**
