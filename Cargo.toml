@@ -20,6 +20,7 @@ console = "0.15.5"
 csv = "1.1.6"
 flate2 = "1.0.25"
 procfs = "0.14.2"
+rust-htslib = { version = "0.40.2", default-features = false }
 serde = { version = "1.0.152", features = ["serde_derive"] }
 thiserror = "1.0.38"
 thousands = "0.2.0"
