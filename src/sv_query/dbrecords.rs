@@ -220,7 +220,7 @@ pub mod gnomad_sv {
         }
     }
 
-    /// dbVar database record as read from TSV file.
+    /// gnomAD SV database record as read from TSV file.
     #[derive(Debug, Deserialize)]
     pub struct FileRecord {
         /// genome build
@@ -246,6 +246,234 @@ pub mod gnomad_sv {
                 end: self.end,
                 sv_type: self.svtype.clone(),
                 carriers: self.n_homalt + self.n_het,
+            }
+        }
+    }
+
+    impl ChromosomeCoordinate for FileRecord {
+        fn chromosome(&self) -> &String {
+            &self.chromosome
+        }
+
+        fn begin(&self) -> i32 {
+            self.start - 1
+        }
+
+        fn start(&self) -> i32 {
+            self.start
+        }
+
+        fn end(&self) -> i32 {
+            self.end
+        }
+    }
+}
+
+/// Records for gnomAD SV
+pub mod dgv {
+    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use serde::Deserialize;
+
+    /// gnomAD SV database record to be kept in memor
+    #[derive(Debug, Deserialize)]
+    pub struct Record {
+        /// start position, 0-based
+        pub begin: i32,
+        /// end position, 0-based
+        pub end: i32,
+
+        /// type of the SV
+        pub sv_type: String,
+
+        /// number of overall carriers
+        pub carriers: i32,
+    }
+
+    impl BeginEnd for Record {
+        fn begin(&self) -> i32 {
+            self.begin
+        }
+        fn end(&self) -> i32 {
+            self.end
+        }
+    }
+
+    /// dbVar database record as read from TSV file.
+    #[derive(Debug, Deserialize)]
+    pub struct FileRecord {
+        /// genome build
+        pub release: String,
+        /// chromosome name
+        pub chromosome: String,
+        /// start position, 1-based
+        pub start: i32,
+        /// end position, 1-based
+        pub end: i32,
+        /// The structural vairant type
+        sv_type: String,
+        /// Number of observed gains.
+        observed_gains: i32,
+        /// Number of observed losses
+        observed_losses: i32,
+    }
+
+    impl ToInMemory<Record> for FileRecord {
+        fn to_in_memory(&self) -> Record {
+            Record {
+                begin: self.start - 1,
+                end: self.end,
+                sv_type: self.sv_type.clone(),
+                carriers: self.observed_gains + self.observed_losses,
+            }
+        }
+    }
+
+    impl ChromosomeCoordinate for FileRecord {
+        fn chromosome(&self) -> &String {
+            &self.chromosome
+        }
+
+        fn begin(&self) -> i32 {
+            self.start - 1
+        }
+
+        fn start(&self) -> i32 {
+            self.start
+        }
+
+        fn end(&self) -> i32 {
+            self.end
+        }
+    }
+}
+
+/// Records for DGV Gold Standard
+pub mod dgv_gs {
+    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use serde::Deserialize;
+
+    /// DGV gold standard database record to be kept in memor
+    #[derive(Debug, Deserialize)]
+    pub struct Record {
+        /// start position, 0-based
+        pub begin: i32,
+        /// end position, 0-based
+        pub end: i32,
+
+        /// type of the SV
+        pub sv_type: String,
+
+        /// number of overall carriers
+        pub carriers: i32,
+    }
+
+    impl BeginEnd for Record {
+        fn begin(&self) -> i32 {
+            self.begin
+        }
+        fn end(&self) -> i32 {
+            self.end
+        }
+    }
+
+    /// DGV gold standard database record as read from TSV file.
+    #[derive(Debug, Deserialize)]
+    pub struct FileRecord {
+        /// genome build
+        pub release: String,
+        /// chromosome name
+        pub chromosome: String,
+        /// outer start position, 1-based
+        pub start_outer: i32,
+        /// outer end position, 1-based
+        pub end_outer: i32,
+        /// The structural vairant type
+        sv_type: String,
+        /// Number of carriers.
+        num_carriers: i32,
+    }
+
+    impl ToInMemory<Record> for FileRecord {
+        fn to_in_memory(&self) -> Record {
+            Record {
+                begin: self.start_outer - 1,
+                end: self.end_outer,
+                sv_type: self.sv_type.clone(),
+                carriers: self.num_carriers,
+            }
+        }
+    }
+
+    impl ChromosomeCoordinate for FileRecord {
+        fn chromosome(&self) -> &String {
+            &self.chromosome
+        }
+
+        fn begin(&self) -> i32 {
+            self.start_outer - 1
+        }
+
+        fn start(&self) -> i32 {
+            self.start_outer
+        }
+
+        fn end(&self) -> i32 {
+            self.end_outer
+        }
+    }
+}
+
+/// Records for ExAC CNV
+pub mod exac_cnv {
+    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use serde::Deserialize;
+
+    /// ExAC CNV database record to be kept in memor
+    #[derive(Debug, Deserialize)]
+    pub struct Record {
+        /// start position, 0-based
+        pub begin: i32,
+        /// end position, 0-based
+        pub end: i32,
+
+        /// type of the SV
+        pub sv_type: String,
+
+        /// number of overall carriers
+        pub carriers: i32,
+    }
+
+    impl BeginEnd for Record {
+        fn begin(&self) -> i32 {
+            self.begin
+        }
+        fn end(&self) -> i32 {
+            self.end
+        }
+    }
+
+    /// ExAC CNV database record as read from TSV file.
+    #[derive(Debug, Deserialize)]
+    pub struct FileRecord {
+        /// genome build
+        pub release: String,
+        /// chromosome name
+        pub chromosome: String,
+        /// outer start position, 1-based
+        pub start: i32,
+        /// outer end position, 1-based
+        pub end: i32,
+        /// The structural vairant type
+        sv_type: String,
+    }
+
+    impl ToInMemory<Record> for FileRecord {
+        fn to_in_memory(&self) -> Record {
+            Record {
+                begin: self.start - 1,
+                end: self.end,
+                sv_type: self.sv_type.clone(),
+                carriers: 1,
             }
         }
     }

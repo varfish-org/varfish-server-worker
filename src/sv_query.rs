@@ -141,6 +141,7 @@ pub(crate) fn run(
 
     let chrom_map = build_chrom_map();
 
+    let before_parsing = Instant::now();
     print_rss_now(term)?;
 
     let bg_sv_path = Path::new(&args.db_base_dir)
@@ -163,15 +164,50 @@ pub(crate) fn run(
     let _gnomad_sv_trees = build_bg_sv_tree(term, &gnomad_sv_records_by_contig)?;
     print_rss_now(term)?;
 
-    let dbvar_sv_path = Path::new(&args.db_base_dir)
+    let dbvar_path = Path::new(&args.db_base_dir)
         .join("bg-public")
         .join("dbvar-sv.tsv.gz");
-    let dbvar_sv_records_by_contig = load_bg_sv_records::<
+    let dbvar_records_by_contig = load_bg_sv_records::<
         dbrecords::db_var::Record,
         dbrecords::db_var::FileRecord,
-    >(&dbvar_sv_path, term, &chrom_map)?;
-    let _dbvar_sv_trees = build_bg_sv_tree(term, &dbvar_sv_records_by_contig)?;
+    >(&dbvar_path, term, &chrom_map)?;
+    let _dbvar_trees = build_bg_sv_tree(term, &dbvar_records_by_contig)?;
     print_rss_now(term)?;
+
+    let dgv_path = Path::new(&args.db_base_dir)
+        .join("bg-public")
+        .join("dgv-sv.tsv.gz");
+    let dgv_records_by_contig = load_bg_sv_records::<
+        dbrecords::dgv::Record,
+        dbrecords::dgv::FileRecord,
+    >(&dgv_path, term, &chrom_map)?;
+    let _dgv_trees = build_bg_sv_tree(term, &dgv_records_by_contig)?;
+    print_rss_now(term)?;
+
+    let dgv_gs_path = Path::new(&args.db_base_dir)
+        .join("bg-public")
+        .join("dgv-gs-sv.tsv.gz");
+    let dgv_gs_records_by_contig = load_bg_sv_records::<
+        dbrecords::dgv_gs::Record,
+        dbrecords::dgv_gs::FileRecord,
+    >(&dgv_gs_path, term, &chrom_map)?;
+    let _dgv_gs_trees = build_bg_sv_tree(term, &dgv_gs_records_by_contig)?;
+    print_rss_now(term)?;
+
+    let exac_cnv_path = Path::new(&args.db_base_dir)
+        .join("bg-public")
+        .join("exac-cnv.tsv.gz");
+    let exac_cnv_records_by_contig = load_bg_sv_records::<
+        dbrecords::exac_cnv::Record,
+        dbrecords::exac_cnv::FileRecord,
+    >(&exac_cnv_path, term, &chrom_map)?;
+    let _exac_cnv_trees = build_bg_sv_tree(term, &exac_cnv_records_by_contig)?;
+    print_rss_now(term)?;
+
+    term.write_line(&format!(
+        "Total time spent parsing: {:?}",
+        before_parsing.elapsed()
+    ))?;
 
     Ok(())
 }
