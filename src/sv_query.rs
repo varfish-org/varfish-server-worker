@@ -4,6 +4,7 @@ use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use std::time::Instant;
 use std::{collections::HashMap, fs::File, path::Path};
 
+use byte_unit::Byte;
 use flate2::read::GzDecoder;
 use serde::Deserialize;
 use thousands::Separable;
@@ -164,6 +165,16 @@ fn build_bg_sv_tree(
     Ok(trees)
 }
 
+fn print_rss_now(term: &console::Term) -> Result<(), anyhow::Error> {
+    let me = procfs::process::Process::myself().unwrap();
+    let page_size = procfs::page_size().unwrap();
+    term.write_line(&format!(
+        "RSS now: {}",
+        Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
+    ))?;
+    Ok(())
+}
+
 pub(crate) fn run(
     term: &console::Term,
     common: &CommonArgs,
@@ -174,10 +185,13 @@ pub(crate) fn run(
     term.write_line(&format!("args = {:?}", &args))?;
     term.write_line("")?;
 
-    let chrom_map = build_chrom_map();
+    print_rss_now(term)?;
 
+    let chrom_map = build_chrom_map();
     let bg_sv_records_by_config = load_bg_sv_records(args, term, chrom_map)?;
     let _bg_sv_trees = build_bg_sv_tree(term, &bg_sv_records_by_config)?;
+
+    print_rss_now(term)?;
 
     Ok(())
 }
