@@ -116,7 +116,7 @@ pub mod bg_sv {
 }
 
 /// Records for the dbVar
-pub mod db_var {
+pub mod dbvar {
     use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
     use serde::Deserialize;
 
