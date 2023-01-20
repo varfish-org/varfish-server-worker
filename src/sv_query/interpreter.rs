@@ -38,9 +38,28 @@ impl QueryInterpreter {
     /// Determine whether this record passes the simple criteria regarding
     /// size and SV type.
     pub fn passes_simple(&self, sv: &StructuralVariant) -> bool {
-        !((!self.query.sv_types.is_empty() && !self.query.sv_types.contains(&sv.sv_type))
-            || (!self.query.sv_sub_types.is_empty()
-                && !self.query.sv_sub_types.contains(&sv.sv_sub_type)))
+        let pass_sv_type =
+            self.query.sv_types.is_empty() || self.query.sv_types.contains(&sv.sv_type);
+
+        let pass_sv_sub_type =
+            self.query.sv_sub_types.is_empty() || self.query.sv_sub_types.contains(&sv.sv_sub_type);
+
+        let sv_size = sv.size();
+        let (pass_sv_size_min, pass_sv_size_max) = if let Some(sv_size) = sv_size {
+            let pass_sv_size_min = self
+                .query
+                .sv_size_min
+                .map_or(true, |sv_size_min| sv_size >= sv_size_min);
+            let pass_sv_size_max = self
+                .query
+                .sv_size_max
+                .map_or(true, |sv_size_max| sv_size <= sv_size_max);
+            (pass_sv_size_min, pass_sv_size_max)
+        } else {
+            (true, true)
+        };
+
+        pass_sv_type && pass_sv_sub_type && pass_sv_size_min && pass_sv_size_max
     }
 
     /// Determine whether an SV record passes the genomic region criteria.
@@ -214,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn test_query_interpreter_passes_simple_pass() {
+    fn test_query_interpreter_passes_simple_pass_sv_type() {
         let query = CaseQuery {
             sv_types: vec![SvType::Del],
             ..CaseQuery::new(Database::Refseq)
@@ -227,7 +246,7 @@ mod tests {
             sv_type: SvType::Del,
             sv_sub_type: SvSubType::Del,
             chrom2: None,
-            end: 100,
+            end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
             call_info: HashMap::new(),
         };
@@ -272,6 +291,73 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 100,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+
+        assert!(!interpreter.passes_simple(&sv_fail));
+    }
+
+    #[test]
+    fn test_query_interpreter_passes_simple_pass_size() {
+        let query = CaseQuery {
+            sv_size_min: Some(50),
+            sv_size_max: Some(500),
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let sv_pass = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+
+        assert!(interpreter.passes_simple(&sv_pass));
+    }
+
+    #[test]
+    fn test_query_interpreter_passes_simple_fail_size_min() {
+        let query = CaseQuery {
+            sv_size_min: Some(5000),
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let sv_fail = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+
+        assert!(!interpreter.passes_simple(&sv_fail));
+    }
+
+    #[test]
+    fn test_query_interpreter_passes_simple_fail_size_max() {
+        let query = CaseQuery {
+            sv_size_max: Some(1),
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let sv_fail = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
             call_info: HashMap::new(),
         };

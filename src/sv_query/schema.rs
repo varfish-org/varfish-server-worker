@@ -465,9 +465,9 @@ pub struct CaseQuery {
     pub svdb_inhouse_max_carriers: Option<u32>,
 
     /// The minimal SV size to consider.
-    pub sv_size_min: Option<i32>,
+    pub sv_size_min: Option<u32>,
     /// The maximal SV size to consider.
-    pub sv_size_max: Option<i32>,
+    pub sv_size_max: Option<u32>,
 
     /// The SV types to consider.
     pub sv_types: Vec<SvType>,
@@ -1151,6 +1151,7 @@ mod tests {
         );
     }
 
+    #[test]
     fn test_sv_sub_type_is_ins() {
         assert_eq!(SvSubType::Del.is_ins(), false);
         assert_eq!(SvSubType::DelMe.is_ins(), false);
@@ -1169,21 +1170,22 @@ mod tests {
         assert_eq!(SvSubType::Cnv.is_ins(), false);
     }
 
+    #[test]
     fn test_sv_sub_type_is_del() {
-        assert_eq!(SvSubType::Del.is_ins(), true);
-        assert_eq!(SvSubType::DelMe.is_ins(), true);
-        assert_eq!(SvSubType::DelMeSva.is_ins(), true);
-        assert_eq!(SvSubType::DelMeL1.is_ins(), true);
-        assert_eq!(SvSubType::DelMeAlu.is_ins(), true);
-        assert_eq!(SvSubType::Dup.is_ins(), false);
-        assert_eq!(SvSubType::DupTandem.is_ins(), false);
-        assert_eq!(SvSubType::Inv.is_ins(), false);
-        assert_eq!(SvSubType::Ins.is_ins(), false);
-        assert_eq!(SvSubType::InsMe.is_ins(), false);
-        assert_eq!(SvSubType::InsMeSva.is_ins(), false);
-        assert_eq!(SvSubType::InsMeL1.is_ins(), false);
-        assert_eq!(SvSubType::InsMeAlu.is_ins(), false);
-        assert_eq!(SvSubType::Bnd.is_ins(), false);
-        assert_eq!(SvSubType::Cnv.is_ins(), false);
+        assert_eq!(SvSubType::Del.is_del(), true);
+        assert_eq!(SvSubType::DelMe.is_del(), true);
+        assert_eq!(SvSubType::DelMeSva.is_del(), true);
+        assert_eq!(SvSubType::DelMeL1.is_del(), true);
+        assert_eq!(SvSubType::DelMeAlu.is_del(), true);
+        assert_eq!(SvSubType::Dup.is_del(), false);
+        assert_eq!(SvSubType::DupTandem.is_del(), false);
+        assert_eq!(SvSubType::Inv.is_del(), false);
+        assert_eq!(SvSubType::Ins.is_del(), false);
+        assert_eq!(SvSubType::InsMe.is_del(), false);
+        assert_eq!(SvSubType::InsMeSva.is_del(), false);
+        assert_eq!(SvSubType::InsMeL1.is_del(), false);
+        assert_eq!(SvSubType::InsMeAlu.is_del(), false);
+        assert_eq!(SvSubType::Bnd.is_del(), false);
+        assert_eq!(SvSubType::Cnv.is_del(), false);
     }
 }
