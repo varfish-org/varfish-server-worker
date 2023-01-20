@@ -672,4 +672,100 @@ mod tests {
 
         assert!(!interpreter.passes_genomic_region(&sv_fail));
     }
+
+    #[test]
+    fn test_query_interpreter_passes_counts_pass() {
+        let query = CaseQuery {
+            svdb_dgv_enabled: true,
+            svdb_dgv_max_carriers: Some(10),
+            svdb_dgv_gs_enabled: true,
+            svdb_dgv_gs_max_carriers: Some(10),
+            svdb_gnomad_enabled: true,
+            svdb_gnomad_max_carriers: Some(10),
+            svdb_exac_enabled: true,
+            svdb_exac_max_carriers: Some(10),
+            svdb_dbvar_enabled: true,
+            svdb_dbvar_max_carriers: Some(10),
+            svdb_g1k_enabled: true,
+            svdb_g1k_max_alleles: Some(10),
+            svdb_inhouse_enabled: true,
+            svdb_inhouse_max_carriers: Some(10),
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let counts_pass = SvOverlapCounts {
+            dgv_carriers: 5,
+            dgv_gs_carriers: 5,
+            gnomad_carriers: 5,
+            exac_carriers: 5,
+            g1k_alleles: 5,
+            inhouse_carriers: 5,
+            dbvar_carriers: 5,
+        };
+
+        assert!(interpreter.passes_counts(&counts_pass));
+    }
+
+    #[test]
+    fn test_query_interpreter_passes_counts_fail() {
+        let query = CaseQuery {
+            svdb_dgv_enabled: true,
+            svdb_dgv_max_carriers: Some(10),
+            svdb_dgv_gs_enabled: true,
+            svdb_dgv_gs_max_carriers: Some(10),
+            svdb_gnomad_enabled: true,
+            svdb_gnomad_max_carriers: Some(10),
+            svdb_exac_enabled: true,
+            svdb_exac_max_carriers: Some(10),
+            svdb_dbvar_enabled: true,
+            svdb_dbvar_max_carriers: Some(10),
+            svdb_g1k_enabled: true,
+            svdb_g1k_max_alleles: Some(10),
+            svdb_inhouse_enabled: true,
+            svdb_inhouse_max_carriers: Some(10),
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let counts_fail = SvOverlapCounts {
+            dgv_carriers: 11,
+            dgv_gs_carriers: 11,
+            gnomad_carriers: 11,
+            exac_carriers: 11,
+            g1k_alleles: 11,
+            inhouse_carriers: 11,
+            dbvar_carriers: 11,
+        };
+
+        assert!(!interpreter.passes_counts(&counts_fail));
+    }
+
+    #[test]
+    fn test_query_interpreter_passes_smoke() {
+        let query = CaseQuery::new(Database::Refseq);
+        let interpreter = QueryInterpreter::new(query);
+
+        let sv_pass = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+        let counts_pass = SvOverlapCounts {
+            dgv_carriers: 5,
+            dgv_gs_carriers: 5,
+            gnomad_carriers: 5,
+            exac_carriers: 5,
+            g1k_alleles: 5,
+            inhouse_carriers: 5,
+            dbvar_carriers: 5,
+        };
+
+        assert!(interpreter.passes(&sv_pass, &counts_pass));
+    }
 }
