@@ -6,7 +6,7 @@ use anyhow::anyhow;
 
 use super::{
     dbrecords::SvOverlapCounts,
-    schema::{CaseQuery, Range, StructuralVariant, SvSubType, SvType},
+    schema::{CaseQuery, GenotypeChoice, Range, StructuralVariant, SvSubType, SvType},
 };
 
 /// Slack around break-end positions
@@ -39,7 +39,46 @@ impl QueryInterpreter {
         let query_samples = self.query.genotype.keys().collect::<HashSet<&String>>();
         let sv_samples = sv.call_info.keys().collect::<HashSet<&String>>();
         if !query_samples.eq(&sv_samples) {
-            return Err(anyhow!("Samples in query and SV are not equal: {:?} vs {:?}", &query_samples, &sv_samples));
+            return Err(anyhow!(
+                "Samples in query and SV are not equal: {:?} vs {:?}",
+                &query_samples,
+                &sv_samples
+            ));
+        }
+
+        // Now check whether for each sample, the selected genotype in `self.query.genotype`
+        // matches what we have in terms of `CallInfo` for the sample in `sv`.  For this, we
+        // go through all `GenotypeCriteria` in `self.query.genotype_criteria` and look
+        // for all matching such records (by genotype, sv sub type, size)...
+        for sample in query_samples {
+            let query_genotype = *self
+                .query
+                .genotype
+                .get(sample)
+                .expect("cannot happen: checked for sample equality earlier");
+            let call_info = sv
+                .call_info
+                .get(sample)
+                .expect("cannot happen: checked for sample quality earlier");
+
+            // We do not have to check if any genotype is fine for this sample
+            if query_genotype != GenotypeChoice::Any {
+                let mut is_any_criteria_pass = false;
+                for criteria in &self.query.genotype_criteria {
+                    if criteria.is_applicable_to(query_genotype, sv.sv_sub_type, sv.size())
+                        && criteria.is_call_info_pass(call_info)
+                    {
+                        is_any_criteria_pass = true;
+                        break; // one matching criteria is enough
+                    }
+                }
+                // If none of the criteria is pass for this sample then the sample's
+                // CallInfo does not comply with the selected genotype.  This variant
+                // does thus not pass the genotype filter.
+                if !is_any_criteria_pass {
+                    return Ok(false);
+                }
+            }
         }
 
         Ok(true)
@@ -203,7 +242,11 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes(&self, sv: &StructuralVariant, counts: &SvOverlapCounts) -> Result<bool, anyhow::Error> {
+    pub fn passes(
+        &self,
+        sv: &StructuralVariant,
+        counts: &SvOverlapCounts,
+    ) -> Result<bool, anyhow::Error> {
         // simply AND-concatenate all `passes_*` functions
         Ok(self.passes_simple(sv)
             && self.passes_counts(counts)

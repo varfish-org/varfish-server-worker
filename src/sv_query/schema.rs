@@ -41,7 +41,7 @@ impl GenomicRegion {
 }
 
 /// Database of transcripts
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Database {
     Refseq,
@@ -49,7 +49,7 @@ pub enum Database {
 }
 
 /// Encode the type of an SV
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SvType {
     /// Deletion
@@ -67,7 +67,7 @@ pub enum SvType {
 }
 
 /// Structural variant sub type
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum SvSubType {
     /// Deletion
     #[serde(rename = "DEL")]
@@ -142,7 +142,7 @@ impl SvSubType {
 }
 
 /// Genotype choice for filter dropdowns
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 #[serde(rename_all = "kebab-case")]
 pub enum GenotypeChoice {
     /// Any genotype
@@ -164,7 +164,7 @@ pub enum GenotypeChoice {
 }
 
 /// ENSEMBL regulatory feature
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum EnsemblRegulatoryFeature {
     /// Any fature
     #[serde(rename = "any_feature")]
@@ -190,7 +190,7 @@ pub enum EnsemblRegulatoryFeature {
 }
 
 /// Variant effect description
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum VariantEffect {
     #[serde(rename = "coding_sequence_variant")]
     CodingSequenceVariant,
@@ -257,7 +257,7 @@ pub enum VariantEffect {
 }
 
 /// VISTA validation
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum VistaValidation {
     /// Overlap with any VISTA enhancer
@@ -289,7 +289,7 @@ impl RegulatoryCustomConfig {
 }
 
 /// Enum for recessive mode
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 #[serde(rename_all = "kebab-case")]
 pub enum RecessiveMode {
     /// Recessive mode of inheritance
@@ -299,7 +299,7 @@ pub enum RecessiveMode {
 }
 
 /// Options for TAD sets to use.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum TadSet {
     /// hESC  cell line
     #[serde(rename = "hesc")]
@@ -320,9 +320,9 @@ pub struct GenotypeCriteria {
     /// Select SV sub types that this applies to
     pub select_sv_sub_type: Vec<SvSubType>,
     /// Select minimal size of SV to apply to (ignored for BND and INS)
-    pub select_sv_min_size: Option<i32>,
+    pub select_sv_min_size: Option<u32>,
     /// Select maximal size of SV to apply to (ignored for BND and INS)
-    pub select_sv_max_size: Option<i32>,
+    pub select_sv_max_size: Option<u32>,
 
     /// The FORMAT/GT field should be one of, unless None
     pub gt_one_of: Option<Vec<String>>,
@@ -330,41 +330,41 @@ pub struct GenotypeCriteria {
     /// Minimal genotype quality as returned by caller
     pub min_gq: Option<f32>,
     /// Minimal number of total paired-end reads covering the SV
-    pub min_pr_cov: Option<i32>,
+    pub min_pr_cov: Option<u32>,
     /// Maximal number of total paired-end reads covering the SV
-    pub max_pr_cov: Option<i32>,
+    pub max_pr_cov: Option<u32>,
     /// Minimal number of reference paired-end reads covering the SV
-    pub min_pr_ref: Option<i32>,
+    pub min_pr_ref: Option<u32>,
     /// Maximal number of reference paired-end reads covering the SV
-    pub max_pr_ref: Option<i32>,
+    pub max_pr_ref: Option<u32>,
     /// Minimal number of variant paired-end reads covering the SV
-    pub min_pr_var: Option<i32>,
+    pub min_pr_var: Option<u32>,
     /// Maximal number of variant paired-end reads covering the SV
-    pub max_pr_var: Option<i32>,
+    pub max_pr_var: Option<u32>,
     /// Minimal number of total split reads covering the SV
-    pub min_sr_cov: Option<i32>,
+    pub min_sr_cov: Option<u32>,
     /// Maximal number of total split reads covering the SV
-    pub max_sr_cov: Option<i32>,
+    pub max_sr_cov: Option<u32>,
     /// Minimal number of reference split reads covering the SV
-    pub min_sr_ref: Option<i32>,
+    pub min_sr_ref: Option<u32>,
     /// Maximal number of reference split reads covering the SV
-    pub max_sr_ref: Option<i32>,
+    pub max_sr_ref: Option<u32>,
     /// Minimal number of variant split reads covering the SV
-    pub min_sr_var: Option<i32>,
+    pub min_sr_var: Option<u32>,
     /// Maximal number of variant split reads covering the SV
-    pub max_sr_var: Option<i32>,
+    pub max_sr_var: Option<u32>,
     /// Minimal sum of total paired-end/split read coverage
-    pub min_srpr_cov: Option<i32>,
+    pub min_srpr_cov: Option<u32>,
     /// Maximal sum of total paired-end/split read coverage
-    pub max_srpr_cov: Option<i32>,
+    pub max_srpr_cov: Option<u32>,
     /// Minimal sum of reference paired-end/split read coverage
-    pub min_srpr_ref: Option<i32>,
+    pub min_srpr_ref: Option<u32>,
     /// Maximal sum of reference paired-end/split read coverage
-    pub max_srpr_ref: Option<i32>,
+    pub max_srpr_ref: Option<u32>,
     /// Minimal sum of variant paired-end/split read coverage
-    pub min_srpr_var: Option<i32>,
+    pub min_srpr_var: Option<u32>,
     /// Maximal sum of variant paired-end/split read coverage
-    pub max_srpr_var: Option<i32>,
+    pub max_srpr_var: Option<u32>,
     /// Minimal coverage deviation
     pub min_rd_dev: Option<f32>,
     /// Maximal coverage deviation
@@ -412,6 +412,98 @@ impl GenotypeCriteria {
             max_amq: None,
             comment: None,
         }
+    }
+
+    /// Returns whether the `GenotypeCriteria` is applicable to a call in
+    /// a structural variant with the given genotype, of the given SV sub
+    /// type and with the given size.
+    pub fn is_applicable_to(
+        &self,
+        genotype: GenotypeChoice,
+        sv_sub_type: SvSubType,
+        sv_size: Option<u32>,
+    ) -> bool {
+        if genotype != self.genotype || !self.select_sv_sub_type.contains(&sv_sub_type) {
+            false
+        } else if sv_sub_type == SvSubType::Bnd || sv_sub_type.is_ins() {
+            true // no further size check
+        } else if let Some(sv_size) = sv_size {
+            // apply the size limits, if defined
+            sv_size >= self.select_sv_min_size.unwrap_or(sv_size)
+                && sv_size <= self.select_sv_max_size.unwrap_or(sv_size)
+        } else {
+            false // is not BND or INS, must have size!
+        }
+    }
+
+    /// Returns whether the `GenotypeCriteria` is pass for the given `CallInfo`.
+    ///
+    /// Note that this only check the genotype and quality criteria.  Whether the
+    /// `GenotypeCriteria` is applicable to the `CallInfo` has to be checked
+    /// independently.
+    pub fn is_call_info_pass(&self, call_info: &CallInfo) -> bool {
+        // The pattern below is always the same: if the constraint in self is
+        // None then pass regardlessly of what `call_info` has.  Otherwise
+        // fail if the corresponding value of `call_info` has not been set.
+        // If both have been set then perform the actual check.
+        let pass_gt_one_of = self.gt_one_of.as_ref().map_or(true, |gt_one_of| {
+            call_info
+                .genotype
+                .as_ref()
+                .map_or(false, |gt| gt_one_of.contains(&gt))
+        });
+
+        let pass_min_gq = self.min_gq.map_or(true, |min_gq| {
+            call_info.quality.map_or(false, |gq| gq >= min_gq)
+        });
+
+        let pass_min_pr_cov = self.min_pr_cov.map_or(true, |min_pr_cov| {
+            call_info
+                .paired_end_cov
+                .map_or(false, |paired_end_cov| paired_end_cov >= min_pr_cov)
+        });
+        let pass_max_pr_cov = self.max_pr_cov.map_or(true, |max_pr_cov| {
+            call_info
+                .paired_end_cov
+                .map_or(false, |paired_end_cov| paired_end_cov >= max_pr_cov)
+        });
+
+        let pass_min_pr_ref = self.min_pr_ref.map_or(true, |min_pr_ref| {
+            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
+                call_info.paired_end_var.map_or(false, |paired_end_var| {
+                    paired_end_cov.saturating_sub(paired_end_var) >= min_pr_ref
+                })
+            })
+        });
+        let pass_max_pr_ref = self.max_pr_ref.map_or(true, |max_pr_ref| {
+            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
+                call_info.paired_end_var.map_or(false, |paired_end_var| {
+                    paired_end_cov.saturating_sub(paired_end_var) <= pass_max_pr_ref
+                })
+            })
+        });
+
+        let pass_min_pr_var = self.min_pr_var.map_or(true, |min_pr_var| {
+            call_info
+                .paired_end_var
+                .map_or(false, |paired_end_var| paired_end_var >= min_pr_var)
+        });
+        let pass_max_pr_var = self.max_pr_var.map_or(true, |max_pr_var| {
+            call_info
+                .paired_end_var
+                .map_or(false, |paired_end_var| paired_end_var >= max_pr_var)
+        });
+
+        todo!(); // continue
+
+        pass_gt_one_of
+            && pass_min_gq
+            && pass_min_pr_cov
+            && pass_max_pr_cov
+            && pass_min_pr_ref
+            && pass_max_pr_ref
+            && pass_min_pr_var
+            && pass_max_pr_var
     }
 }
 
@@ -893,6 +985,54 @@ mod tests {
                 Token::StructEnd,
             ],
         );
+    }
+
+    #[test]
+    fn test_genotype_criteria_is_applicable_to() {
+        let crit = GenotypeCriteria {
+            genotype: GenotypeChoice::Het,
+            select_sv_sub_type: vec![SvSubType::Del],
+            select_sv_min_size: Some(1000),
+            select_sv_max_size: Some(5000),
+            ..GenotypeCriteria::new(GenotypeChoice::Het)
+        };
+
+        assert!(crit.is_applicable_to(GenotypeChoice::Het, SvSubType::Del, Some(1000)));
+        assert!(!crit.is_applicable_to(GenotypeChoice::Hom, SvSubType::Ins, Some(1000)));
+        assert!(!crit.is_applicable_to(GenotypeChoice::Het, SvSubType::Ins, Some(1000)));
+        assert!(!crit.is_applicable_to(GenotypeChoice::Het, SvSubType::Del, Some(100)));
+        assert!(!crit.is_applicable_to(GenotypeChoice::Het, SvSubType::Del, Some(10000)));
+    }
+
+    #[test]
+    fn test_genotype_criteria_is_call_info_pass() {
+        let crit = GenotypeCriteria {
+            gt_one_of: Some(vec!["0/1".to_owned()]),
+            min_gq: Some(10.0),
+            min_pr_cov: Some(10),
+            min_sr_cov: Some(10),
+            min_rd_dev: Some(0.5),
+            ..GenotypeCriteria::new(GenotypeChoice::Het)
+        };
+
+        let pass_info = CallInfo {
+            genotype: Some("0/1".to_owned()),
+            quality: Some(10.0),
+            paired_end_cov: Some(10),
+            paired_end_var: Some(10),
+            split_read_cov: Some(10),
+            split_read_var: Some(10),
+            copy_number: Some(1),
+            average_normalized_cov: Some(0.491),
+            point_count: Some(5),
+        };
+
+        assert!(crit.is_call_info_pass(&pass_info));
+    }
+
+    #[test]
+    fn test_genotype_criteria_is_call_info_fail() {
+        todo!()
     }
 
     #[test]
