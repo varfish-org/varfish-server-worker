@@ -38,15 +38,9 @@ impl QueryInterpreter {
     /// Determine whether this record passes the simple criteria regarding
     /// size and SV type.
     pub fn passes_simple(&self, sv: &StructuralVariant) -> bool {
-        if !self.query.sv_types.is_empty() && !self.query.sv_types.contains(&sv.sv_type) {
-            false
-        } else if !self.query.sv_sub_types.is_empty()
-            && !self.query.sv_sub_types.contains(&sv.sv_sub_type)
-        {
-            false
-        } else {
-            true
-        }
+        !(!self.query.sv_types.is_empty() && !self.query.sv_types.contains(&sv.sv_type))
+            || (!self.query.sv_sub_types.is_empty()
+                && !self.query.sv_sub_types.contains(&sv.sv_sub_type))
     }
 
     /// Determine whether an SV record passes the genomic region criteria.
@@ -58,9 +52,9 @@ impl QueryInterpreter {
                     let range_matches = match region.range {
                         None => true,
                         Some(Range { start, end }) => overlaps(
-                            start.checked_sub(1).unwrap_or(0),
+                            start.saturating_sub(1),
                             end,
-                            sv.pos.checked_sub(INS_SLACK).unwrap_or(0),
+                            sv.pos.saturating_sub(INS_SLACK),
                             sv.pos + INS_SLACK,
                         ),
                     };
@@ -71,18 +65,18 @@ impl QueryInterpreter {
                     let range_matches_chrom = match region.range {
                         None => true,
                         Some(Range { start, end }) => overlaps(
-                            start.checked_sub(1).unwrap_or(0),
+                            start.saturating_sub(1),
                             end,
-                            sv.pos.checked_sub(BND_SLACK).unwrap_or(0),
+                            sv.pos.saturating_sub(BND_SLACK),
                             sv.pos + BND_SLACK,
                         ),
                     };
                     let range_matches_chrom2 = match region.range {
                         None => true,
                         Some(Range { start, end }) => overlaps(
-                            start.checked_sub(1).unwrap_or(0),
+                            start.saturating_sub(1),
                             end,
-                            sv.end.checked_sub(BND_SLACK).unwrap_or(0),
+                            sv.end.saturating_sub(BND_SLACK),
                             sv.end + BND_SLACK,
                         ),
                     };
@@ -99,9 +93,9 @@ impl QueryInterpreter {
                     let range_matches = match region.range {
                         None => true,
                         Some(Range { start, end }) => overlaps(
-                            start.checked_sub(1).unwrap_or(0),
+                            start.saturating_sub(1),
                             end,
-                            sv.pos.checked_sub(1).unwrap_or(0),
+                            sv.pos.saturating_sub(1),
                             sv.end,
                         ),
                     };

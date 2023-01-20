@@ -119,25 +119,25 @@ pub enum SvSubType {
 impl SvSubType {
     /// Return whether SV sub type is any insertion
     pub fn is_ins(&self) -> bool {
-        match self {
+        matches!(
+            self,
             SvSubType::Ins
-            | SvSubType::InsMe
-            | SvSubType::InsMeSva
-            | SvSubType::InsMeL1
-            | SvSubType::InsMeAlu => true,
-            _ => false,
-        }
+                | SvSubType::InsMe
+                | SvSubType::InsMeSva
+                | SvSubType::InsMeL1
+                | SvSubType::InsMeAlu
+        )
     }
     /// Return whether SV sub type is any deletion
     pub fn is_del(&self) -> bool {
-        match self {
+        matches!(
+            self,
             SvSubType::Del
-            | SvSubType::DelMe
-            | SvSubType::DelMeSva
-            | SvSubType::DelMeL1
-            | SvSubType::DelMeAlu => true,
-            _ => false,
-        }
+                | SvSubType::DelMe
+                | SvSubType::DelMeSva
+                | SvSubType::DelMeL1
+                | SvSubType::DelMeAlu
+        )
     }
 }
 
@@ -622,7 +622,7 @@ impl StructuralVariant {
         {
             None
         } else {
-            Some(self.end.checked_sub(self.pos).unwrap_or(0) + 1)
+            Some(self.end.saturating_sub(self.pos) + 1)
         }
     }
 }
