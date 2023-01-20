@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 /// Definition of query schemas.
 use serde::{Deserialize, Serialize};
 
@@ -63,6 +65,7 @@ pub enum SvType {
     Cnv,
 }
 
+/// Structural variant sub type
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum SvSubType {
     /// Deletion
@@ -112,6 +115,7 @@ pub enum SvSubType {
     Cnv,
 }
 
+/// Genotype choice for filter dropdowns
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum GenotypeChoice {
@@ -133,10 +137,151 @@ pub enum GenotypeChoice {
     NonReference,
 }
 
-// TODO: VariantEffect
-// TODO: EnsemblRegulatoryFeature
-// TODO: VistaValidation
-// TODO: GenotypeCriteria
+/// ENSEMBL regulatory feature
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum EnsemblRegulatoryFeature {
+    /// Any fature
+    #[serde(rename = "any_feature")]
+    AnyFeature,
+    /// CTCF binding site
+    #[serde(rename = "CTCF_binding_site")]
+    CtcfBindingSite,
+    /// Enhancer
+    #[serde(rename = "enhancer")]
+    Enhancer,
+    /// Open chromatin region
+    #[serde(rename = "open_chromatin_region")]
+    OpenChromatinRegion,
+    /// Promoter region
+    #[serde(rename = "promoter")]
+    Promoter,
+    /// Promoter flanking region
+    #[serde(rename = "promoter_flanking_region")]
+    PromoterFlankingRegion,
+    /// Transcription factor binding site
+    #[serde(rename = "TF_binding_site")]
+    TfBindingSite,
+}
+
+/// Variant effect description
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum VariantEffect {
+    #[serde(rename = "coding_sequence_variant")]
+    CodingSequenceVariant,
+    #[serde(rename = "coding_transcript_intron_variant")]
+    CodingTranscriptIntronVariant,
+    #[serde(rename = "coding_transcript_variant")]
+    CodingTranscriptVariant,
+    #[serde(rename = "copy_number_change")]
+    CopyNumberChange,
+    #[serde(rename = "direct_tandem_duplication")]
+    DirectTandemDuplicatin,
+    #[serde(rename = "downstream_gene_variant")]
+    DownstreamGeneVariant,
+    #[serde(rename = "exon_loss_variant")]
+    ExonLossVariant,
+    #[serde(rename = "feature_truncation")]
+    FeatureTruncation,
+    #[serde(rename = "5_prime_UTR_exon_variant")]
+    FivePrimeUtrExonVariant,
+    #[serde(rename = "5_prime_UTR_intron_variant")]
+    FivePrimeUtrIntronVariant,
+    #[serde(rename = "5_prime_UTR_truncation")]
+    FivePrimeUtrTruncation,
+    #[serde(rename = "frameshift_truncation")]
+    FrameshiftTruncation,
+    #[serde(rename = "insertion")]
+    Insertion,
+    #[serde(rename = "intron_variant")]
+    IntronVariant,
+    #[serde(rename = "inversion")]
+    Inversion,
+    #[serde(rename = "mobile_element_deletion")]
+    MobileElementDeletion,
+    #[serde(rename = "mobile_element_insertion")]
+    MobileElementInsertion,
+    #[serde(rename = "non_coding_transcript_exon_variant")]
+    NonCodingTranscriptExonVariant,
+    #[serde(rename = "non_coding_transcript_intron_variant")]
+    NonCodingTranscriptIntronVariant,
+    #[serde(rename = "non_coding_transcript_variant")]
+    NonCodingTranscriptVariant,
+    #[serde(rename = "sequence_variant")]
+    SequenceVariant,
+    #[serde(rename = "start_lost")]
+    StartLost,
+    #[serde(rename = "stop_lost")]
+    StopLost,
+    #[serde(rename = "structural_variant")]
+    StructuralVariant,
+    #[serde(rename = "3_prime_UTR_exon_variant")]
+    ThreePrimeUtrExonVariant,
+    #[serde(rename = "3_prime_UTR_intron_variant")]
+    ThreePrimeUtrIntronVariant,
+    #[serde(rename = "3_prime_UTR_truncation")]
+    ThreePrimeUtrTruncation,
+    #[serde(rename = "transcript_ablation")]
+    TranscriptAblation,
+    #[serde(rename = "transcript_amplification")]
+    TranscriptAmplification,
+    #[serde(rename = "translocation")]
+    Translocation,
+    #[serde(rename = "upstream_variant")]
+    UpstreamVariant,
+}
+
+/// VISTA validation
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum VistaValidation {
+    /// Overlap with any VISTA enhancer
+    Any,
+    /// Overlap with positive VISTSA enhancer
+    Positive,
+    /// Overlap with negative VISTA enhancer
+    Negative,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct RegulatoryCustomConfig {
+    /// The selected cell types
+    pub cell_types: Vec<String>,
+    /// The selected element type
+    pub element_types: Vec<String>,
+    /// Alternatively, overlapping with interaction in cell type (includes all elements)
+    pub overlaps_interaction: bool,
+}
+
+impl RegulatoryCustomConfig {
+    pub fn new() -> RegulatoryCustomConfig {
+        RegulatoryCustomConfig {
+            cell_types: vec![],
+            element_types: vec![],
+            overlaps_interaction: false,
+        }
+    }
+}
+
+/// Enum for recessive mode
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub enum RecessiveMode {
+    /// Recessive mode of inheritance
+    Recessive,
+    /// Compound recessive mode of inheritance
+    CompoundRecessive,
+}
+
+/// Options for TAD sets to use.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum TadSet {
+    /// hESC  cell line
+    #[serde(rename = "hesc")]
+    Hesc,
+    /// IMR90 cell line
+    #[serde(rename = "im390")]
+    Imr90,
+}
 
 /// Define rule to apply to a given sub set of structural variants for matching a genotype.
 ///
@@ -244,102 +389,137 @@ impl GenotypeCriteria {
     }
 }
 
-// /// Define a query for structural variants from a case.
-// #[derive(Serialize, Deserialize, PartialEq, Debug)]
-// pub struct CaseQuery {
-//     /// The transcript database to use
-//     pub database: Database,
+/// Define a query for structural variants from a case.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct CaseQuery {
+    /// The transcript database to use
+    pub database: Database,
 
-//     /// Whether to enable SVDB overlap queries with DGV.
-//     svdb_dgv_enabled: bool,
-//     /// The minimal reciprocal overlap for querying DGV.
-//     svdb_dgv_min_overlap: Option<f32>,
-//     /// The maximal number of carriers for querying DGV.
-//     svdb_dgv_max_carriers: Option<i32>,
-//     /// Whether to enable SVDB overlap queries with DGV gold standard.
-//     svdb_dgv_gs_enabled: bool,
-//     /// The minimal reciprocal overlap for querying DGV gold standard.
-//     svdb_dgv_gs_min_overlap: Option<f32>,
-//     /// The maximal number of carriers for querying DGV gold standard.
-//     svdb_dgv_gs_max_carriers: Option<i32>,
-//     /// Whether to enable SVDB overlap queries with gnomAD.
-//     svdb_gnomad_enabled: bool,
-//     /// The minimal reciprocal overlap for querying gnomAD.
-//     svdb_gnomad_min_overlap: Option<f32>,
-//     /// The maximal number of carriers for querying gnomAD.
-//     svdb_gnomad_max_carriers: Option<i32>,
-//     /// Whether to enable SVDB overlap queries with ExAC.
-//     svdb_exac_enabled: bool,
-//     /// The minimal reciprocal overlap for querying ExAC.
-//     svdb_exac_min_overlap: Option<f32>,
-//     /// The maximal number of carriers for querying ExAC.
-//     svdb_exac_max_carriers: Option<i32>,
-//     /// Whether to enable SVDB overlap queries with dbVar.
-//     svdb_dbvar_enabled: bool,
-//     /// The minimal reciprocal overlap for querying dbVar.
-//     svdb_dbvar_min_overlap: Option<f32>,
-//     /// The maximal number of carriers for querying dbVar.
-//     svdb_dbvar_max_carriers: Option<i32>,
-//     /// Whether to enable SVDB overlap queries with Thousand Genomes Project.
-//     svdb_g1k_enabled: bool,
-//     /// The minimal reciprocal overlap for querying Thousand Genomes Project.
-//     svdb_g1k_min_overlap: Option<f32>,
-//     /// The maximal number of carriers for querying Thousand Genomes Project.
-//     svdb_g1k_max_alleles: Option<i32>,
-//     /// Whether to enable SVDB overlap queries with in-house DB.
-//     svdb_inhouse_enabled: bool,
-//     /// The minimal reciprocal overlap for querying in-house DB.
-//     svdb_inhouse_min_overlap: Option<f32>,
-//     /// The maximal number of alleles for querying in-house DB.
-//     svdb_inhouse_max_carriers: Option<i32>,
+    /// Whether to enable SVDB overlap queries with DGV.
+    pub svdb_dgv_enabled: bool,
+    /// The minimal reciprocal overlap for querying DGV.
+    pub svdb_dgv_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying DGV.
+    pub svdb_dgv_max_carriers: Option<i32>,
+    /// Whether to enable SVDB overlap queries with DGV gold standard.
+    pub svdb_dgv_gs_enabled: bool,
+    /// The minimal reciprocal overlap for querying DGV gold standard.
+    pub svdb_dgv_gs_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying DGV gold standard.
+    pub svdb_dgv_gs_max_carriers: Option<i32>,
+    /// Whether to enable SVDB overlap queries with gnomAD.
+    pub svdb_gnomad_enabled: bool,
+    /// The minimal reciprocal overlap for querying gnomAD.
+    pub svdb_gnomad_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying gnomAD.
+    pub svdb_gnomad_max_carriers: Option<i32>,
+    /// Whether to enable SVDB overlap queries with ExAC.
+    pub svdb_exac_enabled: bool,
+    /// The minimal reciprocal overlap for querying ExAC.
+    pub svdb_exac_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying ExAC.
+    pub svdb_exac_max_carriers: Option<i32>,
+    /// Whether to enable SVDB overlap queries with dbVar.
+    pub svdb_dbvar_enabled: bool,
+    /// The minimal reciprocal overlap for querying dbVar.
+    pub svdb_dbvar_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying dbVar.
+    pub svdb_dbvar_max_carriers: Option<i32>,
+    /// Whether to enable SVDB overlap queries with Thousand Genomes Project.
+    pub svdb_g1k_enabled: bool,
+    /// The minimal reciprocal overlap for querying Thousand Genomes Project.
+    pub svdb_g1k_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying Thousand Genomes Project.
+    pub svdb_g1k_max_alleles: Option<i32>,
+    /// Whether to enable SVDB overlap queries with in-house DB.
+    pub svdb_inhouse_enabled: bool,
+    /// The minimal reciprocal overlap for querying in-house DB.
+    pub svdb_inhouse_min_overlap: Option<f32>,
+    /// The maximal number of alleles for querying in-house DB.
+    pub svdb_inhouse_max_carriers: Option<i32>,
 
-//     /// The minimal SV size to consider.
-//     sv_size_min: Option<i32>,
-//     /// The maximal SV size to consider.
-//     sv_size_max: Option<i32>,
+    /// The minimal SV size to consider.
+    pub sv_size_min: Option<i32>,
+    /// The maximal SV size to consider.
+    pub sv_size_max: Option<i32>,
 
-//     /// The SV types to consider.
-//     sv_types: Vec<SvType>,
-//     /// The SV subtypes to consider.
-//     sv_sub_types: Vec<SvSubType>,
+    /// The SV types to consider.
+    pub sv_types: Vec<SvType>,
+    /// The SV subtypes to consider.
+    pub sv_sub_types: Vec<SvSubType>,
 
-//     /// List of genes to require.
-//     gene_allowlist: Option<List<String>>,
-//     /// Genomic region to limit consideration to.
-//     genomic_region: typing.Optional[typing.List[GenomicRegionV1]] = None
+    /// List of genes to require.
+    pub gene_allowlist: Option<Vec<String>>,
+    /// Genomic region to limit consideration to.
+    pub genomic_region: Option<Vec<GenomicRegion>>,
 
-//     /// Regulatory region padding to use.
-//     regulatory_overlap: int = 100
-//     /// Regulatory features to select from ENSEMBL.
-//     regulatory_ensembl_features: typing.Optional[typing.List[EnsemblRegulatorFeature]] = None
-//     /// VISTA enhancer validation results.
-//     regulatory_vista_validation: typing.Optional[VistaValidation] = None
+    /// Regulatory region padding to use.
+    pub regulatory_overlap: i32,
+    /// Regulatory features to select from ENSEMBL.
+    pub regulatory_ensembl_features: Option<Vec<EnsemblRegulatoryFeature>>,
+    /// VISTA enhancer validation results.
+    pub regulatory_vista_validation: Option<VistaValidation>,
 
-//     /// Custom regulatory maps configuration.
-//     regulatory_custom_configs: typing.List[RegulatoryCustomConfig] = attrs.field(factory=list)
+    /// Custom regulatory maps configuration.
+    pub regulatory_custom_configs: Vec<RegulatoryCustomConfig>,
 
-//     /// Name of the TAD set to use for annotation, if any.
-//     tad_set: typing.Optional[str] = None
+    /// Name of the TAD set to use for annotation, if any.
+    pub tad_set: Option<TadSet>,
 
-//     /// Genotype choices
-//     genotype: typing.Dict[str, typing.Optional[GenotypeChoice]] = attrs.field(factory=dict)
-//     /// Criteria for filtering CNVs.
-//     genotype_criteria: typing.List[GenotypeCriteria] = attrs.field(factory=list)
+    /// Genotype choices
+    pub genotype: HashMap<String, GenotypeChoice>,
+    /// Criteria for filtering CNVs.
+    pub genotype_criteria: Vec<GenotypeCriteria>,
 
-//     /// The mode for recessive inheritance.
-//     recessive_mode: typing.Optional[RecessiveModeV1] = None
-//     /// The index to use for recessive inheritance.
-//     recessive_index: typing.Optional[str] = None
+    /// The mode for recessive inheritance.
+    pub recessive_mode: Option<RecessiveMode>,
+    /// The index to use for recessive inheritance.
+    pub recessive_index: Option<String>,
+}
 
-// }
-
-// impl CaseQuery {
-//     pub fn new(database: Database) -> CaseQuery {
-//         CaseQuery {
-//             database,
-//         }
-//     }
-// }
+impl CaseQuery {
+    pub fn new(database: Database) -> CaseQuery {
+        CaseQuery {
+            database,
+            svdb_dgv_enabled: false,
+            svdb_dgv_min_overlap: None,
+            svdb_dgv_max_carriers: None,
+            svdb_dgv_gs_enabled: false,
+            svdb_dgv_gs_min_overlap: None,
+            svdb_dgv_gs_max_carriers: None,
+            svdb_gnomad_enabled: false,
+            svdb_gnomad_min_overlap: None,
+            svdb_gnomad_max_carriers: None,
+            svdb_exac_enabled: false,
+            svdb_exac_min_overlap: None,
+            svdb_exac_max_carriers: None,
+            svdb_dbvar_enabled: false,
+            svdb_dbvar_min_overlap: None,
+            svdb_dbvar_max_carriers: None,
+            svdb_g1k_enabled: false,
+            svdb_g1k_min_overlap: None,
+            svdb_g1k_max_alleles: None,
+            svdb_inhouse_enabled: false,
+            svdb_inhouse_min_overlap: None,
+            svdb_inhouse_max_carriers: None,
+            sv_size_min: None,
+            sv_size_max: None,
+            sv_types: vec![],
+            sv_sub_types: vec![],
+            gene_allowlist: None,
+            genomic_region: None,
+            regulatory_overlap: 100,
+            regulatory_ensembl_features: None,
+            regulatory_vista_validation: None,
+            regulatory_custom_configs: vec![],
+            tad_set: None,
+            genotype: HashMap::new(),
+            genotype_criteria: vec![],
+            recessive_mode: None,
+            recessive_index: None,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -444,6 +624,95 @@ mod tests {
     }
 
     #[test]
+    fn test_ensembl_regulatory_feature_serde_smoke() {
+        assert_tokens(
+            &EnsemblRegulatoryFeature::Promoter,
+            &[Token::UnitVariant {
+                name: "EnsemblRegulatoryFeature",
+                variant: "promoter",
+            }],
+        );
+    }
+
+    #[test]
+    fn test_variant_effect_serde_smoke() {
+        assert_tokens(
+            &VariantEffect::FrameshiftTruncation,
+            &[Token::UnitVariant {
+                name: "VariantEffect",
+                variant: "frameshift_truncation",
+            }],
+        );
+    }
+
+    #[test]
+    fn test_vista_validation_serde_smoke() {
+        assert_tokens(
+            &VistaValidation::Positive,
+            &[Token::UnitVariant {
+                name: "VistaValidation",
+                variant: "positive",
+            }],
+        );
+    }
+
+    #[test]
+    fn test_regulatory_custom_config_smoke() {
+        assert_eq!(
+            RegulatoryCustomConfig::new(),
+            RegulatoryCustomConfig {
+                cell_types: vec![],
+                element_types: vec![],
+                overlaps_interaction: false,
+            }
+        )
+    }
+
+    #[test]
+    fn test_regulatory_custom_config_serde_smoke() {
+        assert_tokens(
+            &RegulatoryCustomConfig::new(),
+            &[
+                Token::Struct {
+                    name: "RegulatoryCustomConfig",
+                    len: 3,
+                },
+                Token::Str("cell_types"),
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::Str("element_types"),
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::Str("overlaps_interaction"),
+                Token::Bool(false),
+                Token::StructEnd,
+            ],
+        );
+    }
+
+    #[test]
+    fn test_recessive_mode_serde_smoke() {
+        assert_tokens(
+            &RecessiveMode::CompoundRecessive,
+            &[Token::UnitVariant {
+                name: "RecessiveMode",
+                variant: "compound-recessive",
+            }],
+        );
+    }
+
+    #[test]
+    fn test_tad_set_serde_smoke() {
+        assert_tokens(
+            &TadSet::Hesc,
+            &[Token::UnitVariant {
+                name: "TadSet",
+                variant: "hesc",
+            }],
+        );
+    }
+
+    #[test]
     fn test_genotype_criteria_serde_smoke() {
         let crit = GenotypeCriteria::new(GenotypeChoice::Het);
         assert_tokens(
@@ -514,6 +783,103 @@ mod tests {
                 Token::Str("max_amq"),
                 Token::None,
                 Token::Str("comment"),
+                Token::None,
+                Token::StructEnd,
+            ],
+        );
+    }
+
+    #[test]
+    fn test_case_query_serde_smoke() {
+        let query = CaseQuery::new(Database::Refseq);
+        assert_tokens(
+            &query,
+            &[
+                Token::Struct {
+                    name: "CaseQuery",
+                    len: 37,
+                },
+                Token::Str("database"),
+                Token::UnitVariant {
+                    name: "Database",
+                    variant: "REFSEQ",
+                },
+                Token::Str("svdb_dgv_enabled"),
+                Token::Bool(false),
+                Token::Str("svdb_dgv_min_overlap"),
+                Token::None,
+                Token::Str("svdb_dgv_max_carriers"),
+                Token::None,
+                Token::Str("svdb_dgv_gs_enabled"),
+                Token::Bool(false),
+                Token::Str("svdb_dgv_gs_min_overlap"),
+                Token::None,
+                Token::Str("svdb_dgv_gs_max_carriers"),
+                Token::None,
+                Token::Str("svdb_gnomad_enabled"),
+                Token::Bool(false),
+                Token::Str("svdb_gnomad_min_overlap"),
+                Token::None,
+                Token::Str("svdb_gnomad_max_carriers"),
+                Token::None,
+                Token::Str("svdb_exac_enabled"),
+                Token::Bool(false),
+                Token::Str("svdb_exac_min_overlap"),
+                Token::None,
+                Token::Str("svdb_exac_max_carriers"),
+                Token::None,
+                Token::Str("svdb_dbvar_enabled"),
+                Token::Bool(false),
+                Token::Str("svdb_dbvar_min_overlap"),
+                Token::None,
+                Token::Str("svdb_dbvar_max_carriers"),
+                Token::None,
+                Token::Str("svdb_g1k_enabled"),
+                Token::Bool(false),
+                Token::Str("svdb_g1k_min_overlap"),
+                Token::None,
+                Token::Str("svdb_g1k_max_alleles"),
+                Token::None,
+                Token::Str("svdb_inhouse_enabled"),
+                Token::Bool(false),
+                Token::Str("svdb_inhouse_min_overlap"),
+                Token::None,
+                Token::Str("svdb_inhouse_max_carriers"),
+                Token::None,
+                Token::Str("sv_size_min"),
+                Token::None,
+                Token::Str("sv_size_max"),
+                Token::None,
+                Token::Str("sv_types"),
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::Str("sv_sub_types"),
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::Str("gene_allowlist"),
+                Token::None,
+                Token::Str("genomic_region"),
+                Token::None,
+                Token::Str("regulatory_overlap"),
+                Token::I32(100),
+                Token::Str("regulatory_ensembl_features"),
+                Token::None,
+                Token::Str("regulatory_vista_validation"),
+                Token::None,
+                Token::Str("regulatory_custom_configs"),
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::Str("tad_set"),
+                Token::None,
+                Token::Str("genotype"),
+                Token::Map { len: Some(0) },
+                Token::MapEnd,
+                Token::Str("genotype_criteria"),
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::Str("recessive_mode"),
+                Token::None,
+                Token::Str("recessive_index"),
                 Token::None,
                 Token::StructEnd,
             ],
