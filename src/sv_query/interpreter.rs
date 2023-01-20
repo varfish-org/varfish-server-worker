@@ -11,16 +11,16 @@ static BND_SLACK: u32 = 50;
 /// Slack around insertion position
 static INS_SLACK: u32 = 50;
 
+/// Returns whether the intervals `[s1, e1)` and `[s2, e2)` overlap.
+fn overlaps(s1: u32, e1: u32, s2: u32, e2: u32) -> bool {
+    s1 < e2 && e1 > s2
+}
+
 /// Hold data structures that support the interpretation of one `CaseQuery`
 /// to multiple `StructuralVariant` records.
 #[derive(Debug)]
 struct QueryInterpreter {
     query: CaseQuery,
-}
-
-/// Returns whether the intervals `[s1, e1)` and `[s2, e2)` overlap.
-fn overlaps(s1: u32, e1: u32, s2: u32, e2: u32) -> bool {
-    s1 < e2 && e1 > s2
 }
 
 impl QueryInterpreter {
