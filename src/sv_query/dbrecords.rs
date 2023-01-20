@@ -20,6 +20,25 @@ pub trait ToInMemory<InMemory> {
     fn to_in_memory(&self) -> InMemory;
 }
 
+/// Store background database counts for a structural variant.
+#[derive(Debug, PartialEq)]
+pub struct SvOverlapCounts {
+    /// Number of carriers in DGV
+    pub dgv_carriers: u32,
+    /// Number of carriers in DGV gold standard
+    pub dgv_gs_carriers: u32,
+    /// Number of carriers in gnomAD SV
+    pub gnomad_carriers: u32,
+    /// Number of carriers in ExAC
+    pub exac_carriers: u32,
+    /// Number of carriers in dbVar
+    pub dbvar_carriers: u32,
+    /// Number of alleles in Thousand Genomes
+    pub g1k_alleles: u32,
+    /// Number of carriers in inhouse database
+    pub inhouse_carriers: u32,
+}
+
 /// Records for in-house SV background database.
 pub mod bg_sv {
     use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};

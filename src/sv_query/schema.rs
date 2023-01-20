@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 /// Range with 1-based positions
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Range {
-    pub start: i32,
-    pub end: i32,
+    pub start: u32,
+    pub end: u32,
 }
 
 impl Range {
-    pub fn new(start: i32, end: i32) -> Range {
+    pub fn new(start: u32, end: u32) -> Self {
         Range { start, end }
     }
 }
@@ -25,14 +25,14 @@ pub struct GenomicRegion {
 }
 
 impl GenomicRegion {
-    pub fn new(chrom: &str, start: i32, end: i32) -> GenomicRegion {
+    pub fn new(chrom: &str, start: u32, end: u32) -> Self {
         GenomicRegion {
             chrom: chrom.to_owned(),
             range: Some(Range::new(start, end)),
         }
     }
 
-    pub fn whole_chrom(chrom: &str) -> GenomicRegion {
+    pub fn whole_chrom(chrom: &str) -> Self {
         GenomicRegion {
             chrom: chrom.to_owned(),
             range: None,
@@ -41,7 +41,7 @@ impl GenomicRegion {
 }
 
 /// Database of transcripts
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Database {
     Refseq,
@@ -49,7 +49,7 @@ pub enum Database {
 }
 
 /// Encode the type of an SV
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SvType {
     /// Deletion
@@ -67,7 +67,7 @@ pub enum SvType {
 }
 
 /// Structural variant sub type
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum SvSubType {
     /// Deletion
     #[serde(rename = "DEL")]
@@ -116,8 +116,33 @@ pub enum SvSubType {
     Cnv,
 }
 
+impl SvSubType {
+    /// Return whether SV sub type is any insertion
+    pub fn is_ins(&self) -> bool {
+        match self {
+            SvSubType::Ins
+            | SvSubType::InsMe
+            | SvSubType::InsMeSva
+            | SvSubType::InsMeL1
+            | SvSubType::InsMeAlu => true,
+            _ => false,
+        }
+    }
+    /// Return whether SV sub type is any deletion
+    pub fn is_del(&self) -> bool {
+        match self {
+            SvSubType::Del
+            | SvSubType::DelMe
+            | SvSubType::DelMeSva
+            | SvSubType::DelMeL1
+            | SvSubType::DelMeAlu => true,
+            _ => false,
+        }
+    }
+}
+
 /// Genotype choice for filter dropdowns
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub enum GenotypeChoice {
     /// Any genotype
@@ -139,7 +164,7 @@ pub enum GenotypeChoice {
 }
 
 /// ENSEMBL regulatory feature
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum EnsemblRegulatoryFeature {
     /// Any fature
     #[serde(rename = "any_feature")]
@@ -165,7 +190,7 @@ pub enum EnsemblRegulatoryFeature {
 }
 
 /// Variant effect description
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum VariantEffect {
     #[serde(rename = "coding_sequence_variant")]
     CodingSequenceVariant,
@@ -232,7 +257,7 @@ pub enum VariantEffect {
 }
 
 /// VISTA validation
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum VistaValidation {
     /// Overlap with any VISTA enhancer
@@ -243,7 +268,7 @@ pub enum VistaValidation {
     Negative,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct RegulatoryCustomConfig {
     /// The selected cell types
     pub cell_types: Vec<String>,
@@ -254,7 +279,7 @@ pub struct RegulatoryCustomConfig {
 }
 
 impl RegulatoryCustomConfig {
-    pub fn new() -> RegulatoryCustomConfig {
+    pub fn new() -> Self {
         RegulatoryCustomConfig {
             cell_types: vec![],
             element_types: vec![],
@@ -264,7 +289,7 @@ impl RegulatoryCustomConfig {
 }
 
 /// Enum for recessive mode
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub enum RecessiveMode {
     /// Recessive mode of inheritance
@@ -274,7 +299,7 @@ pub enum RecessiveMode {
 }
 
 /// Options for TAD sets to use.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum TadSet {
     /// hESC  cell line
     #[serde(rename = "hesc")]
@@ -287,7 +312,7 @@ pub enum TadSet {
 /// Define rule to apply to a given sub set of structural variants for matching a genotype.
 ///
 /// See documentation of VarFish Server for full documentation.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct GenotypeCriteria {
     /// The genotype to evaluate for
     pub genotype: GenotypeChoice,
@@ -355,7 +380,7 @@ pub struct GenotypeCriteria {
 
 impl GenotypeCriteria {
     /// Return new, empty GenotypeCriteria for the given genotype.
-    pub fn new(genotype: GenotypeChoice) -> GenotypeCriteria {
+    pub fn new(genotype: GenotypeChoice) -> Self {
         GenotypeCriteria {
             genotype,
             select_sv_sub_type: vec![],
@@ -391,7 +416,7 @@ impl GenotypeCriteria {
 }
 
 /// Define a query for structural variants from a case.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct CaseQuery {
     /// The transcript database to use
     pub database: Database,
@@ -401,43 +426,43 @@ pub struct CaseQuery {
     /// The minimal reciprocal overlap for querying DGV.
     pub svdb_dgv_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying DGV.
-    pub svdb_dgv_max_carriers: Option<i32>,
+    pub svdb_dgv_max_carriers: Option<u32>,
     /// Whether to enable SVDB overlap queries with DGV gold standard.
     pub svdb_dgv_gs_enabled: bool,
     /// The minimal reciprocal overlap for querying DGV gold standard.
     pub svdb_dgv_gs_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying DGV gold standard.
-    pub svdb_dgv_gs_max_carriers: Option<i32>,
+    pub svdb_dgv_gs_max_carriers: Option<u32>,
     /// Whether to enable SVDB overlap queries with gnomAD.
     pub svdb_gnomad_enabled: bool,
     /// The minimal reciprocal overlap for querying gnomAD.
     pub svdb_gnomad_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying gnomAD.
-    pub svdb_gnomad_max_carriers: Option<i32>,
+    pub svdb_gnomad_max_carriers: Option<u32>,
     /// Whether to enable SVDB overlap queries with ExAC.
     pub svdb_exac_enabled: bool,
     /// The minimal reciprocal overlap for querying ExAC.
     pub svdb_exac_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying ExAC.
-    pub svdb_exac_max_carriers: Option<i32>,
+    pub svdb_exac_max_carriers: Option<u32>,
     /// Whether to enable SVDB overlap queries with dbVar.
     pub svdb_dbvar_enabled: bool,
     /// The minimal reciprocal overlap for querying dbVar.
     pub svdb_dbvar_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying dbVar.
-    pub svdb_dbvar_max_carriers: Option<i32>,
+    pub svdb_dbvar_max_carriers: Option<u32>,
     /// Whether to enable SVDB overlap queries with Thousand Genomes Project.
     pub svdb_g1k_enabled: bool,
     /// The minimal reciprocal overlap for querying Thousand Genomes Project.
     pub svdb_g1k_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying Thousand Genomes Project.
-    pub svdb_g1k_max_alleles: Option<i32>,
+    pub svdb_g1k_max_alleles: Option<u32>,
     /// Whether to enable SVDB overlap queries with in-house DB.
     pub svdb_inhouse_enabled: bool,
     /// The minimal reciprocal overlap for querying in-house DB.
     pub svdb_inhouse_min_overlap: Option<f32>,
     /// The maximal number of alleles for querying in-house DB.
-    pub svdb_inhouse_max_carriers: Option<i32>,
+    pub svdb_inhouse_max_carriers: Option<u32>,
 
     /// The minimal SV size to consider.
     pub sv_size_min: Option<i32>,
@@ -479,7 +504,7 @@ pub struct CaseQuery {
 }
 
 impl CaseQuery {
-    pub fn new(database: Database) -> CaseQuery {
+    pub fn new(database: Database) -> Self {
         CaseQuery {
             database,
             svdb_dgv_enabled: false,
@@ -523,7 +548,7 @@ impl CaseQuery {
 }
 
 /// Strand orientation of
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum StrandOrientation {
     #[serde(rename = "3to3")]
     ThreeToThree,
@@ -536,7 +561,7 @@ pub enum StrandOrientation {
 }
 
 /// Information on the call as combined by the annotator.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct CallInfo {
     /// The genotype, if applicable, e.g., "0/1", "./1", "."
     pub genotype: Option<String>,
@@ -562,11 +587,11 @@ pub struct CallInfo {
 ///
 /// This uses a subset/specialization of what is described by the VCF standard
 /// for the purpose of running SV queries in `varfish-server-worker`.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct StructuralVariant {
     /// Chromosome name
     pub chrom: String,
-    /// Start position of the variant (or position on first chromosome for
+    /// 1-based start position of the variant (or position on first chromosome for
     /// break-ends)
     pub pos: u32,
     /// Type of the structural variant
@@ -582,6 +607,24 @@ pub struct StructuralVariant {
 
     /// Mapping of sample to genotype information for the SV.
     pub call_info: HashMap<String, CallInfo>,
+}
+
+impl StructuralVariant {
+    /// Return the size of the structural variant.
+    ///
+    /// Size is not applicable for insertions and break-ends, so `None` is returned
+    /// in this case.
+    pub fn size(&self) -> Option<u32> {
+        if self.sv_type == SvType::Ins
+            || self.sv_type == SvType::Bnd
+            || self.sv_sub_type.is_ins()
+            || self.sv_sub_type == SvSubType::Bnd
+        {
+            None
+        } else {
+            Some(self.end.checked_sub(self.pos).unwrap_or(0) + 1)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -605,9 +648,9 @@ mod tests {
                     len: 2,
                 },
                 Token::Str("start"),
-                Token::I32(1),
+                Token::U32(1),
                 Token::Str("end"),
-                Token::I32(2),
+                Token::U32(2),
                 Token::StructEnd,
             ],
         );
@@ -1013,6 +1056,51 @@ mod tests {
     }
 
     #[test]
+    fn test_structural_variant_size_linear() {
+        let sv = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::DelMeL1,
+            chrom2: None,
+            end: 200,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+        assert_eq!(sv.size().unwrap(), 101);
+    }
+
+    #[test]
+    fn test_structural_variant_size_ins() {
+        let sv = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Ins,
+            sv_sub_type: SvSubType::Ins,
+            chrom2: None,
+            end: 100,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+        assert!(sv.size().is_none());
+    }
+
+    #[test]
+    fn test_structural_variant_size_bnd() {
+        let sv = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Bnd,
+            sv_sub_type: SvSubType::Bnd,
+            chrom2: Some("chr2".to_owned()),
+            end: 200,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+        assert!(sv.size().is_none());
+    }
+
+    #[test]
     fn test_structural_variant_serde_smoke() {
         let sv = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -1061,5 +1149,41 @@ mod tests {
                 Token::StructEnd,
             ],
         );
+    }
+
+    fn test_sv_sub_type_is_ins() {
+        assert_eq!(SvSubType::Del.is_ins(), false);
+        assert_eq!(SvSubType::DelMe.is_ins(), false);
+        assert_eq!(SvSubType::DelMeSva.is_ins(), false);
+        assert_eq!(SvSubType::DelMeL1.is_ins(), false);
+        assert_eq!(SvSubType::DelMeAlu.is_ins(), false);
+        assert_eq!(SvSubType::Dup.is_ins(), false);
+        assert_eq!(SvSubType::DupTandem.is_ins(), false);
+        assert_eq!(SvSubType::Inv.is_ins(), false);
+        assert_eq!(SvSubType::Ins.is_ins(), true);
+        assert_eq!(SvSubType::InsMe.is_ins(), true);
+        assert_eq!(SvSubType::InsMeSva.is_ins(), true);
+        assert_eq!(SvSubType::InsMeL1.is_ins(), true);
+        assert_eq!(SvSubType::InsMeAlu.is_ins(), true);
+        assert_eq!(SvSubType::Bnd.is_ins(), false);
+        assert_eq!(SvSubType::Cnv.is_ins(), false);
+    }
+
+    fn test_sv_sub_type_is_del() {
+        assert_eq!(SvSubType::Del.is_ins(), true);
+        assert_eq!(SvSubType::DelMe.is_ins(), true);
+        assert_eq!(SvSubType::DelMeSva.is_ins(), true);
+        assert_eq!(SvSubType::DelMeL1.is_ins(), true);
+        assert_eq!(SvSubType::DelMeAlu.is_ins(), true);
+        assert_eq!(SvSubType::Dup.is_ins(), false);
+        assert_eq!(SvSubType::DupTandem.is_ins(), false);
+        assert_eq!(SvSubType::Inv.is_ins(), false);
+        assert_eq!(SvSubType::Ins.is_ins(), false);
+        assert_eq!(SvSubType::InsMe.is_ins(), false);
+        assert_eq!(SvSubType::InsMeSva.is_ins(), false);
+        assert_eq!(SvSubType::InsMeL1.is_ins(), false);
+        assert_eq!(SvSubType::InsMeAlu.is_ins(), false);
+        assert_eq!(SvSubType::Bnd.is_ins(), false);
+        assert_eq!(SvSubType::Cnv.is_ins(), false);
     }
 }
