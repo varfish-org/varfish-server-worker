@@ -32,7 +32,7 @@ impl QueryInterpreter {
     /// Determine whether this record passes the genotype criteria.
     pub fn passes_genotype(&self, sv: &StructuralVariant) -> bool {
         let _ = sv;
-        true
+        false
     }
 
     /// Determine whether this record passes the simple criteria regarding
@@ -212,7 +212,9 @@ impl QueryInterpreter {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::sv_query::schema::{Database, GenomicRegion, StrandOrientation};
+    use crate::sv_query::schema::{
+        CallInfo, Database, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
+    };
 
     use super::*;
 
@@ -739,6 +741,160 @@ mod tests {
         };
 
         assert!(!interpreter.passes_counts(&counts_fail));
+    }
+
+    #[test]
+    fn test_query_interpreter_pass_genotype_fail_no_match() {
+        let query = CaseQuery {
+            genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
+            genotype_criteria: vec![GenotypeCriteria {
+                select_sv_sub_type: vec![SvSubType::Del],
+                select_sv_min_size: Some(1000),
+                select_sv_max_size: Some(5000),
+                gt_one_of: Some(vec![
+                    "0/1".to_owned(),
+                    "0|1".to_owned(),
+                    "1/0".to_owned(),
+                    "1|0".to_owned(),
+                ]),
+                min_gq: Some(5.0),
+                min_pr_cov: Some(10),
+                min_pr_var: Some(5),
+                min_sr_cov: Some(10),
+                min_sr_var: Some(5),
+                ..GenotypeCriteria::new(GenotypeChoice::Het)
+            }],
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let call_info = CallInfo {
+            genotype: Some("0/1".to_owned()),
+            quality: Some(10.0),
+            paired_end_cov: Some(10),
+            paired_end_var: Some(5),
+            split_read_cov: Some(10),
+            split_read_var: Some(5),
+            copy_number: Some(1),
+            average_normalized_cov: Some(0.5),
+            point_count: Some(10),
+        };
+
+        let sv_fail = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 1000,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 2000,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::from([("sample".to_owned(), call_info.clone())]),
+        };
+
+        // The following tests fail because the SV does not match the match criteria for
+        // dfiferent reasons.
+
+        assert!(!interpreter.passes_genotype(&StructuralVariant {
+            end: 1100,
+            ..sv_fail.clone()
+        })); // too small to match
+
+        assert!(!interpreter.passes_genotype(&StructuralVariant {
+            end: 10000,
+            ..sv_fail.clone()
+        })); // too large to match
+
+        assert!(!interpreter.passes_genotype(&StructuralVariant {
+            sv_type: SvType::Dup,
+            sv_sub_type: SvSubType::Dup,
+            ..sv_fail.clone()
+        })); // wrong sv sub type
+
+        assert!(!interpreter.passes_genotype(&StructuralVariant {
+            call_info: HashMap::from([(
+                "sample".to_owned(),
+                CallInfo {
+                    quality: Some(1.0),
+                    ..call_info.clone()
+                },
+            )]),
+            ..sv_fail.clone()
+        })); // quality too low
+
+        assert!(!interpreter.passes_genotype(&StructuralVariant {
+            call_info: HashMap::from([(
+                "sample".to_owned(),
+                CallInfo {
+                    genotype: Some("0/0".to_owned()),
+                    paired_end_cov: Some(1),
+                    ..call_info.clone()
+                },
+            )]),
+            ..sv_fail.clone()
+        })); // pr coverage too low
+
+        assert!(!interpreter.passes_genotype(&StructuralVariant {
+            call_info: HashMap::from([(
+                "sample".to_owned(),
+                CallInfo {
+                    genotype: Some("0/0".to_owned()),
+                    split_read_cov: Some(1),
+                    ..call_info.clone()
+                },
+            )]),
+            ..sv_fail.clone()
+        })); // sr coverage too low
+    }
+
+    #[test]
+    fn test_query_interpreter_pass_genotype_pass_smoke() {
+        let query = CaseQuery {
+            genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
+            genotype_criteria: vec![GenotypeCriteria {
+                select_sv_sub_type: vec![SvSubType::Del],
+                select_sv_min_size: Some(1000),
+                select_sv_max_size: Some(5000),
+                gt_one_of: Some(vec![
+                    "0/1".to_owned(),
+                    "0|1".to_owned(),
+                    "1/0".to_owned(),
+                    "1|0".to_owned(),
+                ]),
+                min_gq: Some(5.0),
+                min_pr_cov: Some(10),
+                min_pr_var: Some(5),
+                min_sr_cov: Some(10),
+                min_sr_var: Some(5),
+                ..GenotypeCriteria::new(GenotypeChoice::Het)
+            }],
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let call_info = CallInfo {
+            genotype: Some("0/1".to_owned()),
+            quality: Some(10.0),
+            paired_end_cov: Some(10),
+            paired_end_var: Some(5),
+            split_read_cov: Some(10),
+            split_read_var: Some(5),
+            copy_number: Some(1),
+            average_normalized_cov: Some(0.5),
+            point_count: Some(10),
+        };
+
+        let sv_pass = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 1000,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 2000,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::from([("sample".to_owned(), call_info.clone())]),
+        };
+
+        assert!(interpreter.passes_genotype(&sv_pass));
     }
 
     #[test]
