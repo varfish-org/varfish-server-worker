@@ -1,5 +1,9 @@
 // Apply settings from a `CaseQuery` to `StructuralVariant` records.
 
+use std::collections::HashSet;
+
+use anyhow::anyhow;
+
 use super::{
     dbrecords::SvOverlapCounts,
     schema::{CaseQuery, Range, StructuralVariant, SvSubType, SvType},
@@ -30,9 +34,15 @@ impl QueryInterpreter {
     }
 
     /// Determine whether this record passes the genotype criteria.
-    pub fn passes_genotype(&self, sv: &StructuralVariant) -> bool {
-        let _ = sv;
-        false
+    pub fn passes_genotype(&self, sv: &StructuralVariant) -> Result<bool, anyhow::Error> {
+        // Ensure that the sample sets in query and sv are the same
+        let query_samples = self.query.genotype.keys().collect::<HashSet<&String>>();
+        let sv_samples = sv.call_info.keys().collect::<HashSet<&String>>();
+        if !query_samples.eq(&sv_samples) {
+            return Err(anyhow!("Samples in query and SV are not equal: {:?} vs {:?}", &query_samples, &sv_samples));
+        }
+
+        Ok(true)
     }
 
     /// Determine whether this record passes the simple criteria regarding
@@ -193,12 +203,12 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes(&self, sv: &StructuralVariant, counts: &SvOverlapCounts) -> bool {
+    pub fn passes(&self, sv: &StructuralVariant, counts: &SvOverlapCounts) -> Result<bool, anyhow::Error> {
         // simply AND-concatenate all `passes_*` functions
-        self.passes_simple(sv)
+        Ok(self.passes_simple(sv)
             && self.passes_counts(counts)
             && self.passes_genomic_region(sv)
-            && self.passes_genotype(sv)
+            && self.passes_genotype(sv)?)
     }
 
     // TODO: gene allow list
@@ -744,7 +754,7 @@ mod tests {
     }
 
     #[test]
-    fn test_query_interpreter_pass_genotype_fail_no_match() {
+    fn test_query_interpreter_pass_genotype_fail_no_match() -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
             genotype_criteria: vec![GenotypeCriteria {
@@ -797,18 +807,18 @@ mod tests {
         assert!(!interpreter.passes_genotype(&StructuralVariant {
             end: 1100,
             ..sv_fail.clone()
-        })); // too small to match
+        })?); // too small to match
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
             end: 10000,
             ..sv_fail.clone()
-        })); // too large to match
+        })?); // too large to match
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
             sv_type: SvType::Dup,
             sv_sub_type: SvSubType::Dup,
             ..sv_fail.clone()
-        })); // wrong sv sub type
+        })?); // wrong sv sub type
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
             call_info: HashMap::from([(
@@ -819,7 +829,7 @@ mod tests {
                 },
             )]),
             ..sv_fail.clone()
-        })); // quality too low
+        })?); // quality too low
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
             call_info: HashMap::from([(
@@ -831,7 +841,7 @@ mod tests {
                 },
             )]),
             ..sv_fail.clone()
-        })); // pr coverage too low
+        })?); // pr coverage too low
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
             call_info: HashMap::from([(
@@ -843,11 +853,13 @@ mod tests {
                 },
             )]),
             ..sv_fail.clone()
-        })); // sr coverage too low
+        })?); // sr coverage too low
+
+        Ok(())
     }
 
     #[test]
-    fn test_query_interpreter_pass_genotype_pass_smoke() {
+    fn test_query_interpreter_pass_genotype_pass_smoke() -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
             genotype_criteria: vec![GenotypeCriteria {
@@ -894,11 +906,12 @@ mod tests {
             call_info: HashMap::from([("sample".to_owned(), call_info.clone())]),
         };
 
-        assert!(interpreter.passes_genotype(&sv_pass));
+        assert!(interpreter.passes_genotype(&sv_pass)?);
+        Ok(())
     }
 
     #[test]
-    fn test_query_interpreter_passes_smoke() {
+    fn test_query_interpreter_passes_smoke() -> Result<(), anyhow::Error> {
         let query = CaseQuery::new(Database::Refseq);
         let interpreter = QueryInterpreter::new(query);
 
@@ -922,6 +935,8 @@ mod tests {
             dbvar_carriers: 5,
         };
 
-        assert!(interpreter.passes(&sv_pass, &counts_pass));
+        assert!(interpreter.passes(&sv_pass, &counts_pass)?);
+
+        Ok(())
     }
 }
