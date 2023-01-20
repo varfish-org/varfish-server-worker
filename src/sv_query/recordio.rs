@@ -69,15 +69,15 @@ fn load_bg_sv_records<
 fn build_bg_sv_tree<Record: BeginEnd>(
     term: &console::Term,
     rec_by_contig: &[Vec<Record>],
-) -> Result<Vec<ArrayBackedIntervalTree<i32, usize>>, anyhow::Error> {
+) -> Result<Vec<ArrayBackedIntervalTree<u32, u32>>, anyhow::Error> {
     term.write_line("Building trees...")?;
-    let mut trees: Vec<ArrayBackedIntervalTree<i32, usize>> = Vec::new();
+    let mut trees: Vec<ArrayBackedIntervalTree<u32, u32>> = Vec::new();
     let before_building = Instant::now();
     for (i, contig_records) in rec_by_contig.iter().enumerate() {
         let before_tree = Instant::now();
         let mut tree = ArrayBackedIntervalTree::new();
         for (i, record) in contig_records.iter().enumerate() {
-            tree.insert((record.begin())..(record.end()), i);
+            tree.insert((record.begin() as u32)..(record.end() as u32), i as u32);
         }
         tree.index();
         trees.push(tree);
@@ -108,17 +108,17 @@ fn print_rss_now(term: &console::Term) -> Result<(), anyhow::Error> {
 /// This struct bundles the background database records by chromosome.
 pub struct SvRecordsByChrom {
     pub bg_sv_records: Vec<Vec<dbrecords::bg_sv::Record>>,
-    pub bg_sv_trees: Vec<ArrayBackedIntervalTree<i32, usize>>,
+    pub bg_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub gnomad_sv_records: Vec<Vec<dbrecords::gnomad_sv::Record>>,
-    pub gnomad_sv_trees: Vec<ArrayBackedIntervalTree<i32, usize>>,
+    pub gnomad_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub dbvar_records: Vec<Vec<dbrecords::dbvar::Record>>,
-    pub dbvar_trees: Vec<ArrayBackedIntervalTree<i32, usize>>,
+    pub dbvar_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub dgv_records: Vec<Vec<dbrecords::dgv::Record>>,
-    pub dgv_trees: Vec<ArrayBackedIntervalTree<i32, usize>>,
+    pub dgv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub dgv_gs_records: Vec<Vec<dbrecords::dgv_gs::Record>>,
-    pub dgv_gs_trees: Vec<ArrayBackedIntervalTree<i32, usize>>,
+    pub dgv_gs_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub exac_cnv_records: Vec<Vec<dbrecords::exac_cnv::Record>>,
-    pub exac_cnv_trees: Vec<ArrayBackedIntervalTree<i32, usize>>,
+    pub exac_cnv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
 }
 
 pub fn load_sv_records(
