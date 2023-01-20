@@ -80,18 +80,23 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
             continue; // skip
         }
 
-        let begin = record.pos() as i32;
+        let begin = record.pos() as u32;
         let end = if let Some(end) = record.info(b"END").integer()? {
             if end.len() < 1 {
                 Err(anyhow!("Empty END tag"))
             } else {
-                Ok(end[0])
+                Ok(end[0] as u32)
             }
         } else {
             Err(anyhow!("Could not decode INFO/end"))
         }?;
 
         sv_records.bg_sv_trees[chrom_idx].find(begin..end);
+        sv_records.gnomad_sv_trees[chrom_idx].find(begin..end);
+        sv_records.dbvar_trees[chrom_idx].find(begin..end);
+        sv_records.dgv_trees[chrom_idx].find(begin..end);
+        sv_records.dgv_gs_trees[chrom_idx].find(begin..end);
+        sv_records.exac_cnv_trees[chrom_idx].find(begin..end);
         count += 1;
     }
     term.write_line(&format!(
