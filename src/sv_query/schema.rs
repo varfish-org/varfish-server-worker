@@ -1,3 +1,4 @@
+/// Schema for the query definition.
 use std::collections::HashMap;
 
 /// Definition of query schemas.
@@ -521,6 +522,68 @@ impl CaseQuery {
     }
 }
 
+/// Strand orientation of
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum StrandOrientation {
+    #[serde(rename = "3to3")]
+    ThreeToThree,
+    #[serde(rename = "5to5")]
+    FiveToFive,
+    #[serde(rename = "3to5")]
+    ThreeToFive,
+    #[serde(rename = "5to3")]
+    FiveToThree,
+}
+
+/// Information on the call as combined by the annotator.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct CallInfo {
+    /// The genotype, if applicable, e.g., "0/1", "./1", "."
+    pub genotype: Option<String>,
+    /// Genotype quality score, if applicable
+    pub quality: Option<f32>,
+    /// Paired-end coverage, if applicable
+    pub paired_end_cov: Option<u32>,
+    /// Paired-end variant support, if applicable
+    pub paired_end_var: Option<u32>,
+    /// Split-read coverage, if applicable
+    pub split_read_cov: Option<u32>,
+    /// Split-read variant support, if applicable
+    pub split_read_var: Option<u32>,
+    /// Integer copy number estimate, if applicable
+    pub copy_number: Option<u32>,
+    /// Average normalized coverage, if applicable
+    pub average_normalized_cov: Option<f32>,
+    /// Number of buckets/targets supporting the CNV call, if applicable
+    pub point_count: Option<u32>,
+}
+
+/// Definition of a structural variant with per-sample genotype calls.
+///
+/// This uses a subset/specialization of what is described by the VCF standard
+/// for the purpose of running SV queries in `varfish-server-worker`.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct StructuralVariant {
+    /// Chromosome name
+    pub chrom: String,
+    /// Start position of the variant (or position on first chromosome for
+    /// break-ends)
+    pub pos: u32,
+    /// Type of the structural variant
+    pub sv_type: SvType,
+    /// Sub type of the structural variant
+    pub sv_sub_type: SvSubType,
+    /// Potentially the second involved chromosome
+    pub chrom2: Option<String>,
+    /// End position (position on second chromosome for break-ends)
+    pub end: u32,
+    /// The strand orientation of the structural variant, if applicable.
+    pub strand_orientation: Option<StrandOrientation>,
+
+    /// Mapping of sample to genotype information for the SV.
+    pub call_info: HashMap<String, CallInfo>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -881,6 +944,120 @@ mod tests {
                 Token::None,
                 Token::Str("recessive_index"),
                 Token::None,
+                Token::StructEnd,
+            ],
+        );
+    }
+
+    #[test]
+    fn test_strand_orientation_serde_smoke() {
+        assert_tokens(
+            &StrandOrientation::ThreeToFive,
+            &[Token::UnitVariant {
+                name: "StrandOrientation",
+                variant: "3to5",
+            }],
+        );
+    }
+
+    #[test]
+    fn test_call_info_serde_smoke() {
+        let info = CallInfo {
+            genotype: Some("0/1".to_owned()),
+            quality: Some(10.0),
+            paired_end_cov: Some(10),
+            paired_end_var: Some(10),
+            split_read_cov: Some(10),
+            split_read_var: Some(10),
+            copy_number: Some(1),
+            average_normalized_cov: Some(0.491),
+            point_count: Some(5),
+        };
+        assert_tokens(
+            &info,
+            &[
+                Token::Struct {
+                    name: "CallInfo",
+                    len: 9,
+                },
+                Token::Str("genotype"),
+                Token::Some,
+                Token::Str("0/1"),
+                Token::Str("quality"),
+                Token::Some,
+                Token::F32(10.0),
+                Token::Str("paired_end_cov"),
+                Token::Some,
+                Token::U32(10),
+                Token::Str("paired_end_var"),
+                Token::Some,
+                Token::U32(10),
+                Token::Str("split_read_cov"),
+                Token::Some,
+                Token::U32(10),
+                Token::Str("split_read_var"),
+                Token::Some,
+                Token::U32(10),
+                Token::Str("copy_number"),
+                Token::Some,
+                Token::U32(1),
+                Token::Str("average_normalized_cov"),
+                Token::Some,
+                Token::F32(0.491),
+                Token::Str("point_count"),
+                Token::Some,
+                Token::U32(5),
+                Token::StructEnd,
+            ],
+        );
+    }
+
+    #[test]
+    fn test_structural_variant_serde_smoke() {
+        let sv = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 123,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::DelMeL1,
+            chrom2: None,
+            end: 245,
+            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            call_info: HashMap::new(),
+        };
+        assert_tokens(
+            &sv,
+            &[
+                Token::Struct {
+                    name: "StructuralVariant",
+                    len: 8,
+                },
+                Token::Str("chrom"),
+                Token::Str("chr1"),
+                Token::Str("pos"),
+                Token::U32(123),
+                Token::Str("sv_type"),
+                Token::UnitVariant {
+                    name: "SvType",
+                    variant: "DEL",
+                },
+                Token::Str("sv_sub_type"),
+                Token::UnitVariant {
+                    name: "SvSubType",
+                    variant: "DEL:ME:L1",
+                },
+                Token::Str("chrom2"),
+                Token::None,
+                Token::Str("end"),
+                Token::U32(245),
+                Token::Str("strand_orientation"),
+                Token::Some,
+                Token::UnitVariant {
+                    name: "StrandOrientation",
+                    variant: "3to5",
+                },
+                Token::Str("call_info"),
+                Token::Map { len: Some(0) },
+                Token::MapEnd,
                 Token::StructEnd,
             ],
         );
