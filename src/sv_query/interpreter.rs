@@ -38,17 +38,20 @@ impl QueryInterpreter {
     /// Determine whether this record passes the simple criteria regarding
     /// size and SV type.
     pub fn passes_simple(&self, sv: &StructuralVariant) -> bool {
-        !(!self.query.sv_types.is_empty() && !self.query.sv_types.contains(&sv.sv_type))
+        !((!self.query.sv_types.is_empty() && !self.query.sv_types.contains(&sv.sv_type))
             || (!self.query.sv_sub_types.is_empty()
-                && !self.query.sv_sub_types.contains(&sv.sv_sub_type))
+                && !self.query.sv_sub_types.contains(&sv.sv_sub_type)))
     }
 
     /// Determine whether an SV record passes the genomic region criteria.
     pub fn passes_genomic_region(&self, sv: &StructuralVariant) -> bool {
         if let Some(regions) = &self.query.genomic_region {
+            // interpret the allow list, any match is sufficient
             let mut any_match = false;
             if sv.sv_type == SvType::Ins || sv.sv_sub_type.is_ins() {
+                // handle case of insertions: overlap position with `INS_SLACK` and region
                 for region in regions {
+                    // as for all others, the range matches if `None` (whole chrom) or has overlap
                     let range_matches = match region.range {
                         None => true,
                         Some(Range { start, end }) => overlaps(
@@ -61,7 +64,9 @@ impl QueryInterpreter {
                     any_match = any_match || (region.chrom.eq(&sv.chrom) && range_matches);
                 }
             } else if sv.sv_type == SvType::Bnd || sv.sv_sub_type == SvSubType::Bnd {
+                // for break-ends, test both ends and use `BND_SLACK`
                 for region in regions {
+                    // as for all others, the range matches if `None` (whole chrom) or has overlap
                     let range_matches_chrom = match region.range {
                         None => true,
                         Some(Range { start, end }) => overlaps(
@@ -89,7 +94,9 @@ impl QueryInterpreter {
                             && range_matches_chrom2);
                 }
             } else {
+                // handle the case of linear structural variants
                 for region in regions {
+                    // as for all others, the range matches if `None` (whole chrom) or has overlap
                     let range_matches = match region.range {
                         None => true,
                         Some(Range { start, end }) => overlaps(
@@ -105,13 +112,15 @@ impl QueryInterpreter {
 
             any_match
         } else {
-            false
+            true // no allow list given; always pass
         }
     }
 
     /// Determine whether an SV record with the given overlap counts passes
     /// the criteria.
     pub fn passes_counts(&self, counts: &SvOverlapCounts) -> bool {
+        // We simply check for each database separately and pass if the check has not
+        // been enabled or no minimal carrier / allele count is given
         let passes_dgv = !self.query.svdb_dgv_enabled
             || counts.dgv_carriers
                 <= self
@@ -166,6 +175,7 @@ impl QueryInterpreter {
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
     pub fn passes(&self, sv: &StructuralVariant, counts: &SvOverlapCounts) -> bool {
+        // simply AND-concatenate all `passes_*` functions
         self.passes_simple(sv)
             && self.passes_counts(counts)
             && self.passes_genomic_region(sv)
