@@ -446,16 +446,23 @@ impl GenotypeCriteria {
         // None then pass regardlessly of what `call_info` has.  Otherwise
         // fail if the corresponding value of `call_info` has not been set.
         // If both have been set then perform the actual check.
+
+        // gt -- genotype
+
         let pass_gt_one_of = self.gt_one_of.as_ref().map_or(true, |gt_one_of| {
             call_info
                 .genotype
                 .as_ref()
-                .map_or(false, |gt| gt_one_of.contains(&gt))
+                .map_or(false, |gt| gt_one_of.contains(gt))
         });
+
+        // gq -- genotype quality
 
         let pass_min_gq = self.min_gq.map_or(true, |min_gq| {
             call_info.quality.map_or(false, |gq| gq >= min_gq)
         });
+
+        // pr -- paired-end reads
 
         let pass_min_pr_cov = self.min_pr_cov.map_or(true, |min_pr_cov| {
             call_info
@@ -478,7 +485,7 @@ impl GenotypeCriteria {
         let pass_max_pr_ref = self.max_pr_ref.map_or(true, |max_pr_ref| {
             call_info.paired_end_cov.map_or(false, |paired_end_cov| {
                 call_info.paired_end_var.map_or(false, |paired_end_var| {
-                    paired_end_cov.saturating_sub(paired_end_var) <= pass_max_pr_ref
+                    paired_end_cov.saturating_sub(paired_end_var) <= max_pr_ref
                 })
             })
         });
@@ -494,7 +501,138 @@ impl GenotypeCriteria {
                 .map_or(false, |paired_end_var| paired_end_var >= max_pr_var)
         });
 
-        todo!(); // continue
+        // sr -- split reads
+
+        let pass_min_sr_cov = self.min_sr_cov.map_or(true, |min_sr_cov| {
+            call_info
+                .split_read_cov
+                .map_or(false, |split_read_cov| split_read_cov >= min_sr_cov)
+        });
+        let pass_max_sr_cov = self.max_sr_cov.map_or(true, |max_sr_cov| {
+            call_info
+                .split_read_cov
+                .map_or(false, |split_read_cov| split_read_cov >= max_sr_cov)
+        });
+
+        let pass_min_sr_ref = self.min_sr_ref.map_or(true, |min_sr_ref| {
+            call_info.split_read_cov.map_or(false, |split_read_cov| {
+                call_info.split_read_var.map_or(false, |split_read_var| {
+                    split_read_cov.saturating_sub(split_read_var) >= min_sr_ref
+                })
+            })
+        });
+        let pass_max_sr_ref = self.max_sr_ref.map_or(true, |max_sr_ref| {
+            call_info.split_read_cov.map_or(false, |split_read_cov| {
+                call_info.split_read_var.map_or(false, |split_read_var| {
+                    split_read_cov.saturating_sub(split_read_var) <= max_sr_ref
+                })
+            })
+        });
+
+        let pass_min_sr_var = self.min_sr_var.map_or(true, |min_sr_var| {
+            call_info
+                .split_read_var
+                .map_or(false, |split_read_var| split_read_var >= min_sr_var)
+        });
+        let pass_max_sr_var = self.max_sr_var.map_or(true, |max_sr_var| {
+            call_info
+                .split_read_var
+                .map_or(false, |split_read_var| split_read_var >= max_sr_var)
+        });
+
+        // sr + pr -- split reads + paired-end reads
+
+        let pass_min_srpr_cov = self.min_srpr_cov.map_or(true, |min_srpr_cov| {
+            call_info.split_read_cov.map_or(false, |split_read_cov| {
+                call_info.paired_end_cov.map_or(false, |paired_end_cov| {
+                    split_read_cov + paired_end_cov >= min_srpr_cov
+                })
+            })
+        });
+        let pass_max_srpr_cov = self.max_srpr_cov.map_or(true, |max_srpr_cov| {
+            call_info.split_read_cov.map_or(false, |split_read_cov| {
+                call_info.paired_end_cov.map_or(false, |paired_end_cov| {
+                    split_read_cov + paired_end_cov <= max_srpr_cov
+                })
+            })
+        });
+
+        let pass_min_srpr_ref = self.min_srpr_ref.map_or(true, |min_srpr_ref| {
+            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
+                call_info.paired_end_var.map_or(false, |paired_end_var| {
+                    call_info.split_read_cov.map_or(false, |split_read_cov| {
+                        call_info.split_read_var.map_or(false, |split_read_var| {
+                            paired_end_cov.saturating_sub(paired_end_var)
+                                + split_read_cov.saturating_sub(split_read_var)
+                                >= min_srpr_ref
+                        })
+                    })
+                })
+            })
+        });
+        let pass_max_srpr_ref = self.max_srpr_ref.map_or(true, |max_srpr_ref| {
+            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
+                call_info.paired_end_var.map_or(false, |paired_end_var| {
+                    call_info.split_read_cov.map_or(false, |split_read_cov| {
+                        call_info.split_read_var.map_or(false, |split_read_var| {
+                            paired_end_cov.saturating_sub(paired_end_var)
+                                + split_read_cov.saturating_sub(split_read_var)
+                                <= max_srpr_ref
+                        })
+                    })
+                })
+            })
+        });
+
+        let pass_min_srpr_var = self.min_srpr_var.map_or(true, |min_srpr_var| {
+            call_info.split_read_var.map_or(false, |split_read_var| {
+                call_info.paired_end_var.map_or(false, |paired_end_var| {
+                    split_read_var + paired_end_var >= min_srpr_var
+                })
+            })
+        });
+        let pass_max_srpr_var = self.max_srpr_var.map_or(true, |max_srpr_var| {
+            call_info.split_read_var.map_or(false, |split_read_var| {
+                call_info.paired_end_var.map_or(false, |paired_end_var| {
+                    split_read_var + paired_end_var <= max_srpr_var
+                })
+            })
+        });
+
+        // rd_dev -- read depth deviation
+
+        let pass_min_rd_dev = self.min_rd_dev.map_or(true, |min_rd_dev| {
+            call_info
+                .average_normalized_cov
+                .map_or(false, |average_normalized_cov| {
+                    (average_normalized_cov - 1.0).abs() >= min_rd_dev
+                })
+        });
+
+        let pass_max_rd_dev = self.max_rd_dev.map_or(true, |max_rd_dev| {
+            call_info
+                .average_normalized_cov
+                .map_or(false, |average_normalized_cov| {
+                    (average_normalized_cov - 1.0).abs() <= max_rd_dev
+                })
+        });
+
+        // amq - average mapping quality
+
+        let pass_min_amq = self.min_amq.map_or(true, |min_amq| {
+            call_info
+                .average_mapping_quality
+                .map_or(false, |average_mapping_quality| {
+                    average_mapping_quality >= min_amq
+                })
+        });
+        let pass_max_amq = self.max_amq.map_or(true, |max_amq| {
+            call_info
+                .average_mapping_quality
+                .map_or(false, |average_mapping_quality| {
+                    average_mapping_quality <= max_amq
+                })
+        });
 
         pass_gt_one_of
             && pass_min_gq
@@ -504,6 +642,22 @@ impl GenotypeCriteria {
             && pass_max_pr_ref
             && pass_min_pr_var
             && pass_max_pr_var
+            && pass_min_sr_cov
+            && pass_max_sr_cov
+            && pass_min_sr_ref
+            && pass_max_sr_ref
+            && pass_min_sr_var
+            && pass_max_sr_var
+            && pass_min_srpr_cov
+            && pass_max_srpr_cov
+            && pass_min_srpr_ref
+            && pass_max_srpr_ref
+            && pass_min_srpr_var
+            && pass_max_srpr_var
+            && pass_min_rd_dev
+            && pass_max_rd_dev
+            && pass_min_amq
+            && pass_max_amq
     }
 }
 
@@ -673,6 +827,8 @@ pub struct CallInfo {
     pub average_normalized_cov: Option<f32>,
     /// Number of buckets/targets supporting the CNV call, if applicable
     pub point_count: Option<u32>,
+    /// Average mapping quality, if applicable
+    pub average_mapping_quality: Option<f32>,
 }
 
 /// Definition of a structural variant with per-sample genotype calls.
@@ -1025,6 +1181,7 @@ mod tests {
             copy_number: Some(1),
             average_normalized_cov: Some(0.491),
             point_count: Some(5),
+            average_mapping_quality: Some(60.0),
         };
 
         assert!(crit.is_call_info_pass(&pass_info));
@@ -1032,7 +1189,67 @@ mod tests {
 
     #[test]
     fn test_genotype_criteria_is_call_info_fail() {
-        todo!()
+        let crit = GenotypeCriteria {
+            gt_one_of: Some(vec!["0/1".to_owned()]),
+            min_gq: Some(10.0),
+            min_pr_cov: Some(10),
+            min_pr_var: Some(10),
+            min_sr_cov: Some(10),
+            min_sr_var: Some(10),
+            min_rd_dev: Some(0.5),
+            min_amq: Some(60.0),
+            ..GenotypeCriteria::new(GenotypeChoice::Het)
+        };
+
+        let fail_info = CallInfo {
+            genotype: Some("0/1".to_owned()),
+            quality: Some(10.0),
+            paired_end_cov: Some(10),
+            paired_end_var: Some(10),
+            split_read_cov: Some(10),
+            split_read_var: Some(10),
+            copy_number: Some(1),
+            average_normalized_cov: Some(0.491),
+            point_count: Some(5),
+            average_mapping_quality: Some(60.0),
+        };
+
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            genotype: Some("1/1".to_owned()),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            quality: Some(9.9),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            paired_end_cov: Some(9),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            paired_end_var: Some(9),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            split_read_cov: Some(9),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            split_read_var: Some(9),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            average_normalized_cov: Some(0.6),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            average_normalized_cov: Some(1.4),
+            ..fail_info.clone()
+        }));
+        assert!(!crit.is_call_info_pass(&CallInfo {
+            average_mapping_quality: Some(59.0),
+            ..fail_info.clone()
+        }));
     }
 
     #[test]
@@ -1155,13 +1372,14 @@ mod tests {
             copy_number: Some(1),
             average_normalized_cov: Some(0.491),
             point_count: Some(5),
+            average_mapping_quality: Some(60.0),
         };
         assert_tokens(
             &info,
             &[
                 Token::Struct {
                     name: "CallInfo",
-                    len: 9,
+                    len: 10,
                 },
                 Token::Str("genotype"),
                 Token::Some,
@@ -1190,6 +1408,9 @@ mod tests {
                 Token::Str("point_count"),
                 Token::Some,
                 Token::U32(5),
+                Token::Str("average_mapping_quality"),
+                Token::Some,
+                Token::F32(60.0),
                 Token::StructEnd,
             ],
         );

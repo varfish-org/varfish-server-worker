@@ -831,6 +831,7 @@ mod tests {
             copy_number: Some(1),
             average_normalized_cov: Some(0.5),
             point_count: Some(10),
+            average_mapping_quality: Some(60.0),
         };
 
         let sv_fail = StructuralVariant {
@@ -936,6 +937,7 @@ mod tests {
             copy_number: Some(1),
             average_normalized_cov: Some(0.5),
             point_count: Some(10),
+            average_mapping_quality: Some(60.0),
         };
 
         let sv_pass = StructuralVariant {
