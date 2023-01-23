@@ -472,7 +472,7 @@ impl GenotypeCriteria {
         let pass_max_pr_cov = self.max_pr_cov.map_or(true, |max_pr_cov| {
             call_info
                 .paired_end_cov
-                .map_or(false, |paired_end_cov| paired_end_cov >= max_pr_cov)
+                .map_or(false, |paired_end_cov| paired_end_cov <= max_pr_cov)
         });
 
         let pass_min_pr_ref = self.min_pr_ref.map_or(true, |min_pr_ref| {
@@ -498,7 +498,7 @@ impl GenotypeCriteria {
         let pass_max_pr_var = self.max_pr_var.map_or(true, |max_pr_var| {
             call_info
                 .paired_end_var
-                .map_or(false, |paired_end_var| paired_end_var >= max_pr_var)
+                .map_or(false, |paired_end_var| paired_end_var <= max_pr_var)
         });
 
         // sr -- split reads
@@ -511,7 +511,7 @@ impl GenotypeCriteria {
         let pass_max_sr_cov = self.max_sr_cov.map_or(true, |max_sr_cov| {
             call_info
                 .split_read_cov
-                .map_or(false, |split_read_cov| split_read_cov >= max_sr_cov)
+                .map_or(false, |split_read_cov| split_read_cov <= max_sr_cov)
         });
 
         let pass_min_sr_ref = self.min_sr_ref.map_or(true, |min_sr_ref| {
@@ -537,7 +537,7 @@ impl GenotypeCriteria {
         let pass_max_sr_var = self.max_sr_var.map_or(true, |max_sr_var| {
             call_info
                 .split_read_var
-                .map_or(false, |split_read_var| split_read_var >= max_sr_var)
+                .map_or(false, |split_read_var| split_read_var <= max_sr_var)
         });
 
         // sr + pr -- split reads + paired-end reads
@@ -1166,17 +1166,36 @@ mod tests {
             gt_one_of: Some(vec!["0/1".to_owned()]),
             min_gq: Some(10.0),
             min_pr_cov: Some(10),
+            max_pr_cov: Some(20),
+            min_pr_ref: Some(10),
+            max_pr_ref: Some(20),
+            min_pr_var: Some(10),
+            max_pr_var: Some(20),
             min_sr_cov: Some(10),
+            max_sr_cov: Some(20),
+            min_sr_var: Some(10),
+            max_sr_var: Some(20),
+            min_sr_ref: Some(10),
+            max_sr_ref: Some(20),
+            min_srpr_cov: Some(20),
+            max_srpr_cov: Some(50),
+            min_srpr_var: Some(20),
+            max_srpr_var: Some(50),
+            min_srpr_ref: Some(20),
+            max_srpr_ref: Some(50),
             min_rd_dev: Some(0.5),
+            max_rd_dev: Some(1.5),
+            min_amq: Some(60.0),
+            max_amq: Some(70.0),
             ..GenotypeCriteria::new(GenotypeChoice::Het)
         };
 
         let pass_info = CallInfo {
             genotype: Some("0/1".to_owned()),
             quality: Some(10.0),
-            paired_end_cov: Some(10),
+            paired_end_cov: Some(20),
             paired_end_var: Some(10),
-            split_read_cov: Some(10),
+            split_read_cov: Some(20),
             split_read_var: Some(10),
             copy_number: Some(1),
             average_normalized_cov: Some(0.491),
