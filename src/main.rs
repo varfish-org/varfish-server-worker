@@ -1,6 +1,6 @@
-mod common;
-mod err;
-mod sv_query;
+pub mod common;
+pub mod err;
+pub mod sv_query;
 
 use clap::{Parser, Subcommand};
 use console::{Emoji, Term};

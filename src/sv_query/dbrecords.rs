@@ -17,7 +17,7 @@ pub trait BeginEnd {
 }
 
 pub trait ToInMemory<InMemory> {
-    fn to_in_memory(&self) -> InMemory;
+    fn to_in_memory(&self) -> Result<Option<InMemory>, anyhow::Error>;
 }
 
 /// Store background database counts for a structural variant.
@@ -39,9 +39,16 @@ pub struct SvOverlapCounts {
     pub inhouse_carriers: u32,
 }
 
+/// Count attached to a background record.
+pub trait Count {
+    fn count(&self) -> usize;
+}
+
 /// Records for in-house SV background database.
 pub mod bg_sv {
-    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use crate::sv_query::schema::SvType;
+
+    use super::{BeginEnd, ChromosomeCoordinate, Count, ToInMemory};
     use serde::Deserialize;
 
     /// Background SV database record to be kept in memory.
@@ -53,7 +60,7 @@ pub mod bg_sv {
         pub end: i32,
 
         /// type of the SV
-        pub sv_type: String,
+        pub sv_type: SvType,
 
         /// Total number of carriers.
         pub carriers: i32,
@@ -71,6 +78,12 @@ pub mod bg_sv {
         }
         fn end(&self) -> i32 {
             self.end
+        }
+    }
+
+    impl Count for Record {
+        fn count(&self) -> usize {
+            self.carriers as usize
         }
     }
 
@@ -120,23 +133,29 @@ pub mod bg_sv {
     }
 
     impl ToInMemory<Record> for FileRecord {
-        fn to_in_memory(&self) -> Record {
-            Record {
+        fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
+            Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: self.sv_type.clone(),
+                sv_type: serde_json::from_str(&format!(
+                    "\"{}\"",
+                    &self.sv_type.split(':').next().unwrap()
+                ))?,
                 carriers: self.carriers,
                 carriers_het: self.carriers_het,
                 carriers_hom: self.carriers_hom,
                 carriers_hemi: self.carriers_hemi,
-            }
+            }))
         }
     }
 }
 
 /// Records for the dbVar
 pub mod dbvar {
-    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use crate::sv_query::schema::SvType;
+
+    use super::{BeginEnd, ChromosomeCoordinate, Count, ToInMemory};
+    use anyhow::anyhow;
     use serde::Deserialize;
 
     /// dbVar database record to be kept in memor
@@ -148,7 +167,7 @@ pub mod dbvar {
         pub end: i32,
 
         /// type of the SV
-        pub sv_type: String,
+        pub sv_type: SvType,
 
         /// number of overall carriers
         pub carriers: i32,
@@ -160,6 +179,12 @@ pub mod dbvar {
         }
         fn end(&self) -> i32 {
             self.end
+        }
+    }
+
+    impl Count for Record {
+        fn count(&self) -> usize {
+            self.carriers as usize
         }
     }
 
@@ -181,13 +206,27 @@ pub mod dbvar {
     }
 
     impl ToInMemory<Record> for FileRecord {
-        fn to_in_memory(&self) -> Record {
-            Record {
+        fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
+            let sv_type = match self.sv_type.split(";").next().unwrap() {
+                "alu_insertion"
+                | "herv_insertion"
+                | "insertion"
+                | "line1_insertion"
+                | "mobile_element_insertion"
+                | "novel_sequence_insertion"
+                | "sva_insertion" => SvType::Ins,
+                "copy_number_gain" | "duplication" | "tandem_duplication" => SvType::Dup,
+                "alu_deletion" | "copy_number_loss" | "deletion" | "herv_deletion"
+                | "line1_deletion" | "sva_deletion" => SvType::Del,
+                "copy_number_variation" => SvType::Cnv,
+                _ => return Err(anyhow!("Unknown SV type: {}", self.sv_type)),
+            };
+            Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: self.sv_type.clone(),
+                sv_type,
                 carriers: self.num_carriers,
-            }
+            }))
         }
     }
 
@@ -212,7 +251,10 @@ pub mod dbvar {
 
 /// Records for gnomAD SV
 pub mod gnomad_sv {
-    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use crate::sv_query::schema::SvType;
+
+    use super::{BeginEnd, ChromosomeCoordinate, Count, ToInMemory};
+    use anyhow::anyhow;
     use serde::Deserialize;
 
     /// gnomAD SV database record to be kept in memor
@@ -224,7 +266,7 @@ pub mod gnomad_sv {
         pub end: i32,
 
         /// type of the SV
-        pub sv_type: String,
+        pub sv_type: SvType,
 
         /// number of overall carriers
         pub carriers: i32,
@@ -236,6 +278,12 @@ pub mod gnomad_sv {
         }
         fn end(&self) -> i32 {
             self.end
+        }
+    }
+
+    impl Count for Record {
+        fn count(&self) -> usize {
+            self.carriers as usize
         }
     }
 
@@ -259,13 +307,23 @@ pub mod gnomad_sv {
     }
 
     impl ToInMemory<Record> for FileRecord {
-        fn to_in_memory(&self) -> Record {
-            Record {
+        fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
+            let sv_type = match self.svtype.as_str() {
+                "CPX" => return Ok(None), // no correspondence
+                "CTX" | "BND" => SvType::Bnd,
+                "DEL" => SvType::Del,
+                "DUP" => SvType::Dup,
+                "INS" => SvType::Ins,
+                "INV" => SvType::Inv,
+                "MCNV" => SvType::Cnv,
+                _ => return Err(anyhow!("Unknown SV type: {}", &self.svtype)),
+            };
+            Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: self.svtype.clone(),
+                sv_type,
                 carriers: self.n_homalt + self.n_het,
-            }
+            }))
         }
     }
 
@@ -289,7 +347,10 @@ pub mod gnomad_sv {
 }
 /// Records for Thousand Genomes SV
 pub mod g1k_sv {
-    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use crate::sv_query::schema::SvType;
+
+    use super::{BeginEnd, ChromosomeCoordinate, Count, ToInMemory};
+    use anyhow::anyhow;
     use serde::Deserialize;
 
     /// gnomAD SV database record to be kept in memor
@@ -301,7 +362,7 @@ pub mod g1k_sv {
         pub end: i32,
 
         /// type of the SV
-        pub sv_type: String,
+        pub sv_type: SvType,
 
         /// number of overall variant alleles
         pub alleles: i32,
@@ -316,7 +377,13 @@ pub mod g1k_sv {
         }
     }
 
-    /// gnomAD SV database record as read from TSV file.
+    impl Count for Record {
+        fn count(&self) -> usize {
+            self.alleles as usize
+        }
+    }
+
+    /// Thousand Genomes SV database record as read from TSV file.
     #[derive(Debug, Deserialize)]
     pub struct FileRecord {
         /// genome build
@@ -334,13 +401,22 @@ pub mod g1k_sv {
     }
 
     impl ToInMemory<Record> for FileRecord {
-        fn to_in_memory(&self) -> Record {
-            Record {
+        fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
+            let sv_type = match self.sv_type.as_str() {
+                "CNV" => SvType::Cnv,
+                "DEL" => SvType::Del,
+                "DEL_ALU" | "DEL_HERV" | "DEL_LINE1" | "DEL_SVA" => SvType::Del,
+                "DUP" => SvType::Dup,
+                "INV" => SvType::Inv,
+                "ALU" | "INS" | "LINE1" | "SVA" => SvType::Ins,
+                _ => return Err(anyhow!("Unknown SV type {}", &self.sv_type)),
+            };
+            Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: self.sv_type.clone(),
+                sv_type: sv_type,
                 alleles: self.num_var_alleles,
-            }
+            }))
         }
     }
 
@@ -363,9 +439,12 @@ pub mod g1k_sv {
     }
 }
 
-/// Records for gnomAD SV
+/// Records for DGV
 pub mod dgv {
-    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use crate::sv_query::schema::SvType;
+
+    use super::{BeginEnd, ChromosomeCoordinate, Count, ToInMemory};
+    use anyhow::anyhow;
     use serde::Deserialize;
 
     /// gnomAD SV database record to be kept in memor
@@ -377,7 +456,7 @@ pub mod dgv {
         pub end: i32,
 
         /// type of the SV
-        pub sv_type: String,
+        pub sv_type: SvType,
 
         /// number of overall carriers
         pub carriers: i32,
@@ -392,6 +471,12 @@ pub mod dgv {
         }
     }
 
+    impl Count for Record {
+        fn count(&self) -> usize {
+            self.carriers as usize
+        }
+    }
+
     /// dbVar database record as read from TSV file.
     #[derive(Debug, Deserialize)]
     pub struct FileRecord {
@@ -403,7 +488,7 @@ pub mod dgv {
         pub start: i32,
         /// end position, 1-based
         pub end: i32,
-        /// The structural vairant type
+        /// The structural variant type
         sv_type: String,
         /// Number of observed gains.
         observed_gains: i32,
@@ -412,13 +497,35 @@ pub mod dgv {
     }
 
     impl ToInMemory<Record> for FileRecord {
-        fn to_in_memory(&self) -> Record {
-            Record {
+        fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
+            let sv_type = match self.sv_type.as_ref() {
+                "alu deletion"
+                | "deletion"
+                | "herv deletion"
+                | "line1 deletion"
+                | "mobile element deletion"
+                | "loss"
+                | "sva deletion" => SvType::Del,
+                "alu insertion"
+                | "herv insertion"
+                | "insertion"
+                | "line1 insertion"
+                | "mobile element insertion"
+                | "novel sequence insertion"
+                | "sva insertion" => SvType::Ins,
+                "duplication" | "gain" | "tandem duplication" => SvType::Dup,
+                "sequence alteration" | "complex" => return Ok(None),
+                "gain+loss" | "CNV" => SvType::Cnv,
+                "inversion" => SvType::Inv,
+                "OTHER" => return Ok(None),
+                _ => return Err(anyhow!("Unknown sv_type {}", &self.sv_type)),
+            };
+            Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: self.sv_type.clone(),
+                sv_type: sv_type,
                 carriers: self.observed_gains + self.observed_losses,
-            }
+            }))
         }
     }
 
@@ -443,7 +550,10 @@ pub mod dgv {
 
 /// Records for DGV Gold Standard
 pub mod dgv_gs {
-    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use crate::sv_query::schema::SvType;
+
+    use super::{BeginEnd, ChromosomeCoordinate, Count, ToInMemory};
+    use anyhow::anyhow;
     use serde::Deserialize;
 
     /// DGV gold standard database record to be kept in memor
@@ -455,7 +565,7 @@ pub mod dgv_gs {
         pub end: i32,
 
         /// type of the SV
-        pub sv_type: String,
+        pub sv_type: SvType,
 
         /// number of overall carriers
         pub carriers: i32,
@@ -470,6 +580,12 @@ pub mod dgv_gs {
         }
     }
 
+    impl Count for Record {
+        fn count(&self) -> usize {
+            self.carriers as usize
+        }
+    }
+
     /// DGV gold standard database record as read from TSV file.
     #[derive(Debug, Deserialize)]
     pub struct FileRecord {
@@ -481,20 +597,25 @@ pub mod dgv_gs {
         pub start_outer: i32,
         /// outer end position, 1-based
         pub end_outer: i32,
-        /// The structural vairant type
-        sv_type: String,
+        /// The structural variant type
+        sv_sub_type: String,
         /// Number of carriers.
         num_carriers: i32,
     }
 
     impl ToInMemory<Record> for FileRecord {
-        fn to_in_memory(&self) -> Record {
-            Record {
+        fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
+            let sv_type = match self.sv_sub_type.as_ref() {
+                "Gain" => SvType::Dup,
+                "Loss" => SvType::Del,
+                _ => return Err(anyhow!("Invalid SV type {}", &self.sv_sub_type)),
+            };
+            Ok(Some(Record {
                 begin: self.start_outer - 1,
                 end: self.end_outer,
-                sv_type: self.sv_type.clone(),
+                sv_type: sv_type,
                 carriers: self.num_carriers,
-            }
+            }))
         }
     }
 
@@ -519,7 +640,10 @@ pub mod dgv_gs {
 
 /// Records for ExAC CNV
 pub mod exac_cnv {
-    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use crate::sv_query::schema::SvType;
+
+    use super::{BeginEnd, ChromosomeCoordinate, Count, ToInMemory};
+    use anyhow::anyhow;
     use serde::Deserialize;
 
     /// ExAC CNV database record to be kept in memor
@@ -531,7 +655,7 @@ pub mod exac_cnv {
         pub end: i32,
 
         /// type of the SV
-        pub sv_type: String,
+        pub sv_type: SvType,
 
         /// number of overall carriers
         pub carriers: i32,
@@ -543,6 +667,12 @@ pub mod exac_cnv {
         }
         fn end(&self) -> i32 {
             self.end
+        }
+    }
+
+    impl Count for Record {
+        fn count(&self) -> usize {
+            self.carriers as usize
         }
     }
 
@@ -558,17 +688,22 @@ pub mod exac_cnv {
         /// outer end position, 1-based
         pub end: i32,
         /// The structural vairant type
-        sv_type: String,
+        pub sv_type: String,
     }
 
     impl ToInMemory<Record> for FileRecord {
-        fn to_in_memory(&self) -> Record {
-            Record {
+        fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
+            let sv_type = match self.sv_type.as_ref() {
+                "duplication" => SvType::Dup,
+                "deletion" => SvType::Del,
+                _ => return Err(anyhow!("Invalid SV type {}", &self.sv_type)),
+            };
+            Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: self.sv_type.clone(),
+                sv_type,
                 carriers: 1,
-            }
+            }))
         }
     }
 
