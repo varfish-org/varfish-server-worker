@@ -14,8 +14,12 @@ use rust_htslib::bcf::{self, Read};
 use thousands::Separable;
 
 use self::{
+    interpreter::QueryInterpreter,
     recordio::{build_chrom_map, BgRecordsByChrom},
-    schema::{CallInfo, StructuralVariant, SvSubType, SvType},
+    schema::{
+        CallInfo, CaseQuery, Database, GenotypeChoice, GenotypeCriteria, StructuralVariant,
+        SvSubType, SvType,
+    },
 };
 use crate::common::Args as CommonArgs;
 
@@ -37,6 +41,54 @@ pub struct Args {
     /// Path to output VCF file
     #[arg(long)]
     pub output_vcf: String,
+}
+
+pub fn build_query(samples: &Vec<String>) -> CaseQuery {
+    let genotype_criteria = vec![
+        // CNVs -- variant
+        GenotypeCriteria {
+            select_sv_sub_type: SvSubType::all(),
+            min_srpr_var: Some(6),
+            ..GenotypeCriteria::new(GenotypeChoice::Variant)
+        },
+        // CNVs -- non-variant
+        GenotypeCriteria {
+            select_sv_sub_type: SvSubType::all(),
+            max_srpr_var: Some(5),
+            ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
+        },
+    ];
+
+    CaseQuery {
+        svdb_gnomad_enabled: true,
+        svdb_gnomad_min_overlap: Some(0.8),
+        svdb_gnomad_max_carriers: Some(10),
+        svdb_exac_enabled: true,
+        svdb_exac_min_overlap: Some(0.8),
+        svdb_exac_max_carriers: Some(10),
+        svdb_dbvar_enabled: true,
+        svdb_dbvar_min_overlap: Some(0.8),
+        svdb_dbvar_max_carriers: Some(20),
+        svdb_g1k_enabled: true,
+        svdb_g1k_min_overlap: Some(0.8),
+        svdb_g1k_max_alleles: Some(10),
+        svdb_inhouse_enabled: true,
+        svdb_inhouse_min_overlap: Some(0.8),
+        svdb_inhouse_max_carriers: Some(10),
+
+        sv_size_min: Some(500),
+        sv_types: SvType::all(),
+        sv_sub_types: SvSubType::all(),
+
+        genotype: HashMap::from_iter(
+            samples
+                .iter()
+                .map(|sample| (sample.clone(), GenotypeChoice::Variant)),
+        ),
+        genotype_criteria,
+
+        ..CaseQuery::new(Database::Refseq)
+    }
 }
 
 pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(), anyhow::Error> {
@@ -72,8 +124,12 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         })
         .collect::<Vec<String>>();
 
+    term.write_line("Buildling query...")?;
+    let interpreter = QueryInterpreter::new(build_query(&samples));
+
     term.write_line("Starting queries...")?;
-    let mut count = 0;
+    let mut count_total = 0;
+    let mut count_passes = 0;
     let before_query = Instant::now();
     for record_result in bcf_reader.records() {
         let record = record_result?;
@@ -231,16 +287,18 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
             }
         };
 
-        let _overlaps = sv_records.count_overlaps(&chrom_map, &sv);
-        // println!("{:?}", &sv);
-        // println!("  `--> {:?}", &overlaps);
-        // println!("--");
-
-        count += 1;
+        count_total += 1;
+        if interpreter.passes(&sv, |sv| sv_records.count_overlaps(&chrom_map, &sv))? {
+            count_passes += 1;
+            if count_passes <= 100 {
+                println!("{:?}\n{:?}\n--", &sv, &sv_records.count_overlaps(&chrom_map, &sv));
+            }
+        }
     }
     term.write_line(&format!(
-        "-- total time spent querying for {} records: {:?}",
-        count.separate_with_commas(),
+        "-- total time spent querying for {} (passing: {}) records: {:?}",
+        count_total.separate_with_commas(),
+        count_passes.separate_with_commas(),
         before_query.elapsed()
     ))?;
 

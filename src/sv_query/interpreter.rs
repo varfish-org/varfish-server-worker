@@ -23,7 +23,7 @@ fn overlaps(s1: u32, e1: u32, s2: u32, e2: u32) -> bool {
 /// Hold data structures that support the interpretation of one `CaseQuery`
 /// to multiple `StructuralVariant` records.
 #[derive(Debug)]
-struct QueryInterpreter {
+pub struct QueryInterpreter {
     query: CaseQuery,
 }
 
@@ -242,16 +242,20 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes(
+    pub fn passes<F: Fn(&StructuralVariant) -> SvOverlapCounts>(
         &self,
         sv: &StructuralVariant,
-        counts: &SvOverlapCounts,
+        counter: F,
     ) -> Result<bool, anyhow::Error> {
-        // simply AND-concatenate all `passes_*` functions
-        Ok(self.passes_simple(sv)
-            && self.passes_counts(counts)
-            && self.passes_genomic_region(sv)
-            && self.passes_genotype(sv)?)
+        // First execute non-overlap based queries.  If all succeed then also run overlapper.
+        if !self.passes_simple(sv)
+            || !self.passes_genomic_region(sv)
+            || !self.passes_genotype(sv)?
+        {
+            Ok(false)
+        } else {
+            Ok(self.passes_counts(&counter(sv)))
+        }
     }
 
     // TODO: gene allow list

@@ -1,7 +1,5 @@
-/// Schema for the query definition.
 use std::collections::HashMap;
 
-/// Definition of query schemas.
 use serde::{Deserialize, Serialize};
 
 /// Range with 1-based positions
@@ -67,6 +65,11 @@ pub enum SvType {
 }
 
 impl SvType {
+    pub fn all() -> Vec<SvType> {
+        use SvType::*;
+        vec![Del, Dup, Inv, Ins, Bnd, Cnv]
+    }
+
     pub fn is_compatible(&self, other: SvType) -> bool {
         use SvType::*;
         match (self, other) {
@@ -136,6 +139,14 @@ pub enum SvSubType {
 }
 
 impl SvSubType {
+    pub fn all() -> Vec<SvSubType> {
+        use SvSubType::*;
+        vec![
+            Del, DelMe, DelMeSva, DelMeL1, DelMeAlu, Dup, DupTandem, Inv, Ins, InsMe, InsMeSva,
+            InsMeL1, InsMeAlu, Bnd, Cnv,
+        ]
+    }
+
     /// Return whether SV sub type is any insertion
     pub fn is_ins(&self) -> bool {
         matches!(
