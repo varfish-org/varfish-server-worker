@@ -6,7 +6,11 @@ use flate2::read::GzDecoder;
 use serde::de::DeserializeOwned;
 use thousands::Separable;
 
-use super::dbrecords::{self, BeginEnd, ChromosomeCoordinate, ToInMemory};
+use super::{
+    dbrecords::{self, BeginEnd, ChromosomeCoordinate, Count, SvOverlapCounts, ToInMemory},
+    interpreter::{BND_SLACK, INS_SLACK},
+    schema::{StructuralVariant, SvType},
+};
 
 const CHROMS: &[&str] = &[
     "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17",
@@ -57,7 +61,9 @@ fn load_bg_sv_records<
         let idx = *chrom_map
             .get(record.chromosome())
             .unwrap_or_else(|| panic!("unknown chromosome {}", record.chromosome()));
-        rec_by_contig[idx].push(record.to_in_memory());
+        if let Some(mem_record) = record.to_in_memory()? {
+            rec_by_contig[idx].push(mem_record);
+        }
     }
     term.write_line(&format!(
         "-- time spent parsing: {:?}",
@@ -106,11 +112,13 @@ fn print_rss_now(term: &console::Term) -> Result<(), anyhow::Error> {
 }
 
 /// This struct bundles the background database records by chromosome.
-pub struct SvRecordsByChrom {
+pub struct BgRecordsByChrom {
     pub bg_sv_records: Vec<Vec<dbrecords::bg_sv::Record>>,
     pub bg_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub gnomad_sv_records: Vec<Vec<dbrecords::gnomad_sv::Record>>,
     pub gnomad_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
+    pub g1k_sv_records: Vec<Vec<dbrecords::g1k_sv::Record>>,
+    pub g1k_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub dbvar_records: Vec<Vec<dbrecords::dbvar::Record>>,
     pub dbvar_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub dgv_records: Vec<Vec<dbrecords::dgv::Record>>,
@@ -121,93 +129,180 @@ pub struct SvRecordsByChrom {
     pub exac_cnv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
 }
 
-pub fn load_sv_records(
-    term: &console::Term,
-    db_base_dir: &str,
-) -> Result<SvRecordsByChrom, anyhow::Error> {
-    let chrom_map = build_chrom_map();
+impl BgRecordsByChrom {
+    pub fn load_from_dir(
+        term: &console::Term,
+        db_base_dir: &str,
+    ) -> Result<BgRecordsByChrom, anyhow::Error> {
+        let chrom_map = build_chrom_map();
 
-    let before_parsing = Instant::now();
-    print_rss_now(term)?;
+        let before_parsing = Instant::now();
+        print_rss_now(term)?;
 
-    let bg_sv_path = Path::new(&db_base_dir)
-        .join("bg-inhouse")
-        .join("varfish-sv.tsv.gz");
-    let bg_sv_records = load_bg_sv_records::<dbrecords::bg_sv::Record, dbrecords::bg_sv::FileRecord>(
-        &bg_sv_path,
-        term,
-        &chrom_map,
-    )?;
-    let bg_sv_trees = build_bg_sv_tree(term, &bg_sv_records)?;
-    print_rss_now(term)?;
+        let bg_sv_path = Path::new(&db_base_dir)
+            .join("bg-inhouse")
+            .join("varfish-sv.tsv.gz");
+        let bg_sv_records = load_bg_sv_records::<
+            dbrecords::bg_sv::Record,
+            dbrecords::bg_sv::FileRecord,
+        >(&bg_sv_path, term, &chrom_map)?;
+        let bg_sv_trees = build_bg_sv_tree(term, &bg_sv_records)?;
+        print_rss_now(term)?;
 
-    let gnomad_sv_path = Path::new(&db_base_dir)
-        .join("bg-public")
-        .join("gnomad-sv.tsv.gz");
-    let gnomad_sv_records = load_bg_sv_records::<
-        dbrecords::gnomad_sv::Record,
-        dbrecords::gnomad_sv::FileRecord,
-    >(&gnomad_sv_path, term, &chrom_map)?;
-    let gnomad_sv_trees = build_bg_sv_tree(term, &gnomad_sv_records)?;
-    print_rss_now(term)?;
+        let gnomad_sv_path = Path::new(&db_base_dir)
+            .join("bg-public")
+            .join("gnomad-sv.tsv.gz");
+        let gnomad_sv_records = load_bg_sv_records::<
+            dbrecords::gnomad_sv::Record,
+            dbrecords::gnomad_sv::FileRecord,
+        >(&gnomad_sv_path, term, &chrom_map)?;
+        let gnomad_sv_trees = build_bg_sv_tree(term, &gnomad_sv_records)?;
+        print_rss_now(term)?;
 
-    let dbvar_path = Path::new(&db_base_dir)
-        .join("bg-public")
-        .join("dbvar-sv.tsv.gz");
-    let dbvar_records = load_bg_sv_records::<dbrecords::dbvar::Record, dbrecords::dbvar::FileRecord>(
-        &dbvar_path,
-        term,
-        &chrom_map,
-    )?;
-    let dbvar_trees = build_bg_sv_tree(term, &dbvar_records)?;
-    print_rss_now(term)?;
+        let g1k_sv_path = Path::new(&db_base_dir)
+            .join("bg-public")
+            .join("g1k-sv.tsv.gz");
+        let g1k_sv_records = load_bg_sv_records::<
+            dbrecords::g1k_sv::Record,
+            dbrecords::g1k_sv::FileRecord,
+        >(&g1k_sv_path, term, &chrom_map)?;
+        let g1k_sv_trees = build_bg_sv_tree(term, &g1k_sv_records)?;
+        print_rss_now(term)?;
 
-    let dgv_path = Path::new(&db_base_dir)
-        .join("bg-public")
-        .join("dgv-sv.tsv.gz");
-    let dgv_records = load_bg_sv_records::<dbrecords::dgv::Record, dbrecords::dgv::FileRecord>(
-        &dgv_path, term, &chrom_map,
-    )?;
-    let dgv_trees = build_bg_sv_tree(term, &dgv_records)?;
-    print_rss_now(term)?;
+        let dbvar_path = Path::new(&db_base_dir)
+            .join("bg-public")
+            .join("dbvar-sv.tsv.gz");
+        let dbvar_records = load_bg_sv_records::<
+            dbrecords::dbvar::Record,
+            dbrecords::dbvar::FileRecord,
+        >(&dbvar_path, term, &chrom_map)?;
+        let dbvar_trees = build_bg_sv_tree(term, &dbvar_records)?;
+        print_rss_now(term)?;
 
-    let dgv_gs_path = Path::new(&db_base_dir)
-        .join("bg-public")
-        .join("dgv-gs-sv.tsv.gz");
-    let dgv_gs_records = load_bg_sv_records::<
-        dbrecords::dgv_gs::Record,
-        dbrecords::dgv_gs::FileRecord,
-    >(&dgv_gs_path, term, &chrom_map)?;
-    let dgv_gs_trees = build_bg_sv_tree(term, &dgv_gs_records)?;
-    print_rss_now(term)?;
+        let dgv_path = Path::new(&db_base_dir)
+            .join("bg-public")
+            .join("dgv-sv.tsv.gz");
+        let dgv_records = load_bg_sv_records::<dbrecords::dgv::Record, dbrecords::dgv::FileRecord>(
+            &dgv_path, term, &chrom_map,
+        )?;
+        let dgv_trees = build_bg_sv_tree(term, &dgv_records)?;
+        print_rss_now(term)?;
 
-    let exac_cnv_path = Path::new(&db_base_dir)
-        .join("bg-public")
-        .join("exac-cnv.tsv.gz");
-    let exac_cnv_records = load_bg_sv_records::<
-        dbrecords::exac_cnv::Record,
-        dbrecords::exac_cnv::FileRecord,
-    >(&exac_cnv_path, term, &chrom_map)?;
-    let exac_cnv_trees = build_bg_sv_tree(term, &exac_cnv_records)?;
-    print_rss_now(term)?;
+        let dgv_gs_path = Path::new(&db_base_dir)
+            .join("bg-public")
+            .join("dgv-gs-sv.tsv.gz");
+        let dgv_gs_records = load_bg_sv_records::<
+            dbrecords::dgv_gs::Record,
+            dbrecords::dgv_gs::FileRecord,
+        >(&dgv_gs_path, term, &chrom_map)?;
+        let dgv_gs_trees = build_bg_sv_tree(term, &dgv_gs_records)?;
+        print_rss_now(term)?;
 
-    term.write_line(&format!(
-        "Total time spent parsing: {:?}",
-        before_parsing.elapsed()
-    ))?;
+        let exac_cnv_path = Path::new(&db_base_dir)
+            .join("bg-public")
+            .join("exac-cnv.tsv.gz");
+        let exac_cnv_records = load_bg_sv_records::<
+            dbrecords::exac_cnv::Record,
+            dbrecords::exac_cnv::FileRecord,
+        >(&exac_cnv_path, term, &chrom_map)?;
+        let exac_cnv_trees = build_bg_sv_tree(term, &exac_cnv_records)?;
+        print_rss_now(term)?;
 
-    Ok(SvRecordsByChrom {
-        bg_sv_records,
-        bg_sv_trees,
-        gnomad_sv_records,
-        gnomad_sv_trees,
-        dbvar_records,
-        dbvar_trees,
-        dgv_records,
-        dgv_trees,
-        dgv_gs_records,
-        dgv_gs_trees,
-        exac_cnv_records,
-        exac_cnv_trees,
-    })
+        term.write_line(&format!(
+            "Total time spent parsing: {:?}",
+            before_parsing.elapsed()
+        ))?;
+
+        Ok(BgRecordsByChrom {
+            bg_sv_records,
+            bg_sv_trees,
+            gnomad_sv_records,
+            gnomad_sv_trees,
+            g1k_sv_records,
+            g1k_sv_trees,
+            dbvar_records,
+            dbvar_trees,
+            dgv_records,
+            dgv_trees,
+            dgv_gs_records,
+            dgv_gs_trees,
+            exac_cnv_records,
+            exac_cnv_trees,
+        })
+    }
+
+    pub fn count_overlaps(
+        &self,
+        chrom_map: &HashMap<String, usize>,
+        sv: &StructuralVariant,
+    ) -> SvOverlapCounts {
+        let chrom_idx = *chrom_map.get(&sv.chrom).unwrap();
+        let range = if sv.sv_type == SvType::Ins {
+            sv.pos.saturating_sub(INS_SLACK)..sv.pos.saturating_add(INS_SLACK)
+        } else if sv.sv_type == SvType::Bnd {
+            sv.pos.saturating_sub(BND_SLACK)..sv.pos.saturating_add(BND_SLACK)
+        } else {
+            sv.pos..sv.end
+        };
+
+        let inhouse_carriers: u32 = self.bg_sv_trees[chrom_idx]
+            .find(range.clone())
+            .iter()
+            .map(|e| &self.bg_sv_records[chrom_idx][*e.data() as usize])
+            .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .map(|record| record.count())
+            .sum::<usize>() as u32;
+        let gnomad_carriers: u32 = self.gnomad_sv_trees[chrom_idx]
+            .find(range.clone())
+            .iter()
+            .map(|e| &self.gnomad_sv_records[chrom_idx][*e.data() as usize])
+            .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .map(|record| record.count())
+            .sum::<usize>() as u32;
+        let g1k_alleles: u32 = self.g1k_sv_trees[chrom_idx]
+            .find(range.clone())
+            .iter()
+            .map(|e| &self.g1k_sv_records[chrom_idx][*e.data() as usize])
+            .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .map(|record| record.count())
+            .sum::<usize>() as u32;
+        let dbvar_carriers: u32 = self.dbvar_trees[chrom_idx]
+            .find(range.clone())
+            .iter()
+            .map(|e| &self.dbvar_records[chrom_idx][*e.data() as usize])
+            .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .map(|record| record.count())
+            .sum::<usize>() as u32;
+        let dgv_carriers: u32 = self.dgv_trees[chrom_idx]
+            .find(range.clone())
+            .iter()
+            .map(|e| &self.dgv_records[chrom_idx][*e.data() as usize])
+            .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .map(|record| record.count())
+            .sum::<usize>() as u32;
+        let dgv_gs_carriers: u32 = self.dgv_gs_trees[chrom_idx]
+            .find(range.clone())
+            .iter()
+            .map(|e| &self.dgv_gs_records[chrom_idx][*e.data() as usize])
+            .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .map(|record| record.count())
+            .sum::<usize>() as u32;
+        let exac_carriers: u32 = self.exac_cnv_trees[chrom_idx]
+            .find(range.clone())
+            .iter()
+            .map(|e| &self.exac_cnv_records[chrom_idx][*e.data() as usize])
+            .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .map(|record| record.count())
+            .sum::<usize>() as u32;
+
+        SvOverlapCounts {
+            dgv_carriers: dgv_carriers,
+            dgv_gs_carriers: dgv_gs_carriers,
+            gnomad_carriers: gnomad_carriers,
+            exac_carriers: exac_carriers,
+            dbvar_carriers: dbvar_carriers,
+            g1k_alleles: g1k_alleles,
+            inhouse_carriers: inhouse_carriers,
+        }
+    }
 }

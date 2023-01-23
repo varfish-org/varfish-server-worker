@@ -10,10 +10,10 @@ use super::{
 };
 
 /// Slack around break-end positions
-static BND_SLACK: u32 = 50;
+pub static BND_SLACK: u32 = 50;
 
 /// Slack around insertion position
-static INS_SLACK: u32 = 50;
+pub static INS_SLACK: u32 = 50;
 
 /// Returns whether the intervals `[s1, e1)` and `[s2, e2)` overlap.
 fn overlaps(s1: u32, e1: u32, s2: u32, e2: u32) -> bool {

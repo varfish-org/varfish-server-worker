@@ -66,6 +66,25 @@ pub enum SvType {
     Cnv,
 }
 
+impl SvType {
+    pub fn is_compatible(&self, other: SvType) -> bool {
+        use SvType::*;
+        match (self, other) {
+            (Del, Del)
+            | (Dup, Dup)
+            | (Inv, Inv)
+            | (Ins, Ins)
+            | (Bnd, Bnd)
+            | (Cnv, Cnv)
+            | (Del, Cnv)
+            | (Cnv, Del)
+            | (Dup, Cnv)
+            | (Cnv, Dup) => true,
+            _ => false,
+        }
+    }
+}
+
 /// Structural variant sub type
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum SvSubType {
@@ -804,6 +823,8 @@ pub enum StrandOrientation {
     ThreeToFive,
     #[serde(rename = "5to3")]
     FiveToThree,
+    #[serde(rename = "NtoN")]
+    NotApplicable,
 }
 
 /// Information on the call as combined by the annotator.
