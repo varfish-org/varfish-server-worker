@@ -1,5 +1,7 @@
 pub mod dbrecords;
+pub mod interpreter;
 pub mod recordio;
+pub mod schema;
 
 use std::{collections::HashSet, time::Instant};
 
