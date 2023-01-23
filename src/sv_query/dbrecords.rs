@@ -287,6 +287,81 @@ pub mod gnomad_sv {
         }
     }
 }
+/// Records for Thousand Genomes SV
+pub mod g1k_sv {
+    use super::{BeginEnd, ChromosomeCoordinate, ToInMemory};
+    use serde::Deserialize;
+
+    /// gnomAD SV database record to be kept in memor
+    #[derive(Debug, Deserialize)]
+    pub struct Record {
+        /// start position, 0-based
+        pub begin: i32,
+        /// end position, 0-based
+        pub end: i32,
+
+        /// type of the SV
+        pub sv_type: String,
+
+        /// number of overall variant alleles
+        pub alleles: i32,
+    }
+
+    impl BeginEnd for Record {
+        fn begin(&self) -> i32 {
+            self.begin
+        }
+        fn end(&self) -> i32 {
+            self.end
+        }
+    }
+
+    /// gnomAD SV database record as read from TSV file.
+    #[derive(Debug, Deserialize)]
+    pub struct FileRecord {
+        /// genome build
+        pub release: String,
+        /// chromosome name
+        pub chromosome: String,
+        /// start position, 1-based
+        pub start: i32,
+        /// end position, 1-based
+        pub end: i32,
+        /// The structural vairant type
+        sv_type: String,
+        /// Number of variant alleles
+        num_var_alleles: i32,
+    }
+
+    impl ToInMemory<Record> for FileRecord {
+        fn to_in_memory(&self) -> Record {
+            Record {
+                begin: self.start - 1,
+                end: self.end,
+                sv_type: self.sv_type.clone(),
+                alleles: self.num_var_alleles,
+            }
+        }
+    }
+
+    impl ChromosomeCoordinate for FileRecord {
+        fn chromosome(&self) -> &String {
+            &self.chromosome
+        }
+
+        fn begin(&self) -> i32 {
+            self.start - 1
+        }
+
+        fn start(&self) -> i32 {
+            self.start
+        }
+
+        fn end(&self) -> i32 {
+            self.end
+        }
+    }
+}
 
 /// Records for gnomAD SV
 pub mod dgv {

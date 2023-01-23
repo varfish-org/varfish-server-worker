@@ -41,6 +41,7 @@ Directory with the following files (read on startup):
     - `bg-public/dgv-sv.tsv.gz` -- DGV SVs (full set)
     - `bg-public/dgv-gs-sv.tsv.gz` -- DGV gold standard SVs
     - `bg-public/exac-cnv.tsv.gz` -- ExAC CNVs
+    - `bg-public/g1k-sv.tsv.gz` -- Thousand Genomes SVs
 - TAD boundaries
     - `tads/dixon-2012-tads-hesc.tsv.gz` -- TAD intervals, hESC from Dixon (2012)
     - `tads/dixon-2012-tads-imr90.tsv.gz` -- TAD intervals, IMR-90 from Dixon (2012)

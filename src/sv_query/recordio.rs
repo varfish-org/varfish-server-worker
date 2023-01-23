@@ -111,6 +111,8 @@ pub struct SvRecordsByChrom {
     pub bg_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub gnomad_sv_records: Vec<Vec<dbrecords::gnomad_sv::Record>>,
     pub gnomad_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
+    pub g1k_sv_records: Vec<Vec<dbrecords::g1k_sv::Record>>,
+    pub g1k_sv_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub dbvar_records: Vec<Vec<dbrecords::dbvar::Record>>,
     pub dbvar_trees: Vec<ArrayBackedIntervalTree<u32, u32>>,
     pub dgv_records: Vec<Vec<dbrecords::dgv::Record>>,
@@ -149,6 +151,16 @@ pub fn load_sv_records(
         dbrecords::gnomad_sv::FileRecord,
     >(&gnomad_sv_path, term, &chrom_map)?;
     let gnomad_sv_trees = build_bg_sv_tree(term, &gnomad_sv_records)?;
+    print_rss_now(term)?;
+
+    let g1k_sv_path = Path::new(&db_base_dir)
+        .join("bg-public")
+        .join("g1k-sv.tsv.gz");
+    let g1k_sv_records = load_bg_sv_records::<
+        dbrecords::g1k_sv::Record,
+        dbrecords::g1k_sv::FileRecord,
+    >(&g1k_sv_path, term, &chrom_map)?;
+    let g1k_sv_trees = build_bg_sv_tree(term, &g1k_sv_records)?;
     print_rss_now(term)?;
 
     let dbvar_path = Path::new(&db_base_dir)
@@ -201,6 +213,8 @@ pub fn load_sv_records(
         bg_sv_trees,
         gnomad_sv_records,
         gnomad_sv_trees,
+        g1k_sv_records,
+        g1k_sv_trees,
         dbvar_records,
         dbvar_trees,
         dgv_records,
