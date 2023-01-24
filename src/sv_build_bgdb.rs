@@ -13,7 +13,7 @@ use clap::Parser;
 use flate2::read::GzDecoder;
 use thousands::Separable;
 
-use crate::common::Args as CommonArgs;
+use crate::common::{print_rss_now, Args as CommonArgs};
 
 use self::recordio::FileRecord;
 
@@ -69,6 +69,8 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         &input_tsv_paths
     ))?;
 
+    print_rss_now(term)?;
+
     let before_parsing = Instant::now();
     let mut count_files = 0;
     for path in &input_tsv_paths {
@@ -86,6 +88,7 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
             let _record: FileRecord = result?;
             count_records += 1;
         }
+        print_rss_now(term)?;
         term.write_line(&format!(
             "-- total time spent parsing {} record: {:?}",
             count_records.separate_with_commas(),
@@ -99,6 +102,7 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         count_files.separate_with_commas(),
         before_parsing.elapsed()
     ))?;
+    print_rss_now(term)?;
 
     Ok(())
 }

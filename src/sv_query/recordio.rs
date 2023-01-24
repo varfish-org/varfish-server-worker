@@ -6,6 +6,8 @@ use flate2::read::GzDecoder;
 use serde::de::DeserializeOwned;
 use thousands::Separable;
 
+use crate::common::print_rss_now;
+
 use super::{
     dbrecords::{
         self, reciprocal_overlap, BeginEnd, ChromosomeCoordinate, Count, SvOverlapCounts,
@@ -102,16 +104,6 @@ fn build_bg_sv_tree<Record: BeginEnd>(
         before_building.elapsed()
     ))?;
     Ok(trees)
-}
-
-fn print_rss_now(term: &console::Term) -> Result<(), anyhow::Error> {
-    let me = procfs::process::Process::myself().unwrap();
-    let page_size = procfs::page_size().unwrap();
-    term.write_line(&format!(
-        "RSS now: {}",
-        Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
-    ))?;
-    Ok(())
 }
 
 /// This struct bundles the background database records by chromosome.
