@@ -7,9 +7,12 @@ use serde::de::DeserializeOwned;
 use thousands::Separable;
 
 use super::{
-    dbrecords::{self, BeginEnd, ChromosomeCoordinate, Count, SvOverlapCounts, ToInMemory},
+    dbrecords::{
+        self, reciprocal_overlap, BeginEnd, ChromosomeCoordinate, Count, SvOverlapCounts,
+        ToInMemory,
+    },
     interpreter::{BND_SLACK, INS_SLACK},
-    schema::{StructuralVariant, SvType},
+    schema::{CaseQuery, StructuralVariant, SvType},
 };
 
 const CHROMS: &[&str] = &[
@@ -234,6 +237,7 @@ impl BgRecordsByChrom {
     pub fn count_overlaps(
         &self,
         chrom_map: &HashMap<String, usize>,
+        query: &CaseQuery,
         sv: &StructuralVariant,
     ) -> SvOverlapCounts {
         let chrom_idx = *chrom_map.get(&sv.chrom).unwrap();
@@ -250,6 +254,14 @@ impl BgRecordsByChrom {
             .iter()
             .map(|e| &self.bg_sv_records[chrom_idx][*e.data() as usize])
             .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .filter(|record| {
+                query.svdb_inhouse_enabled
+                    && (record.sv_type == SvType::Ins
+                        || record.sv_type == SvType::Bnd
+                        || query.svdb_inhouse_min_overlap.map_or(true, |min_overlap| {
+                            (reciprocal_overlap(*record, &range)) >= min_overlap
+                        }))
+            })
             .map(|record| record.count())
             .sum::<usize>() as u32;
         let gnomad_carriers: u32 = self.gnomad_sv_trees[chrom_idx]
@@ -257,6 +269,14 @@ impl BgRecordsByChrom {
             .iter()
             .map(|e| &self.gnomad_sv_records[chrom_idx][*e.data() as usize])
             .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .filter(|record| {
+                query.svdb_gnomad_enabled
+                    && (record.sv_type == SvType::Ins
+                        || record.sv_type == SvType::Bnd
+                        || query.svdb_gnomad_min_overlap.map_or(true, |min_overlap| {
+                            (reciprocal_overlap(*record, &range)) >= min_overlap
+                        }))
+            })
             .map(|record| record.count())
             .sum::<usize>() as u32;
         let g1k_alleles: u32 = self.g1k_sv_trees[chrom_idx]
@@ -264,6 +284,14 @@ impl BgRecordsByChrom {
             .iter()
             .map(|e| &self.g1k_sv_records[chrom_idx][*e.data() as usize])
             .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .filter(|record| {
+                query.svdb_g1k_enabled
+                    && (record.sv_type == SvType::Ins
+                        || record.sv_type == SvType::Bnd
+                        || query.svdb_g1k_min_overlap.map_or(true, |min_overlap| {
+                            (reciprocal_overlap(*record, &range)) >= min_overlap
+                        }))
+            })
             .map(|record| record.count())
             .sum::<usize>() as u32;
         let dbvar_carriers: u32 = self.dbvar_trees[chrom_idx]
@@ -271,6 +299,14 @@ impl BgRecordsByChrom {
             .iter()
             .map(|e| &self.dbvar_records[chrom_idx][*e.data() as usize])
             .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .filter(|record| {
+                query.svdb_dbvar_enabled
+                    && (record.sv_type == SvType::Ins
+                        || record.sv_type == SvType::Bnd
+                        || query.svdb_dbvar_min_overlap.map_or(true, |min_overlap| {
+                            (reciprocal_overlap(*record, &range)) >= min_overlap
+                        }))
+            })
             .map(|record| record.count())
             .sum::<usize>() as u32;
         let dgv_carriers: u32 = self.dgv_trees[chrom_idx]
@@ -278,6 +314,14 @@ impl BgRecordsByChrom {
             .iter()
             .map(|e| &self.dgv_records[chrom_idx][*e.data() as usize])
             .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .filter(|record| {
+                query.svdb_dgv_enabled
+                    && (record.sv_type == SvType::Ins
+                        || record.sv_type == SvType::Bnd
+                        || query.svdb_dgv_min_overlap.map_or(true, |min_overlap| {
+                            (reciprocal_overlap(*record, &range)) >= min_overlap
+                        }))
+            })
             .map(|record| record.count())
             .sum::<usize>() as u32;
         let dgv_gs_carriers: u32 = self.dgv_gs_trees[chrom_idx]
@@ -285,6 +329,14 @@ impl BgRecordsByChrom {
             .iter()
             .map(|e| &self.dgv_gs_records[chrom_idx][*e.data() as usize])
             .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .filter(|record| {
+                query.svdb_dgv_gs_enabled
+                    && (record.sv_type == SvType::Ins
+                        || record.sv_type == SvType::Bnd
+                        || query.svdb_dgv_gs_min_overlap.map_or(true, |min_overlap| {
+                            (reciprocal_overlap(*record, &range)) >= min_overlap
+                        }))
+            })
             .map(|record| record.count())
             .sum::<usize>() as u32;
         let exac_carriers: u32 = self.exac_cnv_trees[chrom_idx]
@@ -292,17 +344,25 @@ impl BgRecordsByChrom {
             .iter()
             .map(|e| &self.exac_cnv_records[chrom_idx][*e.data() as usize])
             .filter(|record| record.sv_type.is_compatible(sv.sv_type))
+            .filter(|record| {
+                query.svdb_exac_enabled
+                    && (record.sv_type == SvType::Ins
+                        || record.sv_type == SvType::Bnd
+                        || query.svdb_exac_min_overlap.map_or(true, |min_overlap| {
+                            (reciprocal_overlap(*record, &range)) >= min_overlap
+                        }))
+            })
             .map(|record| record.count())
             .sum::<usize>() as u32;
 
         SvOverlapCounts {
-            dgv_carriers: dgv_carriers,
-            dgv_gs_carriers: dgv_gs_carriers,
-            gnomad_carriers: gnomad_carriers,
-            exac_carriers: exac_carriers,
-            dbvar_carriers: dbvar_carriers,
-            g1k_alleles: g1k_alleles,
-            inhouse_carriers: inhouse_carriers,
+            dgv_carriers,
+            dgv_gs_carriers,
+            gnomad_carriers,
+            exac_carriers,
+            dbvar_carriers,
+            g1k_alleles,
+            inhouse_carriers,
         }
     }
 }
