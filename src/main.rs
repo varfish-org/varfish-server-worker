@@ -2,11 +2,16 @@ pub mod common;
 pub mod err;
 pub mod sv_query;
 
-use clap::{Parser, Subcommand, Args};
+use clap::{Args, Parser, Subcommand};
 use console::{Emoji, Term};
 
-#[derive(Debug,  Parser)]
-#[command(author, version, about = "Varfish heavy lifting", long_about = "This tool performs the heavy lifting for varfish-server")]
+#[derive(Debug, Parser)]
+#[command(
+    author,
+    version,
+    about = "Varfish heavy lifting",
+    long_about = "This tool performs the heavy lifting for varfish-server"
+)]
 struct Cli {
     /// Commonly used arguments
     #[command(flatten)]
@@ -34,7 +39,7 @@ struct Sv {
 
 #[derive(Debug, Subcommand)]
 enum SvCommands {
-    Query(sv_query::Args)
+    Query(sv_query::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -42,13 +47,11 @@ fn main() -> Result<(), anyhow::Error> {
 
     let term = Term::stderr();
     match &cli.command {
-        Commands::Sv(sv) => {
-            match &sv.command {
-                SvCommands::Query(args) => {
-                    sv_query::run(&term, &cli.common, args)?;
-                }
+        Commands::Sv(sv) => match &sv.command {
+            SvCommands::Query(args) => {
+                sv_query::run(&term, &cli.common, args)?;
             }
-        }
+        },
     }
     term.write_line(&format!("All done. Have a nice day!{}", Emoji(" 😃", "")))?;
 
