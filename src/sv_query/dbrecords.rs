@@ -433,7 +433,7 @@ pub mod g1k_sv {
             Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: sv_type,
+                sv_type,
                 alleles: self.num_var_alleles,
             }))
         }
@@ -542,7 +542,7 @@ pub mod dgv {
             Ok(Some(Record {
                 begin: self.start - 1,
                 end: self.end,
-                sv_type: sv_type,
+                sv_type,
                 carriers: self.observed_gains + self.observed_losses,
             }))
         }
@@ -632,7 +632,7 @@ pub mod dgv_gs {
             Ok(Some(Record {
                 begin: self.start_outer - 1,
                 end: self.end_outer,
-                sv_type: sv_type,
+                sv_type,
                 carriers: self.num_carriers,
             }))
         }

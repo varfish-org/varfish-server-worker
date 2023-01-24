@@ -43,7 +43,7 @@ pub struct Args {
     pub output_vcf: String,
 }
 
-pub fn build_query(samples: &Vec<String>) -> CaseQuery {
+pub fn build_query(samples: &[String]) -> CaseQuery {
     let genotype_criteria = vec![
         // CNVs -- variant
         GenotypeCriteria {
@@ -213,14 +213,14 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
                     CallInfo {
                         genotype,
                         quality,
-                        paired_end_cov: paired_end_ref.map_or(None, |paired_end_ref| {
+                        paired_end_cov: paired_end_ref.and_then(|paired_end_ref| {
                             paired_end_var.map(|paired_end_var| paired_end_ref + paired_end_var)
                         }),
-                        paired_end_var: paired_end_var,
-                        split_read_cov: split_read_ref.map_or(None, |split_read_ref| {
+                        paired_end_var,
+                        split_read_cov: split_read_ref.and_then(|split_read_ref| {
                             split_read_var.map(|split_read_var| split_read_ref + split_read_var)
                         }),
-                        split_read_var: split_read_var,
+                        split_read_var,
                         copy_number: None,
                         average_normalized_cov: None,
                         point_count: None,
@@ -259,7 +259,7 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
                 chrom2: Some(chr2),
                 end: pos2,
                 strand_orientation: Some(strand_orientation),
-                call_info: call_info,
+                call_info,
             }
         } else {
             let end = if let Some(end) = record.info(b"END").integer()? {
@@ -278,9 +278,9 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
                 sv_type,
                 sv_sub_type,
                 chrom2: None,
-                end: end,
+                end,
                 strand_orientation: Some(strand_orientation),
-                call_info: call_info,
+                call_info,
             }
         };
 

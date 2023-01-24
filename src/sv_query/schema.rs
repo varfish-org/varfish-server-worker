@@ -72,19 +72,19 @@ impl SvType {
 
     pub fn is_compatible(&self, other: SvType) -> bool {
         use SvType::*;
-        match (self, other) {
+        matches!(
+            (self, other),
             (Del, Del)
-            | (Dup, Dup)
-            | (Inv, Inv)
-            | (Ins, Ins)
-            | (Bnd, Bnd)
-            | (Cnv, Cnv)
-            | (Del, Cnv)
-            | (Cnv, Del)
-            | (Dup, Cnv)
-            | (Cnv, Dup) => true,
-            _ => false,
-        }
+                | (Dup, Dup)
+                | (Inv, Inv)
+                | (Ins, Ins)
+                | (Bnd, Bnd)
+                | (Cnv, Cnv)
+                | (Del, Cnv)
+                | (Cnv, Del)
+                | (Dup, Cnv)
+                | (Cnv, Dup)
+        )
     }
 }
 
@@ -306,6 +306,12 @@ pub struct RegulatoryCustomConfig {
     pub element_types: Vec<String>,
     /// Alternatively, overlapping with interaction in cell type (includes all elements)
     pub overlaps_interaction: bool,
+}
+
+impl Default for RegulatoryCustomConfig {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RegulatoryCustomConfig {
@@ -1267,7 +1273,7 @@ mod tests {
 
         assert!(!crit.is_call_info_pass(&CallInfo {
             genotype: Some("1/1".to_owned()),
-            ..fail_info.clone()
+            ..fail_info
         }));
         assert!(!crit.is_call_info_pass(&CallInfo {
             quality: Some(9.9),
@@ -1299,7 +1305,7 @@ mod tests {
         }));
         assert!(!crit.is_call_info_pass(&CallInfo {
             average_mapping_quality: Some(59.0),
-            ..fail_info.clone()
+            ..fail_info
         }));
     }
 

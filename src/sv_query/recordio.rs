@@ -356,13 +356,13 @@ impl BgRecordsByChrom {
             .sum::<usize>() as u32;
 
         SvOverlapCounts {
-            dgv_carriers: dgv_carriers,
-            dgv_gs_carriers: dgv_gs_carriers,
-            gnomad_carriers: gnomad_carriers,
-            exac_carriers: exac_carriers,
-            dbvar_carriers: dbvar_carriers,
-            g1k_alleles: g1k_alleles,
-            inhouse_carriers: inhouse_carriers,
+            dgv_carriers,
+            dgv_gs_carriers,
+            gnomad_carriers,
+            exac_carriers,
+            dbvar_carriers,
+            g1k_alleles,
+            inhouse_carriers,
         }
     }
 }
