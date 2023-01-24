@@ -1,3 +1,5 @@
+//! Implementation of `sv query` command.
+
 pub mod dbrecords;
 pub mod interpreter;
 pub mod recordio;
@@ -24,7 +26,7 @@ use self::{
 use crate::common::Args as CommonArgs;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about = "Run query for SVs", long_about = None)]
 pub struct Args {
     /// Base directory path for databases
     #[arg(long)]
@@ -92,7 +94,7 @@ pub fn build_query(samples: &[String]) -> CaseQuery {
 }
 
 pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(), anyhow::Error> {
-    term.write_line("Starting sv-query")?;
+    term.write_line("Starting sv query")?;
     term.write_line(&format!("common = {:?}", &common))?;
     term.write_line(&format!("args = {:?}", &args))?;
     term.write_line("")?;
