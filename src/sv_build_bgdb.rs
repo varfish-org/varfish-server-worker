@@ -1,14 +1,21 @@
 //! Implementation of `sv build-bgdb` command
 
+pub mod recordio;
+
 use std::{
     fs::File,
     io::{self, BufRead},
     path::Path,
+    time::Instant,
 };
 
 use clap::Parser;
+use flate2::read::GzDecoder;
+use thousands::Separable;
 
 use crate::common::Args as CommonArgs;
+
+use self::recordio::FileRecord;
 
 // The output is wrapped in a Result to allow matching on errors
 // Returns an Iterator to the Reader of the lines of the file.
@@ -60,6 +67,37 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         "final input TSV file list (#: {}): {:?}",
         input_tsv_paths.len(),
         &input_tsv_paths
+    ))?;
+
+    let before_parsing = Instant::now();
+    let mut count_files = 0;
+    for path in &input_tsv_paths {
+        term.write_line(&format!("- parsing {:?}", &path))?;
+
+        let file = File::open(path)?;
+        let decoder = GzDecoder::new(&file);
+        let mut rdr = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .delimiter(b'\t')
+            .from_reader(decoder);
+        let before_parsing = Instant::now();
+        let mut count_records = 0;
+        for result in rdr.deserialize() {
+            let _record: FileRecord = result?;
+            count_records += 1;
+        }
+        term.write_line(&format!(
+            "-- total time spent parsing {} record: {:?}",
+            count_records.separate_with_commas(),
+            before_parsing.elapsed()
+        ))?;
+
+        count_files += 1;
+    }
+    term.write_line(&format!(
+        "== total time spent parsing {} files: {:?}",
+        count_files.separate_with_commas(),
+        before_parsing.elapsed()
     ))?;
 
     Ok(())
