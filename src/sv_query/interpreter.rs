@@ -242,11 +242,11 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<F: Fn(&StructuralVariant) -> SvOverlapCounts>(
+    pub fn passes<F>(
         &self,
         sv: &StructuralVariant,
         counter: F,
-    ) -> Result<bool, anyhow::Error> {
+    ) -> Result<bool, anyhow::Error> where F: Fn(&StructuralVariant) -> SvOverlapCounts {
         // First execute non-overlap based queries.  If all succeed then also run overlapper.
         if !self.passes_simple(sv)
             || !self.passes_genomic_region(sv)
@@ -984,7 +984,7 @@ mod tests {
             dbvar_carriers: 5,
         };
 
-        assert!(interpreter.passes(&sv_pass, &counts_pass)?);
+        assert!(interpreter.passes(&sv_pass, |_sv| counts_pass.clone())?);
 
         Ok(())
     }

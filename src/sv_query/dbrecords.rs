@@ -40,7 +40,7 @@ pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
 }
 
 /// Store background database counts for a structural variant.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SvOverlapCounts {
     /// Number of carriers in DGV
     pub dgv_carriers: u32,
