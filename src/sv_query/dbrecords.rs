@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 /// This module provides the code for accessing database records.
 
 /// Provide a chromosome-wise coordinate.
@@ -18,6 +20,23 @@ pub trait BeginEnd {
 
 pub trait ToInMemory<InMemory> {
     fn to_in_memory(&self) -> Result<Option<InMemory>, anyhow::Error>;
+}
+
+pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
+    let lhs_b = lhs.begin() as u32;
+    let lhs_e = lhs.end() as u32;
+    let rhs_b = rhs.start.saturating_sub(1);
+    let rhs_e = rhs.end;
+    let ovl_b = std::cmp::max(lhs_b, rhs_b);
+    let ovl_e = std::cmp::min(lhs_e, rhs_e);
+    if ovl_b >= ovl_e {
+        0f32
+    } else {
+        let ovl_len = (ovl_e - ovl_b) as f32;
+        let x1 = (lhs_e - lhs_b) as f32 / ovl_len;
+        let x2 = (rhs_e - rhs_b) as f32 / ovl_len;
+        x1.min(x2)
+    }
 }
 
 /// Store background database counts for a structural variant.
@@ -207,7 +226,7 @@ pub mod dbvar {
 
     impl ToInMemory<Record> for FileRecord {
         fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
-            let sv_type = match self.sv_type.split(";").next().unwrap() {
+            let sv_type = match self.sv_type.split(';').next().unwrap() {
                 "alu_insertion"
                 | "herv_insertion"
                 | "insertion"

@@ -125,7 +125,8 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         .collect::<Vec<String>>();
 
     term.write_line("Buildling query...")?;
-    let interpreter = QueryInterpreter::new(build_query(&samples));
+    let query = build_query(&samples);
+    let interpreter = QueryInterpreter::new(query.clone());
 
     term.write_line("Starting queries...")?;
     let mut count_total = 0;
@@ -288,10 +289,14 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         };
 
         count_total += 1;
-        if interpreter.passes(&sv, |sv| sv_records.count_overlaps(&chrom_map, &sv))? {
+        if interpreter.passes(&sv, |sv| sv_records.count_overlaps(&chrom_map, &query, &sv))? {
             count_passes += 1;
             if count_passes <= 100 {
-                println!("{:?}\n{:?}\n--", &sv, &sv_records.count_overlaps(&chrom_map, &sv));
+                println!(
+                    "{:?}\n{:?}\n--",
+                    &sv,
+                    &sv_records.count_overlaps(&chrom_map, &query, &sv)
+                );
             }
         }
     }
