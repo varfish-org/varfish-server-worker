@@ -17,13 +17,13 @@ use thousands::Separable;
 
 use self::{
     interpreter::QueryInterpreter,
-    recordio::{build_chrom_map, BgRecordsByChrom},
+    recordio::BgRecordsByChrom,
     schema::{
         CallInfo, CaseQuery, Database, GenotypeChoice, GenotypeCriteria, StructuralVariant,
         SvSubType, SvType,
     },
 };
-use crate::common::Args as CommonArgs;
+use crate::common::{build_chrom_map, Args as CommonArgs};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Run query for SVs", long_about = None)]

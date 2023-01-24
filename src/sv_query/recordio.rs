@@ -6,7 +6,7 @@ use flate2::read::GzDecoder;
 use serde::de::DeserializeOwned;
 use thousands::Separable;
 
-use crate::common::print_rss_now;
+use crate::common::{build_chrom_map, print_rss_now, CHROMS};
 
 use super::{
     dbrecords::{
@@ -16,30 +16,6 @@ use super::{
     interpreter::{BND_SLACK, INS_SLACK},
     schema::{CaseQuery, StructuralVariant, SvType},
 };
-
-const CHROMS: &[&str] = &[
-    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17",
-    "18", "19", "20", "21", "22", "X", "Y", "M",
-];
-
-pub fn build_chrom_map() -> HashMap<String, usize> {
-    let mut result = HashMap::new();
-    for (i, &chrom_name) in CHROMS.iter().enumerate() {
-        result.insert(chrom_name.to_owned(), i);
-        result.insert(format!("chr{}", chrom_name).to_owned(), i);
-    }
-    result.insert("x".to_owned(), 22);
-    result.insert("y".to_owned(), 23);
-    result.insert("chrx".to_owned(), 22);
-    result.insert("chry".to_owned(), 23);
-    result.insert("mt".to_owned(), 24);
-    result.insert("m".to_owned(), 24);
-    result.insert("chrmt".to_owned(), 24);
-    result.insert("chrm".to_owned(), 24);
-    result.insert("MT".to_owned(), 24);
-    result.insert("chrMT".to_owned(), 24);
-    result
-}
 
 fn load_bg_sv_records<
     ResultRecord,
