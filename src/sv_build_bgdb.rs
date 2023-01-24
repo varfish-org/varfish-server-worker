@@ -14,6 +14,7 @@ use bio::data_structures::interval_tree::IntervalTree;
 use clap::Parser;
 use flate2::read::GzDecoder;
 use serde_json::to_writer;
+use serde_jsonlines::JsonLinesReader;
 use strum::IntoEnumIterator;
 use thousands::Separable;
 
@@ -150,8 +151,9 @@ fn merge_to_out(
     let mut tree: IntervalTree<i32, usize> = IntervalTree::new();
     let mut records: Vec<FileRecord> = Vec::new();
 
-    for record in serde_json::Deserializer::from_reader(reader).into_iter::<FileRecord>() {
-        let record = record?;
+    let mut reader = JsonLinesReader::new(reader);
+    while let Ok(Some(record)) = reader.read::<FileRecord>() {
+        println!("{:?}", &record);
         match record.sv_type {
             SvType::Bnd => todo!(),
             SvType::Ins => todo!(),
