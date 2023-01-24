@@ -133,7 +133,7 @@ fn split_input_by_chrom_and_sv_type(
     print_rss_now(term)?;
     for (_, mut f) in tmp_files.drain() {
         f.get_mut().sync_all()?
-    };
+    }
     Ok(())
 }
 
@@ -154,45 +154,56 @@ fn merge_to_out(
 
     let mut reader = JsonLinesReader::new(reader);
     while let Ok(Some(record)) = reader.read::<FileRecord>() {
-        println!("{:?}", &record);
-        match record.sv_type {
-            SvType::Bnd => todo!(),
-            SvType::Ins => todo!(),
-            _ => {
-                let query = (record.start - 1)..(record.end);
-                let mut found_any_cluster = false;
-                for mut it_tree in tree.find_mut(query) {
-                    let cluster_idx = *it_tree.data();
-                    if cluster_idx == 0 {
-                        continue; // skip sentinel
+        let slack = match record.sv_type {
+            SvType::Bnd => args.bnd_slack as i32,
+            SvType::Ins => args.ins_slack as i32,
+            _ => 0,
+        };
+        let query = (record.start - 1 - slack)..(record.end + slack);
+        let mut found_any_cluster = false;
+        // println!("query = {:?}", &query);
+        for mut it_tree in tree.find_mut(&query) {
+            let cluster_idx = *it_tree.data();
+            let mut match_all_in_cluster = true;
+            for it_cluster in &clusters[cluster_idx] {
+                let record_id = it_cluster;
+                let match_this = match record.sv_type {
+                    SvType::Bnd | SvType::Ins => true,
+                    _ => {
+                        let ovl = record.overlap(&records[*record_id]);
+                        assert!(ovl >= 0f32);
+                        // println!(
+                        //     "lhs = {:?}, rhs = {:?}, ovl = {}",
+                        //     &record, &records[*record_id], ovl
+                        // );
+                        ovl >= args.min_overlap
                     }
-                    let mut match_all_in_cluster = true;
-                    for it_cluster in &clusters[cluster_idx] {
-                        let record_id = it_cluster;
-                        match_all_in_cluster = match_all_in_cluster
-                            && record.overlap(&records[*record_id]) <= args.min_overlap;
-                    }
-                    if match_all_in_cluster {
-                        // extend cluster
-                        clusters[cluster_idx].push(records.len());
-                        found_any_cluster = true;
-                        break;
-                    }
-                }
-                if !found_any_cluster {
-                    // create new cluster
-                    clusters.push(vec![records.len()]);
-                }
-                // always register the record
-                records.push(record);
+                };
+                match_all_in_cluster = match_all_in_cluster && match_this;
+            }
+            if match_all_in_cluster {
+                // extend cluster
+                // println!("extending cluster {:?}", cluster_idx);
+                clusters[cluster_idx].push(records.len());
+                found_any_cluster = true;
+                break;
             }
         }
+        if !found_any_cluster {
+            // create new cluster
+            // println!("new cluster {:?}", clusters.len());
+            tree.insert((record.start - 1)..(record.end), clusters.len());
+            clusters.push(vec![records.len()]);
+        }
+        // always register the record
+        records.push(record);
     }
 
     print_rss_now(term)?;
 
     for cluster in clusters {
         let mut out_record = records[cluster[0]].clone();
+        // println!("merged into {}", cluster.len());
         for record_id in &cluster[1..] {
             out_record.merge_into(&records[*record_id]);
         }
@@ -209,7 +220,10 @@ fn merge_split_files(
     args: &Args,
     term: &console::Term,
 ) -> Result<(), anyhow::Error> {
-    let mut writer = csv::Writer::from_path(&args.output_tsv)?;
+    let mut writer = csv::WriterBuilder::new()
+        .delimiter(b'\t')
+        .has_headers(true)
+        .from_path(&args.output_tsv)?;
 
     for chrom in CHROMS {
         for sv_type in SvType::iter() {
