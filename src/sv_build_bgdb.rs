@@ -5,11 +5,12 @@ pub mod recordio;
 use std::{
     collections::HashMap,
     fs::File,
-    io::{self, BufRead, BufWriter, Write},
+    io::{self, BufRead, BufReader, BufWriter, Write},
     path::Path,
     time::Instant,
 };
 
+use bio::data_structures::interval_tree::IntervalTree;
 use clap::Parser;
 use flate2::read::GzDecoder;
 use serde_json::to_writer;
@@ -46,19 +47,30 @@ pub struct Args {
     /// Input files to cluster, prefix with `@` to file with line-wise paths.
     #[arg(required = true)]
     pub input_tsv: Vec<String>,
+    /// Minimal reciprocal overlap to use (slightly more strict that the normal query value of 0.75).
+    #[arg(long, default_value_t = 0.8)]
+    pub min_overlap: f32,
+    /// Padding to use for BNDs
+    #[arg(long, default_value_t = 50)]
+    pub bnd_slack: u32,
+    /// Padding to use for INS
+    #[arg(long, default_value_t = 50)]
+    pub ins_slack: u32,
 }
 
 /// Create one file with records for each chromosome and SV type.
 fn create_tmp_files(
-    tmp_dir: &tempdir::TempDir,
+    // tmp_dir: &tempdir::TempDir,
+    tmp_dir: &Path,
 ) -> Result<HashMap<(usize, SvType), BufWriter<File>>, anyhow::Error> {
     let mut files = HashMap::new();
 
     for (chrom_no, chrom) in CHROMS.iter().enumerate() {
         for sv_type in SvType::iter() {
-            let path = tmp_dir
-                .path()
-                .join(format!("records.chr{}.{:?}.tsv", *chrom, sv_type));
+            // let path = tmp_dir
+            //     .path()
+            //     .join(format!("records.chr{}.{:?}.tsv", *chrom, sv_type));
+            let path = tmp_dir.join(format!("records.chr{}.{:?}.tsv", *chrom, sv_type));
             files.insert((chrom_no, sv_type), BufWriter::new(File::create(path)?));
         }
     }
@@ -68,7 +80,8 @@ fn create_tmp_files(
 
 /// Split the input into one file in `tmp_dir` for each chromosome and SV type.
 fn split_input_by_chrom_and_sv_type(
-    tmp_dir: tempdir::TempDir,
+    // tmp_dir: &tempdir::TempDir,
+    tmp_dir: &Path,
     input_tsv_paths: Vec<String>,
     term: &console::Term,
 ) -> Result<(), anyhow::Error> {
@@ -122,6 +135,95 @@ fn split_input_by_chrom_and_sv_type(
     })
 }
 
+/// Read in all records from `reader`, merge overlapping ones.
+///
+/// The idea to merge here is to get rid of large stacks of SVs with a reciprocal overlap
+/// that is more strict than the 0.75 that is generally used for querying.  We merge with
+/// existing clusters with the reciprocal overlap is >=0.8 for all members.
+fn merge_to_out(
+    args: &Args,
+    reader: &mut BufReader<File>,
+    writer: &mut csv::Writer<File>,
+    term: &console::Term,
+) -> Result<(), anyhow::Error> {
+    let mut clusters: Vec<Vec<usize>> = vec![];
+    let mut tree: IntervalTree<i32, usize> = IntervalTree::new();
+    let mut records: Vec<FileRecord> = Vec::new();
+
+    for record in serde_json::Deserializer::from_reader(reader).into_iter::<FileRecord>() {
+        let record = record?;
+        match record.sv_type {
+            SvType::Bnd => todo!(),
+            SvType::Ins => todo!(),
+            _ => {
+                let query = (record.start - 1)..(record.end);
+                let mut found_any_cluster = false;
+                for mut it_tree in tree.find_mut(query) {
+                    let cluster_idx = *it_tree.data();
+                    if cluster_idx == 0 {
+                        continue; // skip sentinel
+                    }
+                    let mut match_all_in_cluster = true;
+                    for it_cluster in &clusters[cluster_idx] {
+                        let record_id = it_cluster;
+                        match_all_in_cluster = match_all_in_cluster
+                            && record.overlap(&records[*record_id]) <= args.min_overlap;
+                    }
+                    if match_all_in_cluster {
+                        // extend cluster
+                        clusters[cluster_idx].push(records.len());
+                        found_any_cluster = true;
+                        break;
+                    }
+                }
+                if !found_any_cluster {
+                    // create new cluster
+                    clusters.push(vec![records.len()]);
+                }
+                // always register the record
+                records.push(record);
+            }
+        }
+    }
+
+    print_rss_now(term)?;
+
+    for cluster in clusters {
+        let mut out_record = records[cluster[0]].clone();
+        for record_id in &cluster[1..] {
+            out_record.merge_into(&records[*record_id]);
+        }
+        writer.serialize(&out_record)?;
+    }
+
+    Ok(())
+}
+
+/// Perform (chrom, sv_type) wise merging of records in temporary files.
+fn merge_split_files(
+    // tmp_dir: &tempdir::TempDir,  // XXX
+    tmp_dir: &Path,
+    args: &Args,
+    term: &console::Term,
+) -> Result<(), anyhow::Error> {
+    let mut writer = csv::Writer::from_path(&args.output_tsv)?;
+
+    for chrom in CHROMS {
+        for sv_type in SvType::iter() {
+            let filename = format!("records.chr{}.{:?}.tsv", *chrom, sv_type);
+            // let path = tmp_dir.path().join(&filename);  // XXX
+            let path = tmp_dir.join(&filename);
+            term.write_line(&format!("reading from {}", &filename))?;
+            let mut reader = BufReader::new(File::open(&path)?);
+            merge_to_out(args, &mut reader, &mut writer, term)?;
+        }
+    }
+
+    writer.flush()?;
+
+    Ok(())
+}
+
 /// Main entry point for the `sv build-bgdb` command.
 pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(), anyhow::Error> {
     term.write_line("Starting sv build-bgdb")?;
@@ -151,10 +253,15 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
 
     print_rss_now(term)?;
 
-    // Open one temporary file per chrom and SV type.
-    let tmp_dir = tempdir::TempDir::new("tmp.vsw_sv_bgdb.")?;
+    // Read all input files and write all records by chromosome and SV type
+    // let tmp_dir = tempdir::TempDir::new("tmp.vsw_sv_bgdb.")?;
+    let tmp_dir = Path::new("/tmp/foo");
     term.write_line(&format!("using tmpdir={:?}", &tmp_dir))?;
-    split_input_by_chrom_and_sv_type(tmp_dir, input_tsv_paths, term)?;
+    split_input_by_chrom_and_sv_type(&tmp_dir, input_tsv_paths, term)?;
+
+    // Read the output of the previous step by chromosome and SV type, perform overlapping
+    // and merge such "compressed" data set to the final output file.
+    merge_split_files(&tmp_dir, &args, term)?;
 
     Ok(())
 }
