@@ -214,15 +214,11 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
                         genotype,
                         quality,
                         paired_end_cov: paired_end_ref.map_or(None, |paired_end_ref| {
-                            paired_end_var.map_or(None, |paired_end_var| {
-                                Some(paired_end_ref + paired_end_var)
-                            })
+                            paired_end_var.map(|paired_end_var| paired_end_ref + paired_end_var)
                         }),
                         paired_end_var: paired_end_var,
                         split_read_cov: split_read_ref.map_or(None, |split_read_ref| {
-                            split_read_var.map_or(None, |split_read_var| {
-                                Some(split_read_ref + split_read_var)
-                            })
+                            split_read_var.map(|split_read_var| split_read_ref + split_read_var)
                         }),
                         split_read_var: split_read_var,
                         copy_number: None,
@@ -289,7 +285,7 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         };
 
         count_total += 1;
-        if interpreter.passes(&sv, |sv| sv_records.count_overlaps(&chrom_map, &query, &sv))? {
+        if interpreter.passes(&sv, |sv| sv_records.count_overlaps(&chrom_map, &query, sv))? {
             count_passes += 1;
             if count_passes <= 100 {
                 println!(
