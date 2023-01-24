@@ -4,7 +4,7 @@ This repository contains the workers used by VarFish Server to execute certain b
 They are written in the Rust programming language to speed up the execution of certain tasks.
 At the moment, the following workers exist:
 
-- `sv-query` -- execution of SV queries
+- `sv query` -- execution of SV queries
 
 ## Overall Design
 
@@ -14,14 +14,14 @@ The worker then reads in this file, may use some static database files but also 
 The celery worker will then process any worker output further.
 The book keeping is done by the Celery worker that runs from the code of VarFish server.
 
-## The `sv-query` Worker
+## The `sv query` Worker
 
 This worker provides the query functionality.
 
 **Call**
 
 ```bash
-$ sv-query \
+$ cargo-varfish-worker sv query \
     --db-base-dir DIR \
     --result-set-id ID \
     --query-json QUERY.json \
