@@ -86,7 +86,7 @@ fn split_input_by_chrom_and_sv_type(
     input_tsv_paths: Vec<String>,
     term: &console::Term,
 ) -> Result<(), anyhow::Error> {
-    let mut tmp_files = create_tmp_files(&tmp_dir)?;
+    let mut tmp_files = create_tmp_files(tmp_dir)?;
     let chrom_map = build_chrom_map();
     let before_parsing = Instant::now();
     let mut count_files = 0;
@@ -131,9 +131,10 @@ fn split_input_by_chrom_and_sv_type(
         before_parsing.elapsed()
     ))?;
     print_rss_now(term)?;
-    Ok(for (_, mut f) in tmp_files.drain() {
+    for (_, mut f) in tmp_files.drain() {
         f.get_mut().sync_all()?
-    })
+    };
+    Ok(())
 }
 
 /// Read in all records from `reader`, merge overlapping ones.
@@ -216,7 +217,7 @@ fn merge_split_files(
             // let path = tmp_dir.path().join(&filename);  // XXX
             let path = tmp_dir.join(&filename);
             term.write_line(&format!("reading from {}", &filename))?;
-            let mut reader = BufReader::new(File::open(&path)?);
+            let mut reader = BufReader::new(File::open(path)?);
             merge_to_out(args, &mut reader, &mut writer, term)?;
         }
     }
@@ -259,11 +260,11 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
     // let tmp_dir = tempdir::TempDir::new("tmp.vsw_sv_bgdb.")?;
     let tmp_dir = Path::new("/tmp/foo");
     term.write_line(&format!("using tmpdir={:?}", &tmp_dir))?;
-    split_input_by_chrom_and_sv_type(&tmp_dir, input_tsv_paths, term)?;
+    split_input_by_chrom_and_sv_type(tmp_dir, input_tsv_paths, term)?;
 
     // Read the output of the previous step by chromosome and SV type, perform overlapping
     // and merge such "compressed" data set to the final output file.
-    merge_split_files(&tmp_dir, &args, term)?;
+    merge_split_files(tmp_dir, args, term)?;
 
     Ok(())
 }
