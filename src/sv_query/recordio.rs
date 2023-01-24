@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
-use byte_unit::Byte;
+
 use flate2::read::GzDecoder;
 use serde::de::DeserializeOwned;
 use thousands::Separable;

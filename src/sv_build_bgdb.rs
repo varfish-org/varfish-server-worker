@@ -90,7 +90,7 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         }
         print_rss_now(term)?;
         term.write_line(&format!(
-            "-- total time spent parsing {} record: {:?}",
+            "-- total time spent parsing {} records: {:?}",
             count_records.separate_with_commas(),
             before_parsing.elapsed()
         ))?;
