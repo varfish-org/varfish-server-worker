@@ -1,32 +1,37 @@
 # Full configuration.
 
-[public_dbs]
+[background_dbs]
 slack_bnd = 50
 slack_ins = 50
 min_overlap = 0.8
 
-[public_dbs.gnomad_sv]
+[background_dbs.gnomad_sv]
 path = 'public/gnomad_sv.bin'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
-[public_dbs.dbvar]
+[background_dbs.dbvar]
 path = 'public/dbvar.bin'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
-[public_dbs.dgv]
+[background_dbs.dgv]
 path = 'public/dgv.bin'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
-[public_dbs.dgv_gs]
+[background_dbs.dgv_gs]
 path = 'public/dgv_gs.bin'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
-[public_dbs.exac]
+[background_dbs.exac]
 path = 'public/exac.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[background_dbs.inhouse]
+path = 'inhouse/svs.bin'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 

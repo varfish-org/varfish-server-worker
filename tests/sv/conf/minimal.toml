@@ -1,19 +1,22 @@
 # Minimal configuration.
 
-[public_dbs.gnomad_sv]
+[background_dbs.gnomad_sv]
 path = 'public/gnomad_sv.bin'
 
-[public_dbs.dbvar]
+[background_dbs.dbvar]
 path = 'public/dbvar.bin'
 
-[public_dbs.dgv]
+[background_dbs.dgv]
 path = 'public/dgv.bin'
 
-[public_dbs.dgv_gs]
+[background_dbs.dgv_gs]
 path = 'public/dgv_gs.bin'
 
-[public_dbs.exac]
+[background_dbs.exac]
 path = 'public/exac.bin'
+
+[background_dbs.inhouse]
+path = 'inhouse/svs.bin'
 
 [tads.hesc]
 path = 'tads/hesc.bin'

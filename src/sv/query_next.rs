@@ -6,6 +6,7 @@ use tracing::{error, info};
 
 use crate::sv::conf::{sanity_check_db, DbConf};
 
+/// Command line arguments for `sv query` sub command.
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Run query for SVs", long_about = None)]
 pub struct Args {

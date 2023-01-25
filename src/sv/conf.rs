@@ -13,7 +13,7 @@ use tracing::debug;
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct DbConf {
     /// Configuration of public databases.
-    pub public_dbs: PublicDbsConf,
+    pub background_dbs: BackgroundDbsConf,
     /// Configuration of TAD boundaries.
     pub tads: TadsConf,
     /// Configuration of regulatory features.
@@ -22,9 +22,9 @@ pub struct DbConf {
     pub genes: GenesConf,
 }
 
-/// Configuration for public databases.
+/// Configuration for background databases.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct PublicDbsConf {
+pub struct BackgroundDbsConf {
     /// Radius around BND sites used when building the database.
     #[serde(default = "default_slack_bnd")]
     pub slack_bnd: u32,
@@ -45,6 +45,9 @@ pub struct PublicDbsConf {
     pub dgv_gs: PathAndChecksum,
     /// Relative path to the file with ExAC database with checksum.
     pub exac: PathAndChecksum,
+
+    /// Relative pato to the file with the in-house variants with checksum.
+    pub inhouse: PathAndChecksum,
 }
 
 fn default_slack_bnd() -> u32 {
@@ -152,11 +155,16 @@ pub fn sanity_check_db(
         Ok(conf) => conf,
     };
 
-    check_path_and_checksum(path_db, &conf.public_dbs.gnomad_sv, checksums, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.dbvar, checksums, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.dgv, checksums, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.dgv_gs, checksums, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.exac, checksums, &mut result)?;
+    check_path_and_checksum(
+        path_db,
+        &conf.background_dbs.gnomad_sv,
+        checksums,
+        &mut result,
+    )?;
+    check_path_and_checksum(path_db, &conf.background_dbs.dbvar, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.background_dbs.dgv, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.background_dbs.dgv_gs, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.background_dbs.exac, checksums, &mut result)?;
     check_path_and_checksum(path_db, &conf.tads.hesc, checksums, &mut result)?;
     check_path_and_checksum(path_db, &conf.tads.imr90, checksums, &mut result)?;
     check_path_and_checksum(path_db, &conf.tads.imr90, checksums, &mut result)?;
@@ -273,7 +281,7 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use crate::sv::conf::{
-        sanity_check_db, GenesConf, GenesDetailConf, PathAndChecksum, PublicDbsConf,
+        sanity_check_db, BackgroundDbsConf, GenesConf, GenesDetailConf, PathAndChecksum,
         RegulatoryConf, TadsConf,
     };
 
@@ -326,7 +334,7 @@ mod tests {
         assert_eq!(
             toml_data,
             DbConf {
-                public_dbs: PublicDbsConf {
+                background_dbs: BackgroundDbsConf {
                     slack_bnd: 50,
                     slack_ins: 50,
                     min_overlap: 0.8,
@@ -364,6 +372,14 @@ mod tests {
                     },
                     exac: PathAndChecksum {
                         path: "public/exac.bin".to_owned(),
+                        md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
+                        sha256: Some(
+                            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                .to_owned()
+                        ),
+                    },
+                    inhouse: PathAndChecksum {
+                        path: "inhouse/svs.bin".to_owned(),
                         md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
                         sha256: Some(
                             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -485,7 +501,7 @@ mod tests {
         assert_eq!(
             toml_data,
             DbConf {
-                public_dbs: PublicDbsConf {
+                background_dbs: BackgroundDbsConf {
                     slack_bnd: 50,
                     slack_ins: 50,
                     min_overlap: 0.8,
@@ -513,7 +529,12 @@ mod tests {
                         path: "public/exac.bin".to_owned(),
                         md5: None,
                         sha256: None,
-                    }
+                    },
+                    inhouse: PathAndChecksum {
+                        path: "inhouse/svs.bin".to_owned(),
+                        md5: None,
+                        sha256: None,
+                    },
                 },
                 tads: TadsConf {
                     max_dist: 10_000,
