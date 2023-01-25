@@ -7,6 +7,7 @@ pub mod schema;
 
 use std::{
     collections::{HashMap, HashSet},
+    fs::File,
     time::Instant,
 };
 
@@ -19,10 +20,7 @@ use thousands::Separable;
 use self::{
     interpreter::QueryInterpreter,
     recordio::BgRecordsByChrom,
-    schema::{
-        CallInfo, CaseQuery, Database, GenotypeChoice, GenotypeCriteria, StructuralVariant,
-        SvSubType, SvType,
-    },
+    schema::{CallInfo, CaseQuery, StructuralVariant, SvSubType, SvType},
 };
 use crate::common::{build_chrom_map, Args as CommonArgs};
 
@@ -46,87 +44,87 @@ pub struct Args {
     pub output_vcf: String,
 }
 
-pub fn build_query(samples: &[String]) -> CaseQuery {
-    let genotype_criteria = vec![
-        // CNVs -- variant
-        GenotypeCriteria {
-            select_sv_sub_type: SvSubType::vec_cnv(),
-            select_sv_min_size: Some(500),
-            min_srpr_var: Some(5),
-            ..GenotypeCriteria::new(GenotypeChoice::Variant)
-        },
-        // INVs -- variant
-        GenotypeCriteria {
-            select_sv_sub_type: vec![SvSubType::Inv],
-            select_sv_min_size: Some(500),
-            min_sr_var: Some(2),
-            min_pr_var: Some(2),
-            min_srpr_var: Some(5),
-            ..GenotypeCriteria::new(GenotypeChoice::Variant)
-        },
-        // Tricky SVs -- variant
-        GenotypeCriteria {
-            select_sv_sub_type: vec![SvSubType::Bnd, SvSubType::Ins],
-            min_sr_var: Some(10),
-            min_pr_var: Some(10),
-            ..GenotypeCriteria::new(GenotypeChoice::Variant)
-        },
-        // CNVs -- non-variant
-        GenotypeCriteria {
-            select_sv_sub_type: SvSubType::vec_cnv(),
-            select_sv_min_size: Some(500),
-            max_srpr_var: Some(4),
-            ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
-        },
-        // INVs -- non-variant
-        GenotypeCriteria {
-            select_sv_sub_type: vec![SvSubType::Inv],
-            select_sv_min_size: Some(500),
-            max_sr_var: Some(1),
-            max_pr_var: Some(1),
-            max_srpr_var: Some(4),
-            ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
-        },
-        // Tricky SVs -- no-variant
-        GenotypeCriteria {
-            select_sv_sub_type: vec![SvSubType::Bnd, SvSubType::Ins],
-            max_sr_var: Some(9),
-            max_pr_var: Some(9),
-            ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
-        },
-    ];
+// pub fn build_query(samples: &[String]) -> CaseQuery {
+//     let genotype_criteria = vec![
+//         // CNVs -- variant
+//         GenotypeCriteria {
+//             select_sv_sub_type: SvSubType::vec_cnv(),
+//             select_sv_min_size: Some(500),
+//             min_srpr_var: Some(5),
+//             ..GenotypeCriteria::new(GenotypeChoice::Variant)
+//         },
+//         // INVs -- variant
+//         GenotypeCriteria {
+//             select_sv_sub_type: vec![SvSubType::Inv],
+//             select_sv_min_size: Some(500),
+//             min_sr_var: Some(2),
+//             min_pr_var: Some(2),
+//             min_srpr_var: Some(5),
+//             ..GenotypeCriteria::new(GenotypeChoice::Variant)
+//         },
+//         // Tricky SVs -- variant
+//         GenotypeCriteria {
+//             select_sv_sub_type: vec![SvSubType::Bnd, SvSubType::Ins],
+//             min_sr_var: Some(10),
+//             min_pr_var: Some(10),
+//             ..GenotypeCriteria::new(GenotypeChoice::Variant)
+//         },
+//         // CNVs -- non-variant
+//         GenotypeCriteria {
+//             select_sv_sub_type: SvSubType::vec_cnv(),
+//             select_sv_min_size: Some(500),
+//             max_srpr_var: Some(4),
+//             ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
+//         },
+//         // INVs -- non-variant
+//         GenotypeCriteria {
+//             select_sv_sub_type: vec![SvSubType::Inv],
+//             select_sv_min_size: Some(500),
+//             max_sr_var: Some(1),
+//             max_pr_var: Some(1),
+//             max_srpr_var: Some(4),
+//             ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
+//         },
+//         // Tricky SVs -- no-variant
+//         GenotypeCriteria {
+//             select_sv_sub_type: vec![SvSubType::Bnd, SvSubType::Ins],
+//             max_sr_var: Some(9),
+//             max_pr_var: Some(9),
+//             ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
+//         },
+//     ];
 
-    CaseQuery {
-        svdb_gnomad_enabled: true,
-        svdb_gnomad_min_overlap: Some(0.8),
-        svdb_gnomad_max_carriers: Some(10),
-        svdb_exac_enabled: true,
-        svdb_exac_min_overlap: Some(0.8),
-        svdb_exac_max_carriers: Some(10),
-        svdb_dbvar_enabled: true,
-        svdb_dbvar_min_overlap: Some(0.8),
-        svdb_dbvar_max_carriers: Some(20),
-        svdb_g1k_enabled: true,
-        svdb_g1k_min_overlap: Some(0.8),
-        svdb_g1k_max_alleles: Some(10),
-        svdb_inhouse_enabled: true,
-        svdb_inhouse_min_overlap: Some(0.8),
-        svdb_inhouse_max_carriers: Some(10),
+//     CaseQuery {
+//         svdb_gnomad_enabled: true,
+//         svdb_gnomad_min_overlap: Some(0.8),
+//         svdb_gnomad_max_carriers: Some(10),
+//         svdb_exac_enabled: true,
+//         svdb_exac_min_overlap: Some(0.8),
+//         svdb_exac_max_carriers: Some(10),
+//         svdb_dbvar_enabled: true,
+//         svdb_dbvar_min_overlap: Some(0.8),
+//         svdb_dbvar_max_carriers: Some(20),
+//         svdb_g1k_enabled: true,
+//         svdb_g1k_min_overlap: Some(0.8),
+//         svdb_g1k_max_alleles: Some(10),
+//         svdb_inhouse_enabled: true,
+//         svdb_inhouse_min_overlap: Some(0.8),
+//         svdb_inhouse_max_carriers: Some(10),
 
-        sv_size_min: Some(500),
-        sv_types: SvType::all(),
-        sv_sub_types: SvSubType::vec_all(),
+//         sv_size_min: Some(500),
+//         sv_types: SvType::all(),
+//         sv_sub_types: SvSubType::vec_all(),
 
-        genotype: HashMap::from_iter(
-            samples
-                .iter()
-                .map(|sample| (sample.clone(), GenotypeChoice::Variant)),
-        ),
-        genotype_criteria,
+//         genotype: HashMap::from_iter(
+//             samples
+//                 .iter()
+//                 .map(|sample| (sample.clone(), GenotypeChoice::Variant)),
+//         ),
+//         genotype_criteria,
 
-        ..CaseQuery::new(Database::Refseq)
-    }
-}
+//         ..CaseQuery::new(Database::Refseq)
+//     }
+// }
 
 pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(), anyhow::Error> {
     term.write_line("Starting sv query")?;
@@ -161,8 +159,15 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         })
         .collect::<Vec<String>>();
 
-    term.write_line("Buildling query...")?;
-    let query = build_query(&samples);
+    term.write_line("Loading query...")?;
+    let query: CaseQuery = {
+        let file = File::open(&args.query_json)?;
+        serde_json::from_reader(file)?
+    };
+    term.write_line(&format!(
+        "query settings = {}",
+        &serde_json::to_string(&query)?
+    ))?;
     let interpreter = QueryInterpreter::new(query.clone());
 
     term.write_line("Starting queries...")?;

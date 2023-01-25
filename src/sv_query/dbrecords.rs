@@ -318,11 +318,11 @@ pub mod gnomad_sv {
         /// end position, 1-based
         pub end: i32,
         /// The structural vairant type
-        svtype: String,
+        pub svtype: String,
         /// Number of homozygous alternative carriers
-        n_homalt: i32,
+        pub n_homalt: i32,
         /// Number of heterozygous carriers
-        n_het: i32,
+        pub n_het: i32,
     }
 
     impl ToInMemory<Record> for FileRecord {
@@ -617,9 +617,9 @@ pub mod dgv_gs {
         /// outer end position, 1-based
         pub end_outer: i32,
         /// The structural variant type
-        sv_sub_type: String,
+        pub sv_sub_type: String,
         /// Number of carriers.
-        num_carriers: i32,
+        pub num_carriers: i32,
     }
 
     impl ToInMemory<Record> for FileRecord {
