@@ -19,6 +19,7 @@ clap = { version = "4.1.1", features = ["derive", "help"] }
 clap-verbosity-flag = "2.0.0"
 console = "0.15.5"
 csv = "1.1.6"
+flatbuffers = "23.1.21"
 flate2 = "1.0.25"
 log = "0.4.17"
 md-5 = "0.10.5"
@@ -45,3 +46,6 @@ pretty_assertions = "1"
 [[bin]]
 name = "varfish-server-worker"
 path = "src/main.rs"
+
+[build-dependencies]
+flatc-rust = "*"

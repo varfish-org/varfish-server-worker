@@ -152,3 +152,12 @@ If you specify file name(s) starting with an at (`@`) character then this file i
     --input-vcf ~/Data/varfish-workers-input/bwa.sample.vcf.gz \
     --output-vcf /dev/null
 ```
+
+## Development Setup
+
+You will need a recent version of flatbuffers, e.g.:
+
+```
+# bash utils/install-flatbuffers.sh
+# export PATH=$PATH:$HOME/.local/share/flatbuffers/bin
+```

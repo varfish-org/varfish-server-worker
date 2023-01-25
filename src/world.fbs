@@ -1,0 +1,21 @@
+namespace VarFishServerWorker;
+
+// Enum for storing the SV type.
+enum SvType : byte {
+  Del,
+  Dup,
+  Inv,
+  Ins,
+  Bnd,
+  Cnv,
+}
+
+// Background database record.
+table BgDbRecord {
+  chrom_no: ushort;
+  chrom_no2: ushort;
+  start: uint;
+  end: uint;
+  sv_type: uint;
+  count: uint;
+}

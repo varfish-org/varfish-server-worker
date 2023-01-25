@@ -6,6 +6,10 @@ pub mod sv;
 pub mod sv_build_bgdb;
 pub mod sv_query;
 
+#[allow(non_snake_case, unused_imports)]
+#[path = "../target/flatbuffers/world_generated.rs"]
+pub mod world_flatbuffers;
+
 use clap::{Args, Parser, Subcommand};
 use console::{Emoji, Term};
 
