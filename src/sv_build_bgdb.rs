@@ -249,7 +249,6 @@ fn merge_to_out(
             }
             if match_all_in_cluster {
                 // extend cluster
-                // println!("extending cluster {:?}", cluster_idx);
                 clusters[cluster_idx].push(records.len());
                 found_any_cluster = true;
                 break;

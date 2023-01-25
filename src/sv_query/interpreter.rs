@@ -906,6 +906,61 @@ mod tests {
     }
 
     #[test]
+    fn test_query_interpreter_ins_min_pr() -> Result<(), anyhow::Error> {
+        let query = CaseQuery {
+            genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Variant)]),
+            genotype_criteria: vec![GenotypeCriteria {
+                select_sv_sub_type: vec![SvSubType::Ins],
+                select_sv_min_size: Some(1000),
+                select_sv_max_size: Some(5000),
+                gt_one_of: Some(vec![
+                    "0/1".to_owned(),
+                    "0|1".to_owned(),
+                    "1/0".to_owned(),
+                    "1|0".to_owned(),
+                ]),
+                min_gq: Some(5.0),
+                // min_pr_cov: Some(10),
+                // min_pr_var: Some(1),
+                // min_sr_cov: Some(10),
+                min_sr_var: Some(1),
+                ..GenotypeCriteria::new(GenotypeChoice::Variant)
+            }],
+            ..CaseQuery::new(Database::Refseq)
+        };
+        let interpreter = QueryInterpreter::new(query);
+
+        let sv = StructuralVariant {
+            chrom: "1".to_owned(),
+            pos: 12345,
+            sv_type: SvType::Ins,
+            sv_sub_type: SvSubType::Ins,
+            chrom2: None,
+            end: 12345,
+            strand_orientation: Some(StrandOrientation::NotApplicable),
+            call_info: HashMap::from([(
+                "sample".to_owned(),
+                CallInfo {
+                    genotype: Some("0/1".to_owned()),
+                    quality: Some(16.0),
+                    paired_end_cov: Some(0),
+                    paired_end_var: Some(0),
+                    split_read_cov: Some(5),
+                    split_read_var: Some(1),
+                    copy_number: None,
+                    average_normalized_cov: None,
+                    point_count: None,
+                    average_mapping_quality: None,
+                },
+            )]),
+        };
+
+        assert!(interpreter.passes_genotype(&sv)?);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_query_interpreter_pass_genotype_pass_smoke() -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Het)]),

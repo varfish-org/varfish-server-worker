@@ -140,12 +140,31 @@ pub enum SvSubType {
 }
 
 impl SvSubType {
-    pub fn all() -> Vec<SvSubType> {
+    /// Return vector with all SV sub types
+    pub fn vec_all() -> Vec<SvSubType> {
         use SvSubType::*;
         vec![
             Del, DelMe, DelMeSva, DelMeL1, DelMeAlu, Dup, DupTandem, Inv, Ins, InsMe, InsMeSva,
             InsMeL1, InsMeAlu, Bnd, Cnv,
         ]
+    }
+
+    /// Return vector with del/dup/CNV SV sub types
+    pub fn vec_cnv() -> Vec<SvSubType> {
+        use SvSubType::*;
+        vec![Del, DelMe, DelMeSva, DelMeL1, DelMeAlu, Dup, DupTandem, Cnv]
+    }
+
+    /// Return vector with deletion SV sub types
+    pub fn vec_del() -> Vec<SvSubType> {
+        use SvSubType::*;
+        vec![Del, DelMe, DelMeSva, DelMeL1, DelMeAlu]
+    }
+
+    /// Return vector with insertion SV sub types
+    pub fn vec_ins() -> Vec<SvSubType> {
+        use SvSubType::*;
+        vec![Ins, InsMe, InsMeSva, InsMeL1, InsMeAlu]
     }
 
     /// Return whether SV sub type is any insertion
