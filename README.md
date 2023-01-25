@@ -140,3 +140,15 @@ The numeric value to write to the output background SV set ID column.
 
 One or more TSV files as written out by `varfish-annotator-cli`.
 If you specify file name(s) starting with an at (`@`) character then this file is read and each line is expected to show one file name.
+
+## Running Proof of Concept
+
+```
+# cargo run --release \
+    sv query \
+    --db-base-dir ~/Data/varfish-worker \
+    --result-set-id 0 \
+    --query-json <(sed -e 's/__INDEX__/sample/' misc/ok-query-single.json) \
+    --input-vcf ~/Data/varfish-workers-input/bwa.sample.vcf.gz \
+    --output-vcf /dev/null
+```
