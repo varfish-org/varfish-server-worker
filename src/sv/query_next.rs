@@ -20,7 +20,8 @@ pub struct Args {
     pub disable_checksums: bool,
 }
 
-fn load_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
+/// Load database configuration and perform sanity checks as configured.
+fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
     // Get full path to database configuration.
     let path_config = if let Some(path_conf) = &args.path_conf {
         PathBuf::from(path_conf)
@@ -52,7 +53,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
-    let db_conf = load_conf(args)?;
+    let db_conf = load_db_conf(args)?;
 
     Ok(())
 }
