@@ -26,7 +26,7 @@ struct Cli {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Create contigs with synthetic sequence
+    /// SV related commands
     Sv(Sv),
 }
 

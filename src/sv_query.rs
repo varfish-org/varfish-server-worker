@@ -13,6 +13,7 @@ use std::{
 use anyhow::anyhow;
 use clap::Parser;
 use rust_htslib::bcf::{self, Read};
+use strum::IntoEnumIterator;
 use thousands::Separable;
 
 use self::{
@@ -49,14 +50,48 @@ pub fn build_query(samples: &[String]) -> CaseQuery {
     let genotype_criteria = vec![
         // CNVs -- variant
         GenotypeCriteria {
-            select_sv_sub_type: SvSubType::all(),
-            min_srpr_var: Some(6),
+            select_sv_sub_type: SvSubType::vec_cnv(),
+            select_sv_min_size: Some(500),
+            min_srpr_var: Some(5),
+            ..GenotypeCriteria::new(GenotypeChoice::Variant)
+        },
+        // INVs -- variant
+        GenotypeCriteria {
+            select_sv_sub_type: vec![SvSubType::Inv],
+            select_sv_min_size: Some(500),
+            min_sr_var: Some(2),
+            min_pr_var: Some(2),
+            min_srpr_var: Some(5),
+            ..GenotypeCriteria::new(GenotypeChoice::Variant)
+        },
+        // Tricky SVs -- variant
+        GenotypeCriteria {
+            select_sv_sub_type: vec![SvSubType::Bnd, SvSubType::Ins],
+            min_sr_var: Some(10),
+            min_pr_var: Some(10),
             ..GenotypeCriteria::new(GenotypeChoice::Variant)
         },
         // CNVs -- non-variant
         GenotypeCriteria {
-            select_sv_sub_type: SvSubType::all(),
-            max_srpr_var: Some(5),
+            select_sv_sub_type: SvSubType::vec_cnv(),
+            select_sv_min_size: Some(500),
+            max_srpr_var: Some(4),
+            ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
+        },
+        // INVs -- non-variant
+        GenotypeCriteria {
+            select_sv_sub_type: vec![SvSubType::Inv],
+            select_sv_min_size: Some(500),
+            max_sr_var: Some(1),
+            max_pr_var: Some(1),
+            max_srpr_var: Some(4),
+            ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
+        },
+        // Tricky SVs -- no-variant
+        GenotypeCriteria {
+            select_sv_sub_type: vec![SvSubType::Bnd, SvSubType::Ins],
+            max_sr_var: Some(9),
+            max_pr_var: Some(9),
             ..GenotypeCriteria::new(GenotypeChoice::NonVariant)
         },
     ];
@@ -80,7 +115,7 @@ pub fn build_query(samples: &[String]) -> CaseQuery {
 
         sv_size_min: Some(500),
         sv_types: SvType::all(),
-        sv_sub_types: SvSubType::all(),
+        sv_sub_types: SvSubType::vec_all(),
 
         genotype: HashMap::from_iter(
             samples
@@ -131,6 +166,8 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
     let interpreter = QueryInterpreter::new(query.clone());
 
     term.write_line("Starting queries...")?;
+    let mut by_sv_type: HashMap<SvType, usize> =
+        HashMap::from_iter(SvType::iter().map(|sv_type| (sv_type, 0usize)));
     let mut count_total = 0;
     let mut count_passes = 0;
     let before_query = Instant::now();
@@ -289,9 +326,10 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         count_total += 1;
         if interpreter.passes(&sv, |sv| sv_records.count_overlaps(&chrom_map, &query, sv))? {
             count_passes += 1;
+            *by_sv_type.entry(sv.sv_type).or_default() += 1;
             if count_passes <= 100 {
                 println!(
-                    "{:?}\n{:?}\n--",
+                    "passing (first 100 shown): {:?}\n{:?}\n--",
                     &sv,
                     &sv_records.count_overlaps(&chrom_map, &query, &sv)
                 );
@@ -304,6 +342,11 @@ pub fn run(term: &console::Term, common: &CommonArgs, args: &Args) -> Result<(),
         count_passes.separate_with_commas(),
         before_query.elapsed()
     ))?;
+
+    term.write_line("passing records by SV type")?;
+    for (sv_type, count) in by_sv_type.iter() {
+        term.write_line(&format!("{:?} -- {}", sv_type, count))?;
+    }
 
     Ok(())
 }
