@@ -16,6 +16,6 @@ table BgDbRecord {
   chrom_no2: ushort;
   start: uint;
   end: uint;
-  sv_type: uint;
+  sv_type: SvType;
   count: uint;
 }

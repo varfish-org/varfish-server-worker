@@ -290,8 +290,8 @@ mod tests {
     #[test]
     fn test_check_path_and_checksum_good() -> Result<(), anyhow::Error> {
         let errors = sanity_check_db(
-            &Path::new("tests/sv/conf/good"),
-            &Path::new("tests/sv/conf/full.toml"),
+            Path::new("tests/sv/conf/good"),
+            Path::new("tests/sv/conf/full.toml"),
             true,
         )?;
         assert!(errors.is_none());
@@ -302,8 +302,8 @@ mod tests {
     #[test]
     fn test_check_path_and_checksum_bad() -> Result<(), anyhow::Error> {
         let errors = sanity_check_db(
-            &Path::new("tests/sv/conf/bad"),
-            &Path::new("tests/sv/conf/full.toml"),
+            Path::new("tests/sv/conf/bad"),
+            Path::new("tests/sv/conf/full.toml"),
             true,
         )?;
         assert!(errors.is_some());
@@ -315,8 +315,8 @@ mod tests {
     #[test]
     fn test_check_path_and_checksum_nonexisting() -> Result<(), anyhow::Error> {
         let errors = sanity_check_db(
-            &Path::new("tests/sv/conf/nonexisting"),
-            &Path::new("tests/sv/conf/full.toml"),
+            Path::new("tests/sv/conf/nonexisting"),
+            Path::new("tests/sv/conf/full.toml"),
             true,
         )?;
         assert!(errors.is_some());

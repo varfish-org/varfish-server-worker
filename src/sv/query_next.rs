@@ -54,7 +54,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
-    let db_conf = load_db_conf(args)?;
+    let _db_conf = load_db_conf(args)?;
 
     Ok(())
 }

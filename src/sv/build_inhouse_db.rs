@@ -10,7 +10,6 @@ use std::{
 
 use bio::data_structures::interval_tree::IntervalTree;
 use clap::Parser;
-use flate2::read::GzDecoder;
 use serde::{Deserialize, Serialize};
 use serde_json::to_writer;
 use serde_jsonlines::JsonLinesReader;
@@ -19,7 +18,7 @@ use thousands::Separable;
 use tracing::{debug, info};
 
 use crate::{
-    common::{build_chrom_map, trace_rss_now, CHROMS},
+    common::{build_chrom_map, open_maybe_gz, trace_rss_now, CHROMS},
     sv_query::schema::SvType,
 };
 
@@ -233,12 +232,10 @@ fn split_input_by_chrom_and_sv_type(
     for path in &input_tsv_paths {
         debug!("parsing {:?}", &path);
 
-        let file = File::open(path)?;
-        let decoder = GzDecoder::new(&file);
         let mut rdr = csv::ReaderBuilder::new()
             .has_headers(true)
             .delimiter(b'\t')
-            .from_reader(decoder);
+            .from_reader(open_maybe_gz(path)?);
         let before_parsing = Instant::now();
         let mut count_records = 0;
         for result in rdr.deserialize() {
@@ -286,7 +283,7 @@ fn merge_to_out(
     args: &Args,
     reader: &mut BufReader<File>,
     writer: &mut csv::Writer<File>,
-) -> Result<(), anyhow::Error> {
+) -> Result<usize, anyhow::Error> {
     let mut clusters: Vec<Vec<usize>> = vec![];
     let mut tree: IntervalTree<i32, usize> = IntervalTree::new();
     let mut records: Vec<output::Record> = Vec::new();
@@ -347,34 +344,38 @@ fn merge_to_out(
     });
 
     // Finally, write out all records in sorted order
+    let mut out_records = 0;
     for cluster in clusters {
         let mut out_record = records[cluster[0]].clone();
         for record_id in &cluster[1..] {
             out_record.merge_into(&records[*record_id]);
         }
+        out_records += 1;
         writer.serialize(&out_record)?;
     }
 
-    Ok(())
+    Ok(out_records)
 }
 
 /// Perform (chrom, sv_type) wise merging of records in temporary files.
 fn merge_split_files(tmp_dir: &tempdir::TempDir, args: &Args) -> Result<(), anyhow::Error> {
+    info!("merge all files to {}...", &args.output_tsv);
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .has_headers(true)
         .from_path(&args.output_tsv)?;
 
-    info!("merge all files again...");
+    let mut out_records = 0;
     for chrom in CHROMS {
         for sv_type in SvType::iter() {
             let filename = format!("records.chr{}.{:?}.tsv", *chrom, sv_type);
             let path = tmp_dir.path().join(&filename);
             debug!("reading from {}", &filename);
             let mut reader = BufReader::new(File::open(path)?);
-            merge_to_out(args, &mut reader, &mut writer)?;
+            out_records += merge_to_out(args, &mut reader, &mut writer)?;
         }
     }
+    info!("wrote a total of {} records", out_records);
 
     writer.flush()?;
 
