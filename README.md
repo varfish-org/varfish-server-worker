@@ -113,3 +113,30 @@ The fields are as follows:
 - `sv_type` -- String with the SV type (e.g., `DEL`)
 - `sv_sub_type` -- String with the SV sub type (e.g., `DEL:ME:ALU`)
 - `payload` -- JSON field with the result record payload.
+
+## The `sv build-bgdb` Worker
+
+This worker provides the functionality to build the background SV database.
+This was formerly implemented in `varfish-server` itself but has been off-loaded to the worker to improve performance.
+
+**Call**
+
+```bash
+$ cargo-varfish-worker sv build-bgdb \
+    --output-tsv OUTPUT.tsv \
+    --output-bg-sv-set-id ID \
+    INPUT1 [INPUT2...]
+```
+
+**Param: `--output-tsv OUTPUT.tsv` (required)**
+
+The path to the output TSV file to write to.
+
+**Param: `--output-bg-sv-set-id ID` (required)**
+
+The numeric value to write to the output background SV set ID column.
+
+**Input: `INPUT*` (at least one required)**
+
+One or more TSV files as written out by `varfish-annotator-cli`.
+If you specify file name(s) starting with an at (`@`) character then this file is read and each line is expected to show one file name.

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 /// Range with 1-based positions
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -47,7 +48,7 @@ pub enum Database {
 }
 
 /// Encode the type of an SV
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, EnumIter, PartialEq, Eq, Hash, Debug, Clone, Copy)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SvType {
     /// Deletion

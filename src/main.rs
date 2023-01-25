@@ -1,5 +1,6 @@
 pub mod common;
 pub mod err;
+pub mod sv_build_bgdb;
 pub mod sv_query;
 
 use clap::{Args, Parser, Subcommand};
@@ -40,6 +41,7 @@ struct Sv {
 #[derive(Debug, Subcommand)]
 enum SvCommands {
     Query(sv_query::Args),
+    BuildBgDb(sv_build_bgdb::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -50,6 +52,9 @@ fn main() -> Result<(), anyhow::Error> {
         Commands::Sv(sv) => match &sv.command {
             SvCommands::Query(args) => {
                 sv_query::run(&term, &cli.common, args)?;
+            }
+            SvCommands::BuildBgDb(args) => {
+                sv_build_bgdb::run(&term, &cli.common, args)?;
             }
         },
     }
