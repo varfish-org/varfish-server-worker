@@ -1,7 +1,4 @@
-# Minimal configuration file.[public_dbs]
-slack_bnd = 50
-slack_ins = 50
-min_overlap = 0.8
+# Minimal configuration.
 
 [public_dbs.gnomad_sv]
 path = 'public/gnomad_sv.bin'
@@ -17,3 +14,36 @@ path = 'public/dgv_gs.bin'
 
 [public_dbs.exac]
 path = 'public/exac.bin'
+
+[tads.hesc]
+path = 'tads/hesc.bin'
+
+[tads.imr90]
+path = 'tads/imr90.bin'
+
+[regulatory.ensembl]
+path = 'regulatory/ensembl.bin'
+
+[regulatory.vista]
+path = 'regulatory/vista.bin'
+
+[genes.xlink]
+path = 'genes/xlink.bin'
+
+[genes.acmg]
+path = 'genes/acmg.json'
+
+[genes.medgen]
+path = 'genes/medgen.json'
+
+[genes.ensembl.regions]
+path = 'genes/ensembl/regions.bin'
+
+[genes.ensembl.anno_json]
+path = 'genes/ensembl/anno_json.db'
+
+[genes.refseq.regions]
+path = 'genes/refseq/regions.bin'
+
+[genes.refseq.anno_json]
+path = 'genes/refseq/anno_json.db'

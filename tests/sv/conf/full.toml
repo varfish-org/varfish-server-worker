@@ -1,3 +1,5 @@
+# Full configuration.
+
 [public_dbs]
 slack_bnd = 50
 slack_ins = 50
@@ -25,5 +27,63 @@ sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
 [public_dbs.exac]
 path = 'public/exac.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[tads]
+max_dist = 10000
+
+[tads.hesc]
+path = 'tads/hesc.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[tads.imr90]
+path = 'tads/imr90.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[regulatory.ensembl]
+path = 'regulatory/ensembl.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[regulatory.vista]
+path = 'regulatory/vista.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[genes.xlink]
+path = 'genes/xlink.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[genes.acmg]
+path = 'genes/acmg.json'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[genes.medgen]
+path = 'genes/medgen.json'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[genes.ensembl.regions]
+path = 'genes/ensembl/regions.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[genes.ensembl.anno_json]
+path = 'genes/ensembl/anno_json.db'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[genes.refseq.regions]
+path = 'genes/refseq/regions.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+[genes.refseq.anno_json]
+path = 'genes/refseq/anno_json.db'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
