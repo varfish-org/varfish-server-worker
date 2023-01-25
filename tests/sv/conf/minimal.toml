@@ -1,0 +1,19 @@
+# Minimal configuration file.[public_dbs]
+slack_bnd = 50
+slack_ins = 50
+min_overlap = 0.8
+
+[public_dbs.gnomad_sv]
+path = 'public/gnomad_sv.bin'
+
+[public_dbs.dbvar]
+path = 'public/dbvar.bin'
+
+[public_dbs.dgv]
+path = 'public/dgv.bin'
+
+[public_dbs.dgv_gs]
+path = 'public/dgv_gs.bin'
+
+[public_dbs.exac]
+path = 'public/exac.bin'
