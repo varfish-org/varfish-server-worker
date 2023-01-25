@@ -38,35 +38,6 @@ pub struct FileRecord {
     pub num_hemi_ref: u32,
 }
 
-impl FileRecord {
-    /// Compute reciprocal overlap between `self` and `other`.
-    pub fn overlap(&self, other: &FileRecord) -> f32 {
-        let s1 = if self.start > 0 { self.start - 1 } else { 0 };
-        let e1 = self.end + 1;
-        let s2 = if other.start > 0 { other.start - 1 } else { 0 };
-        let e2 = other.end;
-
-        let ovl_s = std::cmp::max(s1, s2);
-        let ovl_e = std::cmp::min(e1, e2);
-        if ovl_e <= ovl_s {
-            0.0
-        } else {
-            let len1 = (e1 - s1) as f32;
-            let len2 = (e2 - s2) as f32;
-            let ovl_len = (ovl_e - ovl_s) as f32;
-            (ovl_len / len1).min(ovl_len / len2)
-        }
-    }
-
-    pub fn merge_into(&mut self, other: &FileRecord) {
-        self.num_hom_alt += other.num_hom_alt;
-        self.num_hom_ref += other.num_hom_alt;
-        self.num_het += other.num_het;
-        self.num_hemi_alt += other.num_hemi_alt;
-        self.num_hemi_ref += other.num_hemi_ref;
-    }
-}
-
 impl Default for FileRecord {
     fn default() -> Self {
         Self {
