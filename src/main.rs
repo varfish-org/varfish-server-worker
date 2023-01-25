@@ -50,6 +50,7 @@ enum SvCommands {
     Query(sv_query::Args),
     BuildBgDb(sv_build_bgdb::Args),
     QueryNext(sv::query_next::Args),
+    BuildInhouseDb(sv::build_inhouse_db::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -81,6 +82,9 @@ fn main() -> Result<(), anyhow::Error> {
                 }
                 SvCommands::QueryNext(args) => {
                     sv::query_next::run(&cli.common, args)?;
+                }
+                SvCommands::BuildInhouseDb(args) => {
+                    sv::build_inhouse_db::run(&cli.common, args)?;
                 }
                 SvCommands::BuildBgDb(args) => {
                     sv_build_bgdb::run(&term, &cli.common, args)?;
