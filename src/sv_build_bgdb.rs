@@ -268,8 +268,8 @@ fn merge_to_out(
 
     // Sort the cluster representatives by start coordinate.
     let mut sorted_idxs = vec![0; clusters.len()];
-    for i in 0..clusters.len() {
-        sorted_idxs[i] = i;
+    for (i, sorted_idx) in sorted_idxs.iter_mut().enumerate() {
+        *sorted_idx = i;
     }
     sorted_idxs.sort_by(|a, b| {
         (records[clusters[*a][0]].start, records[clusters[*a][0]].end)
