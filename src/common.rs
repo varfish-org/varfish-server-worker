@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use byte_unit::Byte;
-use clap_verbosity_flag::Verbosity;
+use clap_verbosity_flag::{InfoLevel, Verbosity};
 
 use clap::Parser;
 
@@ -12,7 +12,7 @@ use clap::Parser;
 pub struct Args {
     /// Verbosity of the program
     #[clap(flatten)]
-    pub verbose: Verbosity,
+    pub verbose: Verbosity<InfoLevel>,
 }
 
 /// Helper to print the current memory resident set size to a `Term`.

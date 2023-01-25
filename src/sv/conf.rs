@@ -2,10 +2,12 @@
 
 use std::{fs, io, path::Path};
 
+use anyhow::anyhow;
 use md5::{Digest, Md5};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use std::io::Read;
+use tracing::debug;
 
 /// Configuration for the database backing the SV annotation.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -125,28 +127,57 @@ pub struct GenesDetailConf {
 pub fn sanity_check_db(
     path_db: &Path,
     path_config: &Path,
+    checksums: bool,
 ) -> Result<Option<Vec<String>>, anyhow::Error> {
     let mut result = Vec::new();
 
-    let toml_str = std::fs::read_to_string(path_config)?;
-    let conf: DbConf = toml::from_str(&toml_str)?;
+    let toml_str = match std::fs::read_to_string(path_config) {
+        Err(err) => {
+            return Err(anyhow!(
+                "Could not open config file {:?}: {}",
+                path_config,
+                err
+            ))
+        }
+        Ok(toml_str) => toml_str,
+    };
+    let conf: DbConf = match toml::from_str(&toml_str) {
+        Err(err) => {
+            return Err(anyhow!(
+                "Could not load configuration file {:?}: {}",
+                path_config,
+                err
+            ))
+        }
+        Ok(conf) => conf,
+    };
 
-    check_path_and_checksum(path_db, &conf.public_dbs.gnomad_sv, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.dbvar, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.dgv, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.dgv_gs, &mut result)?;
-    check_path_and_checksum(path_db, &conf.public_dbs.exac, &mut result)?;
-    check_path_and_checksum(path_db, &conf.tads.hesc, &mut result)?;
-    check_path_and_checksum(path_db, &conf.tads.imr90, &mut result)?;
-    check_path_and_checksum(path_db, &conf.tads.imr90, &mut result)?;
-    check_path_and_checksum(path_db, &conf.regulatory.ensembl, &mut result)?;
-    check_path_and_checksum(path_db, &conf.regulatory.vista, &mut result)?;
-    check_path_and_checksum(path_db, &conf.genes.xlink, &mut result)?;
-    check_path_and_checksum(path_db, &conf.genes.acmg, &mut result)?;
-    check_path_and_checksum(path_db, &conf.genes.refseq.regions, &mut result)?;
-    check_path_and_checksum(path_db, &conf.genes.refseq.anno_json, &mut result)?;
-    check_path_and_checksum(path_db, &conf.genes.ensembl.regions, &mut result)?;
-    check_path_and_checksum(path_db, &conf.genes.ensembl.anno_json, &mut result)?;
+    check_path_and_checksum(path_db, &conf.public_dbs.gnomad_sv, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.public_dbs.dbvar, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.public_dbs.dgv, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.public_dbs.dgv_gs, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.public_dbs.exac, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.tads.hesc, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.tads.imr90, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.tads.imr90, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.regulatory.ensembl, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.regulatory.vista, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.genes.xlink, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.genes.acmg, checksums, &mut result)?;
+    check_path_and_checksum(path_db, &conf.genes.refseq.regions, checksums, &mut result)?;
+    check_path_and_checksum(
+        path_db,
+        &conf.genes.refseq.anno_json,
+        checksums,
+        &mut result,
+    )?;
+    check_path_and_checksum(path_db, &conf.genes.ensembl.regions, checksums, &mut result)?;
+    check_path_and_checksum(
+        path_db,
+        &conf.genes.ensembl.anno_json,
+        checksums,
+        &mut result,
+    )?;
 
     if result.is_empty() {
         Ok(None)
@@ -160,6 +191,7 @@ pub fn sanity_check_db(
 fn check_path_and_checksum(
     base_path: &Path,
     path_and_checksum: &PathAndChecksum,
+    checksums: bool,
     result: &mut Vec<String>,
 ) -> Result<(), anyhow::Error> {
     let joined_path = base_path.join(&path_and_checksum.path);
@@ -174,45 +206,61 @@ fn check_path_and_checksum(
         return Ok(());
     }
 
-    if let Some(sha256) = &path_and_checksum.sha256 {
-        let mut file = fs::File::open(full_path)?;
-        let mut hasher = Sha256::new();
-        let n = io::copy(&mut file, &mut hasher)?;
-        let hash = hasher.finalize();
-        let mut buf = [0u8; 64];
-        let checksum = base16ct::lower::encode_str(&hash, &mut buf).unwrap();
-        if checksum != sha256 {
-            result.push(format!(
-                "file {:?} (with {} bytes) has checksum sha256:{} instead of sha256:{}",
-                &full_path, n, &checksum, &sha256
-            ));
-        }
-    }
-
-    if let Some(md5) = &path_and_checksum.md5 {
-        let mut file = fs::File::open(full_path)?;
-        let mut hasher = Md5::new();
-        const BUF_LEN: usize = 65_536;
-        let mut bytes_read = 0;
-        let mut buffer = [0; BUF_LEN];
-
-        loop {
-            let n = file.read(&mut buffer)?;
-            hasher.update(&buffer[..n]);
-            bytes_read += n;
-            if n != BUF_LEN {
-                break;
+    if checksums {
+        if let Some(sha256) = &path_and_checksum.sha256 {
+            debug!(
+                "SHA256 checksum verification for {}",
+                &path_and_checksum.path
+            );
+            let mut file = fs::File::open(full_path)?;
+            let mut hasher = Sha256::new();
+            let n = io::copy(&mut file, &mut hasher)?;
+            let hash = hasher.finalize();
+            let mut buf = [0u8; 64];
+            let checksum = base16ct::lower::encode_str(&hash, &mut buf).unwrap();
+            if checksum != sha256 {
+                result.push(format!(
+                    "file {:?} (with {} bytes) has checksum sha256:{} instead of sha256:{}",
+                    &full_path, n, &checksum, &sha256
+                ));
             }
+        } else {
+            debug!("SHA256 checksum unknown for {}", &path_and_checksum.path);
         }
-        let hash = hasher.finalize();
-        let mut buf = [0u8; 64];
-        let checksum = base16ct::lower::encode_str(&hash, &mut buf).unwrap();
-        if checksum != md5 {
-            result.push(format!(
-                "file {:?} (with {} bytes) has checksum md5:{} instead of md5:{}",
-                &full_path, bytes_read, &checksum, &md5
-            ));
+
+        if let Some(md5) = &path_and_checksum.md5 {
+            debug!("MD5 checksum verification for {}", &path_and_checksum.path);
+            let mut file = fs::File::open(full_path)?;
+            let mut hasher = Md5::new();
+            const BUF_LEN: usize = 65_536;
+            let mut bytes_read = 0;
+            let mut buffer = [0; BUF_LEN];
+
+            loop {
+                let n = file.read(&mut buffer)?;
+                hasher.update(&buffer[..n]);
+                bytes_read += n;
+                if n != BUF_LEN {
+                    break;
+                }
+            }
+            let hash = hasher.finalize();
+            let mut buf = [0u8; 64];
+            let checksum = base16ct::lower::encode_str(&hash, &mut buf).unwrap();
+            if checksum != md5 {
+                result.push(format!(
+                    "file {:?} (with {} bytes) has checksum md5:{} instead of md5:{}",
+                    &full_path, bytes_read, &checksum, &md5
+                ));
+            }
+        } else {
+            debug!("MD5> checksum unknown for {}", &path_and_checksum.path);
         }
+    } else {
+        debug!(
+            "checksums verification disabled for {}",
+            &path_and_checksum.path
+        );
     }
 
     Ok(())
@@ -236,6 +284,7 @@ mod tests {
         let errors = sanity_check_db(
             &Path::new("tests/sv/conf/good"),
             &Path::new("tests/sv/conf/full.toml"),
+            true,
         )?;
         assert!(errors.is_none());
 
@@ -247,6 +296,7 @@ mod tests {
         let errors = sanity_check_db(
             &Path::new("tests/sv/conf/bad"),
             &Path::new("tests/sv/conf/full.toml"),
+            true,
         )?;
         assert!(errors.is_some());
         assert_eq!(errors.unwrap().len(), 32);
@@ -259,6 +309,7 @@ mod tests {
         let errors = sanity_check_db(
             &Path::new("tests/sv/conf/nonexisting"),
             &Path::new("tests/sv/conf/full.toml"),
+            true,
         )?;
         assert!(errors.is_some());
         assert_eq!(errors.unwrap().len(), 16);
