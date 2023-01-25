@@ -6,7 +6,13 @@ pub mod sv;
 pub mod sv_build_bgdb;
 pub mod sv_query;
 
-#[allow(non_snake_case, unused_imports)]
+#[allow(
+    non_snake_case,
+    unused_imports,
+    clippy::extra_unused_lifetimes,
+    clippy::missing_safety_doc,
+    clippy::derivable_impls
+)]
 #[path = "../target/flatbuffers/world_generated.rs"]
 pub mod world_flatbuffers;
 
@@ -55,6 +61,7 @@ enum SvCommands {
     BuildBgDb(sv_build_bgdb::Args),
     QueryNext(sv::query_next::Args),
     BuildInhouseDb(sv::build_inhouse_db::Args),
+    ConvertBgdb(sv::convert_bgdb::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -89,6 +96,9 @@ fn main() -> Result<(), anyhow::Error> {
                 }
                 SvCommands::BuildInhouseDb(args) => {
                     sv::build_inhouse_db::run(&cli.common, args)?;
+                }
+                SvCommands::ConvertBgdb(args) => {
+                    sv::convert_bgdb::run(&cli.common, args)?;
                 }
                 SvCommands::BuildBgDb(args) => {
                     sv_build_bgdb::run(&term, &cli.common, args)?;

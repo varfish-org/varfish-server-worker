@@ -1,7 +1,5 @@
 // The custom build script, needed as we use flatbuffers.
 
-use flatc_rust;
-
 use std::path::Path;
 
 fn main() {
@@ -10,5 +8,6 @@ fn main() {
         inputs: &[Path::new("src/world.fbs")],
         out_dir: Path::new("target/flatbuffers/"),
         ..Default::default()
-    }).expect("flatc");
+    })
+    .expect("flatc");
 }
