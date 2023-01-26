@@ -10,9 +10,11 @@ use thousands::Separable;
 use tracing::{debug, info};
 
 use crate::common::{build_chrom_map, open_maybe_gz, trace_rss_now};
-use crate::sv::convert_bgdb::records::{DbVarRecord, GnomadRecord, G1kRecord, ExacRecord, DgvGsRecord, DgvRecord};
-use crate::sv_query::schema::SvType;
 use crate::sv::build_inhouse_db::output::Record as InhouseDbRecord;
+use crate::sv::convert_bgdb::records::{
+    DbVarRecord, DgvGsRecord, DgvRecord, ExacRecord, G1kRecord, GnomadRecord,
+};
+use crate::sv_query::schema::SvType;
 use crate::world_flatbuffers::var_fish_server_worker::{BgDbRecord, SvType as FlatSvType};
 
 use self::records::InputRecord;
