@@ -1,5 +1,6 @@
 pub mod bgdbs;
 pub mod interpreter;
+pub mod pathogenic;
 pub mod records;
 pub mod schema;
 
@@ -13,21 +14,21 @@ use std::{
 use anyhow::anyhow;
 use clap::{command, Parser};
 use thousands::Separable;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 use crate::{
     common::{build_chrom_map, open_maybe_gz, trace_rss_now},
     sv::{
         conf::{sanity_check_db, DbConf},
         query::{
-            bgdbs::load_bg_dbs, interpreter::QueryInterpreter,
+            bgdbs::load_bg_dbs, interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
             records::StructuralVariant as RecordSv, schema::CaseQuery,
             schema::StructuralVariant as SchemaSv,
         },
     },
 };
 
-use self::{bgdbs::BgDbBundle, schema::SvType};
+use self::{bgdbs::BgDbBundle, pathogenic::PathoDbBundle, schema::SvType};
 
 /// Command line arguments for `sv query` sub command.
 #[derive(Parser, Debug)]
@@ -97,6 +98,7 @@ struct QueryStats {
 fn run_query(
     interpreter: &QueryInterpreter,
     bg_dbs: &BgDbBundle,
+    patho_dbs: &PathoDbBundle,
     args: &Args,
 ) -> Result<QueryStats, anyhow::Error> {
     let chrom_map = build_chrom_map();
@@ -111,17 +113,23 @@ fn run_query(
         let record_sv: RecordSv = record?;
         let schema_sv: SchemaSv = record_sv.into();
 
-        if interpreter.passes(&schema_sv, |_sv| {
-            bg_dbs.count_overlaps(
-                &schema_sv,
-                &interpreter.query,
-                &chrom_map,
-                args.slack_ins,
-                args.slack_bnd,
-            )
-        })? {
+        if interpreter.passes(
+            &schema_sv,
+            |sv: &SchemaSv| {
+                bg_dbs.count_overlaps(
+                    sv,
+                    &interpreter.query,
+                    &chrom_map,
+                    args.slack_ins,
+                    args.slack_bnd,
+                )
+            }
+        )? {
             stats.count_passed += 1;
             *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
+            if patho_dbs.count_overlaps(&schema_sv, &chrom_map) > 0 {
+                warn!("found overlap with pathogenic {:?}", &schema_sv);
+            }
         }
     }
 
@@ -134,12 +142,13 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
-    info!("Loading backgroun dbs");
+    info!("Loading databases...");
     let db_conf = load_db_conf(args)?;
     let before_loading = Instant::now();
     let bg_dbs = load_bg_dbs(&args.path_db, &db_conf.background_dbs)?;
+    let patho_dbs = load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?;
     info!(
-        "...done loading background dbs in {:?}",
+        "...done loading databases in {:?}",
         before_loading.elapsed()
     );
 
@@ -154,7 +163,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
 
     info!("Running queries...");
     let before_query = Instant::now();
-    let query_stats = run_query(&QueryInterpreter::new(query), &bg_dbs, args)?;
+    let query_stats = run_query(&QueryInterpreter::new(query), &bg_dbs, &patho_dbs, args)?;
     info!("... done running query in {:?}", before_query.elapsed());
     info!(
         "summary: {} records passed out of {}",

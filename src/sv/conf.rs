@@ -12,8 +12,12 @@ use tracing::debug;
 /// Configuration for the database backing the SV annotation.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct DbConf {
-    /// Configuration of public databases.
+    /// Configuration of public background databases; used for excluding artifacts and
+    /// polymorphims.
     pub background_dbs: BackgroundDbsConf,
+    /// Configuration of SV databases with known pathogenic variants, such as the Decipher
+    /// microdeletions and microduplications lists.
+    pub known_pathogenic: KnownPathogenicSvsConf,
     /// Configuration of TAD boundaries.
     pub tads: TadsConf,
     /// Configuration of regulatory features.
@@ -73,6 +77,13 @@ pub struct PathAndChecksum {
     pub md5: Option<String>,
     /// Optional SHA256 checksum.
     pub sha256: Option<String>,
+}
+
+/// Configuration for known pathogenic SVs
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct KnownPathogenicSvsConf {
+    /// MMS list by Wetzel & Danbro (2022)
+    pub mms_wetzel_danbro: PathAndChecksum,
 }
 
 /// TAD configuration.
@@ -283,8 +294,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use crate::sv::conf::{
-        sanity_check_db, BackgroundDbsConf, GenesConf, GenesDetailConf, PathAndChecksum,
-        RegulatoryConf, TadsConf,
+        sanity_check_db, BackgroundDbsConf, GenesConf, GenesDetailConf, KnownPathogenicSvsConf,
+        PathAndChecksum, RegulatoryConf, TadsConf,
     };
 
     use super::DbConf;
@@ -396,6 +407,16 @@ mod tests {
                                 .to_owned()
                         ),
                     }
+                },
+                known_pathogenic: KnownPathogenicSvsConf {
+                    mms_wetzel_danbro: PathAndChecksum {
+                        path: "pathogenic/mms_wetzel_danbro.bed".to_owned(),
+                        md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
+                        sha256: Some(
+                            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                .to_owned()
+                        ),
+                    },
                 },
                 tads: TadsConf {
                     max_dist: 10_000,
@@ -547,6 +568,13 @@ mod tests {
                     },
                     inhouse: PathAndChecksum {
                         path: "inhouse/svs.bin".to_owned(),
+                        md5: None,
+                        sha256: None,
+                    },
+                },
+                known_pathogenic: KnownPathogenicSvsConf {
+                    mms_wetzel_danbro: PathAndChecksum {
+                        path: "pathogenic/mms_wetzel_danbro.bed".to_owned(),
                         md5: None,
                         sha256: None,
                     },

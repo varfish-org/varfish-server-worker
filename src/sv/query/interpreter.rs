@@ -84,9 +84,9 @@ impl QueryInterpreter {
         Ok(true)
     }
 
-    /// Determine whether this record passes the simple criteria regarding
+    /// Determine whether this record passes the selection criteria regarding
     /// size and SV type.
-    pub fn passes_simple(&self, sv: &StructuralVariant) -> bool {
+    pub fn passes_selection(&self, sv: &StructuralVariant) -> bool {
         let pass_sv_type =
             self.query.sv_types.is_empty() || self.query.sv_types.contains(&sv.sv_type);
 
@@ -214,18 +214,23 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<F>(&self, sv: &StructuralVariant, counter: F) -> Result<bool, anyhow::Error>
+    pub fn passes<CountBg>(
+        &self,
+        sv: &StructuralVariant,
+        count_bg: CountBg,
+    ) -> Result<bool, anyhow::Error>
     where
-        F: Fn(&StructuralVariant) -> BgDbOverlaps,
+        CountBg: Fn(&StructuralVariant) -> BgDbOverlaps,
     {
-        // First execute non-overlap based queries.  If all succeed then also run overlapper.
-        if !self.passes_simple(sv)
+        // We first check for matching genotype.  If this succeeds then we execute the
+        // overlapper for known pathogenic and then for frequency in background.
+        if !self.passes_selection(sv)
             || !self.passes_genomic_region(sv)
             || !self.passes_genotype(sv)?
         {
             Ok(false)
         } else {
-            Ok(self.passes_counts(&counter(sv)))
+            Ok(self.passes_counts(&count_bg(sv)))
         }
     }
 
@@ -281,7 +286,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(interpreter.passes_simple(&sv_pass));
+        assert!(interpreter.passes_selection(&sv_pass));
     }
 
     #[test]
@@ -303,7 +308,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
@@ -325,7 +330,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
@@ -348,7 +353,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(interpreter.passes_simple(&sv_pass));
+        assert!(interpreter.passes_selection(&sv_pass));
     }
 
     #[test]
@@ -370,7 +375,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
@@ -392,7 +397,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
