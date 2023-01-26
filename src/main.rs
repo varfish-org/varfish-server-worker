@@ -1,7 +1,6 @@
 //! VarFish Server Worker main executable
 
 pub mod common;
-pub mod err;
 pub mod sv;
 
 #[allow(
@@ -56,10 +55,10 @@ struct Sv {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SvCommands {
-    BuildBgDb(sv::build_bgdb::Args),
+    BuildBgDb(sv::bg_db_build::Args),
     Query(sv::query::Args),
-    BuildInhouseDb(sv::build_inhouse_db::Args),
-    ConvertBgdb(sv::convert_bgdb::Args),
+    InhouseDbBuild(sv::inhouse_db_build::Args),
+    BgDbToBin(sv::bg_db_to_bin::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -89,14 +88,14 @@ fn main() -> Result<(), anyhow::Error> {
                 SvCommands::Query(args) => {
                     sv::query::run(&cli.common, args)?;
                 }
-                SvCommands::BuildInhouseDb(args) => {
-                    sv::build_inhouse_db::run(&cli.common, args)?;
+                SvCommands::InhouseDbBuild(args) => {
+                    sv::inhouse_db_build::run(&cli.common, args)?;
                 }
-                SvCommands::ConvertBgdb(args) => {
-                    sv::convert_bgdb::run(&cli.common, args)?;
+                SvCommands::BgDbToBin(args) => {
+                    sv::bg_db_to_bin::run(&cli.common, args)?;
                 }
                 SvCommands::BuildBgDb(args) => {
-                    sv::build_bgdb::run(&term, &cli.common, args)?;
+                    sv::bg_db_build::run(&term, &cli.common, args)?;
                 }
             },
         }

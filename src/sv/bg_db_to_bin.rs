@@ -10,8 +10,8 @@ use thousands::Separable;
 use tracing::{debug, info};
 
 use crate::common::{build_chrom_map, open_maybe_gz, trace_rss_now};
-use crate::sv::build_inhouse_db::output::Record as InhouseDbRecord;
-use crate::sv::convert_bgdb::records::{
+use crate::sv::inhouse_db_build::output::Record as InhouseDbRecord;
+use crate::sv::bg_db_to_bin::records::{
     DbVarRecord, DgvGsRecord, DgvRecord, ExacRecord, G1kRecord, GnomadRecord,
 };
 use crate::sv::query::schema::SvType;
@@ -26,7 +26,7 @@ use self::records::InputRecord;
 mod records {
     use serde::Deserialize;
 
-    use crate::sv::build_inhouse_db::output::Record as InhouseDbRecord;
+    use crate::sv::inhouse_db_build::output::Record as InhouseDbRecord;
     use crate::sv::query::schema::SvType;
 
     /// dbVar database record as read from TSV file.
@@ -451,7 +451,7 @@ mod tests {
     use temp_testdir::TempDir;
 
     use super::{run, Args};
-    use crate::{common::Args as CommonArgs, sv::convert_bgdb::InputFileType};
+    use crate::{common::Args as CommonArgs, sv::bg_db_to_bin::InputFileType};
 
     #[test]
     fn test_run_smoke() -> Result<(), anyhow::Error> {

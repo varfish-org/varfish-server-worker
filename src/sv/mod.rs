@@ -1,5 +1,5 @@
-pub mod build_inhouse_db;
+pub mod inhouse_db_build;
 pub mod conf;
-pub mod convert_bgdb;
-pub mod build_bgdb;
+pub mod bg_db_to_bin;
+pub mod bg_db_build;
 pub mod query;
