@@ -15,8 +15,12 @@ struct BgDbRecord {
   chrom_no: ubyte;
   chrom_no2: ubyte;
   sv_type: SvType;
-  start: uint;
+  begin: uint;
   end: uint;
   count: uint;
 }
 
+// Background database consists of a Vector of BgDbRecords.
+table BackgroundDatabase {
+  records:[BgDbRecord];
+}

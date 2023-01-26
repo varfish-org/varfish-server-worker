@@ -1,10 +1,18 @@
-use std::path::{Path, PathBuf};
+pub mod bgdbs;
+
+use std::{
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 use anyhow::anyhow;
 use clap::{command, Parser};
 use tracing::{error, info};
 
-use crate::sv::conf::{sanity_check_db, DbConf};
+use crate::sv::{
+    conf::{sanity_check_db, DbConf},
+    query_next::bgdbs::load_bg_dbs,
+};
 
 /// Command line arguments for `sv query` sub command.
 #[derive(Parser, Debug)]
@@ -54,7 +62,13 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
-    let _db_conf = load_db_conf(args)?;
+    let db_conf = load_db_conf(args)?;
+    let before_loading = Instant::now();
+    let _bg_dbs = load_bg_dbs(&args.path_db, &db_conf.background_dbs)?;
+    info!(
+        "done loading background dbs in {:?}",
+        before_loading.elapsed()
+    );
 
     Ok(())
 }

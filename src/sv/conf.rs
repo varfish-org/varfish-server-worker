@@ -262,7 +262,7 @@ fn check_path_and_checksum(
                 ));
             }
         } else {
-            debug!("MD5> checksum unknown for {}", &path_and_checksum.path);
+            debug!("MD5 checksum unknown for {}", &path_and_checksum.path);
         }
     } else {
         debug!(

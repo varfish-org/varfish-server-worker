@@ -23,6 +23,7 @@ flatbuffers = "23.1.21"
 flate2 = "1.0.25"
 log = "0.4.17"
 md-5 = "0.10.5"
+memmap2 = "0.5.8"
 procfs = "0.14.2"
 rust-htslib = { version = "0.40.2", default-features = false }
 serde = { version = "1.0.152", features = ["serde_derive"] }

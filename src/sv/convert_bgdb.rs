@@ -15,7 +15,9 @@ use crate::sv::convert_bgdb::records::{
     DbVarRecord, DgvGsRecord, DgvRecord, ExacRecord, G1kRecord, GnomadRecord,
 };
 use crate::sv_query::schema::SvType;
-use crate::world_flatbuffers::var_fish_server_worker::{BgDbRecord, SvType as FlatSvType};
+use crate::world_flatbuffers::var_fish_server_worker::{
+    BackgroundDatabase, BackgroundDatabaseArgs, BgDbRecord, SvType as FlatSvType,
+};
 
 use self::records::InputRecord;
 
@@ -412,8 +414,14 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
 
     let before_writing = Instant::now();
     let mut builder = flatbuffers::FlatBufferBuilder::new();
-    let output_vector = builder.create_vector(output_records.as_slice());
-    builder.finish_minimal(output_vector);
+    let records = builder.create_vector(output_records.as_slice());
+    let bg_db = BackgroundDatabase::create(
+        &mut builder,
+        &BackgroundDatabaseArgs {
+            records: Some(records),
+        },
+    );
+    builder.finish_minimal(bg_db);
     let mut output_file = File::create(&args.output_bin)?;
     output_file.write_all(builder.finished_data())?;
     output_file.flush()?;
