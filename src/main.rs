@@ -55,10 +55,9 @@ struct Sv {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SvCommands {
-    BuildBgDb(sv::bg_db_build::Args),
-    Query(sv::query::Args),
-    InhouseDbBuild(sv::inhouse_db_build::Args),
     BgDbToBin(sv::bg_db_to_bin::Args),
+    InhouseDbBuild(sv::inhouse_db_build::Args),
+    Query(sv::query::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -85,17 +84,14 @@ fn main() -> Result<(), anyhow::Error> {
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
             Commands::Sv(sv) => match &sv.command {
-                SvCommands::Query(args) => {
-                    sv::query::run(&cli.common, args)?;
+                SvCommands::BgDbToBin(args) => {
+                    sv::bg_db_to_bin::run(&cli.common, args)?;
                 }
                 SvCommands::InhouseDbBuild(args) => {
                     sv::inhouse_db_build::run(&cli.common, args)?;
                 }
-                SvCommands::BgDbToBin(args) => {
-                    sv::bg_db_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::BuildBgDb(args) => {
-                    sv::bg_db_build::run(&term, &cli.common, args)?;
+                SvCommands::Query(args) => {
+                    sv::query::run(&cli.common, args)?;
                 }
             },
         }

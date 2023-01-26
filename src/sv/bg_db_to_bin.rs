@@ -10,10 +10,10 @@ use thousands::Separable;
 use tracing::{debug, info};
 
 use crate::common::{build_chrom_map, open_maybe_gz, trace_rss_now};
-use crate::sv::inhouse_db_build::output::Record as InhouseDbRecord;
 use crate::sv::bg_db_to_bin::records::{
     DbVarRecord, DgvGsRecord, DgvRecord, ExacRecord, G1kRecord, GnomadRecord,
 };
+use crate::sv::inhouse_db_build::output::Record as InhouseDbRecord;
 use crate::sv::query::schema::SvType;
 use crate::world_flatbuffers::var_fish_server_worker::{
     BackgroundDatabase, BackgroundDatabaseArgs, BgDbRecord, SvType as FlatSvType,
@@ -338,13 +338,13 @@ pub enum InputFileType {
 pub struct Args {
     /// Path to input TSV file.
     #[arg(long, required = true)]
-    pub input_tsv: String,
+    pub path_input_tsv: String,
     /// Type of the input record to expect.
     #[arg(long, required = true)]
     pub input_type: InputFileType,
     /// Path to output binary file.
     #[arg(long, required = true)]
-    pub output_bin: String,
+    pub path_output_bin: String,
 }
 
 /// Deserialize from CSV reader to an `Option<records::InputRecord>`
@@ -392,7 +392,7 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&args.input_tsv)?);
+        .from_reader(open_maybe_gz(&args.path_input_tsv)?);
     let before_parsing = Instant::now();
 
     let output_records = match args.input_type {
@@ -422,7 +422,7 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
         },
     );
     builder.finish_minimal(bg_db);
-    let mut output_file = File::create(&args.output_bin)?;
+    let mut output_file = File::create(&args.path_output_bin)?;
     output_file.write_all(builder.finished_data())?;
     output_file.flush()?;
     debug!(
@@ -461,8 +461,8 @@ mod tests {
         };
         let output_bin = tmp_dir.join("output.bin").to_str().unwrap().to_owned();
         let args = Args {
-            input_tsv: "tests/sv/convert_bgdb/input.tsv".to_owned(),
-            output_bin: output_bin.clone(),
+            path_input_tsv: "tests/sv/convert_bgdb/input.tsv".to_owned(),
+            path_output_bin: output_bin.clone(),
             input_type: InputFileType::InhouseDb,
         };
 

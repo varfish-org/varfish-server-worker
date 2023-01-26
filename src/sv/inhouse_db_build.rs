@@ -27,10 +27,10 @@ use super::query::schema::SvType;
 pub struct Args {
     /// Output TSV file to write with resulting SV background db.
     #[arg(long)]
-    pub output_tsv: String,
+    pub path_output_tsv: String,
     /// Input files to cluster, prefix with `@` to file with line-wise paths.
     #[arg(required = true)]
-    pub input_tsvs: Vec<String>,
+    pub path_input_tsvs: Vec<String>,
     /// Minimal reciprocal overlap to use (slightly more strict that the normal query value of 0.75).
     #[arg(long, default_value_t = 0.8)]
     pub min_overlap: f32,
@@ -361,11 +361,11 @@ fn merge_to_out(
 
 /// Perform (chrom, sv_type) wise merging of records in temporary files.
 fn merge_split_files(tmp_dir: &tempdir::TempDir, args: &Args) -> Result<(), anyhow::Error> {
-    info!("merge all files to {}...", &args.output_tsv);
+    info!("merge all files to {}...", &args.path_output_tsv);
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .has_headers(true)
-        .from_path(&args.output_tsv)?;
+        .from_path(&args.path_output_tsv)?;
 
     let mut out_records = 0;
     for chrom in CHROMS {
@@ -392,7 +392,7 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     // Create final list of input paths (expand `@file.tsv`)
     let mut input_tsv_paths = Vec::new();
-    for input_tsv in &args.input_tsvs {
+    for input_tsv in &args.path_input_tsvs {
         if let Some(path) = input_tsv.strip_prefix('@') {
             let path = shellexpand::tilde(&path);
             let lines = read_lines(path.into_owned())?;
