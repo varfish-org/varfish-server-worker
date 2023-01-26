@@ -56,7 +56,7 @@
     "regulatory_custom_configs": [],
     "tad_set": null,
     "genotype": {
-      "__INDEX__~/Data/varfish-workers-input/bwa.delly2.18_5034-N1-DNA1-WGS1.vcf.gz": "variant"
+      "__INDEX__": "variant"
     },
     "genotype_criteria": [
       {

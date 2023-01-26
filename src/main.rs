@@ -58,7 +58,7 @@ struct Sv {
 #[derive(Debug, Subcommand)]
 enum SvCommands {
     BuildBgDb(sv_build_bgdb::Args),
-    QueryNext(sv::query_next::Args),
+    Query(sv::query::Args),
     BuildInhouseDb(sv::build_inhouse_db::Args),
     ConvertBgdb(sv::convert_bgdb::Args),
 }
@@ -87,8 +87,8 @@ fn main() -> Result<(), anyhow::Error> {
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
             Commands::Sv(sv) => match &sv.command {
-                SvCommands::QueryNext(args) => {
-                    sv::query_next::run(&cli.common, args)?;
+                SvCommands::Query(args) => {
+                    sv::query::run(&cli.common, args)?;
                 }
                 SvCommands::BuildInhouseDb(args) => {
                     sv::build_inhouse_db::run(&cli.common, args)?;

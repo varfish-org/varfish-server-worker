@@ -202,11 +202,7 @@ impl QueryInterpreter {
         let passes_g1k = !self.query.svdb_g1k_enabled
             || counts.g1k <= self.query.svdb_g1k_max_count.unwrap_or(counts.g1k);
         let passes_inhouse = !self.query.svdb_inhouse_enabled
-            || counts.inhouse
-                <= self
-                    .query
-                    .svdb_inhouse_max_count
-                    .unwrap_or(counts.inhouse);
+            || counts.inhouse <= self.query.svdb_inhouse_max_count.unwrap_or(counts.inhouse);
 
         passes_dgv
             && passes_dgv_gs
@@ -244,7 +240,7 @@ impl QueryInterpreter {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::sv::query_next::schema::{
+    use crate::sv::query::schema::{
         CallInfo, Database, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
     };
 

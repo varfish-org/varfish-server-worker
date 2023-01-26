@@ -19,7 +19,7 @@ use tracing::{debug, info};
 
 use crate::common::{build_chrom_map, open_maybe_gz, trace_rss_now, CHROMS};
 
-use super::query_next::schema::SvType;
+use super::query::schema::SvType;
 
 /// Command line arguments for `sv build-inhouse-db` sub command.
 #[derive(Parser, Debug)]
@@ -46,7 +46,7 @@ pub struct Args {
 pub mod input {
     use serde::{de::IntoDeserializer, Deserializer};
 
-    use crate::sv::query_next::schema::{StrandOrientation, SvType};
+    use crate::sv::query::schema::{StrandOrientation, SvType};
 
     use super::*;
 
@@ -114,7 +114,7 @@ pub mod input {
 
 /// Code for writing the output file.
 pub mod output {
-    use crate::sv::query_next::schema::{StrandOrientation, SvType};
+    use crate::sv::query::schema::{StrandOrientation, SvType};
 
     use super::{input::Record as InputRecord, *};
 

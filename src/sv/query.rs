@@ -19,7 +19,7 @@ use crate::{
     common::{build_chrom_map, open_maybe_gz, trace_rss_now},
     sv::{
         conf::{sanity_check_db, DbConf},
-        query_next::{
+        query::{
             bgdbs::load_bg_dbs, interpreter::QueryInterpreter,
             records::StructuralVariant as RecordSv, schema::CaseQuery,
             schema::StructuralVariant as SchemaSv,

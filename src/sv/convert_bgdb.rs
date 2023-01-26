@@ -14,7 +14,7 @@ use crate::sv::build_inhouse_db::output::Record as InhouseDbRecord;
 use crate::sv::convert_bgdb::records::{
     DbVarRecord, DgvGsRecord, DgvRecord, ExacRecord, G1kRecord, GnomadRecord,
 };
-use crate::sv::query_next::schema::SvType;
+use crate::sv::query::schema::SvType;
 use crate::world_flatbuffers::var_fish_server_worker::{
     BackgroundDatabase, BackgroundDatabaseArgs, BgDbRecord, SvType as FlatSvType,
 };
@@ -27,7 +27,7 @@ mod records {
     use serde::Deserialize;
 
     use crate::sv::build_inhouse_db::output::Record as InhouseDbRecord;
-    use crate::sv::query_next::schema::SvType;
+    use crate::sv::query::schema::SvType;
 
     /// dbVar database record as read from TSV file.
     #[derive(Debug, Deserialize)]

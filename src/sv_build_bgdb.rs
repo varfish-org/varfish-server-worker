@@ -21,7 +21,7 @@ use thousands::Separable;
 
 use crate::{
     common::{build_chrom_map, print_rss_now, Args as CommonArgs, CHROMS},
-    sv::query_next::schema::{StrandOrientation, SvType},
+    sv::query::schema::{StrandOrientation, SvType},
 };
 
 use self::recordio::FileRecord;
