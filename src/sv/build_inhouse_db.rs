@@ -60,13 +60,13 @@ pub mod input {
         /// chromosome name
         pub chromosome: String,
         /// UCSC bin
-        pub bin: i32,
+        pub bin: u32,
         /// start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// chromosome2 name
         pub chromosome2: String,
         /// end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// paired-end orientation
         #[serde(deserialize_with = "from_varfish_pe_orientation")]
         pub pe_orientation: StrandOrientation,
@@ -127,11 +127,11 @@ pub mod output {
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// chromosome2 name
         pub chromosome2: String,
         /// end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// paired-end orientation
         pub pe_orientation: StrandOrientation,
         /// type of the SV
@@ -293,11 +293,11 @@ fn merge_to_out(
     while let Ok(Some(record)) = reader.read::<input::Record>() {
         let record = output::Record::from_db_record(record);
         let slack = match record.sv_type {
-            SvType::Bnd => args.slack_bnd as i32,
-            SvType::Ins => args.slack_ins as i32,
+            SvType::Bnd => args.slack_bnd as u32,
+            SvType::Ins => args.slack_ins as u32,
             _ => 0,
         };
-        let query = (record.start - 1 - slack)..(record.end + slack);
+        let query = ((record.start - 1 - slack) as i32)..((record.end + slack) as i32);
         let mut found_any_cluster = false;
         for mut it_tree in tree.find_mut(&query) {
             let cluster_idx = *it_tree.data();
@@ -323,7 +323,10 @@ fn merge_to_out(
         }
         if !found_any_cluster {
             // create new cluster
-            tree.insert((record.start - 1)..(record.end), clusters.len());
+            tree.insert(
+                ((record.start - 1) as i32)..(record.end as i32),
+                clusters.len(),
+            );
             clusters.push(vec![records.len()]);
         }
         // always register the record

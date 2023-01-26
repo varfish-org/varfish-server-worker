@@ -11,11 +11,12 @@ enum SvType : byte {
 }
 
 // Background database record.
-table BgDbRecord {
-  chrom_no: ushort;
-  chrom_no2: ushort;
+struct BgDbRecord {
+  chrom_no: ubyte;
+  chrom_no2: ubyte;
+  sv_type: SvType;
   start: uint;
   end: uint;
-  sv_type: SvType;
   count: uint;
 }
+
