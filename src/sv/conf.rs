@@ -307,6 +307,7 @@ mod tests {
             Path::new("tests/sv/conf/full.toml"),
             true,
         )?;
+        println!("{:?}", &errors);
         assert!(errors.is_none());
 
         Ok(())
@@ -421,7 +422,7 @@ mod tests {
                 tads: TadsConf {
                     max_dist: 10_000,
                     hesc: PathAndChecksum {
-                        path: "tads/hesc.bin".to_owned(),
+                        path: "tads/hesc.bed".to_owned(),
                         md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
                         sha256: Some(
                             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -429,7 +430,7 @@ mod tests {
                         ),
                     },
                     imr90: PathAndChecksum {
-                        path: "tads/imr90.bin".to_owned(),
+                        path: "tads/imr90.bed".to_owned(),
                         md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
                         sha256: Some(
                             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -582,12 +583,12 @@ mod tests {
                 tads: TadsConf {
                     max_dist: 10_000,
                     hesc: PathAndChecksum {
-                        path: "tads/hesc.bin".to_owned(),
+                        path: "tads/hesc.bed".to_owned(),
                         md5: None,
                         sha256: None,
                     },
                     imr90: PathAndChecksum {
-                        path: "tads/imr90.bin".to_owned(),
+                        path: "tads/imr90.bed".to_owned(),
                         md5: None,
                         sha256: None,
                     }
