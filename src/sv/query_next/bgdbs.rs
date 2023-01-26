@@ -28,8 +28,6 @@ pub struct BgDb {
     pub trees: Vec<IntervalTree>,
 }
 
-
-
 impl BgDb {
     pub fn count_overlaps(
         &self,
@@ -90,8 +88,6 @@ impl BeginEnd for BgDbRecord {
     }
 }
 
-
-
 /// Load background database from a `.bin` file as created by `sv convert-bgdb`.
 #[tracing::instrument]
 pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
@@ -133,6 +129,10 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         path,
         before_loading.elapsed()
     );
+
+    let before_building = Instant::now();
+    result.trees.iter_mut().for_each(|tree| tree.index());
+    debug!("done building itress in {:?}", before_building.elapsed());
 
     Ok(result)
 }

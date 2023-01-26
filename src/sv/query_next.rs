@@ -12,6 +12,7 @@ use std::{
 
 use anyhow::anyhow;
 use clap::{command, Parser};
+use thousands::Separable;
 use tracing::{error, info};
 
 use crate::{
@@ -129,6 +130,7 @@ fn run_query(
 
 /// Main entry point for `sv query` sub command.
 pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+    let before_anything = Instant::now();
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
@@ -154,12 +156,17 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     info!("... done running query in {:?}", before_query.elapsed());
     info!(
         "summary: {} records passed out of {}",
-        query_stats.count_passed, query_stats.count_total
+        query_stats.count_passed.separate_with_commas(),
+        query_stats.count_total.separate_with_commas()
     );
     info!("passing records by SV type");
     for (sv_type, count) in query_stats.by_sv_type.iter() {
         info!("{:?} -- {}", sv_type, count);
     }
 
+    info!(
+        "All of `sv query` completed in {:?}",
+        before_anything.elapsed()
+    );
     Ok(())
 }

@@ -2,7 +2,10 @@
 
 use std::collections::HashMap;
 
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{
+    de::{self, IntoDeserializer},
+    Deserialize, Deserializer, Serialize,
+};
 
 use super::schema::{
     CallInfo as SchemaCallInfo, StrandOrientation, StructuralVariant as SchemaStructuralVariant,
@@ -20,15 +23,18 @@ pub struct StructuralVariant {
     /// break-ends)
     pub start: u32,
     /// Type of the structural variant
+    #[serde(deserialize_with = "deserialize_sv_type")]
     pub sv_type: SvType,
     /// Sub type of the structural variant
+    #[serde(deserialize_with = "deserialize_sv_sub_type")]
     pub sv_sub_type: SvSubType,
     /// Potentially the second involved chromosome
     pub chromosome2: Option<String>,
     /// End position (position on second chromosome for break-ends)
     pub end: u32,
     /// The strand orientation of the structural variant, if applicable.
-    pub strand_orientation: StrandOrientation,
+    #[serde(deserialize_with = "deserialize_pe_orientation")]
+    pub pe_orientation: StrandOrientation,
     /// Mapping of sample to genotype information for the SV.
     #[serde(deserialize_with = "deserialize_genotype")]
     pub genotype: HashMap<String, Genotype>,
@@ -36,6 +42,10 @@ pub struct StructuralVariant {
 
 impl From<StructuralVariant> for SchemaStructuralVariant {
     fn from(val: StructuralVariant) -> Self {
+        fn to_u32(val: Option<i32>) -> Option<u32> {
+            val.and_then(|val| if val >= 0 { Some(val as u32) } else { None })
+        }
+
         SchemaStructuralVariant {
             chrom: val.chromosome,
             pos: val.start,
@@ -43,25 +53,54 @@ impl From<StructuralVariant> for SchemaStructuralVariant {
             sv_sub_type: val.sv_sub_type,
             chrom2: val.chromosome2,
             end: val.end,
-            strand_orientation: Some(val.strand_orientation),
+            strand_orientation: Some(val.pe_orientation),
             call_info: HashMap::from_iter(val.genotype.into_iter().map(|(k, v)| {
                 (
                     k,
                     SchemaCallInfo {
                         genotype: v.gt,
                         quality: v.gq,
-                        paired_end_cov: v.pec,
-                        paired_end_var: v.pev,
-                        split_read_cov: v.src,
-                        split_read_var: v.srv,
-                        copy_number: v.cn,
+                        paired_end_cov: to_u32(v.pec),
+                        paired_end_var: to_u32(v.pev),
+                        split_read_cov: to_u32(v.src),
+                        split_read_var: to_u32(v.srv),
+                        copy_number: to_u32(v.cn),
                         average_normalized_cov: v.anc,
-                        point_count: v.pc,
+                        point_count: to_u32(v.pc),
                         average_mapping_quality: v.amq,
                     },
                 )
             })),
         }
+    }
+}
+
+fn deserialize_sv_type<'de, D>(deserializer: D) -> Result<SvType, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    let end = s.find('_').unwrap_or(s.len());
+    SvType::deserialize(s[..end].into_deserializer())
+}
+
+fn deserialize_sv_sub_type<'de, D>(deserializer: D) -> Result<SvSubType, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    SvSubType::deserialize(s.replace('_', ":").into_deserializer())
+}
+
+fn deserialize_pe_orientation<'de, D>(deserializer: D) -> Result<StrandOrientation, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    if s.eq(".") {
+        Ok(StrandOrientation::NotApplicable)
+    } else {
+        StrandOrientation::deserialize(s.into_deserializer())
     }
 }
 
@@ -82,19 +121,19 @@ pub struct Genotype {
     /// Genotype quality score, if applicable
     pub gq: Option<f32>,
     /// Paired-end coverage, if applicable
-    pub pec: Option<u32>,
+    pub pec: Option<i32>,
     /// Paired-end variant support, if applicable
-    pub pev: Option<u32>,
+    pub pev: Option<i32>,
     /// Split-read coverage, if applicable
-    pub src: Option<u32>,
+    pub src: Option<i32>,
     /// Split-read variant support, if applicable
-    pub srv: Option<u32>,
+    pub srv: Option<i32>,
     /// Integer copy number estimate, if applicable
-    pub cn: Option<u32>,
+    pub cn: Option<i32>,
     /// Average normalized coverage, if applicable
     pub anc: Option<f32>,
     /// Number of buckets/targets supporting the CNV call, if applicable
-    pub pc: Option<u32>,
+    pub pc: Option<i32>,
     /// Average mapping quality, if applicable
     pub amq: Option<f32>,
 }
