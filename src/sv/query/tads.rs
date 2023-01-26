@@ -128,7 +128,7 @@ fn load_tad_sets(path: &Path) -> Result<TadSet, anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&path.to_str().unwrap())?);
+        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
     let mut total_count = 0;
     for record in reader.deserialize() {
         let record: input::Record = record?;

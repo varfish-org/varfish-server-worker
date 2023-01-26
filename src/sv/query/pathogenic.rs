@@ -51,7 +51,7 @@ impl PathoDb {
         let range = sv.pos.saturating_sub(1)..sv.end;
 
         self.trees[chrom_idx]
-            .find(range.clone())
+            .find(range)
             .iter()
             .map(|e| &self.records[chrom_idx][*e.data() as usize])
             .map(|_record| 1)
@@ -106,7 +106,7 @@ fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&path.to_str().unwrap())?);
+        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
     let mut total_count = 0;
     for record in reader.deserialize() {
         let record: input::Record = record?;
