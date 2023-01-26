@@ -96,3 +96,31 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use clap_verbosity_flag::Verbosity;
+    use temp_testdir::TempDir;
+    
+    use crate::common::Args as CommonArgs;
+    use super::{Args, run};
+
+    #[test]
+    fn test_run_smoke() -> Result<(), anyhow::Error> {
+        let tmp_dir = TempDir::default();
+        let common_args = CommonArgs {
+            verbose: Verbosity::new(0, 0),
+        };
+        let output_bin = tmp_dir.join("output.bin").to_str().unwrap().to_owned();
+        let args = Args {
+            input_tsv: "tests/sv/convert_bgdb/input.tsv".to_owned(),
+            output_bin: output_bin.clone(),
+        };
+
+        run(&common_args, &args)?;
+
+        file_diff::diff("tests/sv/convert_bgdb/output.bin", &output_bin);
+
+        Ok(())
+    }
+}

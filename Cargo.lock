@@ -547,6 +547,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "835a3dc7d1ec9e75e2b5fb4ba75396837112d2060b03f7d43bc1897c7f7211da"
 
 [[package]]
+name = "file_diff"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31a7a908b8f32538a2143e59a6e4e2508988832d5d4d6f7c156b3cbc762643a5"
+
+[[package]]
 name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1581,6 +1587,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "temp_testdir"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "921f1e9c427802414907a48b21a6504ff6b3a15a1a3cf37e699590949ad9befc"
+
+[[package]]
 name = "tempdir"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1816,6 +1828,7 @@ dependencies = [
  "clap-verbosity-flag",
  "console",
  "csv",
+ "file_diff",
  "flatbuffers",
  "flatc-rust",
  "flate2",
@@ -1832,6 +1845,7 @@ dependencies = [
  "shellexpand",
  "strum",
  "strum_macros",
+ "temp_testdir",
  "tempdir",
  "thiserror",
  "thousands",
