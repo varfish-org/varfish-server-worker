@@ -28,6 +28,17 @@ $ varfish-server-worker sv bg-db-to-bin \
     --input-type TYPE
 ```
 
+## The `sv bg-db-to-bin` Command
+
+Convert a gene region file from VarFish DB Downloader to output a binary file.
+The binary file uses `flatbuffers` for fast I/O (startup time is less than 200ms on workstation with NVME).
+
+```
+$ varfish-server-worker sv gene-region-to-bin \
+    --path-input-tsv INPUT.tsv \
+    --path-output-bin OUTPUT.bin
+```
+
 ## The `sv inhouse-db-build` Command
 
 Compute in-house database TSV file from one or more VarFish Annotator annotated SV call sets.

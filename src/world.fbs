@@ -20,7 +20,20 @@ struct BgDbRecord {
   count: uint;
 }
 
-// Background database consists of a Vector of BgDbRecords.
+// Background database consists of a Vector of BgDbRecord.
 table BackgroundDatabase {
   records:[BgDbRecord];
+}
+
+// Gene region record.
+struct GeneRegionRecord {
+  chrom_no: ubyte;
+  begin: uint;
+  end: uint;
+  gene_id: uint;
+}
+
+// Gene region databases consist of Vector of GeneRegionRecord.
+table GeneRegionDatabase {
+  records:[GeneRegionRecord];
 }

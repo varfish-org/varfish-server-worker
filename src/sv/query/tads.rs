@@ -3,8 +3,7 @@
 use std::{collections::HashMap, path::Path};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
-use log::info;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::{
     common::{build_chrom_map, open_maybe_gz, CHROMS},
@@ -39,7 +38,7 @@ pub struct Record {
     pub end: u32,
 }
 
-/// Code for background database overlappers.
+/// TAD set overlapping information.
 #[derive(Default, Debug)]
 pub struct TadSet {
     /// Records, stored by chromosome.
