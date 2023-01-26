@@ -43,6 +43,9 @@ jobs:
            override: true
            components: clippy
 
+      - name: Install flatbuffers
+        uses: ./.github/actions/install-flatbuffers
+
        - name: Lint with clippy
          uses: actions-rs/clippy-check@v1
          with:
