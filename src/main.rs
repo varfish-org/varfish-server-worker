@@ -3,7 +3,6 @@
 pub mod common;
 pub mod err;
 pub mod sv;
-pub mod sv_build_bgdb;
 
 #[allow(
     non_snake_case,
@@ -57,7 +56,7 @@ struct Sv {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SvCommands {
-    BuildBgDb(sv_build_bgdb::Args),
+    BuildBgDb(sv::build_bgdb::Args),
     Query(sv::query::Args),
     BuildInhouseDb(sv::build_inhouse_db::Args),
     ConvertBgdb(sv::convert_bgdb::Args),
@@ -97,7 +96,7 @@ fn main() -> Result<(), anyhow::Error> {
                     sv::convert_bgdb::run(&cli.common, args)?;
                 }
                 SvCommands::BuildBgDb(args) => {
-                    sv_build_bgdb::run(&term, &cli.common, args)?;
+                    sv::build_bgdb::run(&term, &cli.common, args)?;
                 }
             },
         }
