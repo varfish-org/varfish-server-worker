@@ -1,6 +1,11 @@
 pub mod bgdbs;
+pub mod interpreter;
+pub mod records;
+pub mod schema;
 
 use std::{
+    collections::BTreeMap,
+    fs::File,
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -9,24 +14,45 @@ use anyhow::anyhow;
 use clap::{command, Parser};
 use tracing::{error, info};
 
-use crate::sv::{
-    conf::{sanity_check_db, DbConf},
-    query_next::bgdbs::load_bg_dbs,
+use crate::{
+    common::{build_chrom_map, open_maybe_gz},
+    sv::{
+        conf::{sanity_check_db, DbConf},
+        query_next::{
+            bgdbs::load_bg_dbs, interpreter::QueryInterpreter,
+            records::StructuralVariant as RecordSv, schema::CaseQuery,
+            schema::StructuralVariant as SchemaSv,
+        },
+    },
 };
+
+use self::{bgdbs::BgDbBundle, schema::SvType};
 
 /// Command line arguments for `sv query` sub command.
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Run query for SVs", long_about = None)]
 pub struct Args {
     /// Path to database to use for querying.
-    #[arg(long)]
+    #[arg(long, required = true)]
     pub path_db: String,
     /// Path to configuration file, defaults to `${path_db}/conf.toml`.
     #[arg(long)]
     pub path_conf: Option<String>,
+    /// Path to query JSON file.
+    #[arg(long, required = true)]
+    pub path_query_json: String,
+    /// Path to input TSV file.
+    #[arg(long, required = true)]
+    pub path_input_svs: String,
     /// Disable checksum verifiation.
     #[arg(long, default_value_t = false)]
     pub disable_checksums: bool,
+    /// Slack to use around BND.
+    #[arg(long, default_value_t = 50)]
+    pub slack_bnd: u32,
+    /// Slack to use around INS.
+    #[arg(long, default_value_t = 50)]
+    pub slack_ins: u32,
 }
 
 /// Load database configuration and perform sanity checks as configured.
@@ -58,17 +84,82 @@ fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
     Ok(conf)
 }
 
+/// Utility struct to store statistics about counts.
+#[derive(Debug, Default)]
+struct QueryStats {
+    pub count_passed: usize,
+    pub count_total: usize,
+    pub by_sv_type: BTreeMap<SvType, usize>,
+}
+
+/// Open the SV file at `path_sv_tsv` and run through the given `interpreter`.
+fn run_query(
+    interpreter: &QueryInterpreter,
+    bg_dbs: &BgDbBundle,
+    args: &Args,
+) -> Result<QueryStats, anyhow::Error> {
+    let chrom_map = build_chrom_map();
+    let mut stats = QueryStats::default();
+
+    let mut csv_reader = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .delimiter(b'\t')
+        .from_reader(open_maybe_gz(&args.path_input_svs)?);
+    for record in csv_reader.deserialize() {
+        stats.count_total += 1;
+        let record_sv: RecordSv = record?;
+        let schema_sv: SchemaSv = record_sv.into();
+
+        if interpreter.passes(&schema_sv, |_sv| {
+            bg_dbs.count_overlaps(
+                &schema_sv,
+                &interpreter.query,
+                &chrom_map,
+                args.slack_ins,
+                args.slack_bnd,
+            )
+        })? {
+            stats.count_passed += 1;
+            *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
+        }
+    }
+
+    Ok(stats)
+}
+
+/// Main entry point for `sv query` sub command.
 pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
+    info!("Loading backgroun dbs");
     let db_conf = load_db_conf(args)?;
     let before_loading = Instant::now();
-    let _bg_dbs = load_bg_dbs(&args.path_db, &db_conf.background_dbs)?;
+    let bg_dbs = load_bg_dbs(&args.path_db, &db_conf.background_dbs)?;
     info!(
-        "done loading background dbs in {:?}",
+        "...done loading background dbs in {:?}",
         before_loading.elapsed()
     );
+
+    info!("Loading query...");
+    let query: CaseQuery = serde_json::from_reader(File::open(&args.path_query_json)?)?;
+    info!(
+        "... done loading query = {}",
+        &serde_json::to_string(&query)?
+    );
+
+    info!("Running queries...");
+    let before_query = Instant::now();
+    let query_stats = run_query(&QueryInterpreter::new(query), &bg_dbs, &args)?;
+    info!("... done running query in {:?}", before_query.elapsed());
+    info!(
+        "summary: {} records passed out of {}",
+        query_stats.count_passed, query_stats.count_total
+    );
+    info!("passing records by SV type");
+    for (sv_type, count) in query_stats.by_sv_type.iter() {
+        info!("{:?} -- {}", sv_type, count);
+    }
 
     Ok(())
 }

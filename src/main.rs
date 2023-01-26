@@ -11,7 +11,8 @@ pub mod sv_query;
     unused_imports,
     clippy::extra_unused_lifetimes,
     clippy::missing_safety_doc,
-    clippy::derivable_impls
+    clippy::derivable_impls,
+    clippy::size_of_in_element_count
 )]
 #[path = "../target/flatbuffers/world_generated.rs"]
 pub mod world_flatbuffers;

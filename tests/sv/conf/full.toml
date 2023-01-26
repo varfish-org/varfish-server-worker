@@ -30,6 +30,11 @@ path = 'public/exac.bin'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
+[background_dbs.g1k]
+path = 'public/g1k.bin'
+md5 = 'd41d8cd98f00b204e9800998ecf8427e'
+sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
 [background_dbs.inhouse]
 path = 'inhouse/svs.bin'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'

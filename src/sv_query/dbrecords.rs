@@ -6,16 +6,18 @@ use std::ops::Range;
 pub trait ChromosomeCoordinate {
     fn chromosome(&self) -> &String;
     /// 0-based begin position
-    fn begin(&self) -> i32;
+    fn begin(&self) -> u32;
     /// 1-based begin position
-    fn start(&self) -> i32;
+    fn start(&self) -> u32;
     /// 0/1-based end position
-    fn end(&self) -> i32;
+    fn end(&self) -> u32;
 }
 
 pub trait BeginEnd {
-    fn begin(&self) -> i32;
-    fn end(&self) -> i32;
+    /// 0-base begin position
+    fn begin(&self) -> u32;
+    /// 0-based end position
+    fn end(&self) -> u32;
 }
 
 pub trait ToInMemory<InMemory> {
@@ -74,28 +76,28 @@ pub mod bg_sv {
     #[derive(Debug)]
     pub struct Record {
         /// The 0-based begin position.
-        pub begin: i32,
+        pub begin: u32,
         /// The 0-based end position.
-        pub end: i32,
+        pub end: u32,
 
         /// type of the SV
         pub sv_type: SvType,
 
         /// Total number of carriers.
-        pub carriers: i32,
+        pub carriers: u32,
         /// Number of het. carriers.
-        pub carriers_het: i32,
+        pub carriers_het: u32,
         /// Number of hom. carriers.
-        pub carriers_hom: i32,
+        pub carriers_hom: u32,
         /// Number of hemi. carriers.
-        pub carriers_hemi: i32,
+        pub carriers_hemi: u32,
     }
 
     impl BeginEnd for Record {
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.begin
         }
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -114,23 +116,23 @@ pub mod bg_sv {
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// chromosome2 name
         pub chromosome2: String,
         /// end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// paired-end orientation
         pub pe_orientation: String,
         /// type of the SV
         pub sv_type: String,
         /// number of overall carriers
-        pub carriers: i32,
+        pub carriers: u32,
         /// number of het. carriers
-        pub carriers_het: i32,
+        pub carriers_het: u32,
         /// number of hom. carriers
-        pub carriers_hom: i32,
+        pub carriers_hom: u32,
         /// number of hemi. carriers
-        pub carriers_hemi: i32,
+        pub carriers_hemi: u32,
     }
 
     impl ChromosomeCoordinate for FileRecord {
@@ -138,15 +140,15 @@ pub mod bg_sv {
             &self.chromosome
         }
 
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.start - 1
         }
 
-        fn start(&self) -> i32 {
+        fn start(&self) -> u32 {
             self.start
         }
 
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -154,7 +156,7 @@ pub mod bg_sv {
     impl ToInMemory<Record> for FileRecord {
         fn to_in_memory(&self) -> Result<Option<Record>, anyhow::Error> {
             Ok(Some(Record {
-                begin: self.start - 1,
+                begin: self.start.saturating_sub(1),
                 end: self.end,
                 sv_type: serde_json::from_str(&format!(
                     "\"{}\"",
@@ -181,22 +183,22 @@ pub mod dbvar {
     #[derive(Debug, Deserialize)]
     pub struct Record {
         /// start position, 0-based
-        pub begin: i32,
+        pub begin: u32,
         /// end position, 0-based
-        pub end: i32,
+        pub end: u32,
 
         /// type of the SV
         pub sv_type: SvType,
 
         /// number of overall carriers
-        pub carriers: i32,
+        pub carriers: u32,
     }
 
     impl BeginEnd for Record {
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.begin
         }
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -215,11 +217,11 @@ pub mod dbvar {
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// number of overall carriers
-        pub num_carriers: i32,
+        pub num_carriers: u32,
         /// type of the SV
         pub sv_type: String,
     }
@@ -254,15 +256,15 @@ pub mod dbvar {
             &self.chromosome
         }
 
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.start - 1
         }
 
-        fn start(&self) -> i32 {
+        fn start(&self) -> u32 {
             self.start
         }
 
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -280,22 +282,22 @@ pub mod gnomad_sv {
     #[derive(Debug, Deserialize)]
     pub struct Record {
         /// start position, 0-based
-        pub begin: i32,
+        pub begin: u32,
         /// end position, 0-based
-        pub end: i32,
+        pub end: u32,
 
         /// type of the SV
         pub sv_type: SvType,
 
         /// number of overall carriers
-        pub carriers: i32,
+        pub carriers: u32,
     }
 
     impl BeginEnd for Record {
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.begin
         }
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -314,15 +316,15 @@ pub mod gnomad_sv {
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// The structural vairant type
         pub svtype: String,
         /// Number of homozygous alternative carriers
-        pub n_homalt: i32,
+        pub n_homalt: u32,
         /// Number of heterozygous carriers
-        pub n_het: i32,
+        pub n_het: u32,
     }
 
     impl ToInMemory<Record> for FileRecord {
@@ -351,15 +353,15 @@ pub mod gnomad_sv {
             &self.chromosome
         }
 
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.start - 1
         }
 
-        fn start(&self) -> i32 {
+        fn start(&self) -> u32 {
             self.start
         }
 
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -376,22 +378,22 @@ pub mod g1k_sv {
     #[derive(Debug, Deserialize)]
     pub struct Record {
         /// start position, 0-based
-        pub begin: i32,
+        pub begin: u32,
         /// end position, 0-based
-        pub end: i32,
+        pub end: u32,
 
         /// type of the SV
         pub sv_type: SvType,
 
         /// number of overall variant alleles
-        pub alleles: i32,
+        pub alleles: u32,
     }
 
     impl BeginEnd for Record {
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.begin
         }
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -410,13 +412,13 @@ pub mod g1k_sv {
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// The structural vairant type
         sv_type: String,
         /// Number of variant alleles
-        num_var_alleles: i32,
+        num_var_alleles: u32,
     }
 
     impl ToInMemory<Record> for FileRecord {
@@ -444,15 +446,15 @@ pub mod g1k_sv {
             &self.chromosome
         }
 
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.start - 1
         }
 
-        fn start(&self) -> i32 {
+        fn start(&self) -> u32 {
             self.start
         }
 
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -470,22 +472,22 @@ pub mod dgv {
     #[derive(Debug, Deserialize)]
     pub struct Record {
         /// start position, 0-based
-        pub begin: i32,
+        pub begin: u32,
         /// end position, 0-based
-        pub end: i32,
+        pub end: u32,
 
         /// type of the SV
         pub sv_type: SvType,
 
         /// number of overall carriers
-        pub carriers: i32,
+        pub carriers: u32,
     }
 
     impl BeginEnd for Record {
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.begin
         }
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -504,15 +506,15 @@ pub mod dgv {
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// The structural variant type
         sv_type: String,
         /// Number of observed gains.
-        observed_gains: i32,
+        observed_gains: u32,
         /// Number of observed losses
-        observed_losses: i32,
+        observed_losses: u32,
     }
 
     impl ToInMemory<Record> for FileRecord {
@@ -553,15 +555,15 @@ pub mod dgv {
             &self.chromosome
         }
 
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.start - 1
         }
 
-        fn start(&self) -> i32 {
+        fn start(&self) -> u32 {
             self.start
         }
 
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -579,22 +581,22 @@ pub mod dgv_gs {
     #[derive(Debug, Deserialize)]
     pub struct Record {
         /// start position, 0-based
-        pub begin: i32,
+        pub begin: u32,
         /// end position, 0-based
-        pub end: i32,
+        pub end: u32,
 
         /// type of the SV
         pub sv_type: SvType,
 
         /// number of overall carriers
-        pub carriers: i32,
+        pub carriers: u32,
     }
 
     impl BeginEnd for Record {
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.begin
         }
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -613,13 +615,13 @@ pub mod dgv_gs {
         /// chromosome name
         pub chromosome: String,
         /// outer start position, 1-based
-        pub start_outer: i32,
+        pub start_outer: u32,
         /// outer end position, 1-based
-        pub end_outer: i32,
+        pub end_outer: u32,
         /// The structural variant type
         pub sv_sub_type: String,
         /// Number of carriers.
-        pub num_carriers: i32,
+        pub num_carriers: u32,
     }
 
     impl ToInMemory<Record> for FileRecord {
@@ -643,15 +645,15 @@ pub mod dgv_gs {
             &self.chromosome
         }
 
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.start_outer - 1
         }
 
-        fn start(&self) -> i32 {
+        fn start(&self) -> u32 {
             self.start_outer
         }
 
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end_outer
         }
     }
@@ -669,22 +671,22 @@ pub mod exac_cnv {
     #[derive(Debug, Deserialize)]
     pub struct Record {
         /// start position, 0-based
-        pub begin: i32,
+        pub begin: u32,
         /// end position, 0-based
-        pub end: i32,
+        pub end: u32,
 
         /// type of the SV
         pub sv_type: SvType,
 
         /// number of overall carriers
-        pub carriers: i32,
+        pub carriers: u32,
     }
 
     impl BeginEnd for Record {
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.begin
         }
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }
@@ -703,9 +705,9 @@ pub mod exac_cnv {
         /// chromosome name
         pub chromosome: String,
         /// outer start position, 1-based
-        pub start: i32,
+        pub start: u32,
         /// outer end position, 1-based
-        pub end: i32,
+        pub end: u32,
         /// The structural vairant type
         pub sv_type: String,
     }
@@ -731,15 +733,15 @@ pub mod exac_cnv {
             &self.chromosome
         }
 
-        fn begin(&self) -> i32 {
+        fn begin(&self) -> u32 {
             self.start - 1
         }
 
-        fn start(&self) -> i32 {
+        fn start(&self) -> u32 {
             self.start
         }
 
-        fn end(&self) -> i32 {
+        fn end(&self) -> u32 {
             self.end
         }
     }

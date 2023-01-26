@@ -45,6 +45,8 @@ pub struct BackgroundDbsConf {
     pub dgv_gs: PathAndChecksum,
     /// Relative path to the file with ExAC database with checksum.
     pub exac: PathAndChecksum,
+    /// Relative path to the file with Thousan Genomes database with checksum.
+    pub g1k: PathAndChecksum,
 
     /// Relative pato to the file with the in-house variants with checksum.
     pub inhouse: PathAndChecksum,
@@ -378,6 +380,14 @@ mod tests {
                                 .to_owned()
                         ),
                     },
+                    g1k: PathAndChecksum {
+                        path: "public/g1k.bin".to_owned(),
+                        md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
+                        sha256: Some(
+                            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                .to_owned()
+                        ),
+                    },
                     inhouse: PathAndChecksum {
                         path: "inhouse/svs.bin".to_owned(),
                         md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
@@ -527,6 +537,11 @@ mod tests {
                     },
                     exac: PathAndChecksum {
                         path: "public/exac.bin".to_owned(),
+                        md5: None,
+                        sha256: None,
+                    },
+                    g1k: PathAndChecksum {
+                        path: "public/g1k.bin".to_owned(),
                         md5: None,
                         sha256: None,
                     },

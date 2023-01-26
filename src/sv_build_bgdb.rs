@@ -164,13 +164,13 @@ fn split_input_by_chrom_and_sv_type(
 
         let file = File::open(path)?;
         let decoder = GzDecoder::new(&file);
-        let mut rdr = csv::ReaderBuilder::new()
+        let mut csv_reader = csv::ReaderBuilder::new()
             .has_headers(true)
             .delimiter(b'\t')
             .from_reader(decoder);
         let before_parsing = Instant::now();
         let mut count_records = 0;
-        for result in rdr.deserialize() {
+        for result in csv_reader.deserialize() {
             let record: FileRecord = result?;
 
             let chrom_no = *chrom_map

@@ -15,6 +15,9 @@ path = 'public/dgv_gs.bin'
 [background_dbs.exac]
 path = 'public/exac.bin'
 
+[background_dbs.g1k]
+path = 'public/g1k.bin'
+
 [background_dbs.inhouse]
 path = 'inhouse/svs.bin'
 
