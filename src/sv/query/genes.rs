@@ -40,7 +40,7 @@ impl GeneRegionDb {
     /// Return IDs of overlapping genes.
     pub fn overlapping_gene_ids(&self, chrom_no: u32, query: Range<u32>) -> Vec<u32> {
         self.trees[chrom_no as usize]
-            .find(query.clone())
+            .find(query)
             .iter()
             .map(|cursor| self.records[chrom_no as usize][*cursor.data() as usize].gene_id)
             .collect()
@@ -62,8 +62,8 @@ impl GeneRegionDbBundle {
         query: Range<u32>,
     ) -> Vec<u32> {
         match database {
-            Database::Refseq => self.refseq.overlapping_gene_ids(chrom_no, query.clone()),
-            Database::Ensembl => self.ensembl.overlapping_gene_ids(chrom_no, query.clone()),
+            Database::Refseq => self.refseq.overlapping_gene_ids(chrom_no, query),
+            Database::Ensembl => self.ensembl.overlapping_gene_ids(chrom_no, query),
         }
     }
 }
