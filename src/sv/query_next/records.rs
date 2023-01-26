@@ -34,17 +34,17 @@ pub struct StructuralVariant {
     pub genotype: HashMap<String, Genotype>,
 }
 
-impl Into<SchemaStructuralVariant> for StructuralVariant {
-    fn into(self) -> SchemaStructuralVariant {
+impl From<StructuralVariant> for SchemaStructuralVariant {
+    fn from(val: StructuralVariant) -> Self {
         SchemaStructuralVariant {
-            chrom: self.chromosome,
-            pos: self.start,
-            sv_type: self.sv_type,
-            sv_sub_type: self.sv_sub_type,
-            chrom2: self.chromosome2,
-            end: self.end,
-            strand_orientation: Some(self.strand_orientation),
-            call_info: HashMap::from_iter(self.genotype.into_iter().map(|(k, v)| {
+            chrom: val.chromosome,
+            pos: val.start,
+            sv_type: val.sv_type,
+            sv_sub_type: val.sv_sub_type,
+            chrom2: val.chromosome2,
+            end: val.end,
+            strand_orientation: Some(val.strand_orientation),
+            call_info: HashMap::from_iter(val.genotype.into_iter().map(|(k, v)| {
                 (
                     k,
                     SchemaCallInfo {

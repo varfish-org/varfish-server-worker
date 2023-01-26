@@ -25,8 +25,8 @@ pub trait ToInMemory<InMemory> {
 }
 
 pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
-    let lhs_b = lhs.begin() as u32;
-    let lhs_e = lhs.end() as u32;
+    let lhs_b = lhs.begin();
+    let lhs_e = lhs.end();
     let rhs_b = rhs.start.saturating_sub(1);
     let rhs_e = rhs.end;
     let ovl_b = std::cmp::max(lhs_b, rhs_b);

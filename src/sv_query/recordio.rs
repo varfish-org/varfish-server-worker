@@ -64,7 +64,7 @@ fn build_bg_sv_tree<Record: BeginEnd>(
         let before_tree = Instant::now();
         let mut tree = ArrayBackedIntervalTree::new();
         for (i, record) in contig_records.iter().enumerate() {
-            tree.insert((record.begin() as u32)..(record.end() as u32), i as u32);
+            tree.insert(record.begin()..record.end(), i as u32);
         }
         tree.index();
         trees.push(tree);

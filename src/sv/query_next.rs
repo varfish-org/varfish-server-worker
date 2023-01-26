@@ -150,7 +150,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
 
     info!("Running queries...");
     let before_query = Instant::now();
-    let query_stats = run_query(&QueryInterpreter::new(query), &bg_dbs, &args)?;
+    let query_stats = run_query(&QueryInterpreter::new(query), &bg_dbs, args)?;
     info!("... done running query in {:?}", before_query.elapsed());
     info!(
         "summary: {} records passed out of {}",

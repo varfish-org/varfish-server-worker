@@ -20,6 +20,7 @@ use super::schema::{CaseQuery, StructuralVariant, SvType};
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
 
 /// Code for background database overlappers.
+#[derive(Default)]
 pub struct BgDb {
     /// Records, stored by chromosome.
     pub records: Vec<Vec<BgDbRecord>>,
@@ -27,14 +28,7 @@ pub struct BgDb {
     pub trees: Vec<IntervalTree>,
 }
 
-impl Default for BgDb {
-    fn default() -> Self {
-        Self {
-            records: Default::default(),
-            trees: Default::default(),
-        }
-    }
-}
+
 
 impl BgDb {
     pub fn count_overlaps(
@@ -74,6 +68,7 @@ impl BgDb {
 }
 
 /// Information to store for background database.
+#[derive(Default)]
 pub struct BgDbRecord {
     /// 0-based begin position.
     pub begin: u32,
@@ -95,16 +90,7 @@ impl BeginEnd for BgDbRecord {
     }
 }
 
-impl Default for BgDbRecord {
-    fn default() -> Self {
-        Self {
-            begin: Default::default(),
-            end: Default::default(),
-            sv_type: Default::default(),
-            count: Default::default(),
-        }
-    }
-}
+
 
 /// Load background database from a `.bin` file as created by `sv convert-bgdb`.
 #[tracing::instrument]
@@ -118,7 +104,7 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         result.trees.push(IntervalTree::new());
     }
 
-    let file = File::open(&path)?;
+    let file = File::open(path)?;
     let mmap = unsafe { Mmap::map(&file)? };
     let bg_db = flatbuffers::root::<BackgroundDatabase>(&mmap)?;
     let records = bg_db.records().expect("no records in bg db");

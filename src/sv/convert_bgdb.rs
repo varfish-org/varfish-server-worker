@@ -377,8 +377,8 @@ where
                     SvType::Bnd => FlatSvType::Bnd,
                     SvType::Cnv => FlatSvType::Cnv,
                 },
-                record.begin as u32,
-                record.end as u32,
+                record.begin,
+                record.end,
                 record.count,
             ));
         }

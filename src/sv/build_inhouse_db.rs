@@ -293,8 +293,8 @@ fn merge_to_out(
     while let Ok(Some(record)) = reader.read::<input::Record>() {
         let record = output::Record::from_db_record(record);
         let slack = match record.sv_type {
-            SvType::Bnd => args.slack_bnd as u32,
-            SvType::Ins => args.slack_ins as u32,
+            SvType::Bnd => args.slack_bnd,
+            SvType::Ins => args.slack_ins,
             _ => 0,
         };
         let query = ((record.start - 1 - slack) as i32)..((record.end + slack) as i32);
