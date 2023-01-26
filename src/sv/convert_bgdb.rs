@@ -119,7 +119,7 @@ mod tests {
 
         run(&common_args, &args)?;
 
-        file_diff::diff("tests/sv/convert_bgdb/output.bin", &output_bin);
+        assert!(file_diff::diff("tests/sv/convert_bgdb/output.bin", &output_bin));
 
         Ok(())
     }
