@@ -190,22 +190,22 @@ impl QueryInterpreter {
         // We simply check for each database separately and pass if the check has not
         // been enabled or no minimal carrier / allele count is given
         let passes_dgv = !self.query.svdb_dgv_enabled
-            || counts.dgv <= self.query.svdb_dgv_max_carriers.unwrap_or(counts.dgv);
+            || counts.dgv <= self.query.svdb_dgv_max_count.unwrap_or(counts.dgv);
         let passes_dgv_gs = !self.query.svdb_dgv_gs_enabled
-            || counts.dgv_gs <= self.query.svdb_dgv_gs_max_carriers.unwrap_or(counts.dgv_gs);
+            || counts.dgv_gs <= self.query.svdb_dgv_gs_max_count.unwrap_or(counts.dgv_gs);
         let passes_gnomad = !self.query.svdb_gnomad_enabled
-            || counts.gnomad <= self.query.svdb_gnomad_max_carriers.unwrap_or(counts.gnomad);
+            || counts.gnomad <= self.query.svdb_gnomad_max_count.unwrap_or(counts.gnomad);
         let passes_exac = !self.query.svdb_exac_enabled
-            || counts.exac <= self.query.svdb_exac_max_carriers.unwrap_or(counts.exac);
+            || counts.exac <= self.query.svdb_exac_max_count.unwrap_or(counts.exac);
         let passes_dbvar = !self.query.svdb_dbvar_enabled
-            || counts.dbvar <= self.query.svdb_dbvar_max_carriers.unwrap_or(counts.dbvar);
+            || counts.dbvar <= self.query.svdb_dbvar_max_count.unwrap_or(counts.dbvar);
         let passes_g1k = !self.query.svdb_g1k_enabled
-            || counts.g1k <= self.query.svdb_g1k_max_alleles.unwrap_or(counts.g1k);
+            || counts.g1k <= self.query.svdb_g1k_max_count.unwrap_or(counts.g1k);
         let passes_inhouse = !self.query.svdb_inhouse_enabled
             || counts.inhouse
                 <= self
                     .query
-                    .svdb_inhouse_max_carriers
+                    .svdb_inhouse_max_count
                     .unwrap_or(counts.inhouse);
 
         passes_dgv
@@ -711,19 +711,19 @@ mod tests {
     fn test_query_interpreter_passes_counts_pass() {
         let query = CaseQuery {
             svdb_dgv_enabled: true,
-            svdb_dgv_max_carriers: Some(10),
+            svdb_dgv_max_count: Some(10),
             svdb_dgv_gs_enabled: true,
-            svdb_dgv_gs_max_carriers: Some(10),
+            svdb_dgv_gs_max_count: Some(10),
             svdb_gnomad_enabled: true,
-            svdb_gnomad_max_carriers: Some(10),
+            svdb_gnomad_max_count: Some(10),
             svdb_exac_enabled: true,
-            svdb_exac_max_carriers: Some(10),
+            svdb_exac_max_count: Some(10),
             svdb_dbvar_enabled: true,
-            svdb_dbvar_max_carriers: Some(10),
+            svdb_dbvar_max_count: Some(10),
             svdb_g1k_enabled: true,
-            svdb_g1k_max_alleles: Some(10),
+            svdb_g1k_max_count: Some(10),
             svdb_inhouse_enabled: true,
-            svdb_inhouse_max_carriers: Some(10),
+            svdb_inhouse_max_count: Some(10),
             ..CaseQuery::new(Database::Refseq)
         };
         let interpreter = QueryInterpreter::new(query);
@@ -745,19 +745,19 @@ mod tests {
     fn test_query_interpreter_passes_counts_fail() {
         let query = CaseQuery {
             svdb_dgv_enabled: true,
-            svdb_dgv_max_carriers: Some(10),
+            svdb_dgv_max_count: Some(10),
             svdb_dgv_gs_enabled: true,
-            svdb_dgv_gs_max_carriers: Some(10),
+            svdb_dgv_gs_max_count: Some(10),
             svdb_gnomad_enabled: true,
-            svdb_gnomad_max_carriers: Some(10),
+            svdb_gnomad_max_count: Some(10),
             svdb_exac_enabled: true,
-            svdb_exac_max_carriers: Some(10),
+            svdb_exac_max_count: Some(10),
             svdb_dbvar_enabled: true,
-            svdb_dbvar_max_carriers: Some(10),
+            svdb_dbvar_max_count: Some(10),
             svdb_g1k_enabled: true,
-            svdb_g1k_max_alleles: Some(10),
+            svdb_g1k_max_count: Some(10),
             svdb_inhouse_enabled: true,
-            svdb_inhouse_max_carriers: Some(10),
+            svdb_inhouse_max_count: Some(10),
             ..CaseQuery::new(Database::Refseq)
         };
         let interpreter = QueryInterpreter::new(query);
