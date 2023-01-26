@@ -4,7 +4,6 @@ pub mod common;
 pub mod err;
 pub mod sv;
 pub mod sv_build_bgdb;
-pub mod sv_query;
 
 #[allow(
     non_snake_case,
@@ -58,7 +57,6 @@ struct Sv {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SvCommands {
-    Query(sv_query::Args),
     BuildBgDb(sv_build_bgdb::Args),
     QueryNext(sv::query_next::Args),
     BuildInhouseDb(sv::build_inhouse_db::Args),
@@ -89,9 +87,6 @@ fn main() -> Result<(), anyhow::Error> {
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
             Commands::Sv(sv) => match &sv.command {
-                SvCommands::Query(args) => {
-                    sv_query::run(&term, &cli.common, args)?;
-                }
                 SvCommands::QueryNext(args) => {
                     sv::query_next::run(&cli.common, args)?;
                 }

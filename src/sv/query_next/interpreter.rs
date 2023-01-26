@@ -244,7 +244,7 @@ impl QueryInterpreter {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::sv_query::schema::{
+    use crate::sv::query_next::schema::{
         CallInfo, Database, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
     };
 
@@ -728,14 +728,14 @@ mod tests {
         };
         let interpreter = QueryInterpreter::new(query);
 
-        let counts_pass = SvOverlapCounts {
-            dgv_carriers: 5,
-            dgv_gs_carriers: 5,
-            gnomad_carriers: 5,
-            exac_carriers: 5,
-            g1k_alleles: 5,
-            inhouse_carriers: 5,
-            dbvar_carriers: 5,
+        let counts_pass = BgDbOverlaps {
+            dgv: 5,
+            dgv_gs: 5,
+            gnomad: 5,
+            exac: 5,
+            g1k: 5,
+            inhouse: 5,
+            dbvar: 5,
         };
 
         assert!(interpreter.passes_counts(&counts_pass));
@@ -762,14 +762,14 @@ mod tests {
         };
         let interpreter = QueryInterpreter::new(query);
 
-        let counts_fail = SvOverlapCounts {
-            dgv_carriers: 11,
-            dgv_gs_carriers: 11,
-            gnomad_carriers: 11,
-            exac_carriers: 11,
-            g1k_alleles: 11,
-            inhouse_carriers: 11,
-            dbvar_carriers: 11,
+        let counts_fail = BgDbOverlaps {
+            dgv: 11,
+            dgv_gs: 11,
+            gnomad: 11,
+            exac: 11,
+            g1k: 11,
+            inhouse: 11,
+            dbvar: 11,
         };
 
         assert!(!interpreter.passes_counts(&counts_fail));
@@ -1004,14 +1004,14 @@ mod tests {
             strand_orientation: Some(StrandOrientation::ThreeToFive),
             call_info: HashMap::new(),
         };
-        let counts_pass = SvOverlapCounts {
-            dgv_carriers: 5,
-            dgv_gs_carriers: 5,
-            gnomad_carriers: 5,
-            exac_carriers: 5,
-            g1k_alleles: 5,
-            inhouse_carriers: 5,
-            dbvar_carriers: 5,
+        let counts_pass = BgDbOverlaps {
+            dgv: 5,
+            dgv_gs: 5,
+            gnomad: 5,
+            exac: 5,
+            g1k: 5,
+            inhouse: 5,
+            dbvar: 5,
         };
 
         assert!(interpreter.passes(&sv_pass, |_sv| counts_pass.clone())?);

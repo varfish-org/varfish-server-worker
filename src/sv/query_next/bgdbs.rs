@@ -1,20 +1,43 @@
 //! Background database overlapping.
 
-use std::{collections::HashMap, fs::File, path::Path, time::Instant};
+use std::{collections::HashMap, fs::File, ops::Range, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use memmap2::Mmap;
 use tracing::{debug, info};
 
 use crate::{
-    common::{CHROMS, trace_rss_now},
+    common::{trace_rss_now, CHROMS},
     sv::conf::BackgroundDbsConf,
-    sv_query::dbrecords::{reciprocal_overlap, BeginEnd},
     world_flatbuffers::var_fish_server_worker::BackgroundDatabase,
     world_flatbuffers::var_fish_server_worker::SvType as FlatSvType,
 };
 
 use super::schema::{CaseQuery, StructuralVariant, SvType};
+
+pub trait BeginEnd {
+    /// 0-base begin position
+    fn begin(&self) -> u32;
+    /// 0-based end position
+    fn end(&self) -> u32;
+}
+
+pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
+    let lhs_b = lhs.begin();
+    let lhs_e = lhs.end();
+    let rhs_b = rhs.start;
+    let rhs_e = rhs.end;
+    let ovl_b = std::cmp::max(lhs_b, rhs_b);
+    let ovl_e = std::cmp::min(lhs_e, rhs_e);
+    if ovl_b >= ovl_e {
+        0f32
+    } else {
+        let ovl_len = (ovl_e - ovl_b) as f32;
+        let x1 = (lhs_e - lhs_b) as f32 / ovl_len;
+        let x2 = (rhs_e - rhs_b) as f32 / ovl_len;
+        x1.min(x2)
+    }
+}
 
 /// Alias for the interval tree that we use.
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
