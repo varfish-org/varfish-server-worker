@@ -1,8 +1,10 @@
 pub mod bgdbs;
+pub mod genes;
 pub mod interpreter;
 pub mod pathogenic;
 pub mod records;
 pub mod schema;
+pub mod tads;
 
 use std::{
     collections::BTreeMap,
@@ -23,7 +25,7 @@ use crate::{
         query::{
             bgdbs::load_bg_dbs, interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
             records::StructuralVariant as RecordSv, schema::CaseQuery,
-            schema::StructuralVariant as SchemaSv,
+            schema::StructuralVariant as SchemaSv, tads::load_tads,
         },
     },
 };
@@ -113,18 +115,15 @@ fn run_query(
         let record_sv: RecordSv = record?;
         let schema_sv: SchemaSv = record_sv.into();
 
-        if interpreter.passes(
-            &schema_sv,
-            |sv: &SchemaSv| {
-                bg_dbs.count_overlaps(
-                    sv,
-                    &interpreter.query,
-                    &chrom_map,
-                    args.slack_ins,
-                    args.slack_bnd,
-                )
-            }
-        )? {
+        if interpreter.passes(&schema_sv, |sv: &SchemaSv| {
+            bg_dbs.count_overlaps(
+                sv,
+                &interpreter.query,
+                &chrom_map,
+                args.slack_ins,
+                args.slack_bnd,
+            )
+        })? {
             stats.count_passed += 1;
             *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
             if patho_dbs.count_overlaps(&schema_sv, &chrom_map) > 0 {
@@ -147,6 +146,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     let before_loading = Instant::now();
     let bg_dbs = load_bg_dbs(&args.path_db, &db_conf.background_dbs)?;
     let patho_dbs = load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?;
+    let _tad_sets = load_tads(&args.path_db, &db_conf.tads)?;
     info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()
