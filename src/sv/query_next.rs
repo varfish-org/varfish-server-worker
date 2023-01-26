@@ -16,7 +16,7 @@ use thousands::Separable;
 use tracing::{error, info};
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz},
+    common::{build_chrom_map, open_maybe_gz, trace_rss_now},
     sv::{
         conf::{sanity_check_db, DbConf},
         query_next::{
@@ -143,6 +143,8 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
         before_loading.elapsed()
     );
 
+    trace_rss_now();
+
     info!("Loading query...");
     let query: CaseQuery = serde_json::from_reader(File::open(&args.path_query_json)?)?;
     info!(
@@ -163,6 +165,8 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     for (sv_type, count) in query_stats.by_sv_type.iter() {
         info!("{:?} -- {}", sv_type, count);
     }
+
+    trace_rss_now();
 
     info!(
         "All of `sv query` completed in {:?}",

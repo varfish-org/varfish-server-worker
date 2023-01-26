@@ -7,7 +7,7 @@ use memmap2::Mmap;
 use tracing::{debug, info};
 
 use crate::{
-    common::CHROMS,
+    common::{CHROMS, trace_rss_now},
     sv::conf::BackgroundDbsConf,
     sv_query::dbrecords::{reciprocal_overlap, BeginEnd},
     world_flatbuffers::var_fish_server_worker::BackgroundDatabase,
@@ -133,6 +133,8 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
     let before_building = Instant::now();
     result.trees.iter_mut().for_each(|tree| tree.index());
     debug!("done building itress in {:?}", before_building.elapsed());
+
+    trace_rss_now();
 
     Ok(result)
 }
