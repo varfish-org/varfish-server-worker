@@ -22,8 +22,13 @@ jobs:
           override: true
           components: rustfmt
       
+      - name: Install flatbuffers
+        uses: ./.github/actions/install-flatbuffers
+
       - name: Check format
-        run: cargo fmt -- --check
+        run: |
+          flatc -o target/flatbuffers --rust src/world.fbs
+          cargo fmt -- --check
   
   Linting:
      runs-on: ubuntu-latest
