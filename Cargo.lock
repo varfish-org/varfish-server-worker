@@ -1845,6 +1845,7 @@ dependencies = [
  "log",
  "md-5",
  "memmap2",
+ "multimap",
  "pretty_assertions",
  "procfs",
  "rust-htslib",

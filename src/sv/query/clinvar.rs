@@ -1,4 +1,4 @@
-//! Code for working with lists of known pathogenic variants.
+//! Code for working with Clinvar SV.
 
 use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
@@ -31,7 +31,7 @@ pub struct Record {
     pub pathogenicity: Pathogenicity,
 }
 
-/// Code for known pathogenic SV database overlappers.
+/// Code for known Clinvar SV database.
 #[derive(Default, Debug)]
 pub struct ClinvarSv {
     /// Records, stored by chromosome.
@@ -72,7 +72,7 @@ impl ClinvarSv {
     }
 }
 
-// Load all pathogenic SV databases from database given the configuration.
+// Load the Clinvar SV databases from database given the configuration.
 #[tracing::instrument]
 pub fn load_clinvar_sv(path_db: &str, conf: &ClinvarSvConf) -> Result<ClinvarSv, anyhow::Error> {
     info!("loading binaryclinvar SV dbs");

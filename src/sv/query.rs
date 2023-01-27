@@ -24,7 +24,7 @@ use crate::{
     sv::{
         conf::{sanity_check_db, DbConf},
         query::{
-            bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_regions,
+            bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
             interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
             records::StructuralVariant as RecordSv, schema::CaseQuery,
             schema::StructuralVariant as SchemaSv, tads::load_tads,
@@ -35,7 +35,7 @@ use crate::{
 use self::{
     bgdbs::BgDbBundle,
     clinvar::ClinvarSv,
-    genes::GeneRegionDbBundle,
+    genes::GeneDb,
     pathogenic::PathoDbBundle,
     schema::{Pathogenicity, SvType},
     tads::{TadSetBundle, TadSetChoice},
@@ -151,8 +151,9 @@ fn run_query(
             {
                 warn!("found overlap with clinvar {:?}", &schema_sv)
             }
-            let _gene_ids = {
-                let mut gene_ids = dbs.gene_regions.overlapping_gene_ids(
+            
+            let gene_ids = {
+                let mut gene_ids = dbs.genes.overlapping_gene_ids(
                     interpreter.query.database,
                     *chrom_map
                         .get(&schema_sv.chrom)
@@ -162,14 +163,14 @@ fn run_query(
                 gene_ids.sort();
                 gene_ids
             };
-            let _tad_gene_ids = {
+            let tad_gene_ids = {
                 let tads =
                     dbs.tad_sets
                         .overlapping_tads(TadSetChoice::Hesc, &schema_sv, &chrom_map);
                 let mut tad_gene_ids = Vec::new();
                 tads.iter()
                     .map(|tad| {
-                        dbs.gene_regions.overlapping_gene_ids(
+                        dbs.genes.overlapping_gene_ids(
                             interpreter.query.database,
                             tad.chrom_no,
                             tad.begin..tad.end,
@@ -181,6 +182,17 @@ fn run_query(
                 tad_gene_ids.sort();
                 tad_gene_ids
             };
+
+            gene_ids.iter().for_each(|gene_id| {
+                dbs.genes
+                    .xlink
+                    .gene_id_to_symbols(interpreter.query.database, *gene_id);
+            });
+            tad_gene_ids.iter().for_each(|gene_id| {
+                dbs.genes
+                    .xlink
+                    .gene_id_to_symbols(interpreter.query.database, *gene_id);
+            });
         }
     }
 
@@ -192,7 +204,7 @@ pub struct Databases {
     pub bg_dbs: BgDbBundle,
     pub patho_dbs: PathoDbBundle,
     pub tad_sets: TadSetBundle,
-    pub gene_regions: GeneRegionDbBundle,
+    pub genes: GeneDb,
     pub clinvar_sv: ClinvarSv,
 }
 
@@ -209,7 +221,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
         bg_dbs: load_bg_dbs(&args.path_db, &db_conf.background_dbs)?,
         patho_dbs: load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?,
         tad_sets: load_tads(&args.path_db, &db_conf.tads)?,
-        gene_regions: load_gene_regions(&args.path_db, &db_conf.genes)?,
+        genes: load_gene_db(&args.path_db, &db_conf.genes)?,
         clinvar_sv: load_clinvar_sv(&args.path_db, &db_conf.clinvar)?,
     };
     info!(
