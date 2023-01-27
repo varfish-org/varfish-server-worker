@@ -24,14 +24,15 @@ use crate::{
     sv::{
         conf::{sanity_check_db, DbConf},
         query::{
-            bgdbs::load_bg_dbs, genes::load_gene_regions, interpreter::QueryInterpreter,
-            pathogenic::load_patho_dbs, records::StructuralVariant as RecordSv, schema::CaseQuery,
-            schema::StructuralVariant as SchemaSv, tads::load_tads, clinvar::load_clinvar_svs,
+            bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_regions,
+            interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
+            records::StructuralVariant as RecordSv, schema::CaseQuery,
+            schema::StructuralVariant as SchemaSv, tads::load_tads,
         },
     },
 };
 
-use self::{bgdbs::BgDbBundle, pathogenic::PathoDbBundle, schema::SvType};
+use self::{bgdbs::BgDbBundle, clinvar::ClinvarSv, pathogenic::PathoDbBundle, schema::SvType};
 
 /// Command line arguments for `sv query` sub command.
 #[derive(Parser, Debug)]
@@ -101,6 +102,7 @@ struct QueryStats {
 fn run_query(
     interpreter: &QueryInterpreter,
     bg_dbs: &BgDbBundle,
+    clinvar_sv: &ClinvarSv,
     patho_dbs: &PathoDbBundle,
     args: &Args,
 ) -> Result<QueryStats, anyhow::Error> {
@@ -130,6 +132,9 @@ fn run_query(
             if patho_dbs.count_overlaps(&schema_sv, &chrom_map) > 0 {
                 warn!("found overlap with pathogenic {:?}", &schema_sv);
             }
+            if clinvar_sv.count_overlaps(&schema_sv, &chrom_map) > 0 {
+                warn!("found overlap with clinvar {:?}", &schema_sv)
+            }
         }
     }
 
@@ -149,7 +154,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     let patho_dbs = load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?;
     let _tad_sets = load_tads(&args.path_db, &db_conf.tads)?;
     let _gene_regions = load_gene_regions(&args.path_db, &db_conf.genes)?;
-    let _clinvar = load_clinvar_svs(&args.path_db, &db_conf.clinvar)?;
+    let clinvar_sv = load_clinvar_sv(&args.path_db, &db_conf.clinvar)?;
     info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()
@@ -166,7 +171,13 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
 
     info!("Running queries...");
     let before_query = Instant::now();
-    let query_stats = run_query(&QueryInterpreter::new(query), &bg_dbs, &patho_dbs, args)?;
+    let query_stats = run_query(
+        &QueryInterpreter::new(query),
+        &bg_dbs,
+        &clinvar_sv,
+        &patho_dbs,
+        args,
+    )?;
     info!("... done running query in {:?}", before_query.elapsed());
     info!(
         "summary: {} records passed out of {}",

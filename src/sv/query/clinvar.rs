@@ -1,6 +1,6 @@
 //! Code for working with lists of known pathogenic variants.
 
-use std::{collections::HashMap, path::Path, time::Instant, fs::File};
+use std::{collections::HashMap, fs::File, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use memmap2::Mmap;
@@ -8,11 +8,11 @@ use thousands::Separable;
 use tracing::{debug, info, warn};
 
 use crate::{
-    common::CHROMS,
-    sv::conf::ClinvarSvConf, world_flatbuffers::var_fish_server_worker::{ClinvarSvDatabase},
+    common::CHROMS, sv::conf::ClinvarSvConf,
+    world_flatbuffers::var_fish_server_worker::ClinvarSvDatabase,
 };
 
-use super::schema::{StructuralVariant, SvType, VariationType, Pathogenicity};
+use super::schema::{Pathogenicity, StructuralVariant, SvType, VariationType};
 
 /// Alias for the interval tree that we use.
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
@@ -32,14 +32,14 @@ pub struct Record {
 
 /// Code for known pathogenic SV database overlappers.
 #[derive(Default, Debug)]
-pub struct ClinvarSvs {
+pub struct ClinvarSv {
     /// Records, stored by chromosome.
     pub records: Vec<Vec<Record>>,
     /// Interval trees, stored by chromosome.
     pub trees: Vec<IntervalTree>,
 }
 
-impl ClinvarSvs {
+impl ClinvarSv {
     pub fn count_overlaps(
         &self,
         sv: &StructuralVariant,
@@ -63,14 +63,11 @@ impl ClinvarSvs {
 
 // Load all pathogenic SV databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_clinvar_svs(
-    path_db: &str,
-    conf: &ClinvarSvConf,
-) -> Result<ClinvarSvs, anyhow::Error> {
+pub fn load_clinvar_sv(path_db: &str, conf: &ClinvarSvConf) -> Result<ClinvarSv, anyhow::Error> {
     info!("loading binaryclinvar SV dbs");
 
     let before_loading = Instant::now();
-    let mut result = ClinvarSvs::default();
+    let mut result = ClinvarSv::default();
     for _ in CHROMS {
         result.records.push(Vec::new());
         result.trees.push(IntervalTree::new());
@@ -104,7 +101,7 @@ pub fn load_clinvar_svs(
 
     let before_building = Instant::now();
     result.trees.iter_mut().for_each(|tree| tree.index());
-    debug!("done building itress in {:?}", before_building.elapsed());
+    debug!("done building itrees in {:?}", before_building.elapsed());
 
     Ok(result)
 }

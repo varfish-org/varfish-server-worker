@@ -303,8 +303,8 @@ mod tests {
     use pretty_assertions::assert_eq;
 
     use crate::sv::conf::{
-        sanity_check_db, BackgroundDbsConf, GenesConf, GenesDetailConf, KnownPathogenicSvsConf,
-        PathAndChecksum, RegulatoryConf, TadsConf, ClinvarSvConf,
+        sanity_check_db, BackgroundDbsConf, ClinvarSvConf, GenesConf, GenesDetailConf,
+        KnownPathogenicSvsConf, PathAndChecksum, RegulatoryConf, TadsConf,
     };
 
     use super::DbConf;

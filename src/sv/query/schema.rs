@@ -954,9 +954,9 @@ impl StructuralVariant {
     }
 }
 
-impl Into<FlatVariationType> for VariationType {
-    fn into(self) -> FlatVariationType {
-        match self {
+impl From<VariationType> for FlatVariationType {
+    fn from(val: VariationType) -> Self {
+        match val {
             VariationType::Complex => FlatVariationType::Complex,
             VariationType::Microsatellite => FlatVariationType::Microsatellite,
             VariationType::Dup => FlatVariationType::Dup,
@@ -1012,9 +1012,9 @@ pub enum Pathogenicity {
     Pathogenic,
 }
 
-impl Into<FlatPathogenicity> for Pathogenicity {
-    fn into(self) -> FlatPathogenicity {
-        match self {
+impl From<Pathogenicity> for FlatPathogenicity {
+    fn from(val: Pathogenicity) -> Self {
+        match val {
             Pathogenicity::Benign => FlatPathogenicity::Benign,
             Pathogenicity::LikelyBenign => FlatPathogenicity::LikelyBenign,
             Pathogenicity::Uncertain => FlatPathogenicity::Uncertain,
