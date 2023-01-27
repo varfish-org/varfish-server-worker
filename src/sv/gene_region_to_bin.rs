@@ -46,7 +46,7 @@ mod input {
 }
 
 /// Helper to convert ENSEMBL and RefSeq gene ID to u32.
-fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
+pub fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
     let clean_id = if raw_id.starts_with("ENSG") {
         // Strip "ENSG" prefix and as many zeroes as follow
         raw_id

@@ -72,3 +72,15 @@ struct ClinvarSvRecord {
 table ClinvarSvDatabase {
   records: [ClinvarSvRecord];
 }
+
+// One mapping between entrez, ensembl, and gene symbols.
+struct XlinkRecord {
+  entrez_id: uint;
+  ensembl_id: uint;
+}
+
+// Mapping between entrez, ensembl, and gene symbols.
+table XlinkDatabase {
+  records: [XlinkRecord];
+  symbols: [string];
+}

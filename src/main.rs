@@ -58,6 +58,7 @@ enum SvCommands {
     BgDbToBin(sv::bg_db_to_bin::Args),
     ClinvarSvToBin(sv::clinvar_sv_to_bin::Args),
     GeneRegionToBin(sv::gene_region_to_bin::Args),
+    XlinkToBin(sv::xlink_to_bin::Args),
     InhouseDbBuild(sv::inhouse_db_build::Args),
     Query(sv::query::Args),
 }
@@ -91,6 +92,9 @@ fn main() -> Result<(), anyhow::Error> {
                 }
                 SvCommands::ClinvarSvToBin(args) => {
                     sv::clinvar_sv_to_bin::run(&cli.common, args)?;
+                }
+                SvCommands::XlinkToBin(args) => {
+                    sv::xlink_to_bin::run(&cli.common, args)?;
                 }
                 SvCommands::GeneRegionToBin(args) => {
                     sv::gene_region_to_bin::run(&cli.common, args)?;
