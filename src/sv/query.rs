@@ -151,7 +151,7 @@ fn run_query(
             {
                 warn!("found overlap with clinvar {:?}", &schema_sv)
             }
-            
+
             let gene_ids = {
                 let mut gene_ids = dbs.genes.overlapping_gene_ids(
                     interpreter.query.database,
