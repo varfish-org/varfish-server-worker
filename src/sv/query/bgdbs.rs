@@ -155,7 +155,7 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
 
     let before_building = Instant::now();
     result.trees.iter_mut().for_each(|tree| tree.index());
-    debug!("done building itress in {:?}", before_building.elapsed());
+    debug!("done building itrees in {:?}", before_building.elapsed());
 
     trace_rss_now();
 

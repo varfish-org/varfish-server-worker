@@ -18,6 +18,8 @@ pub struct DbConf {
     /// Configuration of SV databases with known pathogenic variants, such as the Decipher
     /// microdeletions and microduplications lists.
     pub known_pathogenic: KnownPathogenicSvsConf,
+    /// Configuration for Clinvar
+    pub clinvar: ClinvarSvConf,
     /// Configuration of TAD boundaries.
     pub tads: TadsConf,
     /// Configuration of regulatory features.
@@ -77,6 +79,13 @@ pub struct PathAndChecksum {
     pub md5: Option<String>,
     /// Optional SHA256 checksum.
     pub sha256: Option<String>,
+}
+
+/// Configuration for Clinvar
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct ClinvarSvConf {
+    // Database of ClinVar SVs
+    pub svs: PathAndChecksum,
 }
 
 /// Configuration for known pathogenic SVs
@@ -295,7 +304,7 @@ mod tests {
 
     use crate::sv::conf::{
         sanity_check_db, BackgroundDbsConf, GenesConf, GenesDetailConf, KnownPathogenicSvsConf,
-        PathAndChecksum, RegulatoryConf, TadsConf,
+        PathAndChecksum, RegulatoryConf, TadsConf, ClinvarSvConf,
     };
 
     use super::DbConf;
@@ -408,6 +417,16 @@ mod tests {
                                 .to_owned()
                         ),
                     }
+                },
+                clinvar: ClinvarSvConf {
+                    svs: PathAndChecksum {
+                        path: "clinvar/svs.bin".to_owned(),
+                        md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
+                        sha256: Some(
+                            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                .to_owned()
+                        ),
+                    },
                 },
                 known_pathogenic: KnownPathogenicSvsConf {
                     mms_wetzel_danbro: PathAndChecksum {
@@ -569,6 +588,13 @@ mod tests {
                     },
                     inhouse: PathAndChecksum {
                         path: "inhouse/svs.bin".to_owned(),
+                        md5: None,
+                        sha256: None,
+                    },
+                },
+                clinvar: ClinvarSvConf {
+                    svs: PathAndChecksum {
+                        path: "clinvar/svs.bin".to_owned(),
                         md5: None,
                         sha256: None,
                     },

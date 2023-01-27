@@ -1,12 +1,16 @@
 //! Common functionality.
 
-use std::{collections::HashMap, fs::File, io::Read};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufReader, Read},
+};
 
 use byte_unit::Byte;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
 
 use clap::Parser;
-use flate2::read::GzDecoder;
+use flate2::bufread::MultiGzDecoder;
 use tracing::debug;
 
 /// Commonly used command line arguments.
@@ -68,7 +72,8 @@ pub fn build_chrom_map() -> HashMap<String, usize> {
 pub fn open_maybe_gz(path: &str) -> Result<Box<dyn Read>, anyhow::Error> {
     if path.ends_with(".gz") {
         let file = File::open(path)?;
-        let decoder = GzDecoder::new(file);
+        let bufreader = BufReader::new(file);
+        let decoder = MultiGzDecoder::new(bufreader);
         Ok(Box::new(decoder))
     } else {
         let file = File::open(path)?;

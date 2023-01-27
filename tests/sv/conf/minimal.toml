@@ -21,6 +21,9 @@ path = 'public/g1k.bin'
 [background_dbs.inhouse]
 path = 'inhouse/svs.bin'
 
+[clinvar.svs]
+path = 'clinvar/svs.bin'
+
 [known_pathogenic.mms_wetzel_danbro]
 path = 'pathogenic/mms_wetzel_danbro.bed'
 

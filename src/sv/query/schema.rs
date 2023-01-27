@@ -2,6 +2,9 @@
 
 use std::collections::HashMap;
 
+use crate::world_flatbuffers::var_fish_server_worker::{
+    Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
+};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
@@ -949,6 +952,108 @@ impl StructuralVariant {
             Some(self.end.saturating_sub(self.pos) + 1)
         }
     }
+}
+
+impl Into<FlatVariationType> for VariationType {
+    fn into(self) -> FlatVariationType {
+        match self {
+            VariationType::Complex => FlatVariationType::Complex,
+            VariationType::Microsatellite => FlatVariationType::Microsatellite,
+            VariationType::Dup => FlatVariationType::Dup,
+            VariationType::Del => FlatVariationType::Del,
+            VariationType::Bnd => FlatVariationType::Bnd,
+            VariationType::Cnv => FlatVariationType::Cnv,
+            VariationType::Inv => FlatVariationType::Inv,
+            VariationType::Ins => FlatVariationType::Ins,
+        }
+    }
+}
+
+impl TryInto<VariationType> for FlatVariationType {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<VariationType, anyhow::Error> {
+        Ok(match self {
+            FlatVariationType::Complex => VariationType::Complex,
+            FlatVariationType::Microsatellite => VariationType::Microsatellite,
+            FlatVariationType::Dup => VariationType::Dup,
+            FlatVariationType::Del => VariationType::Del,
+            FlatVariationType::Bnd => VariationType::Bnd,
+            FlatVariationType::Cnv => VariationType::Cnv,
+            FlatVariationType::Inv => VariationType::Inv,
+            FlatVariationType::Ins => VariationType::Ins,
+            _ => return Err(anyhow::anyhow!("could not convert {:?}", self)),
+        })
+    }
+}
+
+/// Variation type from Clinvar.
+#[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+pub enum VariationType {
+    #[default]
+    Complex,
+    Microsatellite,
+    Dup,
+    Del,
+    Bnd,
+    Cnv,
+    Inv,
+    Ins,
+}
+
+/// Clinvar pathogenicity.
+#[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+pub enum Pathogenicity {
+    Benign,
+    LikelyBenign,
+    #[default]
+    Uncertain,
+    LikelyPathogenic,
+    Pathogenic,
+}
+
+impl Into<FlatPathogenicity> for Pathogenicity {
+    fn into(self) -> FlatPathogenicity {
+        match self {
+            Pathogenicity::Benign => FlatPathogenicity::Benign,
+            Pathogenicity::LikelyBenign => FlatPathogenicity::LikelyBenign,
+            Pathogenicity::Uncertain => FlatPathogenicity::Uncertain,
+            Pathogenicity::LikelyPathogenic => FlatPathogenicity::LikelyPathogenic,
+            Pathogenicity::Pathogenic => FlatPathogenicity::Pathogenic,
+        }
+    }
+}
+
+impl TryInto<Pathogenicity> for FlatPathogenicity {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Pathogenicity, anyhow::Error> {
+        Ok(match self {
+            FlatPathogenicity::Benign => Pathogenicity::Benign,
+            FlatPathogenicity::LikelyBenign => Pathogenicity::LikelyBenign,
+            FlatPathogenicity::Uncertain => Pathogenicity::Uncertain,
+            FlatPathogenicity::LikelyPathogenic => Pathogenicity::LikelyPathogenic,
+            FlatPathogenicity::Pathogenic => Pathogenicity::Pathogenic,
+            _ => return Err(anyhow::anyhow!("could not convert {:?}", self)),
+        })
+    }
+}
+
+/// Clinvar SV as created by clinvar-tsv.
+#[derive(Debug)]
+pub struct ClinvarSv {
+    /// Genome release
+    pub release: String,
+    /// Chromosome name
+    pub chromosome: String,
+    /// 1-based start position
+    pub start: u32,
+    /// 1-based end position
+    pub end: u32,
+    /// Clinvar variation type
+    pub variation_type: VariationType,
+    /// Clinvar pathogenicty
+    pub pathogenicity: Pathogenicity,
 }
 
 #[cfg(test)]

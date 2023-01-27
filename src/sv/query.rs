@@ -1,4 +1,5 @@
 pub mod bgdbs;
+pub mod clinvar;
 pub mod genes;
 pub mod interpreter;
 pub mod pathogenic;
@@ -25,7 +26,7 @@ use crate::{
         query::{
             bgdbs::load_bg_dbs, genes::load_gene_regions, interpreter::QueryInterpreter,
             pathogenic::load_patho_dbs, records::StructuralVariant as RecordSv, schema::CaseQuery,
-            schema::StructuralVariant as SchemaSv, tads::load_tads,
+            schema::StructuralVariant as SchemaSv, tads::load_tads, clinvar::load_clinvar_svs,
         },
     },
 };
@@ -148,6 +149,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     let patho_dbs = load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?;
     let _tad_sets = load_tads(&args.path_db, &db_conf.tads)?;
     let _gene_regions = load_gene_regions(&args.path_db, &db_conf.genes)?;
+    let _clinvar = load_clinvar_svs(&args.path_db, &db_conf.clinvar)?;
     info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()

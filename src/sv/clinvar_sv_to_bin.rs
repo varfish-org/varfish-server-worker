@@ -29,40 +29,9 @@ pub struct Args {
 mod input {
     use std::collections::HashMap;
 
+    use crate::sv::query::schema::{Pathogenicity, VariationType};
     use serde::{de, Deserialize, Deserializer};
     use tracing::warn;
-    use crate::world_flatbuffers::var_fish_server_worker::{
-        VariationType as FlatVariationType,
-        Pathogenicity as FlatPathogenicity,
-    };
-
-    #[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
-    pub enum VariationType {
-        #[default]
-        Complex,
-        Microsatellite,
-        Dup,
-        Del,
-        Bnd,
-        Cnv,
-        Inv,
-        Ins,
-    }
-
-    impl From<VariationType> for FlatVariationType {
-        fn from(val: VariationType) -> Self {
-            match val {
-                VariationType::Complex => FlatVariationType::Complex,
-                VariationType::Microsatellite => FlatVariationType::Microsatellite,
-                VariationType::Dup => FlatVariationType::Dup,
-                VariationType::Del => FlatVariationType::Del,
-                VariationType::Bnd => FlatVariationType::Bnd,
-                VariationType::Cnv => FlatVariationType::Cnv,
-                VariationType::Inv => FlatVariationType::Inv,
-                VariationType::Ins => FlatVariationType::Ins,
-            }
-        }
-    }
 
     lazy_static::lazy_static! {
         static ref VARIATION_TYPE_LABELS: HashMap<&'static str, VariationType> = {
@@ -93,75 +62,16 @@ mod input {
         }
     }
 
-    /// Pathogenicity.
-    #[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
-    pub enum Pathogenicity {
-        Benign,
-        LikelyBenign,
-        #[default]
-        Uncertain,
-        LikelyPathogenic,
-        Pathogenic,
-    }
-
-    impl From<Pathogenicity> for FlatPathogenicity {
-        fn from(val: Pathogenicity) -> Self {
-            match val {
-                Pathogenicity::Benign => FlatPathogenicity::Benign,
-                Pathogenicity::LikelyBenign => FlatPathogenicity::LikelyBenign,
-                Pathogenicity::Uncertain => FlatPathogenicity::Uncertain,
-                Pathogenicity::LikelyPathogenic => FlatPathogenicity::LikelyPathogenic,
-                Pathogenicity::Pathogenic => FlatPathogenicity::Pathogenic,
-            }
-        }
-    }
-
     lazy_static::lazy_static! {
         static ref PATHOGENICITY_LABELS: HashMap<&'static str, Pathogenicity> = {
             let mut m = HashMap::new();
-            m.insert("benign", Pathogenicity::Benign);
-            m.insert("no known pathogenicity", Pathogenicity::Benign);
-            m.insert("non-pathogenic", Pathogenicity::Benign);
-            m.insert("poly", Pathogenicity::Benign);
-
-            m.insert("likely benign", Pathogenicity::LikelyBenign);
-            m.insert("probable-non-pathogenic", Pathogenicity::LikelyBenign);
-            m.insert("probably not pathogenic", Pathogenicity::LikelyBenign);
-            m.insert("protective", Pathogenicity::LikelyBenign);
-            m.insert("suspected benign", Pathogenicity::LikelyBenign);
-
-            m.insert("uncertain significance", Pathogenicity::Uncertain);
-            m.insert("association", Pathogenicity::Uncertain);
-            m.insert("association not found", Pathogenicity::Uncertain);
-            m.insert("cancer", Pathogenicity::Uncertain);
-            m.insert("confers sensitivity", Pathogenicity::Uncertain);
-            m.insert("drug response", Pathogenicity::Uncertain);
-            m.insert("drug-response", Pathogenicity::Uncertain);
-            m.insert("histocompatibility", Pathogenicity::Uncertain);
-            m.insert("not provided", Pathogenicity::Uncertain);
-            m.insert("other", Pathogenicity::Uncertain);
-            m.insert("protective", Pathogenicity::Uncertain);
-            m.insert("risk factor", Pathogenicity::Uncertain);
-            m.insert("uncertain", Pathogenicity::Uncertain);
-            m.insert("unknown", Pathogenicity::Uncertain);
-            m.insert("untested", Pathogenicity::Uncertain);
-            m.insert("variant of unknown significance", Pathogenicity::Uncertain);
-            m.insert("associated with leiomyomas", Pathogenicity::Uncertain);
-
-            m.insert("likely pathogenic", Pathogenicity::LikelyPathogenic);
-            m.insert("affects", Pathogenicity::LikelyPathogenic);
-            m.insert("association", Pathogenicity::LikelyPathogenic);
-            m.insert("confers sensitivity", Pathogenicity::LikelyPathogenic);
-            m.insert("conflicting interpretations of pathogenicity", Pathogenicity::LikelyPathogenic);
-            m.insert("probable-pathogenic", Pathogenicity::LikelyPathogenic);
-            m.insert("probably pathogenic", Pathogenicity::LikelyPathogenic);
-            m.insert("risk factor", Pathogenicity::LikelyPathogenic);
-            m.insert("suspected pathogenic", Pathogenicity::LikelyPathogenic);
-
-            m.insert("pathogenic", Pathogenicity::Pathogenic);
-            m.insert("moderate", Pathogenicity::Pathogenic);
-            m.insert("mut", Pathogenicity::Pathogenic);
-            m.insert("pathologic", Pathogenicity::Pathogenic);
+            m.insert("{\"benign\"}", Pathogenicity::Benign);
+            m.insert("{\"benign\",\"likely benign\"}", Pathogenicity::LikelyBenign);
+            m.insert("{\"likely benign\"}", Pathogenicity::LikelyBenign);
+            m.insert("{\"likely pathogenic\"}", Pathogenicity::LikelyPathogenic);
+            m.insert("{\"likely pathogenic\",\"pathogenic\"}", Pathogenicity::LikelyPathogenic);
+            m.insert("{\"pathogenic\"}", Pathogenicity::Pathogenic);
+            m.insert("{\"uncertain significance\"}", Pathogenicity::Uncertain);
 
             m
         };
@@ -188,11 +98,14 @@ mod input {
         pub start: u32,
         /// 1-based end position
         pub end: u32,
-        /// ENSEMBL or Entrez gene ID
+        /// ClinVar SV variation type
         #[serde(deserialize_with = "from_variation_type_label")]
         pub variation_type: VariationType,
         /// Pathogenicity
-        #[serde(deserialize_with = "from_pathogenicity_label")]
+        #[serde(
+            alias = "summary_clinvar_pathogenicity",
+            deserialize_with = "from_pathogenicity_summary"
+        )]
         pub pathogenicity: Pathogenicity,
     }
 
@@ -209,7 +122,7 @@ mod input {
     /// Deserialize "Pathogenicity" from ClinVar TSV file
     ///
     /// This function will strip everything after the first underscore.
-    fn from_pathogenicity_label<'de, D>(deserializer: D) -> Result<Pathogenicity, D::Error>
+    fn from_pathogenicity_summary<'de, D>(deserializer: D) -> Result<Pathogenicity, D::Error>
     where
         D: Deserializer<'de>,
     {
