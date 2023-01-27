@@ -1841,6 +1841,7 @@ dependencies = [
  "flatbuffers",
  "flatc-rust",
  "flate2",
+ "lazy_static",
  "log",
  "md-5",
  "memmap2",

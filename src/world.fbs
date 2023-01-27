@@ -35,5 +35,40 @@ struct GeneRegionRecord {
 
 // Gene region databases consist of Vector of GeneRegionRecord.
 table GeneRegionDatabase {
-  records:[GeneRegionRecord];
+  records: [GeneRegionRecord];
+}
+
+// Enum for storing the variation type.
+enum VariationType : byte {
+  Complex,
+  Microsatellite,
+  Dup,
+  Del,
+  Bnd,
+  Cnv,
+  Inv,
+  Ins,
+}
+
+// Enum for storing the pathogenicity.
+enum Pathogenicity : byte {
+  Benign,
+  LikelyBenign,
+  Uncertain,
+  LikelyPathogenic,
+  Pathogenic,
+}
+
+// ClinVar SV record.
+struct ClinvarSvRecord {
+  chrom_no: ubyte;
+  begin: uint;
+  end: uint;
+  variation_type: VariationType;
+  pathogenicity: Pathogenicity;
+}
+
+// ClinVar SV database consists of Vector of ClinVarSvRecord.
+table ClinvarSvDatabase {
+  records: [ClinvarSvRecord];
 }
