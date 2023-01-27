@@ -8,7 +8,7 @@ pub mod schema;
 pub mod tads;
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashSet},
     fs::File,
     path::{Path, PathBuf},
     time::Instant,
@@ -32,7 +32,14 @@ use crate::{
     },
 };
 
-use self::{bgdbs::BgDbBundle, clinvar::ClinvarSv, pathogenic::PathoDbBundle, schema::SvType};
+use self::{
+    bgdbs::BgDbBundle,
+    clinvar::ClinvarSv,
+    genes::GeneRegionDbBundle,
+    pathogenic::PathoDbBundle,
+    schema::SvType,
+    tads::{TadSetBundle, TadSetChoice},
+};
 
 /// Command line arguments for `sv query` sub command.
 #[derive(Parser, Debug)]
@@ -101,10 +108,8 @@ struct QueryStats {
 /// Open the SV file at `path_sv_tsv` and run through the given `interpreter`.
 fn run_query(
     interpreter: &QueryInterpreter,
-    bg_dbs: &BgDbBundle,
-    clinvar_sv: &ClinvarSv,
-    patho_dbs: &PathoDbBundle,
     args: &Args,
+    dbs: &Databases,
 ) -> Result<QueryStats, anyhow::Error> {
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
@@ -119,7 +124,7 @@ fn run_query(
         let schema_sv: SchemaSv = record_sv.into();
 
         if interpreter.passes(&schema_sv, |sv: &SchemaSv| {
-            bg_dbs.count_overlaps(
+            dbs.bg_dbs.count_overlaps(
                 sv,
                 &interpreter.query,
                 &chrom_map,
@@ -129,16 +134,56 @@ fn run_query(
         })? {
             stats.count_passed += 1;
             *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
-            if patho_dbs.count_overlaps(&schema_sv, &chrom_map) > 0 {
+            // perform some more queries for measuring time
+            if dbs.patho_dbs.count_overlaps(&schema_sv, &chrom_map) > 0 {
                 warn!("found overlap with pathogenic {:?}", &schema_sv);
             }
-            if clinvar_sv.count_overlaps(&schema_sv, &chrom_map) > 0 {
+            if dbs.clinvar_sv.count_overlaps(&schema_sv, &chrom_map) > 0 {
                 warn!("found overlap with clinvar {:?}", &schema_sv)
             }
+            let _gene_ids = {
+                let mut gene_ids = dbs.gene_regions.overlapping_gene_ids(
+                    interpreter.query.database,
+                    *chrom_map
+                        .get(&schema_sv.chrom)
+                        .expect("cannot translate chromosome") as u32,
+                    schema_sv.pos.saturating_sub(1)..schema_sv.end,
+                );
+                gene_ids.sort();
+                gene_ids
+            };
+            let _tad_gene_ids = {
+                let tads =
+                    dbs.tad_sets
+                        .overlapping_tads(TadSetChoice::Hesc, &schema_sv, &chrom_map);
+                let mut tad_gene_ids = Vec::new();
+                tads.iter()
+                    .map(|tad| {
+                        dbs.gene_regions.overlapping_gene_ids(
+                            interpreter.query.database,
+                            tad.chrom_no,
+                            tad.begin..tad.end,
+                        )
+                    })
+                    .for_each(|mut v| tad_gene_ids.append(&mut v));
+                let tad_gene_ids: HashSet<_> = HashSet::from_iter(tad_gene_ids.into_iter());
+                let mut tad_gene_ids = Vec::from_iter(tad_gene_ids);
+                tad_gene_ids.sort();
+                tad_gene_ids
+            };
         }
     }
 
     Ok(stats)
+}
+
+/// Bundle the used database to reduce argument count.
+pub struct Databases {
+    pub bg_dbs: BgDbBundle,
+    pub patho_dbs: PathoDbBundle,
+    pub tad_sets: TadSetBundle,
+    pub gene_regions: GeneRegionDbBundle,
+    pub clinvar_sv: ClinvarSv,
 }
 
 /// Main entry point for `sv query` sub command.
@@ -148,13 +193,15 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
     info!("args = {:?}", &args);
 
     info!("Loading databases...");
-    let db_conf = load_db_conf(args)?;
     let before_loading = Instant::now();
-    let bg_dbs = load_bg_dbs(&args.path_db, &db_conf.background_dbs)?;
-    let patho_dbs = load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?;
-    let _tad_sets = load_tads(&args.path_db, &db_conf.tads)?;
-    let _gene_regions = load_gene_regions(&args.path_db, &db_conf.genes)?;
-    let clinvar_sv = load_clinvar_sv(&args.path_db, &db_conf.clinvar)?;
+    let db_conf = load_db_conf(args)?;
+    let dbs = Databases {
+        bg_dbs: load_bg_dbs(&args.path_db, &db_conf.background_dbs)?,
+        patho_dbs: load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?,
+        tad_sets: load_tads(&args.path_db, &db_conf.tads)?,
+        gene_regions: load_gene_regions(&args.path_db, &db_conf.genes)?,
+        clinvar_sv: load_clinvar_sv(&args.path_db, &db_conf.clinvar)?,
+    };
     info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()
@@ -171,13 +218,7 @@ pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), 
 
     info!("Running queries...");
     let before_query = Instant::now();
-    let query_stats = run_query(
-        &QueryInterpreter::new(query),
-        &bg_dbs,
-        &clinvar_sv,
-        &patho_dbs,
-        args,
-    )?;
+    let query_stats = run_query(&QueryInterpreter::new(query), args, &dbs)?;
     info!("... done running query in {:?}", before_query.elapsed());
     info!(
         "summary: {} records passed out of {}",
