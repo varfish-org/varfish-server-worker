@@ -1,11 +1,11 @@
-// Apply settings from a `CaseQuery` to `StructuralVariant` records.
+//! Apply settings from a `CaseQuery` to `StructuralVariant` records.
 
 use std::collections::HashSet;
 
 use anyhow::anyhow;
 
 use super::{
-    dbrecords::SvOverlapCounts,
+    bgdbs::BgDbOverlaps,
     schema::{CaseQuery, GenotypeChoice, Range, StructuralVariant, SvSubType, SvType},
 };
 
@@ -24,7 +24,7 @@ fn overlaps(s1: u32, e1: u32, s2: u32, e2: u32) -> bool {
 /// to multiple `StructuralVariant` records.
 #[derive(Debug)]
 pub struct QueryInterpreter {
-    query: CaseQuery,
+    pub query: CaseQuery,
 }
 
 impl QueryInterpreter {
@@ -84,9 +84,9 @@ impl QueryInterpreter {
         Ok(true)
     }
 
-    /// Determine whether this record passes the simple criteria regarding
+    /// Determine whether this record passes the selection criteria regarding
     /// size and SV type.
-    pub fn passes_simple(&self, sv: &StructuralVariant) -> bool {
+    pub fn passes_selection(&self, sv: &StructuralVariant) -> bool {
         let pass_sv_type =
             self.query.sv_types.is_empty() || self.query.sv_types.contains(&sv.sv_type);
 
@@ -186,51 +186,23 @@ impl QueryInterpreter {
 
     /// Determine whether an SV record with the given overlap counts passes
     /// the criteria.
-    pub fn passes_counts(&self, counts: &SvOverlapCounts) -> bool {
+    pub fn passes_counts(&self, counts: &BgDbOverlaps) -> bool {
         // We simply check for each database separately and pass if the check has not
         // been enabled or no minimal carrier / allele count is given
         let passes_dgv = !self.query.svdb_dgv_enabled
-            || counts.dgv_carriers
-                <= self
-                    .query
-                    .svdb_dgv_max_carriers
-                    .unwrap_or(counts.dgv_carriers);
+            || counts.dgv <= self.query.svdb_dgv_max_count.unwrap_or(counts.dgv);
         let passes_dgv_gs = !self.query.svdb_dgv_gs_enabled
-            || counts.dgv_gs_carriers
-                <= self
-                    .query
-                    .svdb_dgv_gs_max_carriers
-                    .unwrap_or(counts.dgv_gs_carriers);
+            || counts.dgv_gs <= self.query.svdb_dgv_gs_max_count.unwrap_or(counts.dgv_gs);
         let passes_gnomad = !self.query.svdb_gnomad_enabled
-            || counts.gnomad_carriers
-                <= self
-                    .query
-                    .svdb_gnomad_max_carriers
-                    .unwrap_or(counts.gnomad_carriers);
+            || counts.gnomad <= self.query.svdb_gnomad_max_count.unwrap_or(counts.gnomad);
         let passes_exac = !self.query.svdb_exac_enabled
-            || counts.exac_carriers
-                <= self
-                    .query
-                    .svdb_exac_max_carriers
-                    .unwrap_or(counts.exac_carriers);
+            || counts.exac <= self.query.svdb_exac_max_count.unwrap_or(counts.exac);
         let passes_dbvar = !self.query.svdb_dbvar_enabled
-            || counts.dbvar_carriers
-                <= self
-                    .query
-                    .svdb_dbvar_max_carriers
-                    .unwrap_or(counts.dbvar_carriers);
+            || counts.dbvar <= self.query.svdb_dbvar_max_count.unwrap_or(counts.dbvar);
         let passes_g1k = !self.query.svdb_g1k_enabled
-            || counts.g1k_alleles
-                <= self
-                    .query
-                    .svdb_g1k_max_alleles
-                    .unwrap_or(counts.g1k_alleles);
+            || counts.g1k <= self.query.svdb_g1k_max_count.unwrap_or(counts.g1k);
         let passes_inhouse = !self.query.svdb_inhouse_enabled
-            || counts.inhouse_carriers
-                <= self
-                    .query
-                    .svdb_inhouse_max_carriers
-                    .unwrap_or(counts.inhouse_carriers);
+            || counts.inhouse <= self.query.svdb_inhouse_max_count.unwrap_or(counts.inhouse);
 
         passes_dgv
             && passes_dgv_gs
@@ -242,18 +214,23 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<F>(&self, sv: &StructuralVariant, counter: F) -> Result<bool, anyhow::Error>
+    pub fn passes<CountBg>(
+        &self,
+        sv: &StructuralVariant,
+        count_bg: CountBg,
+    ) -> Result<bool, anyhow::Error>
     where
-        F: Fn(&StructuralVariant) -> SvOverlapCounts,
+        CountBg: Fn(&StructuralVariant) -> BgDbOverlaps,
     {
-        // First execute non-overlap based queries.  If all succeed then also run overlapper.
-        if !self.passes_simple(sv)
+        // We first check for matching genotype.  If this succeeds then we execute the
+        // overlapper for known pathogenic and then for frequency in background.
+        if !self.passes_selection(sv)
             || !self.passes_genomic_region(sv)
             || !self.passes_genotype(sv)?
         {
             Ok(false)
         } else {
-            Ok(self.passes_counts(&counter(sv)))
+            Ok(self.passes_counts(&count_bg(sv)))
         }
     }
 
@@ -268,7 +245,7 @@ impl QueryInterpreter {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::sv_query::schema::{
+    use crate::sv::query::schema::{
         CallInfo, Database, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
     };
 
@@ -309,7 +286,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(interpreter.passes_simple(&sv_pass));
+        assert!(interpreter.passes_selection(&sv_pass));
     }
 
     #[test]
@@ -331,7 +308,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
@@ -353,7 +330,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
@@ -376,7 +353,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(interpreter.passes_simple(&sv_pass));
+        assert!(interpreter.passes_selection(&sv_pass));
     }
 
     #[test]
@@ -398,7 +375,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
@@ -420,7 +397,7 @@ mod tests {
             call_info: HashMap::new(),
         };
 
-        assert!(!interpreter.passes_simple(&sv_fail));
+        assert!(!interpreter.passes_selection(&sv_fail));
     }
 
     #[test]
@@ -735,31 +712,31 @@ mod tests {
     fn test_query_interpreter_passes_counts_pass() {
         let query = CaseQuery {
             svdb_dgv_enabled: true,
-            svdb_dgv_max_carriers: Some(10),
+            svdb_dgv_max_count: Some(10),
             svdb_dgv_gs_enabled: true,
-            svdb_dgv_gs_max_carriers: Some(10),
+            svdb_dgv_gs_max_count: Some(10),
             svdb_gnomad_enabled: true,
-            svdb_gnomad_max_carriers: Some(10),
+            svdb_gnomad_max_count: Some(10),
             svdb_exac_enabled: true,
-            svdb_exac_max_carriers: Some(10),
+            svdb_exac_max_count: Some(10),
             svdb_dbvar_enabled: true,
-            svdb_dbvar_max_carriers: Some(10),
+            svdb_dbvar_max_count: Some(10),
             svdb_g1k_enabled: true,
-            svdb_g1k_max_alleles: Some(10),
+            svdb_g1k_max_count: Some(10),
             svdb_inhouse_enabled: true,
-            svdb_inhouse_max_carriers: Some(10),
+            svdb_inhouse_max_count: Some(10),
             ..CaseQuery::new(Database::Refseq)
         };
         let interpreter = QueryInterpreter::new(query);
 
-        let counts_pass = SvOverlapCounts {
-            dgv_carriers: 5,
-            dgv_gs_carriers: 5,
-            gnomad_carriers: 5,
-            exac_carriers: 5,
-            g1k_alleles: 5,
-            inhouse_carriers: 5,
-            dbvar_carriers: 5,
+        let counts_pass = BgDbOverlaps {
+            dgv: 5,
+            dgv_gs: 5,
+            gnomad: 5,
+            exac: 5,
+            g1k: 5,
+            inhouse: 5,
+            dbvar: 5,
         };
 
         assert!(interpreter.passes_counts(&counts_pass));
@@ -769,31 +746,31 @@ mod tests {
     fn test_query_interpreter_passes_counts_fail() {
         let query = CaseQuery {
             svdb_dgv_enabled: true,
-            svdb_dgv_max_carriers: Some(10),
+            svdb_dgv_max_count: Some(10),
             svdb_dgv_gs_enabled: true,
-            svdb_dgv_gs_max_carriers: Some(10),
+            svdb_dgv_gs_max_count: Some(10),
             svdb_gnomad_enabled: true,
-            svdb_gnomad_max_carriers: Some(10),
+            svdb_gnomad_max_count: Some(10),
             svdb_exac_enabled: true,
-            svdb_exac_max_carriers: Some(10),
+            svdb_exac_max_count: Some(10),
             svdb_dbvar_enabled: true,
-            svdb_dbvar_max_carriers: Some(10),
+            svdb_dbvar_max_count: Some(10),
             svdb_g1k_enabled: true,
-            svdb_g1k_max_alleles: Some(10),
+            svdb_g1k_max_count: Some(10),
             svdb_inhouse_enabled: true,
-            svdb_inhouse_max_carriers: Some(10),
+            svdb_inhouse_max_count: Some(10),
             ..CaseQuery::new(Database::Refseq)
         };
         let interpreter = QueryInterpreter::new(query);
 
-        let counts_fail = SvOverlapCounts {
-            dgv_carriers: 11,
-            dgv_gs_carriers: 11,
-            gnomad_carriers: 11,
-            exac_carriers: 11,
-            g1k_alleles: 11,
-            inhouse_carriers: 11,
-            dbvar_carriers: 11,
+        let counts_fail = BgDbOverlaps {
+            dgv: 11,
+            dgv_gs: 11,
+            gnomad: 11,
+            exac: 11,
+            g1k: 11,
+            inhouse: 11,
+            dbvar: 11,
         };
 
         assert!(!interpreter.passes_counts(&counts_fail));
@@ -1028,14 +1005,14 @@ mod tests {
             strand_orientation: Some(StrandOrientation::ThreeToFive),
             call_info: HashMap::new(),
         };
-        let counts_pass = SvOverlapCounts {
-            dgv_carriers: 5,
-            dgv_gs_carriers: 5,
-            gnomad_carriers: 5,
-            exac_carriers: 5,
-            g1k_alleles: 5,
-            inhouse_carriers: 5,
-            dbvar_carriers: 5,
+        let counts_pass = BgDbOverlaps {
+            dgv: 5,
+            dgv_gs: 5,
+            gnomad: 5,
+            exac: 5,
+            g1k: 5,
+            inhouse: 5,
+            dbvar: 5,
         };
 
         assert!(interpreter.passes(&sv_pass, |_sv| counts_pass.clone())?);

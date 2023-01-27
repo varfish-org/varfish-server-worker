@@ -12,28 +12,44 @@ readme = "README.md"
 
 [dependencies]
 anyhow = { version = "1.0.68", features = ["backtrace"] }
+base16ct = "0.1.1"
 bio = "1.1.0"
 byte-unit = "4.0.18"
-clap = { version = "4.1.1", features = ["derive"] }
+clap = { version = "4.1.1", features = ["derive", "help"] }
 clap-verbosity-flag = "2.0.0"
 console = "0.15.5"
 csv = "1.1.6"
+flatbuffers = "23.1.21"
 flate2 = "1.0.25"
+lazy_static = "1.4.0"
+log = "0.4.17"
+md-5 = "0.10.5"
+memmap2 = "0.5.8"
+multimap = "0.8.3"
 procfs = "0.14.2"
 rust-htslib = { version = "0.40.2", default-features = false }
 serde = { version = "1.0.152", features = ["serde_derive"] }
 serde-jsonlines = "0.4.0"
 serde_json = "1.0.91"
+sha2 = "0.10.6"
 shellexpand = "3.0.0"
 strum = "0.24.1"
 strum_macros = "0.24.3"
 tempdir = "0.3.7"
 thiserror = "1.0.38"
 thousands = "0.2.0"
+toml = { version = "0.6.0", features = ["preserve_order"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
+
+[build-dependencies]
+flatc-rust = "*"
 
 [dev-dependencies]
+file_diff = "1.0.0"
 serde_test = "1.0.152"
 pretty_assertions = "1"
+temp_testdir = "0.2"
 
 [[bin]]
 name = "varfish-server-worker"

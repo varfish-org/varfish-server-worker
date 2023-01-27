@@ -1,18 +1,35 @@
 //! Common functionality.
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufReader, Read},
+    ops::Range,
+};
 
 use byte_unit::Byte;
-use clap_verbosity_flag::Verbosity;
+use clap_verbosity_flag::{InfoLevel, Verbosity};
 
 use clap::Parser;
+use flate2::bufread::MultiGzDecoder;
+use tracing::debug;
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
 pub struct Args {
     /// Verbosity of the program
     #[clap(flatten)]
-    pub verbose: Verbosity,
+    pub verbose: Verbosity<InfoLevel>,
+}
+
+/// Helper to print the current memory resident set size via `tracing`.
+pub fn trace_rss_now() {
+    let me = procfs::process::Process::myself().unwrap();
+    let page_size = procfs::page_size().unwrap();
+    debug!(
+        "RSS now: {}",
+        Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
+    );
 }
 
 /// Helper to print the current memory resident set size to a `Term`.
@@ -50,4 +67,35 @@ pub fn build_chrom_map() -> HashMap<String, usize> {
     result.insert("MT".to_owned(), 24);
     result.insert("chrMT".to_owned(), 24);
     result
+}
+
+/// Transparently open a file with gzip decoder.
+pub fn open_maybe_gz(path: &str) -> Result<Box<dyn Read>, anyhow::Error> {
+    if path.ends_with(".gz") {
+        let file = File::open(path)?;
+        let bufreader = BufReader::new(file);
+        let decoder = MultiGzDecoder::new(bufreader);
+        Ok(Box::new(decoder))
+    } else {
+        let file = File::open(path)?;
+        Ok(Box::new(file))
+    }
+}
+
+// Compute reciprocal overlap between two ranges.
+pub fn reciprocal_overlap(lhs: Range<u32>, rhs: Range<u32>) -> f32 {
+    let lhs_b = lhs.start;
+    let lhs_e = lhs.end;
+    let rhs_b = rhs.start;
+    let rhs_e = rhs.end;
+    let ovl_b = std::cmp::max(lhs_b, rhs_b);
+    let ovl_e = std::cmp::min(lhs_e, rhs_e);
+    if ovl_b >= ovl_e {
+        0f32
+    } else {
+        let ovl_len = (ovl_e - ovl_b) as f32;
+        let x1 = (lhs_e - lhs_b) as f32 / ovl_len;
+        let x2 = (rhs_e - rhs_b) as f32 / ovl_len;
+        x1.min(x2)
+    }
 }

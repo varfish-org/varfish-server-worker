@@ -1,154 +1,71 @@
-# VarFish Server Workers
+# VarFish Server Worker
 
-This repository contains the workers used by VarFish Server to execute certain background task.
+This repository contains the worker used by VarFish Server to execute certain background task.
 They are written in the Rust programming language to speed up the execution of certain tasks.
-At the moment, the following workers exist:
+At the moment, the following worker exist:
 
-- `sv query` -- execution of SV queries
+- `sv bg-db-to-bin` -- convert background TSV file (from VarFish DB Downloader or `sv inhouse-db-build` to binary format as input for `sv query`)
+- `sv inhouse-db-build` -- combine multiple SV TSV files from VarFish Annotator annotated into a background TSV file for the worker
+- `sv query` -- perform SV (overlap) annoation and filtration
 
 ## Overall Design
 
-The workers are installed into the VarFish Server image and are run as executables.
+For running queries, the worker tool is installed into the VarFish Server image and are run as executables.
 The VarFish Server Celery task writes out file(s) with the input for the worker.
 The worker then reads in this file, may use some static database files but also the VarFish server postgres database, and can write out out a result file or store the results in the postgres database
 The celery worker will then process any worker output further.
 The book keeping is done by the Celery worker that runs from the code of VarFish server.
 
-## The `sv query` Worker
+## The `sv bg-db-to-bin` Command
 
-This worker provides the query functionality.
-
-**Call**
-
-```bash
-$ cargo-varfish-worker sv query \
-    --db-base-dir DIR \
-    --result-set-id ID \
-    --query-json QUERY.json \
-    --input-vcf INPUT.vcf.gz \
-    --output-vcf OUTPUT.tsv
-```
-
-**Param: `--db-base-dir DIR` (required)**
-
-Directory with the following files (read on startup):
-
-- VarFish Background Database
-    - `bg-inhouse/varfish-sv.tsv.gz` -- VarFish SVs
-- SV databases
-    - `bg-public/gnomad-sv.tsv.gz` -- gnomAD SVs
-    - `bg-public/dbvar-sv.tsv.gz` -- dbVar SVs
-    - `bg-public/dgv-sv.tsv.gz` -- DGV SVs (full set)
-    - `bg-public/dgv-gs-sv.tsv.gz` -- DGV gold standard SVs
-    - `bg-public/exac-cnv.tsv.gz` -- ExAC CNVs
-    - `bg-public/g1k-sv.tsv.gz` -- Thousand Genomes SVs
-- TAD boundaries
-    - `tads/dixon-2012-tads-hesc.tsv.gz` -- TAD intervals, hESC from Dixon (2012)
-    - `tads/dixon-2012-tads-imr90.tsv.gz` -- TAD intervals, IMR-90 from Dixon (2012)
-- ENSEMBL Regulatory features
-    - `ensembl/regulatory-build.tsv.gz` -- ENSEMBL regulatory build
-- VISTA enhancers
-    - `vista/vista-enhancer.tsv.gz` -- VISTA enhancers
-- Gene
-    - `genes/gene-intervals.tsv.gz` -- Genes for overlapping genes annotation
-    - `genes/hgnc.tsv.gz` -- HGNC information for genes
-
-**Param: `--result-set-id ID` (required)**
-
-This is written out to the column `svqueryresultset`.
-
-**Input: `QUERY.json`**
-
-JSON file with the serialized query settings from the user.
-
-**Input: `INPUT.vcf.gz`**
-
-A VCF file with the structural variants.
-This is dumped from the database by the Celery worker.
-
-The file will have a `##reference=GRCh37` or `##reference=GRCh38` header depending on the reference of the case.
-
-The following `INFO` fields will be interpreted.
-
-- `INFO/END` -- Integer with end position, if applicable.
-- `INFO/POS2` -- Integer with position on second chromosome, if applicable.
-- `INFO/CHR2` -- String with name of second chromosome.
-- `INFO/CALLER` -- String with caller(s) that found this variant.
-- `INFO/SV_TYPE` -- String with SV type, e.g., `DEL`
-- `INFO/SV_SUB_TYPE` -- String with SV sub type, e.g., `DEL:ME:SVA`.
-
-The following fields will be interpreted from the per-sample `FORMAT` fields.
-
-- `FORMAT/GT` -- String with genotype.
-- `FORMAT/FT` -- Per-genotype filter values.
-- `FORMAT/GQ` -- Float or integer of Phred-scaled genotype quality.
-- `FORMAT/PEC` -- Integer, total number of covering paired-end reads.
-- `FORMAT/PEV` -- Integer, number of paired-end variant reads.
-- `FORMAT/SRC` -- Integer, total number of covering split reads reads.
-- `FORMAT/SRV` -- Integer, number of variant split-reads.
-- `FORMAT/CN` -- Integer with copy number estimate.
-- `FORMAT/ANC` -- Float with average normalized coverage.
-- `FORMAT/PC` -- Integer with number of supporting points (for CNVs).
-
-**Output: `OUTPUT.tsv`**
-A text file with the query result.
-This is a TSV file that can directly be imported into the PostgreSQL database.
-The first line contains a header.
-Each of the following line contains one result record.
-
-The fields are as follows:
-
-- `sodar_uuid` -- String with automatically generated UUID4 for the result record.
-- `svqueryresultset` -- Integer with ID from argument `--result-set-id`.
-- `release` -- String with genome build.
-- `chromosome` -- String with chromosome name.
-- `chromosome_no` -- Integer with number of `chromosome`.
-- `bin` -- Integer with UCSC bin of interval or `chromosome` position.
-- `chromosome2` -- String with chromosome name, e.g., `X` for GRCh37 and `chrX` for GRCh38.
-- `chromosome_no2` -- Integer with chromosome number of `chromsome2`.
-- `bin2` -- Integer with UCSC bin of position on `chromosome2`.
-- `start` -- Integer with 1-based start position.
-- `end` -- Integer with 1-based end position.
-- `pe_orientation` -- String with PE orientation, empty or one of `5to3`, `3to5`, `3to3`, or `5to5`.
-- `sv_type` -- String with the SV type (e.g., `DEL`)
-- `sv_sub_type` -- String with the SV sub type (e.g., `DEL:ME:ALU`)
-- `payload` -- JSON field with the result record payload.
-
-## The `sv build-bgdb` Worker
-
-This worker provides the functionality to build the background SV database.
-This was formerly implemented in `varfish-server` itself but has been off-loaded to the worker to improve performance.
-
-**Call**
-
-```bash
-$ cargo-varfish-worker sv build-bgdb \
-    --output-tsv OUTPUT.tsv \
-    --output-bg-sv-set-id ID \
-    INPUT1 [INPUT2...]
-```
-
-**Param: `--output-tsv OUTPUT.tsv` (required)**
-
-The path to the output TSV file to write to.
-
-**Param: `--output-bg-sv-set-id ID` (required)**
-
-The numeric value to write to the output background SV set ID column.
-
-**Input: `INPUT*` (at least one required)**
-
-One or more TSV files as written out by `varfish-annotator-cli`.
-If you specify file name(s) starting with an at (`@`) character then this file is read and each line is expected to show one file name.
-
-## Running Proof of Concept
+Convert background database from `sv inhouse-db-build` or VarFish DB Downloader output to a binary file.
+The binary file uses `flatbuffers` for fast I/O (startup time is less than 200ms on workstation with NVME).
 
 ```
-# cargo run --release \
-    sv query \
-    --db-base-dir ~/Data/varfish-worker \
-    --result-set-id 0 \
-    --query-json <(sed -e 's/__INDEX__/sample/' misc/ok-query-single.json) \
-    --input-vcf ~/Data/varfish-workers-input/bwa.sample.vcf.gz \
-    --output-vcf /dev/null
+$ varfish-server-worker sv bg-db-to-bin \
+    --path-input-tsv INPUT.tsv \
+    --path-output-bin OUTPUT.bin \
+    --input-type TYPE
+```
+
+## The `sv bg-db-to-bin` Command
+
+Convert a gene region file from VarFish DB Downloader to output a binary file.
+The binary file uses `flatbuffers` for fast I/O (startup time is less than 200ms on workstation with NVME).
+
+```
+$ varfish-server-worker sv gene-region-to-bin \
+    --path-input-tsv INPUT.tsv \
+    --path-output-bin OUTPUT.bin
+```
+
+## The `sv inhouse-db-build` Command
+
+Compute in-house database TSV file from one or more VarFish Annotator annotated SV call sets.
+You can use `@PATH.txt` for a file that has more TSV files, one path per line.
+
+```
+$ varfish-server-worker sv inhouse-db-build \
+    --path-output-tsv OUT.tsv \
+    INPUT.tsv [INPUT.tsv ...]
+```
+
+## The `sv query` Command
+
+This is for actually running the queries.
+
+```
+$ varfish-server-worker sv query \
+    --path-db PATH_DB \
+    --path-query-json QUERY.json \
+    --path-input-svs VARFISH_ANNOTATED.gts.tsv.gz
+```
+
+## Development Setup
+
+You will need a recent version of flatbuffers, e.g.:
+
+```
+# bash utils/install-flatbuffers.sh
+# export PATH=$PATH:$HOME/.local/share/flatbuffers/bin
 ```

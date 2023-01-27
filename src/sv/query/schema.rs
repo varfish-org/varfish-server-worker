@@ -1,5 +1,10 @@
+//! Supporting code for SV query definition.
+
 use std::collections::HashMap;
 
+use crate::world_flatbuffers::var_fish_server_worker::{
+    Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
+};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
@@ -48,10 +53,24 @@ pub enum Database {
 }
 
 /// Encode the type of an SV
-#[derive(Serialize, Deserialize, EnumIter, PartialEq, Eq, Hash, Debug, Clone, Copy)]
+#[derive(
+    Serialize,
+    Deserialize,
+    EnumIter,
+    PartialEq,
+    Eq,
+    Ord,
+    PartialOrd,
+    Hash,
+    Debug,
+    Clone,
+    Copy,
+    Default,
+)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SvType {
     /// Deletion
+    #[default]
     Del,
     /// Duplication
     Dup,
@@ -90,10 +109,11 @@ impl SvType {
 }
 
 /// Structural variant sub type
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy, Default)]
 pub enum SvSubType {
     /// Deletion
     #[serde(rename = "DEL")]
+    #[default]
     Del,
     /// Mobile element deletion
     #[serde(rename = "DEL:ME")]
@@ -728,43 +748,43 @@ pub struct CaseQuery {
     /// The minimal reciprocal overlap for querying DGV.
     pub svdb_dgv_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying DGV.
-    pub svdb_dgv_max_carriers: Option<u32>,
+    pub svdb_dgv_max_count: Option<u32>,
     /// Whether to enable SVDB overlap queries with DGV gold standard.
     pub svdb_dgv_gs_enabled: bool,
     /// The minimal reciprocal overlap for querying DGV gold standard.
     pub svdb_dgv_gs_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying DGV gold standard.
-    pub svdb_dgv_gs_max_carriers: Option<u32>,
+    pub svdb_dgv_gs_max_count: Option<u32>,
     /// Whether to enable SVDB overlap queries with gnomAD.
     pub svdb_gnomad_enabled: bool,
     /// The minimal reciprocal overlap for querying gnomAD.
     pub svdb_gnomad_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying gnomAD.
-    pub svdb_gnomad_max_carriers: Option<u32>,
+    pub svdb_gnomad_max_count: Option<u32>,
     /// Whether to enable SVDB overlap queries with ExAC.
     pub svdb_exac_enabled: bool,
     /// The minimal reciprocal overlap for querying ExAC.
     pub svdb_exac_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying ExAC.
-    pub svdb_exac_max_carriers: Option<u32>,
+    pub svdb_exac_max_count: Option<u32>,
     /// Whether to enable SVDB overlap queries with dbVar.
     pub svdb_dbvar_enabled: bool,
     /// The minimal reciprocal overlap for querying dbVar.
     pub svdb_dbvar_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying dbVar.
-    pub svdb_dbvar_max_carriers: Option<u32>,
+    pub svdb_dbvar_max_count: Option<u32>,
     /// Whether to enable SVDB overlap queries with Thousand Genomes Project.
     pub svdb_g1k_enabled: bool,
     /// The minimal reciprocal overlap for querying Thousand Genomes Project.
     pub svdb_g1k_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying Thousand Genomes Project.
-    pub svdb_g1k_max_alleles: Option<u32>,
+    pub svdb_g1k_max_count: Option<u32>,
     /// Whether to enable SVDB overlap queries with in-house DB.
     pub svdb_inhouse_enabled: bool,
     /// The minimal reciprocal overlap for querying in-house DB.
     pub svdb_inhouse_min_overlap: Option<f32>,
     /// The maximal number of alleles for querying in-house DB.
-    pub svdb_inhouse_max_carriers: Option<u32>,
+    pub svdb_inhouse_max_count: Option<u32>,
 
     /// The minimal SV size to consider.
     pub sv_size_min: Option<u32>,
@@ -811,25 +831,25 @@ impl CaseQuery {
             database,
             svdb_dgv_enabled: false,
             svdb_dgv_min_overlap: None,
-            svdb_dgv_max_carriers: None,
+            svdb_dgv_max_count: None,
             svdb_dgv_gs_enabled: false,
             svdb_dgv_gs_min_overlap: None,
-            svdb_dgv_gs_max_carriers: None,
+            svdb_dgv_gs_max_count: None,
             svdb_gnomad_enabled: false,
             svdb_gnomad_min_overlap: None,
-            svdb_gnomad_max_carriers: None,
+            svdb_gnomad_max_count: None,
             svdb_exac_enabled: false,
             svdb_exac_min_overlap: None,
-            svdb_exac_max_carriers: None,
+            svdb_exac_max_count: None,
             svdb_dbvar_enabled: false,
             svdb_dbvar_min_overlap: None,
-            svdb_dbvar_max_carriers: None,
+            svdb_dbvar_max_count: None,
             svdb_g1k_enabled: false,
             svdb_g1k_min_overlap: None,
-            svdb_g1k_max_alleles: None,
+            svdb_g1k_max_count: None,
             svdb_inhouse_enabled: false,
             svdb_inhouse_min_overlap: None,
-            svdb_inhouse_max_carriers: None,
+            svdb_inhouse_max_count: None,
             sv_size_min: None,
             sv_size_max: None,
             sv_types: vec![],
@@ -850,7 +870,7 @@ impl CaseQuery {
 }
 
 /// Strand orientation of
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
 pub enum StrandOrientation {
     #[serde(rename = "3to3")]
     ThreeToThree,
@@ -861,6 +881,7 @@ pub enum StrandOrientation {
     #[serde(rename = "5to3")]
     FiveToThree,
     #[serde(rename = "NtoN")]
+    #[default]
     NotApplicable,
 }
 
@@ -931,6 +952,108 @@ impl StructuralVariant {
             Some(self.end.saturating_sub(self.pos) + 1)
         }
     }
+}
+
+impl From<VariationType> for FlatVariationType {
+    fn from(val: VariationType) -> Self {
+        match val {
+            VariationType::Complex => FlatVariationType::Complex,
+            VariationType::Microsatellite => FlatVariationType::Microsatellite,
+            VariationType::Dup => FlatVariationType::Dup,
+            VariationType::Del => FlatVariationType::Del,
+            VariationType::Bnd => FlatVariationType::Bnd,
+            VariationType::Cnv => FlatVariationType::Cnv,
+            VariationType::Inv => FlatVariationType::Inv,
+            VariationType::Ins => FlatVariationType::Ins,
+        }
+    }
+}
+
+impl TryInto<VariationType> for FlatVariationType {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<VariationType, anyhow::Error> {
+        Ok(match self {
+            FlatVariationType::Complex => VariationType::Complex,
+            FlatVariationType::Microsatellite => VariationType::Microsatellite,
+            FlatVariationType::Dup => VariationType::Dup,
+            FlatVariationType::Del => VariationType::Del,
+            FlatVariationType::Bnd => VariationType::Bnd,
+            FlatVariationType::Cnv => VariationType::Cnv,
+            FlatVariationType::Inv => VariationType::Inv,
+            FlatVariationType::Ins => VariationType::Ins,
+            _ => return Err(anyhow::anyhow!("could not convert {:?}", self)),
+        })
+    }
+}
+
+/// Variation type from Clinvar.
+#[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+pub enum VariationType {
+    #[default]
+    Complex,
+    Microsatellite,
+    Dup,
+    Del,
+    Bnd,
+    Cnv,
+    Inv,
+    Ins,
+}
+
+/// Clinvar pathogenicity.
+#[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+pub enum Pathogenicity {
+    Benign,
+    LikelyBenign,
+    #[default]
+    Uncertain,
+    LikelyPathogenic,
+    Pathogenic,
+}
+
+impl From<Pathogenicity> for FlatPathogenicity {
+    fn from(val: Pathogenicity) -> Self {
+        match val {
+            Pathogenicity::Benign => FlatPathogenicity::Benign,
+            Pathogenicity::LikelyBenign => FlatPathogenicity::LikelyBenign,
+            Pathogenicity::Uncertain => FlatPathogenicity::Uncertain,
+            Pathogenicity::LikelyPathogenic => FlatPathogenicity::LikelyPathogenic,
+            Pathogenicity::Pathogenic => FlatPathogenicity::Pathogenic,
+        }
+    }
+}
+
+impl TryInto<Pathogenicity> for FlatPathogenicity {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Pathogenicity, anyhow::Error> {
+        Ok(match self {
+            FlatPathogenicity::Benign => Pathogenicity::Benign,
+            FlatPathogenicity::LikelyBenign => Pathogenicity::LikelyBenign,
+            FlatPathogenicity::Uncertain => Pathogenicity::Uncertain,
+            FlatPathogenicity::LikelyPathogenic => Pathogenicity::LikelyPathogenic,
+            FlatPathogenicity::Pathogenic => Pathogenicity::Pathogenic,
+            _ => return Err(anyhow::anyhow!("could not convert {:?}", self)),
+        })
+    }
+}
+
+/// Clinvar SV as created by clinvar-tsv.
+#[derive(Debug)]
+pub struct ClinvarSv {
+    /// Genome release
+    pub release: String,
+    /// Chromosome name
+    pub chromosome: String,
+    /// 1-based start position
+    pub start: u32,
+    /// 1-based end position
+    pub end: u32,
+    /// Clinvar variation type
+    pub variation_type: VariationType,
+    /// Clinvar pathogenicty
+    pub pathogenicity: Pathogenicity,
 }
 
 #[cfg(test)]
@@ -1348,43 +1471,43 @@ mod tests {
                 Token::Bool(false),
                 Token::Str("svdb_dgv_min_overlap"),
                 Token::None,
-                Token::Str("svdb_dgv_max_carriers"),
+                Token::Str("svdb_dgv_max_count"),
                 Token::None,
                 Token::Str("svdb_dgv_gs_enabled"),
                 Token::Bool(false),
                 Token::Str("svdb_dgv_gs_min_overlap"),
                 Token::None,
-                Token::Str("svdb_dgv_gs_max_carriers"),
+                Token::Str("svdb_dgv_gs_max_count"),
                 Token::None,
                 Token::Str("svdb_gnomad_enabled"),
                 Token::Bool(false),
                 Token::Str("svdb_gnomad_min_overlap"),
                 Token::None,
-                Token::Str("svdb_gnomad_max_carriers"),
+                Token::Str("svdb_gnomad_max_count"),
                 Token::None,
                 Token::Str("svdb_exac_enabled"),
                 Token::Bool(false),
                 Token::Str("svdb_exac_min_overlap"),
                 Token::None,
-                Token::Str("svdb_exac_max_carriers"),
+                Token::Str("svdb_exac_max_count"),
                 Token::None,
                 Token::Str("svdb_dbvar_enabled"),
                 Token::Bool(false),
                 Token::Str("svdb_dbvar_min_overlap"),
                 Token::None,
-                Token::Str("svdb_dbvar_max_carriers"),
+                Token::Str("svdb_dbvar_max_count"),
                 Token::None,
                 Token::Str("svdb_g1k_enabled"),
                 Token::Bool(false),
                 Token::Str("svdb_g1k_min_overlap"),
                 Token::None,
-                Token::Str("svdb_g1k_max_alleles"),
+                Token::Str("svdb_g1k_max_count"),
                 Token::None,
                 Token::Str("svdb_inhouse_enabled"),
                 Token::Bool(false),
                 Token::Str("svdb_inhouse_min_overlap"),
                 Token::None,
-                Token::Str("svdb_inhouse_max_carriers"),
+                Token::Str("svdb_inhouse_max_count"),
                 Token::None,
                 Token::Str("sv_size_min"),
                 Token::None,

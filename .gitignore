@@ -6,3 +6,7 @@
 ## Cargo
 
 /target
+
+## Flatbuffers
+
+utils/var

@@ -1,0 +1,86 @@
+namespace VarFishServerWorker;
+
+// Enum for storing the SV type.
+enum SvType : byte {
+  Del,
+  Dup,
+  Inv,
+  Ins,
+  Bnd,
+  Cnv,
+}
+
+// Background database record.
+struct BgDbRecord {
+  chrom_no: ubyte;
+  chrom_no2: ubyte;
+  sv_type: SvType;
+  begin: uint;
+  end: uint;
+  count: uint;
+}
+
+// Background database consists of a Vector of BgDbRecord.
+table BackgroundDatabase {
+  records:[BgDbRecord];
+}
+
+// Gene region record.
+struct GeneRegionRecord {
+  chrom_no: ubyte;
+  begin: uint;
+  end: uint;
+  gene_id: uint;
+}
+
+// Gene region databases consist of Vector of GeneRegionRecord.
+table GeneRegionDatabase {
+  records: [GeneRegionRecord];
+}
+
+// Enum for storing the variation type.
+enum VariationType : byte {
+  Complex,
+  Microsatellite,
+  Dup,
+  Del,
+  Bnd,
+  Cnv,
+  Inv,
+  Ins,
+}
+
+// Enum for storing the pathogenicity.
+enum Pathogenicity : byte {
+  Benign,
+  LikelyBenign,
+  Uncertain,
+  LikelyPathogenic,
+  Pathogenic,
+}
+
+// ClinVar SV record.
+struct ClinvarSvRecord {
+  chrom_no: ubyte;
+  begin: uint;
+  end: uint;
+  variation_type: VariationType;
+  pathogenicity: Pathogenicity;
+}
+
+// ClinVar SV database consists of Vector of ClinVarSvRecord.
+table ClinvarSvDatabase {
+  records: [ClinvarSvRecord];
+}
+
+// One mapping between entrez, ensembl, and gene symbols.
+struct XlinkRecord {
+  entrez_id: uint;
+  ensembl_id: uint;
+}
+
+// Mapping between entrez, ensembl, and gene symbols.
+table XlinkDatabase {
+  records: [XlinkRecord];
+  symbols: [string];
+}

@@ -2,7 +2,7 @@
 
 use serde::{de::IntoDeserializer, Deserialize, Deserializer, Serialize};
 
-use crate::sv_query::schema::{StrandOrientation, SvType};
+use crate::sv::query::schema::{StrandOrientation, SvType};
 
 /// Representation of the fields from the `StructuralVariant` table from VarFish Server
 /// that we need for building the background records.
