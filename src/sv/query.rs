@@ -37,7 +37,7 @@ use self::{
     clinvar::ClinvarSv,
     genes::GeneRegionDbBundle,
     pathogenic::PathoDbBundle,
-    schema::SvType,
+    schema::{Pathogenicity, SvType},
     tads::{TadSetBundle, TadSetChoice},
 };
 
@@ -135,10 +135,20 @@ fn run_query(
             stats.count_passed += 1;
             *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
             // perform some more queries for measuring time
-            if dbs.patho_dbs.count_overlaps(&schema_sv, &chrom_map) > 0 {
+            if dbs
+                .patho_dbs
+                .count_overlaps(&schema_sv, &chrom_map, Some(0.8))
+                > 0
+            {
                 warn!("found overlap with pathogenic {:?}", &schema_sv);
             }
-            if dbs.clinvar_sv.count_overlaps(&schema_sv, &chrom_map) > 0 {
+            if dbs.clinvar_sv.count_overlaps(
+                &schema_sv,
+                &chrom_map,
+                Some(Pathogenicity::LikelyPathogenic),
+                Some(0.8),
+            ) > 0
+            {
                 warn!("found overlap with clinvar {:?}", &schema_sv)
             }
             let _gene_ids = {

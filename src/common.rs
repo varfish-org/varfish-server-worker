@@ -4,6 +4,7 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{BufReader, Read},
+    ops::Range,
 };
 
 use byte_unit::Byte;
@@ -78,5 +79,23 @@ pub fn open_maybe_gz(path: &str) -> Result<Box<dyn Read>, anyhow::Error> {
     } else {
         let file = File::open(path)?;
         Ok(Box::new(file))
+    }
+}
+
+// Compute reciprocal overlap between two ranges.
+pub fn reciprocal_overlap(lhs: Range<u32>, rhs: Range<u32>) -> f32 {
+    let lhs_b = lhs.start;
+    let lhs_e = lhs.end;
+    let rhs_b = rhs.start;
+    let rhs_e = rhs.end;
+    let ovl_b = std::cmp::max(lhs_b, rhs_b);
+    let ovl_e = std::cmp::min(lhs_e, rhs_e);
+    if ovl_b >= ovl_e {
+        0f32
+    } else {
+        let ovl_len = (ovl_e - ovl_b) as f32;
+        let x1 = (lhs_e - lhs_b) as f32 / ovl_len;
+        let x2 = (rhs_e - rhs_b) as f32 / ovl_len;
+        x1.min(x2)
     }
 }

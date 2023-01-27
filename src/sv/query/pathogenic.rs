@@ -6,7 +6,7 @@ use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use tracing::{debug, info, warn};
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz, CHROMS},
+    common::{build_chrom_map, open_maybe_gz, reciprocal_overlap, CHROMS},
     sv::conf::KnownPathogenicSvsConf,
 };
 
@@ -42,6 +42,7 @@ impl PathoDb {
         &self,
         sv: &StructuralVariant,
         chrom_map: &HashMap<String, usize>,
+        min_overlap: Option<f32>,
     ) -> u32 {
         if sv.sv_type == SvType::Ins || sv.sv_type == SvType::Bnd {
             return 0;
@@ -54,6 +55,12 @@ impl PathoDb {
             .find(range)
             .iter()
             .map(|e| &self.records[chrom_idx][*e.data() as usize])
+            .filter(|record| {
+                min_overlap.map_or(true, |min_overlap| {
+                    reciprocal_overlap(record.begin..record.end, sv.pos.saturating_sub(1)..sv.end)
+                        >= min_overlap
+                })
+            })
             .map(|_record| 1)
             .sum::<u32>()
     }
@@ -69,8 +76,9 @@ impl PathoDbBundle {
         &self,
         sv: &StructuralVariant,
         chrom_map: &HashMap<String, usize>,
+        min_overlap: Option<f32>,
     ) -> u32 {
-        self.mms.count_overlaps(sv, chrom_map)
+        self.mms.count_overlaps(sv, chrom_map, min_overlap)
     }
 }
 
