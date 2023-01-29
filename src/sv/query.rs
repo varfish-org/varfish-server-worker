@@ -142,14 +142,17 @@ fn run_query(
             {
                 warn!("found overlap with pathogenic {:?}", &schema_sv);
             }
-            if dbs.clinvar_sv.count_overlaps(
+            let vcvs = dbs.clinvar_sv.overlapping_vcvs(
                 &schema_sv,
                 &chrom_map,
                 Some(Pathogenicity::LikelyPathogenic),
                 Some(0.8),
-            ) > 0
-            {
-                warn!("found overlap with clinvar {:?}", &schema_sv)
+            );
+            if !vcvs.is_empty() {
+                warn!("found overlap with clinvar {:?}", &schema_sv);
+                for vcv in vcvs {
+                    warn!(" --> VCV{:09}", vcv);
+                }
             }
 
             let gene_ids = {
@@ -209,7 +212,7 @@ pub struct Databases {
 }
 
 /// Main entry point for `sv query` sub command.
-pub(crate) fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = Instant::now();
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
