@@ -16,8 +16,11 @@ use std::{
 
 use anyhow::anyhow;
 use clap::{command, Parser};
+use csv::QuoteStyle;
+use serde::Serialize;
 use thousands::Separable;
-use tracing::{error, info, warn};
+use tracing::{error, info};
+use uuid::Uuid;
 
 use crate::{
     common::{build_chrom_map, open_maybe_gz, trace_rss_now},
@@ -26,8 +29,8 @@ use crate::{
         query::{
             bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
             interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
-            records::StructuralVariant as RecordSv, schema::CaseQuery,
-            schema::StructuralVariant as SchemaSv, tads::load_tads,
+            pathogenic::Record as KnownPathogenicRecord, records::StructuralVariant as RecordSv,
+            schema::CaseQuery, schema::StructuralVariant as SchemaSv, tads::load_tads,
         },
     },
 };
@@ -35,9 +38,9 @@ use crate::{
 use self::{
     bgdbs::BgDbBundle,
     clinvar::ClinvarSv,
-    genes::GeneDb,
+    genes::{GeneDb, XlinkDb},
     pathogenic::PathoDbBundle,
-    schema::{Pathogenicity, SvType},
+    schema::{Database, Pathogenicity, StrandOrientation, SvSubType, SvType},
     tads::{TadSetBundle, TadSetChoice},
 };
 
@@ -57,6 +60,12 @@ pub struct Args {
     /// Path to input TSV file.
     #[arg(long, required = true)]
     pub path_input_svs: String,
+    /// Path to the output TSV file.
+    #[arg(long, required = true)]
+    pub path_output_svs: String,
+    /// Value to write to the result set id column.
+    #[arg(long, default_value_t = 0)]
+    pub result_set_id: u64,
     /// Disable checksum verifiation.
     #[arg(long, default_value_t = false)]
     pub disable_checksums: bool,
@@ -97,6 +106,67 @@ fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
     Ok(conf)
 }
 
+/// Gene information.
+#[derive(Debug, Default, Serialize)]
+struct Gene {
+    symbol: String,
+    ensembl_id: String,
+    entrez_id: u32,
+}
+
+/// The structured result information of the result record.
+#[derive(Debug, Default, Serialize)]
+struct ResultPayload {
+    /// The overlapping VCVs
+    clinvar_ovl_vcvs: Vec<String>,
+    /// The directly overlapping genes
+    ovl_genes: Vec<Gene>,
+    /// Genes that are not directly overlapping but contained in overlapping TADs
+    tad_genes: Vec<Gene>,
+    /// Overlapping known pathogenic SV records.
+    known_pathogenic: Vec<KnownPathogenicRecord>,
+}
+
+/// A result record from the query.
+#[derive(Debug, Default, Serialize)]
+struct ResultRecord {
+    sodar_uuid: Uuid,
+    svqueryresultset: u64,
+    release: String,
+    chromosome: String,
+    chromosome_no: u32,
+    bin: u32,
+    chromosome2: String,
+    chromosome_no2: u32,
+    bin2: u32,
+    start: u32,
+    end: u32,
+    pe_orientation: StrandOrientation,
+    sv_type: SvType,
+    sv_sub_type: SvSubType,
+    payload: String,
+}
+
+fn resolve_gene_id(database: Database, xlink: &XlinkDb, gene_id: u32) -> Vec<Gene> {
+    let empty = Vec::new();
+    let record_idxs = match database {
+        Database::Refseq => xlink.from_entrez.get_vec(&gene_id),
+        Database::Ensembl => xlink.from_ensembl.get_vec(&gene_id),
+    }
+    .unwrap_or(&empty);
+    record_idxs
+        .iter()
+        .map(|record_idx| {
+            let record = &xlink.records[*record_idx as usize];
+            Gene {
+                symbol: record.symbol.clone(),
+                ensembl_id: format!("ENSG{:011}", record.ensembl_gene_id),
+                entrez_id: record.entrez_id,
+            }
+        })
+        .collect()
+}
+
 /// Utility struct to store statistics about counts.
 #[derive(Debug, Default)]
 struct QueryStats {
@@ -118,10 +188,17 @@ fn run_query(
         .has_headers(true)
         .delimiter(b'\t')
         .from_reader(open_maybe_gz(&args.path_input_svs)?);
+    let mut csv_writer = csv::WriterBuilder::new()
+        .has_headers(true)
+        .delimiter(b'\t')
+        .quote_style(QuoteStyle::Never)
+        .from_path(&args.path_output_svs)?;
     for record in csv_reader.deserialize() {
         stats.count_total += 1;
         let record_sv: RecordSv = record?;
-        let schema_sv: SchemaSv = record_sv.into();
+        let schema_sv: SchemaSv = record_sv.clone().into();
+
+        let mut result_payload = ResultPayload::default();
 
         if interpreter.passes(&schema_sv, |sv: &SchemaSv| {
             dbs.bg_dbs.count_overlaps(
@@ -135,38 +212,34 @@ fn run_query(
             stats.count_passed += 1;
             *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
             // perform some more queries for measuring time
-            if dbs
-                .patho_dbs
-                .count_overlaps(&schema_sv, &chrom_map, Some(0.8))
-                > 0
-            {
-                warn!("found overlap with pathogenic {:?}", &schema_sv);
-            }
-            let vcvs = dbs.clinvar_sv.overlapping_vcvs(
-                &schema_sv,
-                &chrom_map,
-                Some(Pathogenicity::LikelyPathogenic),
-                Some(0.8),
-            );
-            if !vcvs.is_empty() {
-                warn!("found overlap with clinvar {:?}", &schema_sv);
-                for vcv in vcvs {
-                    warn!(" --> VCV{:09}", vcv);
-                }
-            }
+            result_payload.known_pathogenic =
+                dbs.patho_dbs
+                    .overlapping_records(&schema_sv, &chrom_map, Some(0.8));
+            result_payload.clinvar_ovl_vcvs = dbs
+                .clinvar_sv
+                .overlapping_vcvs(
+                    &schema_sv,
+                    &chrom_map,
+                    Some(Pathogenicity::LikelyPathogenic),
+                    Some(0.8),
+                )
+                .into_iter()
+                .map(|vcv| format!("VCV{:09}", vcv))
+                .collect();
 
-            let gene_ids = {
-                let mut gene_ids = dbs.genes.overlapping_gene_ids(
+            let ovl_gene_ids = {
+                let mut ovl_gene_ids = dbs.genes.overlapping_gene_ids(
                     interpreter.query.database,
                     *chrom_map
                         .get(&schema_sv.chrom)
                         .expect("cannot translate chromosome") as u32,
                     schema_sv.pos.saturating_sub(1)..schema_sv.end,
                 );
-                gene_ids.sort();
-                gene_ids
+                ovl_gene_ids.sort();
+                ovl_gene_ids
             };
             let tad_gene_ids = {
+                let gene_ids: HashSet<_> = HashSet::from_iter(ovl_gene_ids.iter());
                 let tads =
                     dbs.tad_sets
                         .overlapping_tads(TadSetChoice::Hesc, &schema_sv, &chrom_map);
@@ -182,20 +255,46 @@ fn run_query(
                     .for_each(|mut v| tad_gene_ids.append(&mut v));
                 let tad_gene_ids: HashSet<_> = HashSet::from_iter(tad_gene_ids.into_iter());
                 let mut tad_gene_ids = Vec::from_iter(tad_gene_ids);
+                tad_gene_ids.retain(|gene_id| !gene_ids.contains(gene_id));
                 tad_gene_ids.sort();
                 tad_gene_ids
             };
 
-            gene_ids.iter().for_each(|gene_id| {
-                dbs.genes
-                    .xlink
-                    .gene_id_to_symbols(interpreter.query.database, *gene_id);
+            ovl_gene_ids.iter().for_each(|gene_id| {
+                result_payload.ovl_genes.append(&mut resolve_gene_id(
+                    interpreter.query.database,
+                    &dbs.genes.xlink,
+                    *gene_id,
+                ))
             });
             tad_gene_ids.iter().for_each(|gene_id| {
-                dbs.genes
-                    .xlink
-                    .gene_id_to_symbols(interpreter.query.database, *gene_id);
+                result_payload.tad_genes.append(&mut resolve_gene_id(
+                    interpreter.query.database,
+                    &dbs.genes.xlink,
+                    *gene_id,
+                ))
             });
+
+            csv_writer.serialize(&ResultRecord {
+                sodar_uuid: uuid::Uuid::new_v4(),
+                svqueryresultset: args.result_set_id,
+                release: record_sv.release.clone(),
+                chromosome: record_sv.chromosome.clone(),
+                chromosome_no: record_sv.chromosome_no,
+                start: record_sv.start,
+                bin: record_sv.bin,
+                chromosome2: record_sv
+                    .chromosome2
+                    .unwrap_or(record_sv.chromosome)
+                    .clone(),
+                chromosome_no2: record_sv.chromosome_no2,
+                bin2: record_sv.bin2,
+                end: record_sv.end,
+                pe_orientation: record_sv.pe_orientation,
+                sv_type: record_sv.sv_type,
+                sv_sub_type: record_sv.sv_sub_type,
+                payload: serde_json::to_string(&result_payload)?,
+            })?;
         }
     }
 

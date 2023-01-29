@@ -19,6 +19,10 @@ pub struct StructuralVariant {
     pub release: String,
     /// Chromosome name
     pub chromosome: String,
+    /// Chromosome number
+    pub chromosome_no: u32,
+    /// UCSC bin on chromosome
+    pub bin: u32,
     /// 1-based start position of the variant (or position on first chromosome for
     /// break-ends)
     pub start: u32,
@@ -30,6 +34,10 @@ pub struct StructuralVariant {
     pub sv_sub_type: SvSubType,
     /// Potentially the second involved chromosome
     pub chromosome2: Option<String>,
+    /// Chromosome number of second chromosome
+    pub chromosome_no2: u32,
+    /// UCSC bin on chromosome2
+    pub bin2: u32,
     /// End position (position on second chromosome for break-ends)
     pub end: u32,
     /// The strand orientation of the structural variant, if applicable.
