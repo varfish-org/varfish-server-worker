@@ -1,7 +1,6 @@
 //! Records for I/O in `sv query`.
 
-use std::collections::HashMap;
-
+use indexmap::IndexMap;
 use serde::{
     de::{self, IntoDeserializer},
     Deserialize, Deserializer, Serialize,
@@ -45,7 +44,7 @@ pub struct StructuralVariant {
     pub pe_orientation: StrandOrientation,
     /// Mapping of sample to genotype information for the SV.
     #[serde(deserialize_with = "deserialize_genotype")]
-    pub genotype: HashMap<String, Genotype>,
+    pub genotype: IndexMap<String, Genotype>,
 }
 
 impl From<StructuralVariant> for SchemaStructuralVariant {
@@ -62,7 +61,7 @@ impl From<StructuralVariant> for SchemaStructuralVariant {
             chrom2: val.chromosome2,
             end: val.end,
             strand_orientation: Some(val.pe_orientation),
-            call_info: HashMap::from_iter(val.genotype.into_iter().map(|(k, v)| {
+            call_info: IndexMap::from_iter(val.genotype.into_iter().map(|(k, v)| {
                 (
                     k,
                     SchemaCallInfo {
@@ -112,7 +111,7 @@ where
     }
 }
 
-fn deserialize_genotype<'de, D>(deserializer: D) -> Result<HashMap<String, Genotype>, D::Error>
+fn deserialize_genotype<'de, D>(deserializer: D) -> Result<IndexMap<String, Genotype>, D::Error>
 where
     D: Deserializer<'de>,
 {

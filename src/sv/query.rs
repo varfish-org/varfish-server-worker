@@ -1,3 +1,5 @@
+//! Code implementing the "sv query" sub command.
+
 pub mod bgdbs;
 pub mod clinvar;
 pub mod genes;
@@ -17,6 +19,7 @@ use std::{
 use anyhow::anyhow;
 use clap::{command, Parser};
 use csv::QuoteStyle;
+use indexmap::IndexMap;
 use serde::Serialize;
 use thousands::Separable;
 use tracing::{error, info};
@@ -40,7 +43,7 @@ use self::{
     clinvar::ClinvarSv,
     genes::{GeneDb, XlinkDb},
     pathogenic::PathoDbBundle,
-    schema::{Database, Pathogenicity, StrandOrientation, SvSubType, SvType},
+    schema::{CallInfo, Database, Pathogenicity, StrandOrientation, SvSubType, SvType},
     tads::{TadSetBundle, TadSetChoice},
 };
 
@@ -109,9 +112,9 @@ fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
 /// Gene information.
 #[derive(Debug, Default, Serialize)]
 struct Gene {
-    symbol: String,
-    ensembl_id: String,
-    entrez_id: u32,
+    symbol: Option<String>,
+    ensembl_id: Option<String>,
+    entrez_id: Option<u32>,
 }
 
 /// The structured result information of the result record.
@@ -125,6 +128,8 @@ struct ResultPayload {
     tad_genes: Vec<Gene>,
     /// Overlapping known pathogenic SV records.
     known_pathogenic: Vec<KnownPathogenicRecord>,
+    /// Information about the call support from the structural variant.
+    call_info: IndexMap<String, CallInfo>,
 }
 
 /// A result record from the query.
@@ -148,23 +153,36 @@ struct ResultRecord {
 }
 
 fn resolve_gene_id(database: Database, xlink: &XlinkDb, gene_id: u32) -> Vec<Gene> {
-    let empty = Vec::new();
     let record_idxs = match database {
         Database::Refseq => xlink.from_entrez.get_vec(&gene_id),
         Database::Ensembl => xlink.from_ensembl.get_vec(&gene_id),
+    };
+    if let Some(record_idxs) = record_idxs {
+        record_idxs
+            .iter()
+            .map(|record_idx| {
+                let record = &xlink.records[*record_idx as usize];
+                Gene {
+                    symbol: Some(record.symbol.clone()),
+                    ensembl_id: Some(format!("ENSG{:011}", record.ensembl_gene_id)),
+                    entrez_id: Some(record.entrez_id),
+                }
+            })
+            .collect()
+    } else {
+        match database {
+            Database::Refseq => vec![Gene {
+                entrez_id: Some(gene_id),
+                symbol: None,
+                ensembl_id: None,
+            }],
+            Database::Ensembl => vec![Gene {
+                ensembl_id: Some(format!("ENSG{:011}", gene_id)),
+                symbol: None,
+                entrez_id: None,
+            }],
+        }
     }
-    .unwrap_or(&empty);
-    record_idxs
-        .iter()
-        .map(|record_idx| {
-            let record = &xlink.records[*record_idx as usize];
-            Gene {
-                symbol: record.symbol.clone(),
-                ensembl_id: format!("ENSG{:011}", record.ensembl_gene_id),
-                entrez_id: record.entrez_id,
-            }
-        })
-        .collect()
 }
 
 /// Utility struct to store statistics about counts.
@@ -184,6 +202,7 @@ fn run_query(
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
 
+    // Construct reader and writer for CSV records
     let mut csv_reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
@@ -193,12 +212,12 @@ fn run_query(
         .delimiter(b'\t')
         .quote_style(QuoteStyle::Never)
         .from_path(&args.path_output_svs)?;
+
+    // Read through input records using the query interpreter as a filter
     for record in csv_reader.deserialize() {
         stats.count_total += 1;
         let record_sv: RecordSv = record?;
         let schema_sv: SchemaSv = record_sv.clone().into();
-
-        let mut result_payload = ResultPayload::default();
 
         if interpreter.passes(&schema_sv, |sv: &SchemaSv| {
             dbs.bg_dbs.count_overlaps(
@@ -209,9 +228,16 @@ fn run_query(
                 args.slack_bnd,
             )
         })? {
+            let mut result_payload = ResultPayload {
+                call_info: schema_sv.call_info.clone(),
+                ..ResultPayload::default()
+            };
+
+            // Count passing record in statistics
             stats.count_passed += 1;
             *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
-            // perform some more queries for measuring time
+
+            // Get overlaps with known pathogenic SVs and ClinVar SVs
             result_payload.known_pathogenic =
                 dbs.patho_dbs
                     .overlapping_records(&schema_sv, &chrom_map, Some(0.8));
@@ -227,6 +253,7 @@ fn run_query(
                 .map(|vcv| format!("VCV{:09}", vcv))
                 .collect();
 
+            // Get overlapping genes and genes in overlapping TADs
             let ovl_gene_ids = {
                 let mut ovl_gene_ids = dbs.genes.overlapping_gene_ids(
                     interpreter.query.database,
@@ -260,6 +287,7 @@ fn run_query(
                 tad_gene_ids
             };
 
+            // Convert the genes into more verbose records and put them into the result
             ovl_gene_ids.iter().for_each(|gene_id| {
                 result_payload.ovl_genes.append(&mut resolve_gene_id(
                     interpreter.query.database,
@@ -275,6 +303,7 @@ fn run_query(
                 ))
             });
 
+            // Finally, write out the record.
             csv_writer.serialize(&ResultRecord {
                 sodar_uuid: uuid::Uuid::new_v4(),
                 svqueryresultset: args.result_set_id,

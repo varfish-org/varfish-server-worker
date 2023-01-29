@@ -21,6 +21,7 @@ console = "0.15.5"
 csv = "1.1.6"
 flatbuffers = "23.1.21"
 flate2 = "1.0.25"
+indexmap = { version = "1.9.2", features = ["serde"] }
 lazy_static = "1.4.0"
 log = "0.4.17"
 md-5 = "0.10.5"
