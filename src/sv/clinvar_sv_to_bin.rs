@@ -101,6 +101,8 @@ mod input {
         /// ClinVar SV variation type
         #[serde(deserialize_with = "from_variation_type_label")]
         pub variation_type: VariationType,
+        /// The ClinVar VCV identifier
+        pub vcv: String,
         /// Pathogenicity
         #[serde(
             alias = "summary_clinvar_pathogenicity",
@@ -131,6 +133,18 @@ mod input {
     }
 }
 
+/// Helper to convert VCV IDs to numbers.
+fn numeric_vcv_id(raw_id: &str) -> Result<u32, anyhow::Error> {
+    let clean_id: String = raw_id
+        .chars()
+        .skip("VCV".len())
+        .skip_while(|c| *c == '0')
+        .collect();
+    clean_id
+        .parse::<u32>()
+        .map_err(|e| anyhow::anyhow!("could not parse VCV id {:?}: {}", &clean_id, &e))
+}
+
 /// Perform conversion to flatbuffers `.bin` file.
 pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
     let chrom_map = build_chrom_map();
@@ -150,6 +164,7 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
             record.end,
             record.variation_type.into(),
             record.pathogenicity.into(),
+            numeric_vcv_id(&record.vcv)?,
         ));
     }
 

@@ -66,6 +66,7 @@ struct ClinvarSvRecord {
   end: uint;
   variation_type: VariationType;
   pathogenicity: Pathogenicity;
+  vcv: uint;
 }
 
 // ClinVar SV database consists of Vector of ClinVarSvRecord.
