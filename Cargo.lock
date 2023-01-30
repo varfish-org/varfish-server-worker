@@ -752,6 +752,7 @@ checksum = "1885e79c1fc4b10f0e172c475f458b7f7b93061064d98c3293e98c5ba0c8b399"
 dependencies = [
  "autocfg",
  "hashbrown",
+ "serde",
 ]
 
 [[package]]
@@ -1820,6 +1821,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5190c9442dcdaf0ddd50f37420417d219ae5261bbf5db120d0f9bab996c9cba1"
 
 [[package]]
+name = "uuid"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "422ee0de9031b5b948b97a8fc04e3aa35230001a722ddd27943e0be31564ce4c"
+dependencies = [
+ "getrandom",
+ "rand 0.8.5",
+ "serde",
+]
+
+[[package]]
 name = "valuable"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1841,6 +1853,7 @@ dependencies = [
  "flatbuffers",
  "flatc-rust",
  "flate2",
+ "indexmap",
  "lazy_static",
  "log",
  "md-5",
@@ -1864,6 +1877,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

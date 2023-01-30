@@ -29,6 +29,8 @@ pub struct Record {
     pub variation_type: VariationType,
     /// Pathogenicity annotation.
     pub pathogenicity: Pathogenicity,
+    /// The ClinVar VCV identifier
+    pub vcv: u32,
 }
 
 /// Code for known Clinvar SV database.
@@ -41,15 +43,16 @@ pub struct ClinvarSv {
 }
 
 impl ClinvarSv {
-    pub fn count_overlaps(
+    /// Returns the overlapping VCVs
+    pub fn overlapping_vcvs(
         &self,
         sv: &StructuralVariant,
         chrom_map: &HashMap<String, usize>,
         min_patho: Option<Pathogenicity>,
         min_overlap: Option<f32>,
-    ) -> u32 {
+    ) -> Vec<u32> {
         if sv.sv_type == SvType::Ins || sv.sv_type == SvType::Bnd {
-            return 0;
+            return Vec::new();
         }
 
         let chrom_idx = *chrom_map.get(&sv.chrom).expect("invalid chromosome");
@@ -65,10 +68,9 @@ impl ClinvarSv {
                         >= min_overlap
                 })
             })
-            .map(|record| record.pathogenicity)
-            .filter(|patho| *patho >= min_patho.unwrap_or(Pathogenicity::Benign))
-            .map(|_record| 1)
-            .sum::<u32>()
+            .filter(|record| record.pathogenicity >= min_patho.unwrap_or(Pathogenicity::Benign))
+            .map(|record| record.vcv)
+            .collect()
     }
 }
 
@@ -100,6 +102,7 @@ pub fn load_clinvar_sv(path_db: &str, conf: &ClinvarSvConf) -> Result<ClinvarSv,
             end: record.end(),
             variation_type: record.variation_type().try_into()?,
             pathogenicity: record.pathogenicity().try_into()?,
+            vcv: record.vcv(),
         });
         total_count += 1;
     }

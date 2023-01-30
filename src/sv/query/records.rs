@@ -1,7 +1,6 @@
 //! Records for I/O in `sv query`.
 
-use std::collections::HashMap;
-
+use indexmap::IndexMap;
 use serde::{
     de::{self, IntoDeserializer},
     Deserialize, Deserializer, Serialize,
@@ -19,6 +18,10 @@ pub struct StructuralVariant {
     pub release: String,
     /// Chromosome name
     pub chromosome: String,
+    /// Chromosome number
+    pub chromosome_no: u32,
+    /// UCSC bin on chromosome
+    pub bin: u32,
     /// 1-based start position of the variant (or position on first chromosome for
     /// break-ends)
     pub start: u32,
@@ -30,6 +33,10 @@ pub struct StructuralVariant {
     pub sv_sub_type: SvSubType,
     /// Potentially the second involved chromosome
     pub chromosome2: Option<String>,
+    /// Chromosome number of second chromosome
+    pub chromosome_no2: u32,
+    /// UCSC bin on chromosome2
+    pub bin2: u32,
     /// End position (position on second chromosome for break-ends)
     pub end: u32,
     /// The strand orientation of the structural variant, if applicable.
@@ -37,7 +44,7 @@ pub struct StructuralVariant {
     pub pe_orientation: StrandOrientation,
     /// Mapping of sample to genotype information for the SV.
     #[serde(deserialize_with = "deserialize_genotype")]
-    pub genotype: HashMap<String, Genotype>,
+    pub genotype: IndexMap<String, Genotype>,
 }
 
 impl From<StructuralVariant> for SchemaStructuralVariant {
@@ -54,7 +61,7 @@ impl From<StructuralVariant> for SchemaStructuralVariant {
             chrom2: val.chromosome2,
             end: val.end,
             strand_orientation: Some(val.pe_orientation),
-            call_info: HashMap::from_iter(val.genotype.into_iter().map(|(k, v)| {
+            call_info: IndexMap::from_iter(val.genotype.into_iter().map(|(k, v)| {
                 (
                     k,
                     SchemaCallInfo {
@@ -104,7 +111,7 @@ where
     }
 }
 
-fn deserialize_genotype<'de, D>(deserializer: D) -> Result<HashMap<String, Genotype>, D::Error>
+fn deserialize_genotype<'de, D>(deserializer: D) -> Result<IndexMap<String, Genotype>, D::Error>
 where
     D: Deserializer<'de>,
 {
