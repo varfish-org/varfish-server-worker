@@ -1,10 +1,9 @@
 //! Supporting code for SV query definition.
 
-use std::collections::HashMap;
-
 use crate::world_flatbuffers::var_fish_server_worker::{
     Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
 };
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
@@ -815,7 +814,7 @@ pub struct CaseQuery {
     pub tad_set: Option<TadSet>,
 
     /// Genotype choices
-    pub genotype: HashMap<String, GenotypeChoice>,
+    pub genotype: IndexMap<String, GenotypeChoice>,
     /// Criteria for filtering CNVs.
     pub genotype_criteria: Vec<GenotypeCriteria>,
 
@@ -861,7 +860,7 @@ impl CaseQuery {
             regulatory_vista_validation: None,
             regulatory_custom_configs: vec![],
             tad_set: None,
-            genotype: HashMap::new(),
+            genotype: IndexMap::new(),
             genotype_criteria: vec![],
             recessive_mode: None,
             recessive_index: None,
@@ -933,7 +932,7 @@ pub struct StructuralVariant {
     pub strand_orientation: Option<StrandOrientation>,
 
     /// Mapping of sample to genotype information for the SV.
-    pub call_info: HashMap<String, CallInfo>,
+    pub call_info: IndexMap<String, CallInfo>,
 }
 
 impl StructuralVariant {
@@ -1626,7 +1625,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
         assert_eq!(sv.size().unwrap(), 101);
     }
@@ -1641,7 +1640,7 @@ mod tests {
             chrom2: None,
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
         assert!(sv.size().is_none());
     }
@@ -1656,7 +1655,7 @@ mod tests {
             chrom2: Some("chr2".to_owned()),
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
         assert!(sv.size().is_none());
     }
@@ -1671,7 +1670,7 @@ mod tests {
             chrom2: None,
             end: 245,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
         assert_tokens(
             &sv,

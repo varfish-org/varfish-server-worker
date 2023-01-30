@@ -243,7 +243,7 @@ impl QueryInterpreter {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use indexmap::IndexMap;
 
     use crate::sv::query::schema::{
         CallInfo, Database, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
@@ -283,7 +283,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_selection(&sv_pass));
@@ -305,7 +305,7 @@ mod tests {
             chrom2: None,
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_selection(&sv_fail));
@@ -327,7 +327,7 @@ mod tests {
             chrom2: None,
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_selection(&sv_fail));
@@ -350,7 +350,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_selection(&sv_pass));
@@ -372,7 +372,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_selection(&sv_fail));
@@ -394,7 +394,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_selection(&sv_fail));
@@ -416,7 +416,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -438,7 +438,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -460,7 +460,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_genomic_region(&sv_fail));
@@ -482,7 +482,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_genomic_region(&sv_fail));
@@ -504,7 +504,7 @@ mod tests {
             chrom2: None,
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -526,7 +526,7 @@ mod tests {
             chrom2: None,
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -548,7 +548,7 @@ mod tests {
             chrom2: None,
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_genomic_region(&sv_fail));
@@ -570,7 +570,7 @@ mod tests {
             chrom2: None,
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_genomic_region(&sv_fail));
@@ -592,7 +592,7 @@ mod tests {
             chrom2: Some("chr1".to_owned()),
             end: 1000,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -614,7 +614,7 @@ mod tests {
             chrom2: Some("chr1".to_owned()),
             end: 1000,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -636,7 +636,7 @@ mod tests {
             chrom2: Some("chr2".to_owned()),
             end: 100,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -658,7 +658,7 @@ mod tests {
             chrom2: Some("chr2".to_owned()),
             end: 1000,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(interpreter.passes_genomic_region(&sv_pass));
@@ -680,7 +680,7 @@ mod tests {
             chrom2: Some("chr1".to_owned()),
             end: 1000,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_genomic_region(&sv_fail));
@@ -702,7 +702,7 @@ mod tests {
             chrom2: Some("chr1".to_owned()),
             end: 1000,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
 
         assert!(!interpreter.passes_genomic_region(&sv_fail));
@@ -779,7 +779,7 @@ mod tests {
     #[test]
     fn test_query_interpreter_pass_genotype_fail_no_match() -> Result<(), anyhow::Error> {
         let query = CaseQuery {
-            genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
+            genotype: IndexMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
             genotype_criteria: vec![GenotypeCriteria {
                 select_sv_sub_type: vec![SvSubType::Del],
                 select_sv_min_size: Some(1000),
@@ -822,7 +822,7 @@ mod tests {
             chrom2: None,
             end: 2000,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::from([("sample".to_owned(), call_info.clone())]),
+            call_info: IndexMap::from([("sample".to_owned(), call_info.clone())]),
         };
 
         // The following tests fail because the SV does not match the match criteria for
@@ -845,7 +845,7 @@ mod tests {
         })?); // wrong sv sub type
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
-            call_info: HashMap::from([(
+            call_info: IndexMap::from([(
                 "sample".to_owned(),
                 CallInfo {
                     quality: Some(1.0),
@@ -856,7 +856,7 @@ mod tests {
         })?); // quality too low
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
-            call_info: HashMap::from([(
+            call_info: IndexMap::from([(
                 "sample".to_owned(),
                 CallInfo {
                     genotype: Some("0/0".to_owned()),
@@ -868,7 +868,7 @@ mod tests {
         })?); // pr coverage too low
 
         assert!(!interpreter.passes_genotype(&StructuralVariant {
-            call_info: HashMap::from([(
+            call_info: IndexMap::from([(
                 "sample".to_owned(),
                 CallInfo {
                     genotype: Some("0/0".to_owned()),
@@ -885,7 +885,7 @@ mod tests {
     #[test]
     fn test_query_interpreter_ins_min_pr() -> Result<(), anyhow::Error> {
         let query = CaseQuery {
-            genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Variant)]),
+            genotype: IndexMap::from([("sample".to_owned(), GenotypeChoice::Variant)]),
             genotype_criteria: vec![GenotypeCriteria {
                 select_sv_sub_type: vec![SvSubType::Ins],
                 select_sv_min_size: Some(1000),
@@ -915,7 +915,7 @@ mod tests {
             chrom2: None,
             end: 12345,
             strand_orientation: Some(StrandOrientation::NotApplicable),
-            call_info: HashMap::from([(
+            call_info: IndexMap::from([(
                 "sample".to_owned(),
                 CallInfo {
                     genotype: Some("0/1".to_owned()),
@@ -940,7 +940,7 @@ mod tests {
     #[test]
     fn test_query_interpreter_pass_genotype_pass_smoke() -> Result<(), anyhow::Error> {
         let query = CaseQuery {
-            genotype: HashMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
+            genotype: IndexMap::from([("sample".to_owned(), GenotypeChoice::Het)]),
             genotype_criteria: vec![GenotypeCriteria {
                 select_sv_sub_type: vec![SvSubType::Del],
                 select_sv_min_size: Some(1000),
@@ -983,7 +983,7 @@ mod tests {
             chrom2: None,
             end: 2000,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::from([("sample".to_owned(), call_info)]),
+            call_info: IndexMap::from([("sample".to_owned(), call_info)]),
         };
 
         assert!(interpreter.passes_genotype(&sv_pass)?);
@@ -1003,7 +1003,7 @@ mod tests {
             chrom2: None,
             end: 200,
             strand_orientation: Some(StrandOrientation::ThreeToFive),
-            call_info: HashMap::new(),
+            call_info: IndexMap::new(),
         };
         let counts_pass = BgDbOverlaps {
             dgv: 5,

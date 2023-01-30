@@ -3,6 +3,7 @@
 use std::{collections::HashMap, path::Path};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
+use serde::Serialize;
 use tracing::{debug, info, warn};
 
 use crate::{
@@ -16,7 +17,7 @@ use super::schema::{StructuralVariant, SvType};
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
 
 /// Information to store for known pathogenic SV database.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Clone)]
 pub struct Record {
     /// 0-based begin position.
     pub begin: u32,
@@ -38,14 +39,14 @@ pub struct PathoDb {
 }
 
 impl PathoDb {
-    pub fn count_overlaps(
+    pub fn overlapping_records(
         &self,
         sv: &StructuralVariant,
         chrom_map: &HashMap<String, usize>,
         min_overlap: Option<f32>,
-    ) -> u32 {
+    ) -> Vec<Record> {
         if sv.sv_type == SvType::Ins || sv.sv_type == SvType::Bnd {
-            return 0;
+            return Vec::new();
         }
 
         let chrom_idx = *chrom_map.get(&sv.chrom).expect("invalid chromosome");
@@ -61,8 +62,8 @@ impl PathoDb {
                         >= min_overlap
                 })
             })
-            .map(|_record| 1)
-            .sum::<u32>()
+            .cloned()
+            .collect()
     }
 }
 
@@ -72,13 +73,13 @@ pub struct PathoDbBundle {
 }
 
 impl PathoDbBundle {
-    pub fn count_overlaps(
+    pub fn overlapping_records(
         &self,
         sv: &StructuralVariant,
         chrom_map: &HashMap<String, usize>,
         min_overlap: Option<f32>,
-    ) -> u32 {
-        self.mms.count_overlaps(sv, chrom_map, min_overlap)
+    ) -> Vec<Record> {
+        self.mms.overlapping_records(sv, chrom_map, min_overlap)
     }
 }
 
