@@ -20,6 +20,7 @@ use anyhow::anyhow;
 use clap::{command, Parser};
 use csv::QuoteStyle;
 use indexmap::IndexMap;
+use log::warn;
 use serde::Serialize;
 use thousands::Separable;
 use tracing::{error, info};
@@ -78,6 +79,9 @@ pub struct Args {
     /// Slack to use around INS.
     #[arg(long, default_value_t = 50)]
     pub slack_ins: u32,
+    /// Optional maximal number of total records to write out.
+    #[arg(long)]
+    pub max_results: Option<usize>,
 }
 
 /// Load database configuration and perform sanity checks as configured.
@@ -302,6 +306,15 @@ fn run_query(
                     *gene_id,
                 ))
             });
+
+            if let Some(max_results) = args.max_results {
+                if stats.count_total > max_results {
+                    warn!(
+                        "stopping writing {} records but there are more results!",
+                        stats.count_total
+                    );
+                }
+            }
 
             // Finally, write out the record.
             csv_writer.serialize(&ResultRecord {
