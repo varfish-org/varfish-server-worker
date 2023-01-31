@@ -43,10 +43,10 @@ path = 'regulatory/vista.bin'
 path = 'genes/xlink.bin'
 
 [genes.acmg]
-path = 'genes/acmg.json'
+path = 'genes/acmg.tsv'
 
-[genes.medgen]
-path = 'genes/medgen.json'
+[genes.omim]
+path = 'genes/omim.tsv'
 
 [genes.ensembl.regions]
 path = 'genes/ensembl/regions.bin'

@@ -42,7 +42,7 @@ use crate::{
 use self::{
     bgdbs::BgDbBundle,
     clinvar::ClinvarSv,
-    genes::{GeneDb, XlinkDb},
+    genes::GeneDb,
     pathogenic::PathoDbBundle,
     schema::{CallInfo, Database, Pathogenicity, StrandOrientation, SvSubType, SvType},
     tads::{TadSetBundle, TadSetChoice},
@@ -116,9 +116,16 @@ fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
 /// Gene information.
 #[derive(Debug, Default, Serialize)]
 struct Gene {
+    /// Gene symbol
     symbol: Option<String>,
+    /// ENSEMBL gene ID
     ensembl_id: Option<String>,
+    /// Entrez gene ID
     entrez_id: Option<u32>,
+    /// Whether the gene is in the ACMG list for incidental findings
+    is_acmg: bool,
+    /// Whether the gene is linked to an OMIM disease
+    is_disease_gene: bool,
 }
 
 /// The structured result information of the result record.
@@ -156,20 +163,22 @@ struct ResultRecord {
     payload: String,
 }
 
-fn resolve_gene_id(database: Database, xlink: &XlinkDb, gene_id: u32) -> Vec<Gene> {
+fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Gene> {
     let record_idxs = match database {
-        Database::Refseq => xlink.from_entrez.get_vec(&gene_id),
-        Database::Ensembl => xlink.from_ensembl.get_vec(&gene_id),
+        Database::Refseq => gene_db.xlink.from_entrez.get_vec(&gene_id),
+        Database::Ensembl => gene_db.xlink.from_ensembl.get_vec(&gene_id),
     };
     if let Some(record_idxs) = record_idxs {
         record_idxs
             .iter()
             .map(|record_idx| {
-                let record = &xlink.records[*record_idx as usize];
+                let record = &gene_db.xlink.records[*record_idx as usize];
                 Gene {
                     symbol: Some(record.symbol.clone()),
                     ensembl_id: Some(format!("ENSG{:011}", record.ensembl_gene_id)),
                     entrez_id: Some(record.entrez_id),
+                    is_acmg: gene_db.acmg.contains(record.entrez_id),
+                    is_disease_gene: gene_db.omim.contains(record.entrez_id),
                 }
             })
             .collect()
@@ -179,11 +188,15 @@ fn resolve_gene_id(database: Database, xlink: &XlinkDb, gene_id: u32) -> Vec<Gen
                 entrez_id: Some(gene_id),
                 symbol: None,
                 ensembl_id: None,
+                is_acmg: gene_db.acmg.contains(gene_id),
+                is_disease_gene: gene_db.omim.contains(gene_id),
             }],
             Database::Ensembl => vec![Gene {
                 ensembl_id: Some(format!("ENSG{:011}", gene_id)),
                 symbol: None,
                 entrez_id: None,
+                is_acmg: false,
+                is_disease_gene: false,
             }],
         }
     }
@@ -295,14 +308,14 @@ fn run_query(
             ovl_gene_ids.iter().for_each(|gene_id| {
                 result_payload.ovl_genes.append(&mut resolve_gene_id(
                     interpreter.query.database,
-                    &dbs.genes.xlink,
+                    &dbs.genes,
                     *gene_id,
                 ))
             });
             tad_gene_ids.iter().for_each(|gene_id| {
                 result_payload.tad_genes.append(&mut resolve_gene_id(
                     interpreter.query.database,
-                    &dbs.genes.xlink,
+                    &dbs.genes,
                     *gene_id,
                 ))
             });

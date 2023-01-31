@@ -1,13 +1,14 @@
 //! Code for supporting annotation with overlapping genes.
 
-use std::{fs::File, ops::Range, path::Path, time::Instant};
+use std::{collections::HashSet, fs::File, ops::Range, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use memmap2::Mmap;
+use serde::Deserialize;
 use tracing::{debug, info};
 
 use crate::{
-    common::CHROMS,
+    common::{open_maybe_gz, CHROMS},
     sv::conf::GenesConf,
     world_flatbuffers::var_fish_server_worker::{GeneRegionDatabase, XlinkDatabase},
 };
@@ -182,11 +183,105 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
     Ok(result)
 }
 
+/// Information to store for an ACMG entry.
+#[derive(Deserialize, Default, Clone, Debug)]
+pub struct AcmgRecord {
+    /// Entrez gene ID
+    pub entrez_id: u32,
+}
+
+/// Container for set of genes in ACMG
+#[derive(Default, Clone, Debug)]
+pub struct AcmgDb {
+    pub entrez_ids: HashSet<u32>,
+}
+
+#[tracing::instrument]
+fn load_acmg_db(path: &Path) -> Result<AcmgDb, anyhow::Error> {
+    debug!("loading ACMG TSV records from {:?}...", path);
+
+    let before_loading = Instant::now();
+    let mut result = AcmgDb::default();
+
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+
+    let mut total_count = 0;
+    for record in reader.deserialize() {
+        let record: AcmgRecord = record?;
+        result.entrez_ids.insert(record.entrez_id);
+        total_count += 1;
+    }
+    debug!(
+        "... done loading {} records in {:?}",
+        total_count,
+        before_loading.elapsed(),
+    );
+
+    Ok(result)
+}
+
+impl AcmgDb {
+    pub fn contains(&self, entrez_id: u32) -> bool {
+        self.entrez_ids.contains(&entrez_id)
+    }
+}
+
+/// Information to store for an OMIM entry.
+#[derive(Deserialize, Default, Clone, Debug)]
+pub struct OmimRecord {
+    /// OMIM ID
+    pub omim_id: u32,
+    /// Entrez gene ID
+    pub entrez_id: u32,
+}
+
+/// Container for set of genes in OMIM
+#[derive(Default, Clone, Debug)]
+pub struct OmimDb {
+    pub entrez_ids: HashSet<u32>,
+}
+
+impl OmimDb {
+    pub fn contains(&self, entrez_id: u32) -> bool {
+        self.entrez_ids.contains(&entrez_id)
+    }
+}
+
+#[tracing::instrument]
+fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
+    debug!("loading OMIM TSV records from {:?}...", path);
+
+    let before_loading = Instant::now();
+    let mut result = OmimDb::default();
+
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+
+    let mut total_count = 0;
+    for record in reader.deserialize() {
+        let record: OmimRecord = record?;
+        result.entrez_ids.insert(record.entrez_id);
+        total_count += 1;
+    }
+    debug!(
+        "... done loading {} records in {:?}",
+        total_count,
+        before_loading.elapsed(),
+    );
+
+    Ok(result)
+}
+
 /// Bundle of gene region DBs and the xlink info packaged with VarFish.
 pub struct GeneDb {
     pub refseq: GeneRegionDb,
     pub ensembl: GeneRegionDb,
     pub xlink: XlinkDb,
+    pub acmg: AcmgDb,
+    pub omim: OmimDb,
 }
 
 impl GeneDb {
@@ -216,6 +311,8 @@ pub fn load_gene_db(path_db: &str, conf: &GenesConf) -> Result<GeneDb, anyhow::E
                 .as_path(),
         )?,
         xlink: load_xlink_db(Path::new(path_db).join(&conf.xlink.path).as_path())?,
+        acmg: load_acmg_db(Path::new(path_db).join(&conf.acmg.path).as_path())?,
+        omim: load_omim_db(Path::new(path_db).join(&conf.omim.path).as_path())?,
     };
 
     Ok(result)
