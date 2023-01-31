@@ -145,6 +145,8 @@ struct ResultPayload {
     ovl_disease_gene: bool,
     /// Whether there is an overlap with a disease gene in the overlapping TADs.
     tad_disease_gene: bool,
+    /// The size of the SV, None for ins and BND
+    sv_length: Option<u32>,
 }
 
 /// A result record from the query.
@@ -253,6 +255,10 @@ fn run_query(
                 call_info: schema_sv.call_info.clone(),
                 ..ResultPayload::default()
             };
+
+            if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
+                result_payload.sv_length = Some(schema_sv.end - schema_sv.pos + 1);
+            }
 
             // Count passing record in statistics
             stats.count_passed += 1;
