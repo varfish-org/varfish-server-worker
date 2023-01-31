@@ -16,7 +16,8 @@ runs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
-    - name: Install flatbuffers
+    - if: ${{ steps. cache-flatbuffers-installation.outputs.cache-hit != 'true' }}
+      name: Install flatbuffers
       shell: bash
       run: |
         mkdir -p utils/var
