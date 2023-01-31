@@ -42,7 +42,7 @@ use crate::{
 use self::{
     bgdbs::BgDbBundle,
     clinvar::ClinvarSv,
-    genes::{GeneDb, XlinkDb},
+    genes::GeneDb,
     pathogenic::PathoDbBundle,
     schema::{CallInfo, Database, Pathogenicity, StrandOrientation, SvSubType, SvType},
     tads::{TadSetBundle, TadSetChoice},
@@ -116,9 +116,16 @@ fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
 /// Gene information.
 #[derive(Debug, Default, Serialize)]
 struct Gene {
+    /// Gene symbol
     symbol: Option<String>,
+    /// ENSEMBL gene ID
     ensembl_id: Option<String>,
+    /// Entrez gene ID
     entrez_id: Option<u32>,
+    /// Whether the gene is in the ACMG list for incidental findings.
+    is_acmg: bool,
+    /// Whether the gene is linked to an OMIM disease.
+    is_disease_gene: bool,
 }
 
 /// The structured result information of the result record.
@@ -126,14 +133,18 @@ struct Gene {
 struct ResultPayload {
     /// The overlapping VCVs
     clinvar_ovl_vcvs: Vec<String>,
-    /// The directly overlapping genes
+    /// The directly overlapping genes.
     ovl_genes: Vec<Gene>,
-    /// Genes that are not directly overlapping but contained in overlapping TADs
+    /// Genes that are not directly overlapping but contained in overlapping TADs.
     tad_genes: Vec<Gene>,
     /// Overlapping known pathogenic SV records.
     known_pathogenic: Vec<KnownPathogenicRecord>,
     /// Information about the call support from the structural variant.
     call_info: IndexMap<String, CallInfo>,
+    /// Whether there is an overlap with a disease gene in the overlap.
+    ovl_disease_gene: bool,
+    /// Whether there is an overlap with a disease gene in the overlapping TADs.
+    tad_disease_gene: bool,
 }
 
 /// A result record from the query.
@@ -156,20 +167,22 @@ struct ResultRecord {
     payload: String,
 }
 
-fn resolve_gene_id(database: Database, xlink: &XlinkDb, gene_id: u32) -> Vec<Gene> {
+fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Gene> {
     let record_idxs = match database {
-        Database::Refseq => xlink.from_entrez.get_vec(&gene_id),
-        Database::Ensembl => xlink.from_ensembl.get_vec(&gene_id),
+        Database::Refseq => gene_db.xlink.from_entrez.get_vec(&gene_id),
+        Database::Ensembl => gene_db.xlink.from_ensembl.get_vec(&gene_id),
     };
     if let Some(record_idxs) = record_idxs {
         record_idxs
             .iter()
             .map(|record_idx| {
-                let record = &xlink.records[*record_idx as usize];
+                let record = &gene_db.xlink.records[*record_idx as usize];
                 Gene {
                     symbol: Some(record.symbol.clone()),
                     ensembl_id: Some(format!("ENSG{:011}", record.ensembl_gene_id)),
                     entrez_id: Some(record.entrez_id),
+                    is_acmg: gene_db.acmg.contains(record.entrez_id),
+                    is_disease_gene: gene_db.omim.contains(record.entrez_id),
                 }
             })
             .collect()
@@ -179,11 +192,15 @@ fn resolve_gene_id(database: Database, xlink: &XlinkDb, gene_id: u32) -> Vec<Gen
                 entrez_id: Some(gene_id),
                 symbol: None,
                 ensembl_id: None,
+                is_acmg: gene_db.acmg.contains(gene_id),
+                is_disease_gene: gene_db.omim.contains(gene_id),
             }],
             Database::Ensembl => vec![Gene {
                 ensembl_id: Some(format!("ENSG{:011}", gene_id)),
                 symbol: None,
                 entrez_id: None,
+                is_acmg: false,
+                is_disease_gene: false,
             }],
         }
     }
@@ -295,17 +312,25 @@ fn run_query(
             ovl_gene_ids.iter().for_each(|gene_id| {
                 result_payload.ovl_genes.append(&mut resolve_gene_id(
                     interpreter.query.database,
-                    &dbs.genes.xlink,
+                    &dbs.genes,
                     *gene_id,
                 ))
             });
+            result_payload.ovl_disease_gene = result_payload
+                .ovl_genes
+                .iter()
+                .any(|gene| gene.is_disease_gene);
             tad_gene_ids.iter().for_each(|gene_id| {
                 result_payload.tad_genes.append(&mut resolve_gene_id(
                     interpreter.query.database,
-                    &dbs.genes.xlink,
+                    &dbs.genes,
                     *gene_id,
                 ))
             });
+            result_payload.tad_disease_gene = result_payload
+                .tad_genes
+                .iter()
+                .any(|gene| gene.is_disease_gene);
 
             if let Some(max_results) = args.max_results {
                 if stats.count_total > max_results {

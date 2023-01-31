@@ -127,8 +127,8 @@ pub struct GenesConf {
     pub xlink: PathAndChecksum,
     /// ACMG incidental finding list information
     pub acmg: PathAndChecksum,
-    /// Annotation of genes with associated HPO terms and OMIM diseases from NCBI medgen.
-    pub medgen: PathAndChecksum,
+    /// Annotation of genes with OMIM diseases
+    pub omim: PathAndChecksum,
 
     /// RefSeq gene configuration
     pub refseq: GenesDetailConf,
@@ -330,7 +330,7 @@ mod tests {
             true,
         )?;
         assert!(errors.is_some());
-        assert_eq!(errors.unwrap().len(), 32);
+        assert_eq!(errors.unwrap().len(), 31);
 
         Ok(())
     }
@@ -485,15 +485,15 @@ mod tests {
                         ),
                     },
                     acmg: PathAndChecksum {
-                        path: "genes/acmg.json".to_owned(),
+                        path: "genes/acmg.tsv".to_owned(),
                         md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
                         sha256: Some(
                             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                                 .to_owned()
                         ),
                     },
-                    medgen: PathAndChecksum {
-                        path: "genes/medgen.json".to_owned(),
+                    omim: PathAndChecksum {
+                        path: "genes/omim.tsv".to_owned(),
                         md5: Some("d41d8cd98f00b204e9800998ecf8427e".to_owned()),
                         sha256: Some(
                             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -638,12 +638,12 @@ mod tests {
                         sha256: None,
                     },
                     acmg: PathAndChecksum {
-                        path: "genes/acmg.json".to_owned(),
+                        path: "genes/acmg.tsv".to_owned(),
                         md5: None,
                         sha256: None,
                     },
-                    medgen: PathAndChecksum {
-                        path: "genes/medgen.json".to_owned(),
+                    omim: PathAndChecksum {
+                        path: "genes/omim.tsv".to_owned(),
                         md5: None,
                         sha256: None,
                     },

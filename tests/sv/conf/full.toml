@@ -79,12 +79,12 @@ md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
 [genes.acmg]
-path = 'genes/acmg.json'
+path = 'genes/acmg.tsv'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
-[genes.medgen]
-path = 'genes/medgen.json'
+[genes.omim]
+path = 'genes/omim.tsv'
 md5 = 'd41d8cd98f00b204e9800998ecf8427e'
 sha256 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
 
