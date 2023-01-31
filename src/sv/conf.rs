@@ -330,7 +330,7 @@ mod tests {
             true,
         )?;
         assert!(errors.is_some());
-        assert_eq!(errors.unwrap().len(), 32);
+        assert_eq!(errors.unwrap().len(), 31);
 
         Ok(())
     }
