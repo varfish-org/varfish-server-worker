@@ -122,9 +122,9 @@ struct Gene {
     ensembl_id: Option<String>,
     /// Entrez gene ID
     entrez_id: Option<u32>,
-    /// Whether the gene is in the ACMG list for incidental findings
+    /// Whether the gene is in the ACMG list for incidental findings.
     is_acmg: bool,
-    /// Whether the gene is linked to an OMIM disease
+    /// Whether the gene is linked to an OMIM disease.
     is_disease_gene: bool,
 }
 
@@ -133,14 +133,18 @@ struct Gene {
 struct ResultPayload {
     /// The overlapping VCVs
     clinvar_ovl_vcvs: Vec<String>,
-    /// The directly overlapping genes
+    /// The directly overlapping genes.
     ovl_genes: Vec<Gene>,
-    /// Genes that are not directly overlapping but contained in overlapping TADs
+    /// Genes that are not directly overlapping but contained in overlapping TADs.
     tad_genes: Vec<Gene>,
     /// Overlapping known pathogenic SV records.
     known_pathogenic: Vec<KnownPathogenicRecord>,
     /// Information about the call support from the structural variant.
     call_info: IndexMap<String, CallInfo>,
+    /// Whether there is an overlap with a disease gene in the overlap.
+    ovl_disease_gene: bool,
+    /// Whether there is an overlap with a disease gene in the overlapping TADs.
+    tad_disease_gene: bool,
 }
 
 /// A result record from the query.
@@ -312,6 +316,10 @@ fn run_query(
                     *gene_id,
                 ))
             });
+            result_payload.ovl_disease_gene = result_payload
+                .ovl_genes
+                .iter()
+                .any(|gene| gene.is_disease_gene);
             tad_gene_ids.iter().for_each(|gene_id| {
                 result_payload.tad_genes.append(&mut resolve_gene_id(
                     interpreter.query.database,
@@ -319,6 +327,10 @@ fn run_query(
                     *gene_id,
                 ))
             });
+            result_payload.tad_disease_gene = result_payload
+                .tad_genes
+                .iter()
+                .any(|gene| gene.is_disease_gene);
 
             if let Some(max_results) = args.max_results {
                 if stats.count_total > max_results {
