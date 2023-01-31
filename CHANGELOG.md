@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.2.1...v0.3.0) (2023-01-31)
+
+
+### Features
+
+* make clinvar/pathogenic SV overlap configurable ([#39](https://www.github.com/bihealth/varfish-server-worker/issues/39)) ([af36bd4](https://www.github.com/bihealth/varfish-server-worker/commit/af36bd47dc50740543b6125e555aad7fe25e81e4))
+
 ### [0.2.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.2.0...v0.2.1) (2023-01-31)
 
 
