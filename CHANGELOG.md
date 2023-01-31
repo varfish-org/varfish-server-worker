@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.1.0...v0.2.0) (2023-01-31)
+
+
+### Features
+
+* adding --max-results for "sv query" sub command ([#32](https://www.github.com/bihealth/varfish-server-worker/issues/32)) ([#33](https://www.github.com/bihealth/varfish-server-worker/issues/33)) ([4aa7094](https://www.github.com/bihealth/varfish-server-worker/commit/4aa709468d0e8a3bdd3aaa78b6376b9a31f08c25))
+* annotate ACMG and OMIM genes in "sv query" ([#31](https://www.github.com/bihealth/varfish-server-worker/issues/31)) ([#35](https://www.github.com/bihealth/varfish-server-worker/issues/35)) ([9058e2a](https://www.github.com/bihealth/varfish-server-worker/commit/9058e2aca09e97e908009af7f00c3e6663a73ee6))
+
 ## 0.1.0 (2023-01-30)
 
 
