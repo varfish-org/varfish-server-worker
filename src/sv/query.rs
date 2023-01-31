@@ -40,7 +40,7 @@ use crate::{
 };
 
 use self::{
-    bgdbs::BgDbBundle,
+    bgdbs::{BgDbBundle, BgDbOverlaps},
     clinvar::ClinvarSv,
     genes::GeneDb,
     pathogenic::PathoDbBundle,
@@ -147,6 +147,8 @@ struct ResultPayload {
     tad_disease_gene: bool,
     /// The size of the SV, None for ins and BND
     sv_length: Option<u32>,
+    /// Overlap counts with background databases.
+    overlap_counts: BgDbOverlaps,
 }
 
 /// A result record from the query.
@@ -198,7 +200,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
                 is_disease_gene: gene_db.omim.contains(gene_id),
             }],
             Database::Ensembl => vec![Gene {
-                ensembl_id: Some(format!("ENSG{:011}", gene_id)),
+                ensembl_id: Some(format!("ENSG{gene_id:011}")),
                 symbol: None,
                 entrez_id: None,
                 is_acmg: false,
@@ -242,20 +244,23 @@ fn run_query(
         let record_sv: RecordSv = record?;
         let schema_sv: SchemaSv = record_sv.clone().into();
 
-        if interpreter.passes(&schema_sv, |sv: &SchemaSv| {
-            dbs.bg_dbs.count_overlaps(
+        let mut result_payload = ResultPayload {
+            call_info: schema_sv.call_info.clone(),
+            ..ResultPayload::default()
+        };
+
+        let is_pass = interpreter.passes(&schema_sv, &mut |sv: &SchemaSv| {
+            result_payload.overlap_counts = dbs.bg_dbs.count_overlaps(
                 sv,
                 &interpreter.query,
                 &chrom_map,
                 args.slack_ins,
                 args.slack_bnd,
-            )
-        })? {
-            let mut result_payload = ResultPayload {
-                call_info: schema_sv.call_info.clone(),
-                ..ResultPayload::default()
-            };
+            );
+            result_payload.overlap_counts.clone()
+        })?;
 
+        if is_pass {
             if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
                 result_payload.sv_length = Some(schema_sv.end - schema_sv.pos + 1);
             }
@@ -279,7 +284,7 @@ fn run_query(
                     interpreter.query.clinvar_sv_min_overlap,
                 )
                 .into_iter()
-                .map(|vcv| format!("VCV{:09}", vcv))
+                .map(|vcv| format!("VCV{vcv:09}"))
                 .collect();
 
             // Get overlapping genes and genes in overlapping TADs

@@ -236,10 +236,10 @@ impl QueryInterpreter {
     pub fn passes<CountBg>(
         &self,
         sv: &StructuralVariant,
-        count_bg: CountBg,
+        count_bg: &mut CountBg,
     ) -> Result<bool, anyhow::Error>
     where
-        CountBg: Fn(&StructuralVariant) -> BgDbOverlaps,
+        CountBg: FnMut(&StructuralVariant) -> BgDbOverlaps,
     {
         // We first check for matching genotype.  If this succeeds then we execute the
         // overlapper for known pathogenic and then for frequency in background.
@@ -1037,7 +1037,7 @@ mod tests {
             dbvar: 5,
         };
 
-        assert!(interpreter.passes(&sv_pass, |_sv| counts_pass.clone())?);
+        assert!(interpreter.passes(&sv_pass, &mut |_sv| counts_pass.clone())?);
 
         Ok(())
     }
