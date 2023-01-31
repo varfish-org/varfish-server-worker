@@ -45,7 +45,7 @@ tracing-subscriber = "0.3.16"
 uuid = { version = "1.2.2", features = ["v4", "fast-rng", "serde"] }
 
 [build-dependencies]
-flatc-rust = "*"
+flatc-rust = "0.2.0"
 
 [dev-dependencies]
 file_diff = "1.0.0"
