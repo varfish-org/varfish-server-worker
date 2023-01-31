@@ -200,7 +200,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
                 is_disease_gene: gene_db.omim.contains(gene_id),
             }],
             Database::Ensembl => vec![Gene {
-                ensembl_id: Some(format!("ENSG{:011}", gene_id)),
+                ensembl_id: Some(format!("ENSG{gene_id:011}")),
                 symbol: None,
                 entrez_id: None,
                 is_acmg: false,
@@ -249,7 +249,7 @@ fn run_query(
             ..ResultPayload::default()
         };
 
-        if interpreter.passes(&schema_sv, &mut |sv: &SchemaSv| {
+        let is_pass = interpreter.passes(&schema_sv, &mut |sv: &SchemaSv| {
             result_payload.overlap_counts = dbs.bg_dbs.count_overlaps(
                 sv,
                 &interpreter.query,
@@ -258,7 +258,9 @@ fn run_query(
                 args.slack_bnd,
             );
             result_payload.overlap_counts.clone()
-        })? {
+        })?;
+
+        if is_pass {
             if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
                 result_payload.sv_length = Some(schema_sv.end - schema_sv.pos + 1);
             }
@@ -282,7 +284,7 @@ fn run_query(
                     interpreter.query.clinvar_sv_min_overlap,
                 )
                 .into_iter()
-                .map(|vcv| format!("VCV{:09}", vcv))
+                .map(|vcv| format!("VCV{vcv:09}"))
                 .collect();
 
             // Get overlapping genes and genes in overlapping TADs

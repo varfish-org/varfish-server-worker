@@ -54,7 +54,7 @@ pub fn build_chrom_map() -> HashMap<String, usize> {
     let mut result = HashMap::new();
     for (i, &chrom_name) in CHROMS.iter().enumerate() {
         result.insert(chrom_name.to_owned(), i);
-        result.insert(format!("chr{}", chrom_name).to_owned(), i);
+        result.insert(format!("chr{chrom_name}").to_owned(), i);
     }
     result.insert("x".to_owned(), 22);
     result.insert("y".to_owned(), 23);

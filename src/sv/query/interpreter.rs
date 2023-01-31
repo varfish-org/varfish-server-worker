@@ -252,7 +252,7 @@ impl QueryInterpreter {
             Ok(false)
         } else {
             trace!("... SV passes filter");
-            Ok(self.passes_counts(&mut count_bg(sv)))
+            Ok(self.passes_counts(&count_bg(sv)))
         }
     }
 
@@ -1037,7 +1037,7 @@ mod tests {
             dbvar: 5,
         };
 
-        assert!(interpreter.passes(&sv_pass, |_sv| counts_pass.clone())?);
+        assert!(interpreter.passes(&sv_pass, &mut |_sv| counts_pass.clone())?);
 
         Ok(())
     }
