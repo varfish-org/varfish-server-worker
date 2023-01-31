@@ -785,6 +785,13 @@ pub struct CaseQuery {
     /// The maximal number of alleles for querying in-house DB.
     pub svdb_inhouse_max_count: Option<u32>,
 
+    /// Minimal reciprocal overlap when overlapping with ClinVar SVs
+    pub clinvar_sv_min_overlap: Option<f32>,
+    /// Minimal pathogenicity when overlapping with ClinVar SVs.
+    pub clinvar_sv_min_pathogenicity: Option<Pathogenicity>,
+    /// Minimal reciprocal overhead when overlapping with known pathogenic SVs.
+    pub known_pathogenic_min_overlap: Option<f32>,
+
     /// The minimal SV size to consider.
     pub sv_size_min: Option<u32>,
     /// The maximal SV size to consider.
@@ -853,6 +860,9 @@ impl CaseQuery {
             sv_size_max: None,
             sv_types: vec![],
             sv_sub_types: vec![],
+            clinvar_sv_min_overlap: None,
+            clinvar_sv_min_pathogenicity: None,
+            known_pathogenic_min_overlap: None,
             gene_allowlist: None,
             genomic_region: None,
             regulatory_overlap: 100,
@@ -1001,7 +1011,8 @@ pub enum VariationType {
 }
 
 /// Clinvar pathogenicity.
-#[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+#[serde(rename_all = "kebab-case")]
 pub enum Pathogenicity {
     Benign,
     LikelyBenign,
@@ -1459,7 +1470,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "CaseQuery",
-                    len: 37,
+                    len: 40,
                 },
                 Token::Str("database"),
                 Token::UnitVariant {
@@ -1507,6 +1518,12 @@ mod tests {
                 Token::Str("svdb_inhouse_min_overlap"),
                 Token::None,
                 Token::Str("svdb_inhouse_max_count"),
+                Token::None,
+                Token::Str("clinvar_sv_min_overlap"),
+                Token::None,
+                Token::Str("clinvar_sv_min_pathogenicity"),
+                Token::None,
+                Token::Str("known_pathogenic_min_overlap"),
                 Token::None,
                 Token::Str("sv_size_min"),
                 Token::None,
