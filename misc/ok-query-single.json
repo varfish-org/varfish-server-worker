@@ -1,5 +1,5 @@
 {
-    "database": "REFSEQ",
+    "database": "refseq",
     "svdb_dgv_enabled": false,
     "svdb_dgv_min_overlap": null,
     "svdb_dgv_max_count": null,

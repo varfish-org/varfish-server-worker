@@ -45,7 +45,7 @@ impl GenomicRegion {
 
 /// Database of transcripts
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[serde(rename_all = "kebab-case")]
 pub enum Database {
     Refseq,
     Ensembl,
@@ -1119,7 +1119,7 @@ mod tests {
             &Database::Refseq,
             &[Token::UnitVariant {
                 name: "Database",
-                variant: "REFSEQ",
+                variant: "refseq",
             }],
         );
     }
@@ -1130,7 +1130,7 @@ mod tests {
             &Database::Refseq,
             &[Token::UnitVariant {
                 name: "Database",
-                variant: "REFSEQ",
+                variant: "refseq",
             }],
         );
     }
@@ -1475,7 +1475,7 @@ mod tests {
                 Token::Str("database"),
                 Token::UnitVariant {
                     name: "Database",
-                    variant: "REFSEQ",
+                    variant: "refseq",
                 },
                 Token::Str("svdb_dgv_enabled"),
                 Token::Bool(false),

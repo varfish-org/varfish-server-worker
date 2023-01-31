@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 
 use anyhow::anyhow;
+use tracing::trace;
 
 use super::{
     bgdbs::BgDbOverlaps,
@@ -108,6 +109,7 @@ impl QueryInterpreter {
             (true, true)
         };
 
+        trace!("does SV pass selection? pass_sv_type={} pass_sv_sub_type={} pass_sv_size_min={} pass_sv_size_max={}", pass_sv_type, pass_sv_sub_type, pass_sv_size_min, pass_sv_size_max);
         pass_sv_type && pass_sv_sub_type && pass_sv_size_min && pass_sv_size_max
     }
 
@@ -116,6 +118,12 @@ impl QueryInterpreter {
         if let Some(regions) = &self.query.genomic_region {
             // interpret the allow list, any match is sufficient
             let mut any_match = false;
+
+            if regions.is_empty() {
+                trace!("no genomic region allow list given, pass");
+                any_match = true;
+            }
+
             if sv.sv_type == SvType::Ins || sv.sv_sub_type.is_ins() {
                 // handle case of insertions: overlap position with `INS_SLACK` and region
                 for region in regions {
@@ -178,8 +186,10 @@ impl QueryInterpreter {
                 }
             }
 
+            trace!("does SV pass genomic region? any_match={}", any_match);
             any_match
         } else {
+            trace!("no genomic region allow list given, pass");
             true // no allow list given; always pass
         }
     }
@@ -204,6 +214,15 @@ impl QueryInterpreter {
         let passes_inhouse = !self.query.svdb_inhouse_enabled
             || counts.inhouse <= self.query.svdb_inhouse_max_count.unwrap_or(counts.inhouse);
 
+        trace!("does SV pass counts? passes_dgv={}, passes_dgv_gs={}, passes_gnomad={}, passes_exac={}, passes_dbvar={}, passes_g1k={}, passes_inhouse={}",
+        passes_dgv
+        ,passes_dgv_gs
+        ,passes_gnomad
+        ,passes_exac
+        ,passes_dbvar
+        ,passes_g1k
+        ,passes_inhouse);
+
         passes_dgv
             && passes_dgv_gs
             && passes_gnomad
@@ -224,12 +243,15 @@ impl QueryInterpreter {
     {
         // We first check for matching genotype.  If this succeeds then we execute the
         // overlapper for known pathogenic and then for frequency in background.
+        trace!("checking whether SV passes filter");
         if !self.passes_selection(sv)
             || !self.passes_genomic_region(sv)
             || !self.passes_genotype(sv)?
         {
+            trace!("... SV does not pass filter");
             Ok(false)
         } else {
+            trace!("... SV passes filter");
             Ok(self.passes_counts(&count_bg(sv)))
         }
     }
