@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.2.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.2.0...v0.2.1) (2023-01-31)
+
+
+### Bug Fixes
+
+* pinning flatc-rust ([#37](https://www.github.com/bihealth/varfish-server-worker/issues/37)) ([e9d1d89](https://www.github.com/bihealth/varfish-server-worker/commit/e9d1d89a16fe5c962cfe97e215f378ba138968e4))
+
 ## [0.2.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.1.0...v0.2.0) (2023-01-31)
 
 
