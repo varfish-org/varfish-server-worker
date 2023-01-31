@@ -4,6 +4,7 @@ use std::{collections::HashMap, fs::File, ops::Range, path::Path, time::Instant}
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use memmap2::Mmap;
+use serde::Serialize;
 use tracing::{debug, info};
 
 use crate::{
@@ -174,7 +175,7 @@ pub struct BgDbBundle {
 }
 
 /// Store background database counts for a structural variant.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Serialize, Clone, Debug, PartialEq, Default)]
 pub struct BgDbOverlaps {
     pub gnomad: u32,
     pub dbvar: u32,

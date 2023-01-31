@@ -40,7 +40,7 @@ use crate::{
 };
 
 use self::{
-    bgdbs::BgDbBundle,
+    bgdbs::{BgDbBundle, BgDbOverlaps},
     clinvar::ClinvarSv,
     genes::GeneDb,
     pathogenic::PathoDbBundle,
@@ -147,6 +147,8 @@ struct ResultPayload {
     tad_disease_gene: bool,
     /// The size of the SV, None for ins and BND
     sv_length: Option<u32>,
+    /// Overlap counts with background databases.
+    overlap_counts: BgDbOverlaps,
 }
 
 /// A result record from the query.
@@ -242,20 +244,21 @@ fn run_query(
         let record_sv: RecordSv = record?;
         let schema_sv: SchemaSv = record_sv.clone().into();
 
-        if interpreter.passes(&schema_sv, |sv: &SchemaSv| {
-            dbs.bg_dbs.count_overlaps(
+        let mut result_payload = ResultPayload {
+            call_info: schema_sv.call_info.clone(),
+            ..ResultPayload::default()
+        };
+
+        if interpreter.passes(&schema_sv, &mut |sv: &SchemaSv| {
+            result_payload.overlap_counts = dbs.bg_dbs.count_overlaps(
                 sv,
                 &interpreter.query,
                 &chrom_map,
                 args.slack_ins,
                 args.slack_bnd,
-            )
+            );
+            result_payload.overlap_counts.clone()
         })? {
-            let mut result_payload = ResultPayload {
-                call_info: schema_sv.call_info.clone(),
-                ..ResultPayload::default()
-            };
-
             if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
                 result_payload.sv_length = Some(schema_sv.end - schema_sv.pos + 1);
             }
