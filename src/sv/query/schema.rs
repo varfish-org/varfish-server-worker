@@ -384,6 +384,10 @@ pub enum TadSet {
     Imr90,
 }
 
+fn default_as_true() -> bool {
+    true
+}
+
 /// Define rule to apply to a given sub set of structural variants for matching a genotype.
 ///
 /// See documentation of VarFish Server for full documentation.
@@ -449,6 +453,28 @@ pub struct GenotypeCriteria {
     /// Maximal average mapping quality
     pub max_amq: Option<f32>,
 
+    /// Whether missing genotype call leads to filter out variant
+    #[serde(default = "default_as_true")]
+    pub missing_gt_ok: bool,
+    /// Whether missing genotype quality information leads filter out variant
+    #[serde(default = "default_as_true")]
+    pub missing_gq_ok: bool,
+    /// Whether missing paired-read information leads to filter out variant
+    #[serde(default = "default_as_true")]
+    pub missing_pr_ok: bool,
+    /// Whether missing split read information leads to filter out variant
+    #[serde(default = "default_as_true")]
+    pub missing_sr_ok: bool,
+    /// Whether missing split read or paired read information leads to filter out variant
+    #[serde(default = "default_as_true")]
+    pub missing_srpr_ok: bool,
+    /// Whether missing read depth information leads to filter out variant
+    #[serde(default = "default_as_true")]
+    pub missing_rd_dev_ok: bool,
+    /// Whether missing mapping quality information leads to filter out variant
+    #[serde(default = "default_as_true")]
+    pub missing_amq_ok: bool,
+
     /// An optional comment
     pub comment: Option<String>,
 }
@@ -486,6 +512,13 @@ impl GenotypeCriteria {
             min_amq: None,
             max_amq: None,
             comment: None,
+            missing_gt_ok: true,
+            missing_gq_ok: true,
+            missing_pr_ok: true,
+            missing_sr_ok: true,
+            missing_srpr_ok: true,
+            missing_rd_dev_ok: true,
+            missing_amq_ok: true,
         }
     }
 
@@ -528,13 +561,15 @@ impl GenotypeCriteria {
             call_info
                 .genotype
                 .as_ref()
-                .map_or(false, |gt| gt_one_of.contains(gt))
+                .map_or(self.missing_gt_ok, |gt| gt_one_of.contains(gt))
         });
 
         // gq -- genotype quality
 
         let pass_min_gq = self.min_gq.map_or(true, |min_gq| {
-            call_info.quality.map_or(false, |gq| gq >= min_gq)
+            call_info
+                .quality
+                .map_or(self.missing_gq_ok, |gq| gq >= min_gq)
         });
 
         // pr -- paired-end reads
@@ -542,38 +577,54 @@ impl GenotypeCriteria {
         let pass_min_pr_cov = self.min_pr_cov.map_or(true, |min_pr_cov| {
             call_info
                 .paired_end_cov
-                .map_or(false, |paired_end_cov| paired_end_cov >= min_pr_cov)
+                .map_or(self.missing_pr_ok, |paired_end_cov| {
+                    paired_end_cov >= min_pr_cov
+                })
         });
         let pass_max_pr_cov = self.max_pr_cov.map_or(true, |max_pr_cov| {
             call_info
                 .paired_end_cov
-                .map_or(false, |paired_end_cov| paired_end_cov <= max_pr_cov)
+                .map_or(self.missing_pr_ok, |paired_end_cov| {
+                    paired_end_cov <= max_pr_cov
+                })
         });
 
         let pass_min_pr_ref = self.min_pr_ref.map_or(true, |min_pr_ref| {
-            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
-                call_info.paired_end_var.map_or(false, |paired_end_var| {
-                    paired_end_cov.saturating_sub(paired_end_var) >= min_pr_ref
+            call_info
+                .paired_end_cov
+                .map_or(self.missing_pr_ok, |paired_end_cov| {
+                    call_info
+                        .paired_end_var
+                        .map_or(self.missing_pr_ok, |paired_end_var| {
+                            paired_end_cov.saturating_sub(paired_end_var) >= min_pr_ref
+                        })
                 })
-            })
         });
         let pass_max_pr_ref = self.max_pr_ref.map_or(true, |max_pr_ref| {
-            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
-                call_info.paired_end_var.map_or(false, |paired_end_var| {
-                    paired_end_cov.saturating_sub(paired_end_var) <= max_pr_ref
+            call_info
+                .paired_end_cov
+                .map_or(self.missing_pr_ok, |paired_end_cov| {
+                    call_info
+                        .paired_end_var
+                        .map_or(self.missing_pr_ok, |paired_end_var| {
+                            paired_end_cov.saturating_sub(paired_end_var) <= max_pr_ref
+                        })
                 })
-            })
         });
 
         let pass_min_pr_var = self.min_pr_var.map_or(true, |min_pr_var| {
             call_info
                 .paired_end_var
-                .map_or(false, |paired_end_var| paired_end_var >= min_pr_var)
+                .map_or(self.missing_pr_ok, |paired_end_var| {
+                    paired_end_var >= min_pr_var
+                })
         });
         let pass_max_pr_var = self.max_pr_var.map_or(true, |max_pr_var| {
             call_info
                 .paired_end_var
-                .map_or(false, |paired_end_var| paired_end_var <= max_pr_var)
+                .map_or(self.missing_pr_ok, |paired_end_var| {
+                    paired_end_var <= max_pr_var
+                })
         });
 
         // sr -- split reads
@@ -581,97 +632,149 @@ impl GenotypeCriteria {
         let pass_min_sr_cov = self.min_sr_cov.map_or(true, |min_sr_cov| {
             call_info
                 .split_read_cov
-                .map_or(false, |split_read_cov| split_read_cov >= min_sr_cov)
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    split_read_cov >= min_sr_cov
+                })
         });
         let pass_max_sr_cov = self.max_sr_cov.map_or(true, |max_sr_cov| {
             call_info
                 .split_read_cov
-                .map_or(false, |split_read_cov| split_read_cov <= max_sr_cov)
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    split_read_cov <= max_sr_cov
+                })
         });
 
         let pass_min_sr_ref = self.min_sr_ref.map_or(true, |min_sr_ref| {
-            call_info.split_read_cov.map_or(false, |split_read_cov| {
-                call_info.split_read_var.map_or(false, |split_read_var| {
-                    split_read_cov.saturating_sub(split_read_var) >= min_sr_ref
+            call_info
+                .split_read_cov
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_sr_ok, |split_read_var| {
+                            split_read_cov.saturating_sub(split_read_var) >= min_sr_ref
+                        })
                 })
-            })
         });
         let pass_max_sr_ref = self.max_sr_ref.map_or(true, |max_sr_ref| {
-            call_info.split_read_cov.map_or(false, |split_read_cov| {
-                call_info.split_read_var.map_or(false, |split_read_var| {
-                    split_read_cov.saturating_sub(split_read_var) <= max_sr_ref
+            call_info
+                .split_read_cov
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_sr_ok, |split_read_var| {
+                            split_read_cov.saturating_sub(split_read_var) <= max_sr_ref
+                        })
                 })
-            })
         });
 
         let pass_min_sr_var = self.min_sr_var.map_or(true, |min_sr_var| {
             call_info
                 .split_read_var
-                .map_or(false, |split_read_var| split_read_var >= min_sr_var)
+                .map_or(self.missing_sr_ok, |split_read_var| {
+                    split_read_var >= min_sr_var
+                })
         });
         let pass_max_sr_var = self.max_sr_var.map_or(true, |max_sr_var| {
             call_info
                 .split_read_var
-                .map_or(false, |split_read_var| split_read_var <= max_sr_var)
+                .map_or(self.missing_sr_ok, |split_read_var| {
+                    split_read_var <= max_sr_var
+                })
         });
 
         // sr + pr -- split reads + paired-end reads
 
         let pass_min_srpr_cov = self.min_srpr_cov.map_or(true, |min_srpr_cov| {
-            call_info.split_read_cov.map_or(false, |split_read_cov| {
-                call_info.paired_end_cov.map_or(false, |paired_end_cov| {
-                    split_read_cov + paired_end_cov >= min_srpr_cov
+            call_info
+                .split_read_cov
+                .map_or(self.missing_srpr_ok, |split_read_cov| {
+                    call_info
+                        .paired_end_cov
+                        .map_or(self.missing_srpr_ok, |paired_end_cov| {
+                            split_read_cov + paired_end_cov >= min_srpr_cov
+                        })
                 })
-            })
         });
         let pass_max_srpr_cov = self.max_srpr_cov.map_or(true, |max_srpr_cov| {
-            call_info.split_read_cov.map_or(false, |split_read_cov| {
-                call_info.paired_end_cov.map_or(false, |paired_end_cov| {
-                    split_read_cov + paired_end_cov <= max_srpr_cov
+            call_info
+                .split_read_cov
+                .map_or(self.missing_srpr_ok, |split_read_cov| {
+                    call_info
+                        .paired_end_cov
+                        .map_or(self.missing_srpr_ok, |paired_end_cov| {
+                            split_read_cov + paired_end_cov <= max_srpr_cov
+                        })
                 })
-            })
         });
 
         let pass_min_srpr_ref = self.min_srpr_ref.map_or(true, |min_srpr_ref| {
-            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
-                call_info.paired_end_var.map_or(false, |paired_end_var| {
-                    call_info.split_read_cov.map_or(false, |split_read_cov| {
-                        call_info.split_read_var.map_or(false, |split_read_var| {
-                            paired_end_cov.saturating_sub(paired_end_var)
-                                + split_read_cov.saturating_sub(split_read_var)
-                                >= min_srpr_ref
+            call_info
+                .paired_end_cov
+                .map_or(self.missing_srpr_ok, |paired_end_cov| {
+                    call_info
+                        .paired_end_var
+                        .map_or(self.missing_srpr_ok, |paired_end_var| {
+                            call_info.split_read_cov.map_or(
+                                self.missing_srpr_ok,
+                                |split_read_cov| {
+                                    call_info.split_read_var.map_or(
+                                        self.missing_srpr_ok,
+                                        |split_read_var| {
+                                            paired_end_cov.saturating_sub(paired_end_var)
+                                                + split_read_cov.saturating_sub(split_read_var)
+                                                >= min_srpr_ref
+                                        },
+                                    )
+                                },
+                            )
                         })
-                    })
                 })
-            })
         });
         let pass_max_srpr_ref = self.max_srpr_ref.map_or(true, |max_srpr_ref| {
-            call_info.paired_end_cov.map_or(false, |paired_end_cov| {
-                call_info.paired_end_var.map_or(false, |paired_end_var| {
-                    call_info.split_read_cov.map_or(false, |split_read_cov| {
-                        call_info.split_read_var.map_or(false, |split_read_var| {
-                            paired_end_cov.saturating_sub(paired_end_var)
-                                + split_read_cov.saturating_sub(split_read_var)
-                                <= max_srpr_ref
+            call_info
+                .paired_end_cov
+                .map_or(self.missing_srpr_ok, |paired_end_cov| {
+                    call_info
+                        .paired_end_var
+                        .map_or(self.missing_srpr_ok, |paired_end_var| {
+                            call_info.split_read_cov.map_or(
+                                self.missing_srpr_ok,
+                                |split_read_cov| {
+                                    call_info.split_read_var.map_or(
+                                        self.missing_srpr_ok,
+                                        |split_read_var| {
+                                            paired_end_cov.saturating_sub(paired_end_var)
+                                                + split_read_cov.saturating_sub(split_read_var)
+                                                <= max_srpr_ref
+                                        },
+                                    )
+                                },
+                            )
                         })
-                    })
                 })
-            })
         });
 
         let pass_min_srpr_var = self.min_srpr_var.map_or(true, |min_srpr_var| {
-            call_info.split_read_var.map_or(false, |split_read_var| {
-                call_info.paired_end_var.map_or(false, |paired_end_var| {
-                    split_read_var + paired_end_var >= min_srpr_var
+            call_info
+                .split_read_var
+                .map_or(self.missing_srpr_ok, |split_read_var| {
+                    call_info
+                        .paired_end_var
+                        .map_or(self.missing_srpr_ok, |paired_end_var| {
+                            split_read_var + paired_end_var >= min_srpr_var
+                        })
                 })
-            })
         });
         let pass_max_srpr_var = self.max_srpr_var.map_or(true, |max_srpr_var| {
-            call_info.split_read_var.map_or(false, |split_read_var| {
-                call_info.paired_end_var.map_or(false, |paired_end_var| {
-                    split_read_var + paired_end_var <= max_srpr_var
+            call_info
+                .split_read_var
+                .map_or(self.missing_srpr_ok, |split_read_var| {
+                    call_info
+                        .paired_end_var
+                        .map_or(self.missing_srpr_ok, |paired_end_var| {
+                            split_read_var + paired_end_var <= max_srpr_var
+                        })
                 })
-            })
         });
 
         // rd_dev -- read depth deviation
@@ -679,7 +782,7 @@ impl GenotypeCriteria {
         let pass_min_rd_dev = self.min_rd_dev.map_or(true, |min_rd_dev| {
             call_info
                 .average_normalized_cov
-                .map_or(false, |average_normalized_cov| {
+                .map_or(self.missing_rd_dev_ok, |average_normalized_cov| {
                     (average_normalized_cov - 1.0).abs() >= min_rd_dev
                 })
         });
@@ -687,7 +790,7 @@ impl GenotypeCriteria {
         let pass_max_rd_dev = self.max_rd_dev.map_or(true, |max_rd_dev| {
             call_info
                 .average_normalized_cov
-                .map_or(false, |average_normalized_cov| {
+                .map_or(self.missing_rd_dev_ok, |average_normalized_cov| {
                     (average_normalized_cov - 1.0).abs() <= max_rd_dev
                 })
         });
@@ -697,14 +800,14 @@ impl GenotypeCriteria {
         let pass_min_amq = self.min_amq.map_or(true, |min_amq| {
             call_info
                 .average_mapping_quality
-                .map_or(false, |average_mapping_quality| {
+                .map_or(self.missing_amq_ok, |average_mapping_quality| {
                     average_mapping_quality >= min_amq
                 })
         });
         let pass_max_amq = self.max_amq.map_or(true, |max_amq| {
             call_info
                 .average_mapping_quality
-                .map_or(false, |average_mapping_quality| {
+                .map_or(self.missing_amq_ok, |average_mapping_quality| {
                     average_mapping_quality <= max_amq
                 })
         });
@@ -1265,7 +1368,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "GenotypeCriteria",
-                    len: 29,
+                    len: 36,
                 },
                 Token::Str("genotype"),
                 Token::UnitVariant {
@@ -1327,6 +1430,20 @@ mod tests {
                 Token::None,
                 Token::Str("max_amq"),
                 Token::None,
+                Token::Str("missing_gt_ok"),
+                Token::Bool(true),
+                Token::Str("missing_gq_ok"),
+                Token::Bool(true),
+                Token::Str("missing_pr_ok"),
+                Token::Bool(true),
+                Token::Str("missing_sr_ok"),
+                Token::Bool(true),
+                Token::Str("missing_srpr_ok"),
+                Token::Bool(true),
+                Token::Str("missing_rd_dev_ok"),
+                Token::Bool(true),
+                Token::Str("missing_amq_ok"),
+                Token::Bool(true),
                 Token::Str("comment"),
                 Token::None,
                 Token::StructEnd,
