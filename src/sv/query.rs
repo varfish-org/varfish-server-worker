@@ -149,6 +149,8 @@ struct ResultPayload {
     sv_length: Option<u32>,
     /// Overlap counts with background databases.
     overlap_counts: BgDbOverlaps,
+    /// Distance to next TAD boundary.
+    tad_boundary_distance: Option<u32>,
 }
 
 /// A result record from the query.
@@ -320,6 +322,7 @@ fn run_query(
                 tad_gene_ids.sort();
                 tad_gene_ids
             };
+            result_payload.tad_boundary_distance = dbs.tad_sets.boundary_dist(TadSetChoice::Hesc, &schema_sv, &chrom_map);
 
             // Convert the genes into more verbose records and put them into the result
             ovl_gene_ids.iter().for_each(|gene_id| {
