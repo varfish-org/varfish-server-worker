@@ -12,20 +12,11 @@ use crate::{
 
 use super::{
     interpreter::{BND_SLACK, INS_SLACK},
-    schema::{StructuralVariant, SvType},
+    schema::{StructuralVariant, SvType, TadSet as TadSetChoice},
 };
 
 /// Alias for the interval tree that we use.
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
-
-/// Enum for selecting TAD set.
-#[derive(Debug, PartialEq, Eq)]
-pub enum TadSetChoice {
-    // HESC data set from Dixon et al. (2012)
-    Hesc,
-    // IMR90 data set from Dixon et al. (2012)
-    Imr90,
-}
 
 /// Information to store for a TAD set entry.
 #[derive(Default, Clone, Debug)]

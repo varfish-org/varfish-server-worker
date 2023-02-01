@@ -44,8 +44,8 @@ use self::{
     clinvar::ClinvarSv,
     genes::GeneDb,
     pathogenic::PathoDbBundle,
-    schema::{CallInfo, Database, StrandOrientation, SvSubType, SvType},
-    tads::{TadSetBundle, TadSetChoice},
+    schema::{CallInfo, Database, StrandOrientation, SvSubType, SvType, TadSet as TadSetChoice},
+    tads::TadSetBundle,
 };
 
 /// Command line arguments for `sv query` sub command.
