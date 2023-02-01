@@ -23,7 +23,6 @@
     "svdb_inhouse_max_count": 10,
     "clinvar_sv_min_overlap": 0.8,
     "clinvar_sv_min_pathogenicity": "likely-pathogenic",
-    "known_pathogenic_min_overlap": 0.8,
     "sv_size_min": 500,
     "sv_size_max": null,
     "sv_types": [
