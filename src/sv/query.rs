@@ -322,7 +322,9 @@ fn run_query(
                 tad_gene_ids.sort();
                 tad_gene_ids
             };
-            result_payload.tad_boundary_distance = dbs.tad_sets.boundary_dist(TadSetChoice::Hesc, &schema_sv, &chrom_map);
+            result_payload.tad_boundary_distance =
+                dbs.tad_sets
+                    .boundary_dist(TadSetChoice::Hesc, &schema_sv, &chrom_map);
 
             // Convert the genes into more verbose records and put them into the result
             ovl_gene_ids.iter().for_each(|gene_id| {
