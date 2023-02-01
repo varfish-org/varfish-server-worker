@@ -128,7 +128,7 @@ impl TadSet {
                 }
                 SvType::Ins => vec![(
                     chrom_idx,
-                    sv.pos.saturating_sub(delta)..sv.pos.saturating_sub(delta),
+                    sv.pos.saturating_sub(delta)..sv.pos.saturating_add(delta),
                     sv.pos,
                 )],
                 _ => vec![
@@ -148,7 +148,7 @@ impl TadSet {
 
         let mut dists = Vec::new();
         for (chrom_idx, r, pos) in queries {
-            self.records_trees[chrom_idx]
+            self.boundaries_trees[chrom_idx]
                 .find(r.clone())
                 .iter()
                 .for_each(|cursor| {
@@ -261,6 +261,10 @@ fn load_tad_sets(path: &Path, boundary_max_dist: u32) -> Result<TadSet, anyhow::
     }
     result
         .records_trees
+        .iter_mut()
+        .for_each(|tree| tree.index());
+    result
+        .boundaries_trees
         .iter_mut()
         .for_each(|tree| tree.index());
     debug!(
