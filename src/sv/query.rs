@@ -272,11 +272,8 @@ fn run_query(
             *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
 
             // Get overlaps with known pathogenic SVs and ClinVar SVs
-            result_payload.known_pathogenic = dbs.patho_dbs.overlapping_records(
-                &schema_sv,
-                &chrom_map,
-                interpreter.query.known_pathogenic_min_overlap,
-            );
+            result_payload.known_pathogenic =
+                dbs.patho_dbs.overlapping_records(&schema_sv, &chrom_map);
             result_payload.clinvar_ovl_vcvs = dbs
                 .clinvar_sv
                 .overlapping_vcvs(

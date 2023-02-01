@@ -892,8 +892,6 @@ pub struct CaseQuery {
     pub clinvar_sv_min_overlap: Option<f32>,
     /// Minimal pathogenicity when overlapping with ClinVar SVs.
     pub clinvar_sv_min_pathogenicity: Option<Pathogenicity>,
-    /// Minimal reciprocal overhead when overlapping with known pathogenic SVs.
-    pub known_pathogenic_min_overlap: Option<f32>,
 
     /// The minimal SV size to consider.
     pub sv_size_min: Option<u32>,
@@ -965,7 +963,6 @@ impl CaseQuery {
             sv_sub_types: vec![],
             clinvar_sv_min_overlap: None,
             clinvar_sv_min_pathogenicity: None,
-            known_pathogenic_min_overlap: None,
             gene_allowlist: None,
             genomic_region: None,
             regulatory_overlap: 100,
@@ -1587,7 +1584,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "CaseQuery",
-                    len: 40,
+                    len: 39,
                 },
                 Token::Str("database"),
                 Token::UnitVariant {
@@ -1639,8 +1636,6 @@ mod tests {
                 Token::Str("clinvar_sv_min_overlap"),
                 Token::None,
                 Token::Str("clinvar_sv_min_pathogenicity"),
-                Token::None,
-                Token::Str("known_pathogenic_min_overlap"),
                 Token::None,
                 Token::Str("sv_size_min"),
                 Token::None,
