@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.0.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.2.1...v1.0.0) (2023-02-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* enums serialization case and query issues (#41)
+
+### Features
+
+* allow configuring whether missing call_info entry is pass ([#47](https://www.github.com/bihealth/varfish-server-worker/issues/47)) ([#49](https://www.github.com/bihealth/varfish-server-worker/issues/49)) ([4d0f64d](https://www.github.com/bihealth/varfish-server-worker/commit/4d0f64da21eb883cd7c31d56c9eacddd9fb4361b))
+* make clinvar/pathogenic SV overlap configurable ([#39](https://www.github.com/bihealth/varfish-server-worker/issues/39)) ([af36bd4](https://www.github.com/bihealth/varfish-server-worker/commit/af36bd47dc50740543b6125e555aad7fe25e81e4))
+* make TAD set configurable in query ([#51](https://www.github.com/bihealth/varfish-server-worker/issues/51)) ([82d4995](https://www.github.com/bihealth/varfish-server-worker/commit/82d4995ca727e46018a30520da48b31d774b7e23))
+* write out bg db overlap counts in "sv query" ([#44](https://www.github.com/bihealth/varfish-server-worker/issues/44)) ([#46](https://www.github.com/bihealth/varfish-server-worker/issues/46)) ([7286d0d](https://www.github.com/bihealth/varfish-server-worker/commit/7286d0d52d51eae39145772f9121f4c960f3fdd2))
+* write out distance to next TAD boundary ([#45](https://www.github.com/bihealth/varfish-server-worker/issues/45)) ([#50](https://www.github.com/bihealth/varfish-server-worker/issues/50)) ([5ef72f3](https://www.github.com/bihealth/varfish-server-worker/commit/5ef72f32436c3e7d2116a26193935c7ed0db7b5a))
+* writing out payload.sv_length ([#43](https://www.github.com/bihealth/varfish-server-worker/issues/43)) ([368621d](https://www.github.com/bihealth/varfish-server-worker/commit/368621dfbebfb1e0b1c1eb40f466277780cca82e))
+
+
+### Bug Fixes
+
+* enums serialization case and query issues ([#41](https://www.github.com/bihealth/varfish-server-worker/issues/41)) ([7cd73aa](https://www.github.com/bihealth/varfish-server-worker/commit/7cd73aae69421998500571decd9417f026824135))
+
 ### [0.2.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.2.0...v0.2.1) (2023-01-31)
 
 

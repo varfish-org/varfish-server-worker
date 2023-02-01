@@ -1,6 +1,6 @@
 [package]
 name = "varfish-server-worker"
-version = "0.2.1"
+version = "1.0.0"
 authors = ["Manuel Holtgrewe <manuel.holtgrewe@bih-charite.de>"]
 description = "Rust-based workers for varfish-server"
 license-file = "LICENSE.md"
