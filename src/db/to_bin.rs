@@ -387,9 +387,7 @@ pub mod clinvar {
         let chrom_map = build_chrom_map();
 
         let mut reader = csv::ReaderBuilder::new()
-            .has_headers(false)
             .delimiter(b'\t')
-            .comment(Some(b'#'))
             .from_reader(open_read_maybe_gz(path_input_tsv)?);
         let before_parsing = Instant::now();
 

@@ -354,6 +354,13 @@ fn convert_strucvar(args: &Args, dbdefs: &mut StrucVarDbs) -> Result<(), anyhow:
         )?;
     }
 
+    to_bin::clinvar::convert_to_bin(
+        base_path.join("clinvar.bed.gz"),
+        base_path.join("clinvar.bin"),
+        &args.path_worker_db,
+        &mut dbdefs.clinvar,
+    )?;
+
     Ok(())
 }
 

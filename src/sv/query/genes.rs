@@ -181,10 +181,14 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
     Ok(result)
 }
 
-/// Information to store for an ACMG entry.
+/// Information from ACMG file.
 #[derive(Deserialize, Default, Clone, Debug)]
 pub struct AcmgRecord {
-    /// Entrez gene ID
+    /// HGNC gene symbol.
+    pub gene_symbol: String,
+    /// ENSEMBL gene ID.
+    pub ensembl_gene_id: String,
+    /// Entrez / NCBI gene ID.
     pub entrez_id: u32,
 }
 
@@ -202,7 +206,9 @@ fn load_acmg_db(path: &Path) -> Result<AcmgDb, anyhow::Error> {
     let mut result = AcmgDb::default();
 
     let mut reader = csv::ReaderBuilder::new()
+        .comment(Some(b'#'))
         .delimiter(b'\t')
+        .has_headers(false)
         .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;
@@ -255,7 +261,9 @@ fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
     let mut result = OmimDb::default();
 
     let mut reader = csv::ReaderBuilder::new()
+        .comment(Some(b'#'))
         .delimiter(b'\t')
+        .has_headers(false)
         .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;

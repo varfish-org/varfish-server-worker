@@ -106,6 +106,7 @@ fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
 
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
+        .comment(Some(b'#'))
         .delimiter(b'\t')
         .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
     let mut total_count = 0;

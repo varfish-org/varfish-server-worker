@@ -216,6 +216,7 @@ fn load_tad_sets(path: &Path, boundary_max_dist: u32) -> Result<TadSet, anyhow::
 
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
+        .comment(Some(b'#'))
         .delimiter(b'\t')
         .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
     let mut total_count = 0;
