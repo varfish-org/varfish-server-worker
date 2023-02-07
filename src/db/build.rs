@@ -1,6 +1,6 @@
 //! Code supporting the `db build` sub command.
 
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 use clap::{Parser, ValueEnum};
 use enum_map::{enum_map, EnumMap};
@@ -18,7 +18,7 @@ use super::conf::{Database, DbDef, TadSet};
 /// Copy one database definition file set.
 fn copy_db_def(
     path_out: &PathBuf,
-    base_path: &PathBuf,
+    base_path: &Path,
     file_name: &str,
     file_ext: &str,
 ) -> Result<DbDef, anyhow::Error> {
@@ -31,10 +31,10 @@ fn copy_db_def(
 
     debug!("Compute and verify MD5 checksum");
     // First create path to `.md5` file, then read in the MD5 string.
-    let md5_path = base_path.join(&format!("{}{}.md5", file_name, file_ext));
+    let md5_path = base_path.join(&format!("{file_name}{file_ext}.md5"));
     let md5_str = read_md5_file(&md5_path)?.to_lowercase();
 
-    let file_path = base_path.join(&format!("{}{}", file_name, file_ext));
+    let file_path = base_path.join(&format!("{file_name}{file_ext}"));
     let chk_md5 = md5sum(&file_path)?.to_lowercase();
     if md5_str != chk_md5 {
         return Err(anyhow::anyhow!(
@@ -49,16 +49,16 @@ fn copy_db_def(
 
     debug!("Create directory and copy file");
     trace!("Create {:?}", &path_out);
-    std::fs::create_dir_all(&path_out)?;
+    std::fs::create_dir_all(path_out)?;
     for ext in &[file_ext, ".spec.json"] {
         trace!("Copy {}{}", &file_name, ext);
-        let name = format!("{}{}", file_name, ext);
+        let name = format!("{file_name}{ext}");
         let bytes_copied = std::fs::copy(base_path.join(&name), path_out.join(&name))?;
         trace!("  copied {} bytes", bytes_copied.separate_with_commas());
     }
 
     Ok(DbDef {
-        path: format!("{:?}", file_path),
+        path: format!("{file_path:?}"),
         md5: Some(chk_md5),
         sha256: Some(chk_sha256),
         ..Default::default()
@@ -145,10 +145,10 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     };
 
     info!("Copying features/{:?}/gene_regions", genome_release);
-    conf.features[genome_release].gene_regions = copy_gene_regions(&args)?;
+    conf.features[genome_release].gene_regions = copy_gene_regions(args)?;
 
     info!("Copying features/{:?}/tads", genome_release);
-    conf.features[genome_release].tads = copy_tads(&args)?;
+    conf.features[genome_release].tads = copy_tads(args)?;
 
     info!("Copying genes/acmg");
     info!("Copying genes/gnomad_constraints");
