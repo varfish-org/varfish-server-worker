@@ -65,8 +65,8 @@ fn copy_db_def(
 
     Ok(DbDef {
         path: path_out
-            .join(&format!("{}{}", &file_name, &file_ext))
-            .strip_prefix(&db_path)?
+            .join(format!("{}{}", &file_name, &file_ext))
+            .strip_prefix(db_path)?
             .to_str()
             .unwrap()
             .to_owned(),
