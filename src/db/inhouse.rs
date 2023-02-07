@@ -18,7 +18,12 @@ use tracing::{debug, info};
 
 use crate::{
     common::{
-        build_chrom_map, open_read_maybe_gz, open_write_maybe_gz, read_lines, trace_rss_now, CHROMS,
+        build_chrom_map, md5sum, open_read_maybe_gz, open_write_maybe_gz, read_lines, sha256sum,
+        trace_rss_now, CHROMS,
+    },
+    db::{
+        conf::{DbDef, GenomeRelease, Top},
+        to_bin::{self, vardbs::InputFileType},
     },
     sv::query::schema::SvType,
 };
@@ -439,16 +444,52 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     debug!("using tmpdir={:?}", &tmp_dir);
     split_input_by_chrom_and_sv_type(&tmp_dir, input_tsv_paths, args.genome_release)?;
 
-    let path_out_tsv = args
+    let base_path = args
         .path_worker_db
         .join("vardbs")
         .join(args.genome_release.to_string())
-        .join("strucvar")
-        .join("inhouse.tsv.gz");
+        .join("strucvar");
+    let path_out_tsv = base_path.join("inhouse.tsv.gz");
 
     // Read the output of the previous step by chromosome and SV type, perform overlapping
     // and merge such "compressed" data set to the final output file.
     merge_split_files(&tmp_dir, args, &path_out_tsv)?;
+
+    // Convert in-house database to binary.
+    info!("Converting to binary...");
+    let path_out_bin = base_path.join("gnomad_sv.bin");
+    to_bin::vardbs::convert_to_bin(&path_out_tsv, &path_out_bin, InputFileType::InhouseDb)?;
+
+    // Update database configuration.
+    info!("Writing database configuration...");
+    let genome_release = match args.genome_release {
+        ArgGenomeRelease::Grch37 => GenomeRelease::Grch37,
+        ArgGenomeRelease::Grch38 => GenomeRelease::Grch38,
+    };
+    let conf_toml = std::fs::read_to_string(args.path_worker_db.join("conf.toml"))?;
+    let mut conf: Top = toml::from_str(&conf_toml)?;
+    conf.vardbs[genome_release].strucvar.inhouse = Some(DbDef {
+        path: path_out_tsv
+            .strip_prefix(&args.path_worker_db)?
+            .to_str()
+            .unwrap()
+            .to_owned(),
+        md5: Some(md5sum(&path_out_tsv)?),
+        sha256: Some(sha256sum(&path_out_tsv)?),
+        bin_path: Some(
+            path_out_bin
+                .strip_prefix(&args.path_worker_db)?
+                .to_str()
+                .unwrap()
+                .to_owned(),
+        ),
+        bin_md5: Some(md5sum(&path_out_bin)?),
+        bin_sha256: Some(sha256sum(&path_out_bin)?),
+    });
+    std::fs::write(
+        args.path_worker_db.join("conf.toml"),
+        toml::to_string_pretty(&conf)?,
+    )?;
 
     Ok(())
 }

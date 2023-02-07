@@ -22,6 +22,7 @@ use super::conf::{
 
 /// Copy one database definition file set.
 fn copy_db_def(
+    db_path: &Path,
     path_out: &PathBuf,
     base_path: &Path,
     file_name: &str,
@@ -63,7 +64,12 @@ fn copy_db_def(
     }
 
     Ok(DbDef {
-        path: file_path.into_os_string().into_string().expect("Bad path"),
+        path: path_out
+            .join(&format!("{}{}", &file_name, &file_ext))
+            .strip_prefix(&db_path)?
+            .to_str()
+            .unwrap()
+            .to_owned(),
         md5: Some(chk_md5),
         sha256: Some(chk_sha256),
         ..Default::default()
@@ -84,8 +90,8 @@ fn copy_gene_regions(args: &Args) -> Result<EnumMap<Database, DbDef>, anyhow::Er
         .join("gene_regions");
 
     Ok(enum_map! {
-        Database::Ensembl => copy_db_def(&path_out, &base_path, "ensembl", ".bed.gz")?,
-        Database::RefSeq => copy_db_def(&path_out, &base_path, "refseq", ".bed.gz")?,
+        Database::Ensembl => copy_db_def(&args.path_worker_db, &path_out, &base_path, "ensembl", ".bed.gz")?,
+        Database::RefSeq => copy_db_def(&args.path_worker_db, &path_out, &base_path, "refseq", ".bed.gz")?,
     })
 }
 
@@ -125,8 +131,8 @@ fn copy_tads(args: &Args) -> Result<EnumMap<TadSet, DbDef>, anyhow::Error> {
         .join("tads");
 
     Ok(enum_map! {
-        TadSet::Hesc => copy_db_def(&path_out, &base_path, "hesc", ".bed")?,
-        TadSet::Imr90 => copy_db_def(&path_out, &base_path, "imr90", ".bed")?,
+        TadSet::Hesc => copy_db_def(&args.path_worker_db, &path_out, &base_path, "hesc", ".bed")?,
+        TadSet::Imr90 => copy_db_def(&args.path_worker_db, &path_out, &base_path, "imr90", ".bed")?,
     })
 }
 
@@ -135,7 +141,7 @@ fn copy_acmg(args: &Args) -> Result<DbDef, anyhow::Error> {
     let path_out = args.path_worker_db.join("genes").join("acmg");
     let base_path = args.path_db_downloader.join("genes").join("acmg");
 
-    copy_db_def(&path_out, &base_path, "acmg", ".tsv")
+    copy_db_def(&args.path_worker_db, &path_out, &base_path, "acmg", ".tsv")
 }
 
 /// Copy over the gnomAD gene constraints file.
@@ -146,7 +152,13 @@ fn copy_gnomad_constraints(args: &Args) -> Result<DbDef, anyhow::Error> {
         .join("genes")
         .join("gnomad_constraints");
 
-    copy_db_def(&path_out, &base_path, "gnomad_constraints", ".tsv")
+    copy_db_def(
+        &args.path_worker_db,
+        &path_out,
+        &base_path,
+        "gnomad_constraints",
+        ".tsv",
+    )
 }
 
 /// Copy over the mim2gene mapping file.
@@ -154,7 +166,13 @@ fn copy_mim2gene(args: &Args) -> Result<DbDef, anyhow::Error> {
     let path_out = args.path_worker_db.join("genes").join("mim2gene");
     let base_path = args.path_db_downloader.join("genes").join("mim2gene");
 
-    copy_db_def(&path_out, &base_path, "mim2gene", ".tsv")
+    copy_db_def(
+        &args.path_worker_db,
+        &path_out,
+        &base_path,
+        "mim2gene",
+        ".tsv",
+    )
 }
 
 /// Copy over the xlink mapping files.
@@ -163,8 +181,8 @@ fn copy_xlink(args: &Args) -> Result<EnumMap<GeneXlink, DbDef>, anyhow::Error> {
     let base_path = args.path_db_downloader.join("genes").join("xlink");
 
     Ok(enum_map! {
-        GeneXlink::Hgnc => copy_db_def(&path_out, &base_path, "hgnc", ".tsv")?,
-        GeneXlink::Ensembl => copy_db_def(&path_out, &base_path, "ensembl", ".tsv")?,
+        GeneXlink::Hgnc => copy_db_def(&args.path_worker_db, &path_out, &base_path, "hgnc", ".tsv")?,
+        GeneXlink::Ensembl => copy_db_def(&args.path_worker_db, &path_out, &base_path, "ensembl", ".tsv")?,
     })
 }
 
@@ -198,17 +216,65 @@ fn copy_strucvar(args: &Args) -> Result<StrucVarDbs, anyhow::Error> {
         slack_ins: default_slack_ins(),
         min_overlap: default_min_overlap(),
 
-        gnomad_sv: copy_db_def(&path_out, &base_path, "gnomad_sv", ".bed.gz")?,
-        dbvar: copy_db_def(&path_out, &base_path, "dbvar", ".bed.gz")?,
-        dgv: copy_db_def(&path_out, &base_path, "dgv", ".bed.gz")?,
-        dgv_gs: copy_db_def(&path_out, &base_path, "dgv_gs", ".bed.gz")?,
-        exac: Some(copy_db_def(&path_out, &base_path, "exac", ".bed.gz")?),
-        g1k: Some(copy_db_def(&path_out, &base_path, "g1k", ".bed.gz")?),
+        gnomad_sv: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "gnomad_sv",
+            ".bed.gz",
+        )?,
+        dbvar: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "dbvar",
+            ".bed.gz",
+        )?,
+        dgv: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "dgv",
+            ".bed.gz",
+        )?,
+        dgv_gs: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "dgv_gs",
+            ".bed.gz",
+        )?,
+        exac: Some(copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "exac",
+            ".bed.gz",
+        )?),
+        g1k: Some(copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "g1k",
+            ".bed.gz",
+        )?),
 
         inhouse: None,
 
-        patho_mms: copy_db_def(&path_out, &base_path, "patho_mms", ".bed")?,
-        clinvar: copy_db_def(&path_out, &base_path, "clinvar", ".bed.gz")?,
+        patho_mms: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "patho_mms",
+            ".bed",
+        )?,
+        clinvar: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "clinvar",
+            ".bed.gz",
+        )?,
     })
 }
 
