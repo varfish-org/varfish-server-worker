@@ -310,7 +310,7 @@ pub fn load_gene_db(
         refseq: load_gene_regions_db(
             Path::new(path_db)
                 .join(
-                    &feature_conf.gene_regions[Database::RefSeq]
+                    feature_conf.gene_regions[Database::RefSeq]
                         .bin_path
                         .as_ref()
                         .expect("no binary path for RefSeq regions?"),
@@ -320,7 +320,7 @@ pub fn load_gene_db(
         ensembl: load_gene_regions_db(
             Path::new(path_db)
                 .join(
-                    &feature_conf.gene_regions[Database::Ensembl]
+                    feature_conf.gene_regions[Database::Ensembl]
                         .bin_path
                         .as_ref()
                         .expect("no binary path for ENSEMBL regions?"),
@@ -330,7 +330,7 @@ pub fn load_gene_db(
         xlink: load_xlink_db(
             Path::new(path_db)
                 .join(
-                    &gene_conf.xlink[GeneXlink::Hgnc]
+                    gene_conf.xlink[GeneXlink::Hgnc]
                         .bin_path
                         .as_ref()
                         .expect("no binary path for HGNC xlink?"),

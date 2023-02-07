@@ -267,9 +267,9 @@ impl QueryInterpreter {
 mod tests {
     use indexmap::IndexMap;
 
-    use crate::sv::query::schema::{
-        CallInfo, Database, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
-    };
+    use crate::{sv::query::schema::{
+        CallInfo, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
+    }, db::conf::Database};
 
     use super::*;
 
