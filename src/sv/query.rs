@@ -29,7 +29,7 @@ use crate::{
     common::{build_chrom_map, open_read_maybe_gz, trace_rss_now},
     db::{
         compile::ArgGenomeRelease,
-        conf::{GenomeRelease, Top, Database, TadSet as TadSetChoice},
+        conf::{Database, GenomeRelease, TadSet as TadSetChoice, Top},
     },
     sv::query::{
         bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,

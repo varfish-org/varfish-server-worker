@@ -272,8 +272,7 @@ pub fn load_bg_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<BgDbBundle, anyh
         gnomad: load_bg_db_records(
             Path::new(path_db)
                 .join(
-                    conf
-                        .gnomad_sv
+                    conf.gnomad_sv
                         .bin_path
                         .as_ref()
                         .expect("no binary path for gnomAD-SV"),
@@ -282,7 +281,12 @@ pub fn load_bg_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<BgDbBundle, anyh
         )?,
         dbvar: load_bg_db_records(
             Path::new(path_db)
-                .join(conf.dbvar.bin_path.as_ref().expect("no binary path for dbVar"))
+                .join(
+                    conf.dbvar
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for dbVar"),
+                )
                 .as_path(),
         )?,
         dgv: load_bg_db_records(
@@ -292,7 +296,12 @@ pub fn load_bg_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<BgDbBundle, anyh
         )?,
         dgv_gs: load_bg_db_records(
             Path::new(path_db)
-                .join(conf.dgv_gs.bin_path.as_ref().expect("no binary path for DGV GS"))
+                .join(
+                    conf.dgv_gs
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for DGV GS"),
+                )
                 .as_path(),
         )?,
         exac: conf
@@ -313,7 +322,8 @@ pub fn load_bg_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<BgDbBundle, anyh
                 load_bg_db_records(
                     Path::new(path_db)
                         .join(
-                            g1k.bin_path.as_ref()
+                            g1k.bin_path
+                                .as_ref()
                                 .expect("no binary path for Thousand Genomes SV"),
                         )
                         .as_path(),
@@ -328,7 +338,8 @@ pub fn load_bg_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<BgDbBundle, anyh
                     Path::new(path_db)
                         .join(
                             inhouse
-                                .bin_path.as_ref()
+                                .bin_path
+                                .as_ref()
                                 .expect("no binary path for in-house SV DB?"),
                         )
                         .as_path(),

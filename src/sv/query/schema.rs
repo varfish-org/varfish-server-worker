@@ -1,8 +1,11 @@
 //! Supporting code for SV query definition.
 
-use crate::{world_flatbuffers::var_fish_server_worker::{
-    Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
-}, db::conf::{Database, TadSet}};
+use crate::{
+    db::conf::{Database, TadSet},
+    world_flatbuffers::var_fish_server_worker::{
+        Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
+    },
+};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;

@@ -17,6 +17,9 @@ path = ""
 [genes.xlink.ensembl]
 path = ""
 
+[features.grch37]
+max_dist = 0
+
 [features.grch37.gene_regions.refseq]
 path = ""
 
@@ -28,6 +31,9 @@ path = ""
 
 [features.grch37.tads.imr90]
 path = ""
+
+[features.grch38]
+max_dist = 0
 
 [features.grch38.gene_regions.refseq]
 path = ""

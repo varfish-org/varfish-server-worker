@@ -86,7 +86,12 @@ pub fn load_clinvar_sv(path_db: &str, conf: &StrucVarDbs) -> Result<ClinvarSv, a
         result.trees.push(IntervalTree::new());
     }
 
-    let path = Path::new(path_db).join(conf.clinvar.bin_path.as_ref().expect("no binary clinvar path?"));
+    let path = Path::new(path_db).join(
+        conf.clinvar
+            .bin_path
+            .as_ref()
+            .expect("no binary clinvar path?"),
+    );
     let file = File::open(&path)?;
     let mmap = unsafe { Mmap::map(&file)? };
     let bg_db = flatbuffers::root::<ClinvarSvDatabase>(&mmap)?;
