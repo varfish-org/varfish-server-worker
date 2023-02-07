@@ -58,7 +58,7 @@ pub mod gene_region {
             output_records.push(GeneRegionRecord::new(
                 *chrom_map
                     .get(&record.chromosome)
-                    .expect(&format!("unknown chrom {:?}", &record.chromosome))
+                    .unwrap_or_else(|| panic!("unknown chrom {:?}", &record.chromosome))
                     as u8,
                 record.begin,
                 record.end,
@@ -142,16 +142,15 @@ pub mod xlink {
             .from_reader(open_read_maybe_gz(path_input_tsv)?);
         for record in reader.deserialize() {
             let record: input::Record = record?;
-            match (record.entrez_id, record.ensembl_gene_id, record.gene_symbol) {
-                (Some(entrez_id), Some(ensembl_gene_id), Some(gene_symbol)) => {
-                    output_records.push(XlinkRecord::new(
-                        entrez_id,
-                        numeric_gene_id(&ensembl_gene_id)?,
-                    ));
-                    let flat_str = builder.create_shared_string(&gene_symbol);
-                    output_strings.push(flat_str);
-                }
-                _ => (), // skip
+            if let (Some(entrez_id), Some(ensembl_gene_id), Some(gene_symbol)) =
+                (record.entrez_id, record.ensembl_gene_id, record.gene_symbol)
+            {
+                output_records.push(XlinkRecord::new(
+                    entrez_id,
+                    numeric_gene_id(&ensembl_gene_id)?,
+                ));
+                let flat_str = builder.create_shared_string(&gene_symbol);
+                output_strings.push(flat_str);
             }
         }
 
@@ -739,11 +738,11 @@ pub mod vardbs {
                 result.push(BgDbRecord::new(
                     *chrom_map
                         .get(&record.chromosome)
-                        .expect(&format!("unknown chrom: {:?}", &record.chromosome))
+                        .unwrap_or_else(|| panic!("unknown chrom: {:?}", &record.chromosome))
                         as u8,
                     *chrom_map
                         .get(&record.chromosome2)
-                        .expect(&format!("unknown chrom2: {:?}", &record.chromosome2))
+                        .unwrap_or_else(|| panic!("unknown chrom2: {:?}", &record.chromosome2))
                         as u8,
                     match record.sv_type {
                         SvType::Del => FlatSvType::Del,

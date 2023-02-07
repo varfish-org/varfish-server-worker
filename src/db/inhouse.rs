@@ -352,7 +352,7 @@ fn merge_split_files(
         .from_writer(open_write_maybe_gz(path_output_tsv)?);
 
     // Write header as comment.
-    writer.write_record(&[
+    writer.write_record([
         "#chromosome",
         "begin",
         "chromosome2",
