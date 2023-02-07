@@ -74,11 +74,6 @@ struct Sv {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SvCommands {
-    BgDbToBin(sv::bg_db_to_bin::Args),
-    ClinvarSvToBin(sv::clinvar_sv_to_bin::Args),
-    GeneRegionToBin(sv::gene_region_to_bin::Args),
-    XlinkToBin(sv::xlink_to_bin::Args),
-    InhouseDbBuild(sv::inhouse_db_build::Args),
     Query(sv::query::Args),
 }
 
@@ -114,21 +109,6 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             },
             Commands::Sv(sv) => match &sv.command {
-                SvCommands::BgDbToBin(args) => {
-                    sv::bg_db_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::ClinvarSvToBin(args) => {
-                    sv::clinvar_sv_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::XlinkToBin(args) => {
-                    sv::xlink_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::GeneRegionToBin(args) => {
-                    sv::gene_region_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::InhouseDbBuild(args) => {
-                    sv::inhouse_db_build::run(&cli.common, args)?;
-                }
                 SvCommands::Query(args) => {
                     sv::query::run(&cli.common, args)?;
                 }

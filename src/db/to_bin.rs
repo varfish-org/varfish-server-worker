@@ -207,6 +207,7 @@ pub mod clinvar {
 
         use crate::sv::query::schema::{Pathogenicity, VariationType};
         use serde::{de, Deserialize, Deserializer};
+        use tracing::warn;
 
         lazy_static::lazy_static! {
             static ref VARIATION_TYPE_LABELS: HashMap<&'static str, VariationType> = {
@@ -227,15 +228,15 @@ pub mod clinvar {
             };
         }
 
-        // impl VariationType {
-        //     pub fn from_label(label: &str) -> Result<VariationType, anyhow::Error> {
-        //         if let Some(result) = VARIATION_TYPE_LABELS.get(label) {
-        //             Ok(*result)
-        //         } else {
-        //             Err(anyhow::anyhow!("Invalid VariationType label: {}", label))
-        //         }
-        //     }
-        // }
+        impl VariationType {
+            pub fn from_label(label: &str) -> Result<VariationType, anyhow::Error> {
+                if let Some(result) = VARIATION_TYPE_LABELS.get(label) {
+                    Ok(*result)
+                } else {
+                    Err(anyhow::anyhow!("Invalid VariationType label: {}", label))
+                }
+            }
+        }
 
         lazy_static::lazy_static! {
             static ref PATHOGENICITY_LABELS: HashMap<&'static str, Pathogenicity> = {
@@ -252,16 +253,16 @@ pub mod clinvar {
             };
         }
 
-        // impl Pathogenicity {
-        //     pub fn from_label(label: &str) -> Result<Self, anyhow::Error> {
-        //         if let Some(pathogenicity) = PATHOGENICITY_LABELS.get(label) {
-        //             Ok(*pathogenicity)
-        //         } else {
-        //             warn!("Cannot decode pathogenicity from {}", label);
-        //             Ok(Pathogenicity::Uncertain)
-        //         }
-        //     }
-        // }
+        impl Pathogenicity {
+            pub fn from_label(label: &str) -> Result<Self, anyhow::Error> {
+                if let Some(pathogenicity) = PATHOGENICITY_LABELS.get(label) {
+                    Ok(*pathogenicity)
+                } else {
+                    warn!("Cannot decode pathogenicity from {}", label);
+                    Ok(Pathogenicity::Uncertain)
+                }
+            }
+        }
 
         /// Record as created by VarFish DB Downloader.
         #[derive(Debug, Deserialize)]
@@ -389,7 +390,7 @@ pub mod vardbs {
     use tracing::debug;
 
     use crate::common::{build_chrom_map, open_read_maybe_gz, trace_rss_now};
-    use crate::sv::inhouse_db_build::output::Record as InhouseDbRecord;
+    use crate::db::inhouse::output::Record as InhouseDbRecord;
     use crate::sv::query::schema::SvType;
     use crate::world_flatbuffers::var_fish_server_worker::{
         BackgroundDatabase, BackgroundDatabaseArgs, BgDbRecord, SvType as FlatSvType,
@@ -403,7 +404,7 @@ pub mod vardbs {
         use serde::Deserialize;
         use tracing::error;
 
-        use crate::sv::inhouse_db_build::output::Record as InhouseDbRecord;
+        use crate::db::inhouse::output::Record as InhouseDbRecord;
         use crate::sv::query::schema::SvType;
 
         /// dbVar database record as read from TSV file.
