@@ -9,7 +9,7 @@ use tracing::{debug, info, warn};
 
 use crate::{
     common::{reciprocal_overlap, CHROMS},
-    sv::conf::ClinvarSvConf,
+    db::conf::StrucVarDbs,
     world_flatbuffers::var_fish_server_worker::ClinvarSvDatabase,
 };
 
@@ -76,8 +76,8 @@ impl ClinvarSv {
 
 // Load the Clinvar SV databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_clinvar_sv(path_db: &str, conf: &ClinvarSvConf) -> Result<ClinvarSv, anyhow::Error> {
-    info!("loading binaryclinvar SV dbs");
+pub fn load_clinvar_sv(path_db: &str, conf: &StrucVarDbs) -> Result<ClinvarSv, anyhow::Error> {
+    info!("loading binary ClinVar SV dbs");
 
     let before_loading = Instant::now();
     let mut result = ClinvarSv::default();
@@ -86,7 +86,7 @@ pub fn load_clinvar_sv(path_db: &str, conf: &ClinvarSvConf) -> Result<ClinvarSv,
         result.trees.push(IntervalTree::new());
     }
 
-    let path = Path::new(path_db).join(&conf.svs.path);
+    let path = Path::new(path_db).join(&conf.clinvar.bin_path.as_ref().expect("no binary clinvar path?"));
     let file = File::open(&path)?;
     let mmap = unsafe { Mmap::map(&file)? };
     let bg_db = flatbuffers::root::<ClinvarSvDatabase>(&mmap)?;

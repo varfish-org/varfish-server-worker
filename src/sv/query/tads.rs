@@ -7,12 +7,12 @@ use tracing::{debug, info};
 
 use crate::{
     common::{build_chrom_map, open_read_maybe_gz, CHROMS},
-    sv::conf::TadsConf,
+    db::conf::{FeatureDbs, TadSet as TadSetChoice},
 };
 
 use super::{
     interpreter::{BND_SLACK, INS_SLACK},
-    schema::{StructuralVariant, SvType, TadSet as TadSetChoice},
+    schema::{StructuralVariant, SvType},
 };
 
 /// Alias for the interval tree that we use.
@@ -268,15 +268,19 @@ fn load_tad_sets(path: &Path, boundary_max_dist: u32) -> Result<TadSet, anyhow::
 
 // Load all pathogenic SV databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_tads(path_db: &str, conf: &TadsConf) -> Result<TadSetBundle, anyhow::Error> {
+pub fn load_tads(path_db: &str, conf: &FeatureDbs) -> Result<TadSetBundle, anyhow::Error> {
     info!("Loading TAD sets dbs");
     let result = TadSetBundle {
         hesc: load_tad_sets(
-            Path::new(path_db).join(&conf.hesc.path).as_path(),
+            Path::new(path_db)
+                .join(&conf.tads[TadSetChoice::Hesc].path)
+                .as_path(),
             conf.max_dist,
         )?,
         imr90: load_tad_sets(
-            Path::new(path_db).join(&conf.imr90.path).as_path(),
+            Path::new(path_db)
+                .join(&conf.tads[TadSetChoice::Imr90].path)
+                .as_path(),
             conf.max_dist,
         )?,
     };

@@ -29,6 +29,7 @@ md-5 = "0.10.5"
 memmap2 = "0.5.8"
 multimap = "0.8.3"
 procfs = "0.14.2"
+result = "1.0.0"
 rust-htslib = { version = "0.40.2", default-features = false }
 serde = { version = "1.0.152", features = ["serde_derive"] }
 serde-jsonlines = "0.4.0"

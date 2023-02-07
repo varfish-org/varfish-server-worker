@@ -1364,6 +1364,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "result"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "194d8e591e405d1eecf28819740abed6d719d1a2db87fc0bcdedee9a26d55560"
+
+[[package]]
 name = "rust-htslib"
 version = "0.40.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1883,6 +1889,7 @@ dependencies = [
  "multimap",
  "pretty_assertions",
  "procfs",
+ "result",
  "rust-htslib",
  "serde",
  "serde-jsonlines",

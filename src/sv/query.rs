@@ -16,26 +16,26 @@ use std::{
     time::Instant,
 };
 
-use anyhow::anyhow;
 use clap::{command, Parser};
 use csv::QuoteStyle;
 use indexmap::IndexMap;
 use log::warn;
 use serde::Serialize;
 use thousands::Separable;
-use tracing::{error, info};
+use tracing::info;
 use uuid::Uuid;
 
 use crate::{
     common::{build_chrom_map, open_read_maybe_gz, trace_rss_now},
-    sv::{
-        conf::{sanity_check_db, DbConf},
-        query::{
-            bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
-            interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
-            pathogenic::Record as KnownPathogenicRecord, records::StructuralVariant as RecordSv,
-            schema::CaseQuery, schema::StructuralVariant as SchemaSv, tads::load_tads,
-        },
+    db::{
+        compile::ArgGenomeRelease,
+        conf::{GenomeRelease, Top, Database, TadSet as TadSetChoice},
+    },
+    sv::query::{
+        bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
+        interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
+        pathogenic::Record as KnownPathogenicRecord, records::StructuralVariant as RecordSv,
+        schema::CaseQuery, schema::StructuralVariant as SchemaSv, tads::load_tads,
     },
 };
 
@@ -44,7 +44,7 @@ use self::{
     clinvar::ClinvarSv,
     genes::GeneDb,
     pathogenic::PathoDbBundle,
-    schema::{CallInfo, Database, StrandOrientation, SvSubType, SvType, TadSet as TadSetChoice},
+    schema::{CallInfo, StrandOrientation, SvSubType, SvType},
     tads::TadSetBundle,
 };
 
@@ -52,6 +52,9 @@ use self::{
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Run query for SVs", long_about = None)]
 pub struct Args {
+    /// Genome release to assume.
+    #[arg(long, value_enum, default_value_t = ArgGenomeRelease::Grch37)]
+    pub genome_release: ArgGenomeRelease,
     /// Path to database to use for querying.
     #[arg(long, required = true)]
     pub path_db: String,
@@ -70,22 +73,13 @@ pub struct Args {
     /// Value to write to the result set id column.
     #[arg(long, default_value_t = 0)]
     pub result_set_id: u64,
-    /// Disable checksum verifiation.
-    #[arg(long, default_value_t = false)]
-    pub disable_checksums: bool,
-    /// Slack to use around BND.
-    #[arg(long, default_value_t = 50)]
-    pub slack_bnd: u32,
-    /// Slack to use around INS.
-    #[arg(long, default_value_t = 50)]
-    pub slack_ins: u32,
     /// Optional maximal number of total records to write out.
     #[arg(long)]
     pub max_results: Option<usize>,
 }
 
 /// Load database configuration and perform sanity checks as configured.
-fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
+fn load_db_conf(args: &Args) -> Result<Top, anyhow::Error> {
     // Get full path to database configuration.
     let path_config = if let Some(path_conf) = &args.path_conf {
         PathBuf::from(path_conf)
@@ -93,24 +87,9 @@ fn load_db_conf(args: &Args) -> Result<DbConf, anyhow::Error> {
         Path::new(&args.path_db).join("conf.toml")
     };
 
-    // Perform sanity checks on database.
-    if let Some(error_msgs) = sanity_check_db(
-        Path::new(&args.path_db),
-        &path_config,
-        !args.disable_checksums,
-    )? {
-        error!("Found {} errors in your database", error_msgs.len());
-        for msg in &error_msgs {
-            error!("error: {}", &msg);
-        }
-        return Err(anyhow!("Errors found in database sanity heck"));
-    }
-
     // Load configuration
     let toml_str = std::fs::read_to_string(path_config)?;
-    let conf: DbConf = toml::from_str(&toml_str)?;
-
-    Ok(conf)
+    Ok(toml::from_str(&toml_str)?)
 }
 
 /// Gene information.
@@ -175,7 +154,7 @@ struct ResultRecord {
 
 fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Gene> {
     let record_idxs = match database {
-        Database::Refseq => gene_db.xlink.from_entrez.get_vec(&gene_id),
+        Database::RefSeq => gene_db.xlink.from_entrez.get_vec(&gene_id),
         Database::Ensembl => gene_db.xlink.from_ensembl.get_vec(&gene_id),
     };
     if let Some(record_idxs) = record_idxs {
@@ -194,7 +173,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
             .collect()
     } else {
         match database {
-            Database::Refseq => vec![Gene {
+            Database::RefSeq => vec![Gene {
                 entrez_id: Some(gene_id),
                 symbol: None,
                 ensembl_id: None,
@@ -224,8 +203,13 @@ struct QueryStats {
 fn run_query(
     interpreter: &QueryInterpreter,
     args: &Args,
+    db_conf: &Top,
     dbs: &Databases,
 ) -> Result<QueryStats, anyhow::Error> {
+    let gr = match args.genome_release {
+        ArgGenomeRelease::Grch37 => GenomeRelease::Grch37,
+        ArgGenomeRelease::Grch38 => GenomeRelease::Grch38,
+    };
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
 
@@ -256,8 +240,8 @@ fn run_query(
                 sv,
                 &interpreter.query,
                 &chrom_map,
-                args.slack_ins,
-                args.slack_bnd,
+                db_conf.vardbs[gr].strucvar.slack_ins,
+                db_conf.vardbs[gr].strucvar.slack_bnd,
             );
             result_payload.overlap_counts.clone()
         })?;
@@ -401,12 +385,16 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("Loading databases...");
     let before_loading = Instant::now();
     let db_conf = load_db_conf(args)?;
+    let gr = match args.genome_release {
+        ArgGenomeRelease::Grch37 => GenomeRelease::Grch37,
+        ArgGenomeRelease::Grch38 => GenomeRelease::Grch38,
+    };
     let dbs = Databases {
-        bg_dbs: load_bg_dbs(&args.path_db, &db_conf.background_dbs)?,
-        patho_dbs: load_patho_dbs(&args.path_db, &db_conf.known_pathogenic)?,
-        tad_sets: load_tads(&args.path_db, &db_conf.tads)?,
-        genes: load_gene_db(&args.path_db, &db_conf.genes)?,
-        clinvar_sv: load_clinvar_sv(&args.path_db, &db_conf.clinvar)?,
+        bg_dbs: load_bg_dbs(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
+        patho_dbs: load_patho_dbs(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
+        tad_sets: load_tads(&args.path_db, &db_conf.features[gr])?,
+        genes: load_gene_db(&args.path_db, &db_conf.genes, &db_conf.features[gr])?,
+        clinvar_sv: load_clinvar_sv(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
     };
     info!(
         "...done loading databases in {:?}",
@@ -424,7 +412,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     info!("Running queries...");
     let before_query = Instant::now();
-    let query_stats = run_query(&QueryInterpreter::new(query), args, &dbs)?;
+    let query_stats = run_query(&QueryInterpreter::new(query), args, &db_conf, &dbs)?;
     info!("... done running query in {:?}", before_query.elapsed());
     info!(
         "summary: {} records passed out of {}",

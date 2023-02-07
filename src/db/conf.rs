@@ -81,12 +81,19 @@ pub struct Top {
 /// Configuration of genomic features.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default)]
 pub struct FeatureDbs {
+    /// Maximal distance to feature to consider.
+    #[serde(default = "default_max_dist")]
+    pub max_dist: u32,
+
     /// Gene regions for the supported databases.
     pub gene_regions: EnumMap<Database, DbDef>,
     /// TAD definitions (by domain, not boundary).
     pub tads: EnumMap<TadSet, DbDef>,
 }
 
+pub fn default_max_dist() -> u32 {
+    10_000
+}
 /// Configuration of gene databases.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default)]
 pub struct GeneDbs {
