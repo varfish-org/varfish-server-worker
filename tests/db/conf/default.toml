@@ -60,6 +60,12 @@ path = ""
 [vardbs.grch37.strucvar.dgv_gs]
 path = ""
 
+[vardbs.grch37.strucvar.patho_mms]
+path = ""
+
+[vardbs.grch37.strucvar.clinvar]
+path = ""
+
 [vardbs.grch38.seqvar]
 
 [vardbs.grch38.strucvar]
@@ -77,4 +83,10 @@ path = ""
 path = ""
 
 [vardbs.grch38.strucvar.dgv_gs]
+path = ""
+
+[vardbs.grch38.strucvar.patho_mms]
+path = ""
+
+[vardbs.grch38.strucvar.clinvar]
 path = ""
