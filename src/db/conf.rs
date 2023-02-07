@@ -75,7 +75,7 @@ pub struct Top {
     /// Genome features annotation.
     pub features: EnumMap<GenomeRelease, FeatureDbs>,
     /// Configuration of structural variant databases for each genome build.
-    pub var_dbs: EnumMap<GenomeRelease, VarDbs>,
+    pub vardbs: EnumMap<GenomeRelease, VarDbs>,
 }
 
 /// Configuration of genomic features.
@@ -142,18 +142,18 @@ pub struct StrucVarDbs {
     pub g1k: Option<DbDef>,
 
     /// Relative pato to the file with the in-house variants with checksum.
-    pub inhouse: DbDef,
+    pub inhouse: Option<DbDef>,
 }
 
-fn default_slack_bnd() -> u32 {
+pub fn default_slack_bnd() -> u32 {
     50
 }
 
-fn default_slack_ins() -> u32 {
+pub fn default_slack_ins() -> u32 {
     50
 }
 
-fn default_min_overlap() -> f32 {
+pub fn default_min_overlap() -> f32 {
     0.8
 }
 

@@ -1,6 +1,6 @@
 //! Code supporting the `db build` sub command.
 
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 use clap::{Parser, ValueEnum};
 use enum_map::{enum_map, EnumMap};
@@ -10,10 +10,12 @@ use tracing::{debug, info, trace};
 
 use crate::{
     common::{md5sum, read_md5_file, sha256sum},
-    db::conf::{GenomeRelease, Top},
+    db::conf::{GeneXlink, GenomeRelease, Top},
 };
 
-use super::conf::{Database, DbDef, TadSet};
+use super::conf::{
+    default_min_overlap, default_slack_bnd, default_slack_ins, Database, DbDef, StrucVarDbs, TadSet,
+};
 
 /// Copy one database definition file set.
 fn copy_db_def(
@@ -103,6 +105,70 @@ fn copy_tads(args: &Args) -> Result<EnumMap<TadSet, DbDef>, anyhow::Error> {
     })
 }
 
+/// Copy over the ACMG secondary findings list.
+fn copy_acmg(args: &Args) -> Result<DbDef, anyhow::Error> {
+    let path_out = args.path_worker_db.join("genes").join("acmg");
+    let base_path = args.path_db_downloader.join("genes").join("acmg");
+
+    copy_db_def(&path_out, &base_path, "acmg", ".tsv")
+}
+
+/// Copy over the gnomAD gene constraints file.
+fn copy_gnomad_constraints(args: &Args) -> Result<DbDef, anyhow::Error> {
+    let path_out = args.path_worker_db.join("genes").join("gnomad_constraints");
+    let base_path = args
+        .path_db_downloader
+        .join("genes")
+        .join("gnomad_constraints");
+
+    copy_db_def(&path_out, &base_path, "gnomad_constraints", ".tsv")
+}
+/// Copy over the mim2gene mapping file.
+fn copy_mim2gene(args: &Args) -> Result<DbDef, anyhow::Error> {
+    let path_out = args.path_worker_db.join("genes").join("mim2gene");
+    let base_path = args.path_db_downloader.join("genes").join("mim2gene");
+
+    copy_db_def(&path_out, &base_path, "mim2gene", ".tsv")
+}
+/// Copy over the xlink mapping files.
+fn copy_xlink(args: &Args) -> Result<EnumMap<GeneXlink, DbDef>, anyhow::Error> {
+    let path_out = args.path_worker_db.join("genes").join("xlink");
+    let base_path = args.path_db_downloader.join("genes").join("xlink");
+
+    Ok(enum_map! {
+        GeneXlink::Hgnc => copy_db_def(&path_out, &base_path, "hgnc", ".tsv")?,
+        GeneXlink::Ensembl => copy_db_def(&path_out, &base_path, "ensembl", ".tsv")?,
+    })
+}
+
+/// Copy over the strucvar files.
+fn copy_strucvar(args: &Args) -> Result<StrucVarDbs, anyhow::Error> {
+    let path_out = args
+        .path_worker_db
+        .join("vardbs")
+        .join(args.genome_release.to_string())
+        .join("strucvar");
+    let base_path = args
+        .path_db_downloader
+        .join("vardbs")
+        .join(args.genome_release.to_string())
+        .join("strucvar");
+
+    Ok(StrucVarDbs {
+        slack_bnd: default_slack_bnd(),
+        slack_ins: default_slack_ins(),
+        min_overlap: default_min_overlap(),
+
+        gnomad_sv: copy_db_def(&path_out, &base_path, "gnomad_sv", ".bed.gz")?,
+        dbvar: copy_db_def(&path_out, &base_path, "dbvar", ".bed.gz")?,
+        dgv: copy_db_def(&path_out, &base_path, "dgv", ".bed.gz")?,
+        dgv_gs: copy_db_def(&path_out, &base_path, "dgv_gs", ".bed.gz")?,
+        exac: Some(copy_db_def(&path_out, &base_path, "exac", ".bed.gz")?),
+        g1k: Some(copy_db_def(&path_out, &base_path, "g1k", ".bed.gz")?),
+        inhouse: None,
+    })
+}
+
 /// Local genome release for command line arguments.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, ValueEnum, Display)]
 #[strum(serialize_all = "lowercase")]
@@ -151,10 +217,19 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     conf.features[genome_release].tads = copy_tads(args)?;
 
     info!("Copying genes/acmg");
+    conf.genes.acmg = copy_acmg(args)?;
+
     info!("Copying genes/gnomad_constraints");
+    conf.genes.gnomad_constraints = copy_gnomad_constraints(args)?;
+
     info!("Copying genes/mim2gene");
+    conf.genes.mim2gene = copy_mim2gene(args)?;
+
     info!("Copying genes/xlink");
+    conf.genes.xlink = copy_xlink(args)?;
+
     info!("Copying vardbs/{:?}/strucvars", genome_release);
+    conf.vardbs[genome_release].strucvar = copy_strucvar(args)?;
 
     info!(
         "Converting features/{:?}/gene_regions to binary",

@@ -41,46 +41,40 @@ path = ""
 [features.grch38.tads.imr90]
 path = ""
 
-[var_dbs.grch37.seqvar]
+[vardbs.grch37.seqvar]
 
-[var_dbs.grch37.strucvar]
+[vardbs.grch37.strucvar]
 slack_bnd = 0
 slack_ins = 0
 min_overlap = 0.0
 
-[var_dbs.grch37.strucvar.gnomad_sv]
+[vardbs.grch37.strucvar.gnomad_sv]
 path = ""
 
-[var_dbs.grch37.strucvar.dbvar]
+[vardbs.grch37.strucvar.dbvar]
 path = ""
 
-[var_dbs.grch37.strucvar.dgv]
+[vardbs.grch37.strucvar.dgv]
 path = ""
 
-[var_dbs.grch37.strucvar.dgv_gs]
+[vardbs.grch37.strucvar.dgv_gs]
 path = ""
 
-[var_dbs.grch37.strucvar.inhouse]
-path = ""
+[vardbs.grch38.seqvar]
 
-[var_dbs.grch38.seqvar]
-
-[var_dbs.grch38.strucvar]
+[vardbs.grch38.strucvar]
 slack_bnd = 0
 slack_ins = 0
 min_overlap = 0.0
 
-[var_dbs.grch38.strucvar.gnomad_sv]
+[vardbs.grch38.strucvar.gnomad_sv]
 path = ""
 
-[var_dbs.grch38.strucvar.dbvar]
+[vardbs.grch38.strucvar.dbvar]
 path = ""
 
-[var_dbs.grch38.strucvar.dgv]
+[vardbs.grch38.strucvar.dgv]
 path = ""
 
-[var_dbs.grch38.strucvar.dgv_gs]
-path = ""
-
-[var_dbs.grch38.strucvar.inhouse]
+[vardbs.grch38.strucvar.dgv_gs]
 path = ""

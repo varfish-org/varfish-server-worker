@@ -153,7 +153,8 @@ pub fn read_md5_file<P>(path: P) -> Result<String, anyhow::Error>
 where
     P: AsRef<Path> + std::fmt::Debug,
 {
-    let fcontents = std::fs::read_to_string(&path)?;
+    let fcontents = std::fs::read_to_string(&path)
+        .map_err(|e| anyhow::anyhow!("Could not open .md5 file {:?}: {}", &path, e))?;
     let md5_str = fcontents
         .split_whitespace()
         .into_iter()
