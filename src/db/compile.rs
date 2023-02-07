@@ -10,7 +10,10 @@ use tracing::{debug, info, trace};
 
 use crate::{
     common::{md5sum, read_md5_file, sha256sum},
-    db::conf::{GeneXlink, GenomeRelease, Top},
+    db::{
+        conf::{GeneXlink, GenomeRelease, Top},
+        to_bin,
+    },
 };
 
 use super::conf::{
@@ -60,7 +63,7 @@ fn copy_db_def(
     }
 
     Ok(DbDef {
-        path: format!("{file_path:?}"),
+        path: file_path.into_os_string().into_string().expect("Bad path"),
         md5: Some(chk_md5),
         sha256: Some(chk_sha256),
         ..Default::default()
@@ -84,6 +87,28 @@ fn copy_gene_regions(args: &Args) -> Result<EnumMap<Database, DbDef>, anyhow::Er
         Database::Ensembl => copy_db_def(&path_out, &base_path, "ensembl", ".bed.gz")?,
         Database::RefSeq => copy_db_def(&path_out, &base_path, "refseq", ".bed.gz")?,
     })
+}
+
+/// Convert gene regions to binary.
+fn convert_gene_regions(args: &Args) -> Result<(), anyhow::Error> {
+    debug!("Converting gene regions");
+
+    let base_path = args
+        .path_worker_db
+        .join("features")
+        .join(args.genome_release.to_string())
+        .join("gene_regions");
+
+    to_bin::gene_region::convert_to_bin(
+        base_path.join("ensembl.bed.gz"),
+        base_path.join("ensembl.bin"),
+    )?;
+    to_bin::gene_region::convert_to_bin(
+        base_path.join("refseq.bed.gz"),
+        base_path.join("refseq.bin"),
+    )?;
+
+    Ok(())
 }
 
 /// Copy over the tads.
@@ -123,6 +148,7 @@ fn copy_gnomad_constraints(args: &Args) -> Result<DbDef, anyhow::Error> {
 
     copy_db_def(&path_out, &base_path, "gnomad_constraints", ".tsv")
 }
+
 /// Copy over the mim2gene mapping file.
 fn copy_mim2gene(args: &Args) -> Result<DbDef, anyhow::Error> {
     let path_out = args.path_worker_db.join("genes").join("mim2gene");
@@ -130,6 +156,7 @@ fn copy_mim2gene(args: &Args) -> Result<DbDef, anyhow::Error> {
 
     copy_db_def(&path_out, &base_path, "mim2gene", ".tsv")
 }
+
 /// Copy over the xlink mapping files.
 fn copy_xlink(args: &Args) -> Result<EnumMap<GeneXlink, DbDef>, anyhow::Error> {
     let path_out = args.path_worker_db.join("genes").join("xlink");
@@ -139,6 +166,18 @@ fn copy_xlink(args: &Args) -> Result<EnumMap<GeneXlink, DbDef>, anyhow::Error> {
         GeneXlink::Hgnc => copy_db_def(&path_out, &base_path, "hgnc", ".tsv")?,
         GeneXlink::Ensembl => copy_db_def(&path_out, &base_path, "ensembl", ".tsv")?,
     })
+}
+
+/// Convert gene ID xlink to binary.
+fn convert_xlink(args: &Args) -> Result<(), anyhow::Error> {
+    debug!("Converting xlink");
+
+    let base_path = args.path_worker_db.join("genes").join("xlink");
+
+    to_bin::xlink::convert_to_bin(base_path.join("ensembl.tsv"), base_path.join("ensembl.bin"))?;
+    to_bin::xlink::convert_to_bin(base_path.join("hgnc.tsv"), base_path.join("refseq.bin"))?;
+
+    Ok(())
 }
 
 /// Copy over the strucvar files.
@@ -165,8 +204,58 @@ fn copy_strucvar(args: &Args) -> Result<StrucVarDbs, anyhow::Error> {
         dgv_gs: copy_db_def(&path_out, &base_path, "dgv_gs", ".bed.gz")?,
         exac: Some(copy_db_def(&path_out, &base_path, "exac", ".bed.gz")?),
         g1k: Some(copy_db_def(&path_out, &base_path, "g1k", ".bed.gz")?),
+
         inhouse: None,
+
+        patho_mms: copy_db_def(&path_out, &base_path, "patho_mms", ".bed")?,
+        clinvar: copy_db_def(&path_out, &base_path, "clinvar", ".bed.gz")?,
     })
+}
+
+/// Convert structural variants database.
+fn convert_strucvar(args: &Args) -> Result<(), anyhow::Error> {
+    use super::to_bin::vardbs::InputFileType;
+
+    debug!("Converting strucvar");
+
+    let base_path = args
+        .path_worker_db
+        .join("vardbs")
+        .join(args.genome_release.to_string())
+        .join("strucvar");
+
+    to_bin::vardbs::convert_to_bin(
+        base_path.join("gnomad_sv.bed.gz"),
+        base_path.join("gnomad_sv.bin"),
+        InputFileType::Gnomad,
+    )?;
+    to_bin::vardbs::convert_to_bin(
+        base_path.join("dbvar.bed.gz"),
+        base_path.join("dbvar.bin"),
+        InputFileType::Dbvar,
+    )?;
+    to_bin::vardbs::convert_to_bin(
+        base_path.join("dgv.bed.gz"),
+        base_path.join("dgv.bin"),
+        InputFileType::Dgv,
+    )?;
+    to_bin::vardbs::convert_to_bin(
+        base_path.join("dgv_gs.bed.gz"),
+        base_path.join("dgv_gs.bin"),
+        InputFileType::DgvGs,
+    )?;
+    to_bin::vardbs::convert_to_bin(
+        base_path.join("exac.bed.gz"),
+        base_path.join("exac.bin"),
+        InputFileType::Exac,
+    )?;
+    to_bin::vardbs::convert_to_bin(
+        base_path.join("g1k.bed.gz"),
+        base_path.join("g1k.bin"),
+        InputFileType::G1k,
+    )?;
+
+    Ok(())
 }
 
 /// Local genome release for command line arguments.
@@ -228,22 +317,20 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("Copying genes/xlink");
     conf.genes.xlink = copy_xlink(args)?;
 
-    info!("Copying vardbs/{:?}/strucvars", genome_release);
+    info!("Copying vardbs/{:?}/strucvar", genome_release);
     conf.vardbs[genome_release].strucvar = copy_strucvar(args)?;
 
     info!(
         "Converting features/{:?}/gene_regions to binary",
         genome_release
     );
+    convert_gene_regions(args)?;
+
     info!("Converting vardbs/genes/xlink to binary");
-    info!(
-        "Converting vardbs/{:?}/strucvars/inhouse to binary",
-        genome_release
-    );
-    info!(
-        "Converting vardbs/{:?}/strucvars/clinvar to binary",
-        genome_release
-    );
+    convert_xlink(args)?;
+
+    info!("Converting vardbs/{:?}/strucvar to binary", genome_release);
+    convert_strucvar(args)?;
 
     info!(
         "Writing out configuration file to {:?}",
@@ -260,7 +347,7 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 #[cfg(test)]
 mod tests {
     use super::{run, Args};
-    use crate::{common::Args as CommonArgs, db::build::ArgGenomeRelease};
+    use crate::{common::Args as CommonArgs, db::compile::ArgGenomeRelease};
     use clap_verbosity_flag::Verbosity;
     use temp_testdir::TempDir;
 

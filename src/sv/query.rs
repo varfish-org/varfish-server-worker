@@ -27,7 +27,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz, trace_rss_now},
+    common::{build_chrom_map, open_read_maybe_gz, trace_rss_now},
     sv::{
         conf::{sanity_check_db, DbConf},
         query::{
@@ -233,7 +233,7 @@ fn run_query(
     let mut csv_reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&args.path_input_svs)?);
+        .from_reader(open_read_maybe_gz(&args.path_input_svs)?);
     let mut csv_writer = csv::WriterBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')

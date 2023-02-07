@@ -9,7 +9,7 @@ use clap::{command, Parser, ValueEnum};
 use thousands::Separable;
 use tracing::{debug, info};
 
-use crate::common::{build_chrom_map, open_maybe_gz, trace_rss_now};
+use crate::common::{build_chrom_map, open_read_maybe_gz, trace_rss_now};
 use crate::sv::bg_db_to_bin::records::{
     DbVarRecord, DgvGsRecord, DgvRecord, ExacRecord, G1kRecord, GnomadRecord,
 };
@@ -157,7 +157,7 @@ mod records {
                 chromosome: self.chromosome,
                 chromosome2: self.chromosome2,
                 sv_type: self.sv_type,
-                begin: self.start.saturating_sub(1),
+                begin: self.begin.saturating_sub(1),
                 end: self.end,
                 count: self.carriers,
             }))
@@ -392,7 +392,7 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&args.path_input_tsv)?);
+        .from_reader(open_read_maybe_gz(&args.path_input_tsv)?);
     let before_parsing = Instant::now();
 
     let output_records = match args.input_type {

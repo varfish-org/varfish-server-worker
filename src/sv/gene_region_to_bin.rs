@@ -7,7 +7,7 @@ use thousands::Separable;
 use tracing::{debug, info};
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz, trace_rss_now},
+    common::{build_chrom_map, numeric_gene_id, open_read_maybe_gz, trace_rss_now},
     world_flatbuffers::var_fish_server_worker::{
         GeneRegionDatabase, GeneRegionDatabaseArgs, GeneRegionRecord,
     },
@@ -45,24 +45,6 @@ mod input {
     }
 }
 
-/// Helper to convert ENSEMBL and RefSeq gene ID to u32.
-pub fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
-    let clean_id = if raw_id.starts_with("ENSG") {
-        // Strip "ENSG" prefix and as many zeroes as follow
-        raw_id
-            .chars()
-            .skip("ENSG".len())
-            .skip_while(|c| *c == '0')
-            .collect()
-    } else {
-        raw_id.to_owned()
-    };
-
-    clean_id
-        .parse::<u32>()
-        .map_err(|e| anyhow::anyhow!("could not parse gene id {:?}: {}", &clean_id, &e))
-}
-
 /// Perform conversion to flatbuffers `.bin` file.
 pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
     let chrom_map = build_chrom_map();
@@ -70,7 +52,7 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&args.path_input_tsv)?);
+        .from_reader(open_read_maybe_gz(&args.path_input_tsv)?);
     let before_parsing = Instant::now();
 
     let mut output_records = Vec::new();

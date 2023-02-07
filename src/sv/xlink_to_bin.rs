@@ -7,8 +7,7 @@ use thousands::Separable;
 use tracing::{debug, info};
 
 use crate::{
-    common::{open_maybe_gz, trace_rss_now},
-    sv::gene_region_to_bin::numeric_gene_id,
+    common::{numeric_gene_id, open_read_maybe_gz, trace_rss_now},
     world_flatbuffers::var_fish_server_worker::{
         XlinkDatabase, XlinkDatabaseArgs, XlinkRecord as FlatXlinkRecord,
     },
@@ -51,7 +50,7 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&args.path_input_tsv)?);
+        .from_reader(open_read_maybe_gz(&args.path_input_tsv)?);
     for record in reader.deserialize() {
         let record: input::XlinkRecord = record?;
         output_records.push(FlatXlinkRecord::new(

@@ -8,7 +8,7 @@ use serde::Deserialize;
 use tracing::{debug, info};
 
 use crate::{
-    common::{open_maybe_gz, CHROMS},
+    common::{open_read_maybe_gz, CHROMS},
     sv::conf::GenesConf,
     world_flatbuffers::var_fish_server_worker::{GeneRegionDatabase, XlinkDatabase},
 };
@@ -205,7 +205,7 @@ fn load_acmg_db(path: &Path) -> Result<AcmgDb, anyhow::Error> {
 
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+        .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;
     for record in reader.deserialize() {
@@ -258,7 +258,7 @@ fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
 
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+        .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;
     for record in reader.deserialize() {

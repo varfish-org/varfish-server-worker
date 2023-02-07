@@ -58,7 +58,8 @@ struct Db {
 /// Enum supporting the parsing of "db *" sub commands.
 #[derive(Debug, Subcommand)]
 enum DbCommands {
-    Build(db::build::Args),
+    Compile(db::compile::Args),
+    MkInhouse(db::inhouse::Args),
 }
 
 /// Parsing of "sv *" sub commands.
@@ -105,8 +106,11 @@ fn main() -> Result<(), anyhow::Error> {
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
             Commands::Db(db) => match &db.command {
-                DbCommands::Build(args) => {
-                    db::build::run(&cli.common, args)?;
+                DbCommands::Compile(args) => {
+                    db::compile::run(&cli.common, args)?;
+                }
+                DbCommands::MkInhouse(args) => {
+                    db::inhouse::run(&cli.common, args)?;
                 }
             },
             Commands::Sv(sv) => match &sv.command {

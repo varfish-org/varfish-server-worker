@@ -7,7 +7,7 @@ use serde::Serialize;
 use tracing::{debug, info, warn};
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz, CHROMS},
+    common::{build_chrom_map, open_read_maybe_gz, CHROMS},
     sv::conf::KnownPathogenicSvsConf,
 };
 
@@ -107,7 +107,7 @@ fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+        .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
     let mut total_count = 0;
     for record in reader.deserialize() {
         let record: input::Record = record?;

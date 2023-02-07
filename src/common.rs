@@ -3,7 +3,7 @@
 use std::{
     collections::HashMap,
     fs::File,
-    io::{BufReader, Read},
+    io::{BufRead, BufReader, BufWriter, Read, Write},
     ops::Range,
     path::Path,
 };
@@ -12,10 +12,10 @@ use byte_unit::Byte;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
 
 use clap::Parser;
-use flate2::bufread::MultiGzDecoder;
+use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
 use md5::{Digest, Md5};
 use sha2::Sha256;
-use tracing::debug;
+use tracing::{debug, trace};
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
@@ -73,13 +73,36 @@ pub fn build_chrom_map() -> HashMap<String, usize> {
 }
 
 /// Transparently open a file with gzip decoder.
-pub fn open_maybe_gz(path: &str) -> Result<Box<dyn Read>, anyhow::Error> {
-    if path.ends_with(".gz") {
+pub fn open_read_maybe_gz<P>(path: P) -> Result<Box<dyn Read>, anyhow::Error>
+where
+    P: AsRef<Path>,
+{
+    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
+        trace!("Opening {:?} as gzip for reading", path.as_ref());
         let file = File::open(path)?;
         let bufreader = BufReader::new(file);
         let decoder = MultiGzDecoder::new(bufreader);
         Ok(Box::new(decoder))
     } else {
+        trace!("Opening {:?} as plain text for reading", path.as_ref());
+        let file = File::open(path)?;
+        Ok(Box::new(file))
+    }
+}
+
+/// Transparently opena  file with gzip encoder.
+pub fn open_write_maybe_gz<P>(path: P) -> Result<Box<dyn Write>, anyhow::Error>
+where
+    P: AsRef<Path>,
+{
+    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
+        trace!("Opening {:?} as gzip for writing", path.as_ref());
+        let file = File::create(path)?;
+        let bufwriter = BufWriter::new(file);
+        let encoder = GzEncoder::new(bufwriter, Compression::default());
+        Ok(Box::new(encoder))
+    } else {
+        trace!("Opening {:?} as plain text for writing", path.as_ref());
         let file = File::open(path)?;
         Ok(Box::new(file))
     }
@@ -163,11 +186,41 @@ where
     Ok(md5_str.to_owned())
 }
 
+/// Helper to convert ENSEMBL and RefSeq gene ID to u32.
+pub fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
+    let clean_id = if raw_id.starts_with("ENSG") {
+        // Strip "ENSG" prefix and as many zeroes as follow
+        raw_id
+            .chars()
+            .skip("ENSG".len())
+            .skip_while(|c| *c == '0')
+            .collect()
+    } else {
+        raw_id.to_owned()
+    };
+
+    clean_id
+        .parse::<u32>()
+        .map_err(|e| anyhow::anyhow!("could not parse gene id {:?}: {}", &clean_id, &e))
+}
+
+// The output is wrapped in a Result to allow matching on errors
+// Returns an Iterator to the Reader of the lines of the file.
+pub fn read_lines<P: AsRef<Path>>(
+    filename: P,
+) -> std::io::Result<std::io::Lines<std::io::BufReader<File>>>
+where
+    P: AsRef<Path>,
+{
+    let file = File::open(filename)?;
+    Ok(std::io::BufReader::new(file).lines())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::common::{md5sum, sha256sum};
 
-    use super::read_md5_file;
+    use super::{numeric_gene_id, read_md5_file};
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -195,6 +248,15 @@ mod tests {
         let actual = md5sum("tests/common/payload.txt")?;
 
         assert_eq!(expected, actual);
+
+        Ok(())
+    }
+
+    #[test]
+    fn numeric_gene_id_simple() -> Result<(), anyhow::Error> {
+        assert_eq!(1, numeric_gene_id("ENSG0000000001")?);
+        assert_eq!(1, numeric_gene_id("ENSG1")?);
+        assert_eq!(1, numeric_gene_id("1")?);
 
         Ok(())
     }

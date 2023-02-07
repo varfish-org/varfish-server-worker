@@ -1,54 +1,35 @@
-//! Code for building the inhouse SV db.
+//! Code supporting the `db mk-inhouse` sub command.
 
 use std::{
     collections::HashMap,
     fs::File,
-    io::{self, BufRead, BufReader, BufWriter, Write},
-    path::Path,
+    io::{BufReader, BufWriter, Write},
+    path::{Path, PathBuf},
     time::Instant,
 };
 
 use bio::data_structures::interval_tree::IntervalTree;
-use clap::Parser;
-use serde::{Deserialize, Serialize};
+use clap::{command, Parser};
 use serde_json::to_writer;
 use serde_jsonlines::JsonLinesReader;
 use strum::IntoEnumIterator;
 use thousands::Separable;
 use tracing::{debug, info};
 
-use crate::common::{build_chrom_map, open_read_maybe_gz, trace_rss_now, CHROMS};
+use crate::{
+    common::{
+        build_chrom_map, open_read_maybe_gz, open_write_maybe_gz, read_lines, trace_rss_now, CHROMS,
+    },
+    sv::query::schema::SvType,
+};
 
-use super::query::schema::SvType;
-
-/// Command line arguments for `sv build-inhouse-db` sub command.
-#[derive(Parser, Debug)]
-#[command(author, version, about = "Build inhouse SV database TSV", long_about = None)]
-pub struct Args {
-    /// Output TSV file to write with resulting SV background db.
-    #[arg(long)]
-    pub path_output_tsv: String,
-    /// Input files to cluster, prefix with `@` to file with line-wise paths.
-    #[arg(required = true)]
-    pub path_input_tsvs: Vec<String>,
-    /// Minimal reciprocal overlap to use (slightly more strict that the normal query value of 0.75).
-    #[arg(long, default_value_t = 0.8)]
-    pub min_overlap: f32,
-    /// Padding to use for BNDs
-    #[arg(long, default_value_t = 50)]
-    pub slack_bnd: u32,
-    /// Padding to use for INS
-    #[arg(long, default_value_t = 50)]
-    pub slack_ins: u32,
-}
+use super::compile::ArgGenomeRelease;
 
 /// Code for reading the input file.
 pub mod input {
-    use serde::{de::IntoDeserializer, Deserializer};
+    use serde::{de::IntoDeserializer, Deserialize, Deserializer, Serialize};
 
     use crate::sv::query::schema::{StrandOrientation, SvType};
-
-    use super::*;
 
     /// Representation of the fields from the `StructuralVariant` table from VarFish Server
     /// that we need for building the background records.
@@ -114,15 +95,15 @@ pub mod input {
 
 /// Code for writing the output file.
 pub mod output {
+    use serde::{Deserialize, Serialize};
+
     use crate::sv::query::schema::{StrandOrientation, SvType};
 
-    use super::{input::Record as InputRecord, *};
+    use super::input::Record as InputRecord;
 
     /// Representation of the fields for the in-house background database.
     #[derive(Debug, Deserialize, Serialize, Clone)]
     pub struct Record {
-        /// genome build
-        pub release: String,
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
@@ -174,7 +155,6 @@ pub mod output {
 
         pub fn from_db_record(record: InputRecord) -> Self {
             Record {
-                release: record.release,
                 chromosome: record.chromosome,
                 begin: record.start,
                 chromosome2: record.chromosome2,
@@ -188,16 +168,6 @@ pub mod output {
             }
         }
     }
-}
-
-// The output is wrapped in a Result to allow matching on errors
-// Returns an Iterator to the Reader of the lines of the file.
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
 }
 
 /// Create one file with records for each chromosome and SV type.
@@ -222,8 +192,10 @@ fn create_tmp_files(
 fn split_input_by_chrom_and_sv_type(
     tmp_dir: &tempdir::TempDir,
     input_tsv_paths: Vec<String>,
+    genome_release: ArgGenomeRelease,
 ) -> Result<(), anyhow::Error> {
     info!("parse all input files and split them up");
+    let genome_release = genome_release.to_string().to_lowercase();
     let mut tmp_files = create_tmp_files(tmp_dir)?;
     let chrom_map = build_chrom_map();
     let before_parsing = Instant::now();
@@ -239,6 +211,14 @@ fn split_input_by_chrom_and_sv_type(
         let mut count_records = 0;
         for result in rdr.deserialize() {
             let record: input::Record = result?;
+
+            if record.release.to_lowercase() != genome_release {
+                return Err(anyhow::anyhow!(
+                    "Unexpected release {}, expected {}",
+                    record.release.to_lowercase(),
+                    &genome_release
+                ));
+            }
 
             let chrom_no = *chrom_map
                 .get(&record.chromosome)
@@ -281,7 +261,7 @@ fn split_input_by_chrom_and_sv_type(
 fn merge_to_out(
     args: &Args,
     reader: &mut BufReader<File>,
-    writer: &mut csv::Writer<File>,
+    writer: &mut csv::Writer<impl Write>,
 ) -> Result<usize, anyhow::Error> {
     let mut clusters: Vec<Vec<usize>> = vec![];
     let mut tree: IntervalTree<i32, usize> = IntervalTree::new();
@@ -360,12 +340,30 @@ fn merge_to_out(
 }
 
 /// Perform (chrom, sv_type) wise merging of records in temporary files.
-fn merge_split_files(tmp_dir: &tempdir::TempDir, args: &Args) -> Result<(), anyhow::Error> {
-    info!("merge all files to {}...", &args.path_output_tsv);
+fn merge_split_files(
+    tmp_dir: &tempdir::TempDir,
+    args: &Args,
+    path_output_tsv: &Path,
+) -> Result<(), anyhow::Error> {
+    info!("merge all files to {:?}...", &path_output_tsv);
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
-        .has_headers(true)
-        .from_path(&args.path_output_tsv)?;
+        .has_headers(false)
+        .from_writer(open_write_maybe_gz(path_output_tsv)?);
+
+    // Write header as comment.
+    writer.write_record(&[
+        "#chromosome",
+        "begin",
+        "chromosome2",
+        "end",
+        "pe_orientation",
+        "sv_type",
+        "carriers",
+        "carriers_het",
+        "carriers_hom",
+        "carriers_hemi",
+    ])?;
 
     let mut out_records = 0;
     for chrom in CHROMS {
@@ -384,11 +382,35 @@ fn merge_split_files(tmp_dir: &tempdir::TempDir, args: &Args) -> Result<(), anyh
     Ok(())
 }
 
-/// Main entry point for the `sv build-bgdb` command.
+/// Command line arguments for `db build` sub command.
+#[derive(Parser, Debug)]
+#[command(about = "Build inhouse database", long_about = None)]
+pub struct Args {
+    /// Genome build to use in the build.
+    #[arg(long, value_enum, default_value_t = ArgGenomeRelease::Grch37)]
+    pub genome_release: ArgGenomeRelease,
+    /// Path to `varfish-server-worker` directory (output).
+    #[arg(long, required = true)]
+    pub path_worker_db: PathBuf,
+    /// Input files to cluster, prefix with `@` to file with line-wise paths.
+    #[arg(required = true)]
+    pub path_input_tsvs: Vec<String>,
+    /// Minimal reciprocal overlap to use (slightly more strict that the normal query value of 0.75).
+    #[arg(long, default_value_t = 0.8)]
+    pub min_overlap: f32,
+    /// Padding to use for BNDs
+    #[arg(long, default_value_t = 50)]
+    pub slack_bnd: u32,
+    /// Padding to use for INS
+    #[arg(long, default_value_t = 50)]
+    pub slack_ins: u32,
+}
+
+/// Main entry point for the `sv bg-db-to-bin` command.
 pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
-    info!("Starting sv build-inhouse-db");
-    info!("common_args = {:?}", &common_args);
-    info!("args = {:?}", &args);
+    info!("Starting `db mk-inhouse`");
+    info!("  common_args = {:?}", &common_args);
+    info!("  args = {:?}", &args);
 
     // Create final list of input paths (expand `@file.tsv`)
     let mut input_tsv_paths = Vec::new();
@@ -413,13 +435,20 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     // Read all input files and write all records by chromosome and SV type
-    let tmp_dir = tempdir::TempDir::new("tmp.vsw_sv_bgdb")?;
+    let tmp_dir = tempdir::TempDir::new("vfw")?;
     debug!("using tmpdir={:?}", &tmp_dir);
-    split_input_by_chrom_and_sv_type(&tmp_dir, input_tsv_paths)?;
+    split_input_by_chrom_and_sv_type(&tmp_dir, input_tsv_paths, args.genome_release)?;
+
+    let path_out_tsv = args
+        .path_worker_db
+        .join("vardbs")
+        .join(args.genome_release.to_string())
+        .join("strucvar")
+        .join("inhouse.tsv.gz");
 
     // Read the output of the previous step by chromosome and SV type, perform overlapping
     // and merge such "compressed" data set to the final output file.
-    merge_split_files(&tmp_dir, args)?;
+    merge_split_files(&tmp_dir, args, &path_out_tsv)?;
 
     Ok(())
 }

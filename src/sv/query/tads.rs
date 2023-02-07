@@ -6,7 +6,7 @@ use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use tracing::{debug, info};
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz, CHROMS},
+    common::{build_chrom_map, open_read_maybe_gz, CHROMS},
     sv::conf::TadsConf,
 };
 
@@ -217,7 +217,7 @@ fn load_tad_sets(path: &Path, boundary_max_dist: u32) -> Result<TadSet, anyhow::
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+        .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
     let mut total_count = 0;
     for (i, record) in reader.deserialize().enumerate() {
         let record: input::Record = record?;

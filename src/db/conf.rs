@@ -141,8 +141,13 @@ pub struct StrucVarDbs {
     /// Relative path to the file with Thousan Genomes database with checksum.
     pub g1k: Option<DbDef>,
 
-    /// Relative pato to the file with the in-house variants with checksum.
+    /// Relative path to the file with the in-house variants with checksum.
     pub inhouse: Option<DbDef>,
+
+    /// Relative path to the file with the known pathogenic variants.
+    pub patho_mms: DbDef,
+    /// Relative path to the ClinVar SV file.
+    pub clinvar: DbDef,
 }
 
 pub fn default_slack_bnd() -> u32 {

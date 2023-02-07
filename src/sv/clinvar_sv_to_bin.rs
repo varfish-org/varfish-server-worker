@@ -7,7 +7,7 @@ use thousands::Separable;
 use tracing::{debug, info};
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz, trace_rss_now},
+    common::{build_chrom_map, open_read_maybe_gz, trace_rss_now},
     world_flatbuffers::var_fish_server_worker::{
         ClinvarSvDatabase, ClinvarSvDatabaseArgs, ClinvarSvRecord,
     },
@@ -152,7 +152,7 @@ pub fn convert_to_bin(args: &Args) -> Result<(), anyhow::Error> {
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(&args.path_input_tsv)?);
+        .from_reader(open_read_maybe_gz(&args.path_input_tsv)?);
     let before_parsing = Instant::now();
 
     let mut output_records = Vec::new();
