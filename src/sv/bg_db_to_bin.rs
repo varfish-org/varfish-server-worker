@@ -454,7 +454,7 @@ mod tests {
     use crate::{common::Args as CommonArgs, sv::bg_db_to_bin::InputFileType};
 
     #[test]
-    fn test_run_smoke() -> Result<(), anyhow::Error> {
+    fn run_smoke() -> Result<(), anyhow::Error> {
         let tmp_dir = TempDir::default();
         let common_args = CommonArgs {
             verbose: Verbosity::new(0, 0),

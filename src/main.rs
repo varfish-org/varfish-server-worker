@@ -1,6 +1,7 @@
 //! VarFish Server Worker main executable
 
 pub mod common;
+pub mod db;
 pub mod sv;
 
 #[allow(
@@ -39,11 +40,28 @@ struct Cli {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// SV related commands
+    /// Database-related commands.
+    Db(Db),
+    /// SV related commands.
     Sv(Sv),
 }
 
-/// Parsing of top-level CLI commands.
+/// Parsing of "db *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Db {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: DbCommands,
+}
+
+/// Enum supporting the parsing of "db *" sub commands.
+#[derive(Debug, Subcommand)]
+enum DbCommands {
+    Build(db::build::Args),
+}
+
+/// Parsing of "sv *" sub commands.
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
 struct Sv {
@@ -86,6 +104,11 @@ fn main() -> Result<(), anyhow::Error> {
     let term = Term::stderr();
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
+            Commands::Db(db) => match &db.command {
+                DbCommands::Build(args) => {
+                    db::build::run(&cli.common, args)?;
+                }
+            },
             Commands::Sv(sv) => match &sv.command {
                 SvCommands::BgDbToBin(args) => {
                     sv::bg_db_to_bin::run(&cli.common, args)?;
