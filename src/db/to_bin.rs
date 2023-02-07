@@ -2,13 +2,21 @@
 
 /// Code for converting gene region from text-based to binary format.
 pub mod gene_region {
-    use std::{fs::File, io::Write, path::Path, time::Instant};
+    use std::{
+        fs::File,
+        io::Write,
+        path::{Path, PathBuf},
+        time::Instant,
+    };
 
     use thousands::Separable;
     use tracing::debug;
 
     use crate::{
-        common::{build_chrom_map, numeric_gene_id, open_read_maybe_gz, trace_rss_now},
+        common::{
+            build_chrom_map, md5sum, numeric_gene_id, open_read_maybe_gz, sha256sum, trace_rss_now,
+        },
+        db::conf::DbDef,
         world_flatbuffers::var_fish_server_worker::{
             GeneRegionDatabase, GeneRegionDatabaseArgs, GeneRegionRecord,
         },
@@ -33,7 +41,12 @@ pub mod gene_region {
     }
 
     /// Perform conversion to flatbuffers `.bin` file.
-    pub fn convert_to_bin<P, Q>(path_input_tsv: P, path_output_bin: Q) -> Result<(), anyhow::Error>
+    pub fn convert_to_bin<P, Q>(
+        path_input_tsv: P,
+        path_output_bin: Q,
+        path_worker_db: &PathBuf,
+        dbdef: &mut DbDef,
+    ) -> Result<(), anyhow::Error>
     where
         P: AsRef<Path>,
         Q: AsRef<Path>,
@@ -92,19 +105,37 @@ pub mod gene_region {
             before_writing.elapsed()
         );
 
+        // Update the DbDef.
+        dbdef.bin_path = Some(
+            path_output_bin
+                .as_ref()
+                .strip_prefix(path_worker_db)?
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+        dbdef.bin_md5 = Some(md5sum(path_output_bin.as_ref())?);
+        dbdef.bin_sha256 = Some(sha256sum(path_output_bin.as_ref())?);
+
         Ok(())
     }
 }
 
 /// Code for converting xlink from text-based to binary format.
 pub mod xlink {
-    use std::{fs::File, io::Write, path::Path, time::Instant};
+    use std::{
+        fs::File,
+        io::Write,
+        path::{Path, PathBuf},
+        time::Instant,
+    };
 
     use thousands::Separable;
     use tracing::debug;
 
     use crate::{
-        common::{numeric_gene_id, open_read_maybe_gz, trace_rss_now},
+        common::{md5sum, numeric_gene_id, open_read_maybe_gz, sha256sum, trace_rss_now},
+        db::conf::DbDef,
         world_flatbuffers::var_fish_server_worker::{
             XlinkDatabase, XlinkDatabaseArgs, XlinkRecord,
         },
@@ -123,7 +154,12 @@ pub mod xlink {
     }
 
     /// Perform conversion to flatbuffers `.bin` file.
-    pub fn convert_to_bin<P, Q>(path_input_tsv: P, path_output_bin: Q) -> Result<(), anyhow::Error>
+    pub fn convert_to_bin<P, Q>(
+        path_input_tsv: P,
+        path_output_bin: Q,
+        path_worker_db: &PathBuf,
+        dbdef: &mut DbDef,
+    ) -> Result<(), anyhow::Error>
     where
         P: AsRef<Path>,
         Q: AsRef<Path>,
@@ -182,19 +218,37 @@ pub mod xlink {
         );
         trace_rss_now();
 
+        // Update the DbDef.
+        dbdef.bin_path = Some(
+            path_output_bin
+                .as_ref()
+                .strip_prefix(path_worker_db)?
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+        dbdef.bin_md5 = Some(md5sum(path_output_bin.as_ref())?);
+        dbdef.bin_sha256 = Some(sha256sum(path_output_bin.as_ref())?);
+
         Ok(())
     }
 }
 
 /// Code for converting ClinVar database to binary.
 pub mod clinvar {
-    use std::{fs::File, io::Write, path::Path, time::Instant};
+    use std::{
+        fs::File,
+        io::Write,
+        path::{Path, PathBuf},
+        time::Instant,
+    };
 
     use thousands::Separable;
     use tracing::debug;
 
     use crate::{
-        common::{build_chrom_map, open_read_maybe_gz, trace_rss_now},
+        common::{build_chrom_map, md5sum, open_read_maybe_gz, sha256sum, trace_rss_now},
+        db::conf::DbDef,
         world_flatbuffers::var_fish_server_worker::{
             ClinvarSvDatabase, ClinvarSvDatabaseArgs, ClinvarSvRecord,
         },
@@ -320,7 +374,12 @@ pub mod clinvar {
     }
 
     /// Perform conversion to flatbuffers `.bin` file.
-    pub fn convert_to_bin<P, Q>(path_input_tsv: P, path_output_bin: Q) -> Result<(), anyhow::Error>
+    pub fn convert_to_bin<P, Q>(
+        path_input_tsv: P,
+        path_output_bin: Q,
+        path_worker_db: &PathBuf,
+        dbdef: &mut DbDef,
+    ) -> Result<(), anyhow::Error>
     where
         P: AsRef<Path>,
         Q: AsRef<Path>,
@@ -373,6 +432,18 @@ pub mod clinvar {
             before_writing.elapsed()
         );
 
+        // Update the DbDef.
+        dbdef.bin_path = Some(
+            path_output_bin
+                .as_ref()
+                .strip_prefix(path_worker_db)?
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+        dbdef.bin_md5 = Some(md5sum(path_output_bin.as_ref())?);
+        dbdef.bin_sha256 = Some(sha256sum(path_output_bin.as_ref())?);
+
         Ok(())
     }
 }
@@ -381,14 +452,15 @@ pub mod clinvar {
 pub mod vardbs {
     use std::fs::File;
     use std::io::Write;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
     use std::time::Instant;
 
     use anyhow::anyhow;
     use thousands::Separable;
     use tracing::debug;
 
-    use crate::common::{build_chrom_map, open_read_maybe_gz, trace_rss_now};
+    use crate::common::{build_chrom_map, md5sum, open_read_maybe_gz, sha256sum, trace_rss_now};
+    use crate::db::conf::DbDef;
     use crate::db::inhouse::output::Record as InhouseDbRecord;
     use crate::sv::query::schema::SvType;
     use crate::world_flatbuffers::var_fish_server_worker::{
@@ -766,7 +838,9 @@ pub mod vardbs {
     pub fn convert_to_bin<P, Q>(
         path_input_tsv: P,
         path_output_bin: Q,
+        path_worker_db: &PathBuf,
         input_type: InputFileType,
+        dbdef: &mut DbDef,
     ) -> Result<(), anyhow::Error>
     where
         P: AsRef<Path>,
@@ -814,6 +888,18 @@ pub mod vardbs {
             output_records.len().separate_with_commas(),
             before_writing.elapsed()
         );
+
+        // Update the DbDef.
+        dbdef.bin_path = Some(
+            path_output_bin
+                .as_ref()
+                .strip_prefix(path_worker_db)?
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+        dbdef.bin_md5 = Some(md5sum(path_output_bin.as_ref())?);
+        dbdef.bin_sha256 = Some(sha256sum(path_output_bin.as_ref())?);
 
         Ok(())
     }

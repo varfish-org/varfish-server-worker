@@ -455,13 +455,8 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     // and merge such "compressed" data set to the final output file.
     merge_split_files(&tmp_dir, args, &path_out_tsv)?;
 
-    // Convert in-house database to binary.
-    info!("Converting to binary...");
-    let path_out_bin = base_path.join("gnomad_sv.bin");
-    to_bin::vardbs::convert_to_bin(&path_out_tsv, &path_out_bin, InputFileType::InhouseDb)?;
-
     // Update database configuration.
-    info!("Writing database configuration...");
+    info!("Reading database configuration...");
     let genome_release = match args.genome_release {
         ArgGenomeRelease::Grch37 => GenomeRelease::Grch37,
         ArgGenomeRelease::Grch38 => GenomeRelease::Grch38,
@@ -470,22 +465,30 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let mut conf: Top = toml::from_str(&conf_toml)?;
     conf.vardbs[genome_release].strucvar.inhouse = Some(DbDef {
         path: path_out_tsv
-            .strip_prefix(&args.path_worker_db)?
+            .strip_prefix(&args.path_worker_db)
+            .unwrap()
             .to_str()
             .unwrap()
             .to_owned(),
         md5: Some(md5sum(&path_out_tsv)?),
         sha256: Some(sha256sum(&path_out_tsv)?),
-        bin_path: Some(
-            path_out_bin
-                .strip_prefix(&args.path_worker_db)?
-                .to_str()
-                .unwrap()
-                .to_owned(),
-        ),
-        bin_md5: Some(md5sum(&path_out_bin)?),
-        bin_sha256: Some(sha256sum(&path_out_bin)?),
+        ..Default::default()
     });
+
+    // Convert in-house database to binary.
+    info!("Converting to binary...");
+    let path_out_bin = base_path.join("inhouse.bin");
+    if let Some(inhouse) = &mut conf.vardbs[genome_release].strucvar.inhouse {
+        to_bin::vardbs::convert_to_bin(
+            &path_out_tsv,
+            &path_out_bin,
+            &args.path_worker_db,
+            InputFileType::InhouseDb,
+            inhouse,
+        )?;
+    }
+
+    info!("Writing database configuration...");
     std::fs::write(
         args.path_worker_db.join("conf.toml"),
         toml::to_string_pretty(&conf)?,

@@ -96,7 +96,10 @@ fn copy_gene_regions(args: &Args) -> Result<EnumMap<Database, DbDef>, anyhow::Er
 }
 
 /// Convert gene regions to binary.
-fn convert_gene_regions(args: &Args) -> Result<(), anyhow::Error> {
+fn convert_gene_regions(
+    args: &Args,
+    dbdefs: &mut EnumMap<Database, DbDef>,
+) -> Result<(), anyhow::Error> {
     debug!("Converting gene regions");
 
     let base_path = args
@@ -108,10 +111,14 @@ fn convert_gene_regions(args: &Args) -> Result<(), anyhow::Error> {
     to_bin::gene_region::convert_to_bin(
         base_path.join("ensembl.bed.gz"),
         base_path.join("ensembl.bin"),
+        &args.path_worker_db,
+        &mut dbdefs[Database::Ensembl],
     )?;
     to_bin::gene_region::convert_to_bin(
         base_path.join("refseq.bed.gz"),
         base_path.join("refseq.bin"),
+        &args.path_worker_db,
+        &mut dbdefs[Database::RefSeq],
     )?;
 
     Ok(())
@@ -187,13 +194,23 @@ fn copy_xlink(args: &Args) -> Result<EnumMap<GeneXlink, DbDef>, anyhow::Error> {
 }
 
 /// Convert gene ID xlink to binary.
-fn convert_xlink(args: &Args) -> Result<(), anyhow::Error> {
+fn convert_xlink(args: &Args, dbdefs: &mut EnumMap<GeneXlink, DbDef>) -> Result<(), anyhow::Error> {
     debug!("Converting xlink");
 
     let base_path = args.path_worker_db.join("genes").join("xlink");
 
-    to_bin::xlink::convert_to_bin(base_path.join("ensembl.tsv"), base_path.join("ensembl.bin"))?;
-    to_bin::xlink::convert_to_bin(base_path.join("hgnc.tsv"), base_path.join("refseq.bin"))?;
+    to_bin::xlink::convert_to_bin(
+        base_path.join("ensembl.tsv"),
+        base_path.join("ensembl.bin"),
+        &args.path_worker_db,
+        &mut dbdefs[GeneXlink::Ensembl],
+    )?;
+    to_bin::xlink::convert_to_bin(
+        base_path.join("hgnc.tsv"),
+        base_path.join("refseq.bin"),
+        &args.path_worker_db,
+        &mut dbdefs[GeneXlink::Hgnc],
+    )?;
 
     Ok(())
 }
@@ -279,7 +296,7 @@ fn copy_strucvar(args: &Args) -> Result<StrucVarDbs, anyhow::Error> {
 }
 
 /// Convert structural variants database.
-fn convert_strucvar(args: &Args) -> Result<(), anyhow::Error> {
+fn convert_strucvar(args: &Args, dbdefs: &mut StrucVarDbs) -> Result<(), anyhow::Error> {
     use super::to_bin::vardbs::InputFileType;
 
     debug!("Converting strucvar");
@@ -293,33 +310,49 @@ fn convert_strucvar(args: &Args) -> Result<(), anyhow::Error> {
     to_bin::vardbs::convert_to_bin(
         base_path.join("gnomad_sv.bed.gz"),
         base_path.join("gnomad_sv.bin"),
+        &args.path_worker_db,
         InputFileType::Gnomad,
+        &mut dbdefs.gnomad_sv,
     )?;
     to_bin::vardbs::convert_to_bin(
         base_path.join("dbvar.bed.gz"),
         base_path.join("dbvar.bin"),
+        &args.path_worker_db,
         InputFileType::Dbvar,
+        &mut dbdefs.dbvar,
     )?;
     to_bin::vardbs::convert_to_bin(
         base_path.join("dgv.bed.gz"),
         base_path.join("dgv.bin"),
+        &args.path_worker_db,
         InputFileType::Dgv,
+        &mut dbdefs.dgv,
     )?;
     to_bin::vardbs::convert_to_bin(
         base_path.join("dgv_gs.bed.gz"),
         base_path.join("dgv_gs.bin"),
+        &args.path_worker_db,
         InputFileType::DgvGs,
+        &mut dbdefs.dgv_gs,
     )?;
-    to_bin::vardbs::convert_to_bin(
-        base_path.join("exac.bed.gz"),
-        base_path.join("exac.bin"),
-        InputFileType::Exac,
-    )?;
-    to_bin::vardbs::convert_to_bin(
-        base_path.join("g1k.bed.gz"),
-        base_path.join("g1k.bin"),
-        InputFileType::G1k,
-    )?;
+    if let Some(exac) = &mut dbdefs.exac {
+        to_bin::vardbs::convert_to_bin(
+            base_path.join("exac.bed.gz"),
+            base_path.join("exac.bin"),
+            &args.path_worker_db,
+            InputFileType::Exac,
+            exac,
+        )?;
+    }
+    if let Some(g1k) = &mut dbdefs.g1k {
+        to_bin::vardbs::convert_to_bin(
+            base_path.join("g1k.bed.gz"),
+            base_path.join("g1k.bin"),
+            &args.path_worker_db,
+            InputFileType::G1k,
+            g1k,
+        )?;
+    }
 
     Ok(())
 }
@@ -357,12 +390,21 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         ArgGenomeRelease::Grch37 => GenomeRelease::Grch37,
         ArgGenomeRelease::Grch38 => GenomeRelease::Grch38,
     };
-    let mut conf = Top {
-        release_enabled: enum_map! {
-            GenomeRelease::Grch37 => genome_release == GenomeRelease::Grch37,
-            GenomeRelease::Grch38 => genome_release == GenomeRelease::Grch38,
-        },
-        ..Default::default()
+
+    let path_conf_toml = args.path_worker_db.join("conf.toml");
+    let mut conf = if path_conf_toml.exists() {
+        info!("Reading database configuration...");
+        let conf_toml = std::fs::read_to_string(&path_conf_toml)?;
+        toml::from_str(&conf_toml)?
+    } else {
+        info!("Creating fresh database configuration...");
+        Top {
+            release_enabled: enum_map! {
+                GenomeRelease::Grch37 => genome_release == GenomeRelease::Grch37,
+                GenomeRelease::Grch38 => genome_release == GenomeRelease::Grch38,
+            },
+            ..Default::default()
+        }
     };
 
     info!("Copying features/{:?}/gene_regions", genome_release);
@@ -390,22 +432,19 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         "Converting features/{:?}/gene_regions to binary",
         genome_release
     );
-    convert_gene_regions(args)?;
+    convert_gene_regions(args, &mut conf.features[genome_release].gene_regions)?;
 
     info!("Converting vardbs/genes/xlink to binary");
-    convert_xlink(args)?;
+    convert_xlink(args, &mut conf.genes.xlink)?;
 
     info!("Converting vardbs/{:?}/strucvar to binary", genome_release);
-    convert_strucvar(args)?;
+    convert_strucvar(args, &mut conf.vardbs[genome_release].strucvar)?;
 
     info!(
         "Writing out configuration file to {:?}",
         args.path_worker_db.join("conf.toml")
     );
-    std::fs::write(
-        args.path_worker_db.join("conf.toml"),
-        toml::to_string_pretty(&conf)?,
-    )?;
+    std::fs::write(&path_conf_toml, toml::to_string_pretty(&conf)?)?;
 
     Ok(())
 }
