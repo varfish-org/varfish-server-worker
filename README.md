@@ -2,52 +2,49 @@
 
 This repository contains the worker used by VarFish Server to execute certain background task.
 They are written in the Rust programming language to speed up the execution of certain tasks.
-At the moment, the following worker exist:
+At the moment, the following sub commands exist:
 
-- `sv bg-db-to-bin` -- convert background TSV file (from VarFish DB Downloader or `sv inhouse-db-build` to binary format as input for `sv query`)
-- `sv inhouse-db-build` -- combine multiple SV TSV files from VarFish Annotator annotated into a background TSV file for the worker
+- `db compile` -- compile files from `varfish-db-downloader` to be useable by the query sub commands
+- `db mk-inhouse` -- compile per-case structural variant into an in-house database previously created by `db compile`
 - `sv query` -- perform SV (overlap) annoation and filtration
 
 ## Overall Design
 
 For running queries, the worker tool is installed into the VarFish Server image and are run as executables.
 The VarFish Server Celery task writes out file(s) with the input for the worker.
-The worker then reads in this file, may use some static database files but also the VarFish server postgres database, and can write out out a result file or store the results in the postgres database
+The worker then reads in this file, may use some static database files but also the VarFish server postgres database, and can write out out a result file or store the results in the postgres database.
 The celery worker will then process any worker output further.
 The book keeping is done by the Celery worker that runs from the code of VarFish server.
 
-## The `sv bg-db-to-bin` Command
+Future versions may provide persistently running HTTP/REST servers that provide functionality without startup cost.
 
-Convert background database from `sv inhouse-db-build` or VarFish DB Downloader output to a binary file.
-The binary file uses `flatbuffers` for fast I/O (startup time is less than 200ms on workstation with NVME).
+## The `db compile` Command
 
-```
-$ varfish-server-worker sv bg-db-to-bin \
-    --path-input-tsv INPUT.tsv \
-    --path-output-bin OUTPUT.bin \
-    --input-type TYPE
-```
-
-## The `sv bg-db-to-bin` Command
-
-Convert a gene region file from VarFish DB Downloader to output a binary file.
-The binary file uses `flatbuffers` for fast I/O (startup time is less than 200ms on workstation with NVME).
+Convert output of `varfish-db-downloader` to a directory with databases to be used by query commands such as `sv query`.
 
 ```
-$ varfish-server-worker sv gene-region-to-bin \
-    --path-input-tsv INPUT.tsv \
-    --path-output-bin OUTPUT.bin
+$ varfish-server-worker db compile \
+    --path-db-downloader SRC/varfish-db-downloader \
+    --path-worker-db DST/varfish-server-worker-db
 ```
 
-## The `sv inhouse-db-build` Command
+## The `db mk-inhouse` Command
 
-Compute in-house database TSV file from one or more VarFish Annotator annotated SV call sets.
-You can use `@PATH.txt` for a file that has more TSV files, one path per line.
+Import multiple files created by `varfish-annotator annotate_svs` into a database previously created by `db compile`.
+You can specify the files individually.
+Paths starting with an at (`@`) character are interpreted as files with lists of paths.
+You can mix paths with `@` and without.
 
 ```
-$ varfish-server-worker sv inhouse-db-build \
-    --path-output-tsv OUT.tsv \
-    INPUT.tsv [INPUT.tsv ...]
+$ varfish-server-worker db mk-inhouse \
+    --path-worker-db WORK/varfish-server-worker-db \
+    IN/file1.gts.tsv.gz [IN/file1.gts.tsv.gz] \
+
+# OR:
+
+$ varfish-server-worker db mk-inhouse \
+    --path-worker-db WORK/varfish-server-worker-db \
+    @IN/path-list.txt [@IN/path-list2.txt]
 ```
 
 ## The `sv query` Command
