@@ -123,21 +123,20 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
-    match args_common.verbose.log_level() {
-        Some(level) => match level {
+    if let Some(level) = args_common.verbose.log_level() {
+        match level {
             log::Level::Trace | log::Level::Debug => {
                 std::env::set_var("RUST_LOG", "debug");
                 env_logger::init();
             }
             _ => (),
-        },
-        None => (),
+        }
     }
 
     info!("Loading database config...");
     let db_conf: Top = {
         let path_conf = if let Some(path_conf) = &args.path_conf {
-            PathBuf::from_str(&path_conf)?
+            PathBuf::from_str(path_conf)?
         } else {
             PathBuf::from_str(&args.path_db)?.join("conf.toml")
         };
@@ -170,7 +169,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     info!("Launching server ...");
-    actix_server::main(&args, data)?;
+    actix_server::main(args, data)?;
 
     info!("All done. Have a nice day!");
     Ok(())

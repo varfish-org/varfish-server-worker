@@ -58,12 +58,12 @@ pub struct StructuralVariant {
     pub genotype: IndexMap<String, Genotype>,
 }
 
-impl Into<ChromRange> for StructuralVariant {
-    fn into(self) -> ChromRange {
+impl From<StructuralVariant> for ChromRange {
+    fn from(val: StructuralVariant) -> Self {
         ChromRange {
-            chromosome: self.chromosome,
-            begin: self.start.saturating_sub(1),
-            end: self.end,
+            chromosome: val.chromosome,
+            begin: val.start.saturating_sub(1),
+            end: val.end,
         }
     }
 }
