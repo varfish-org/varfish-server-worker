@@ -31,13 +31,16 @@ pub mod actix_server {
         web::{self, Data, Json, Path},
         App, HttpServer, Responder, ResponseError,
     };
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
     use thousands::Separable;
 
     use crate::{
         common::CHROMS,
         db::conf::TadSet as TadSetChoice,
-        sv::query::schema::{Pathogenicity, SvType, VariationType},
+        sv::query::{
+            bgdbs::BgDbType,
+            schema::{Pathogenicity, SvType, VariationType},
+        },
     };
     use crate::{db::conf::GenomeRelease, sv::query::records::ChromRange};
 
@@ -150,6 +153,7 @@ pub mod actix_server {
         /// Minimal pathogenicity.
         pub min_pathogenicity: Option<Pathogenicity>,
     }
+
     /// List the overlapping TADs of the given TAD set.
     #[get("/public/svs/clinvar/{release}/")]
     async fn fetch_clinvar_sv(
@@ -186,6 +190,28 @@ pub mod actix_server {
             })
             .collect::<Vec<ClinvarEntry>>();
         Ok(Json(clinvar_entries))
+    }
+
+    /// List the overlapping background database entries.
+    #[get("/public/svs/bgdb/{release}/{database}/")]
+    async fn fetch_bgdb_records(
+        data: Data<WebServerData>,
+        path: Path<(String, String)>,
+        query: web::Query<ChromRange>,
+    ) -> actix_web::Result<impl Responder, MyError> {
+        let genome_release =
+            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+        let database = BgDbType::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+        let chrom_range = ChromRange {
+            chromosome: query.chromosome.clone(),
+            begin: query.begin,
+            end: query.end,
+        };
+        let records =
+            data.dbs[genome_release]
+                .bg_dbs
+                .fetch_records(&chrom_range, &data.chrom_map, database);
+        Ok(Json(records))
     }
 
     #[actix_web::main]
