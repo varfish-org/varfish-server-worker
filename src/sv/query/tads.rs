@@ -214,6 +214,7 @@ fn load_tad_sets(path: &Path, boundary_max_dist: u32) -> Result<TadSet, anyhow::
         result.boundaries_trees.push(IntervalTree::new());
     }
 
+    // Setup CSV reader for BED file - header is written as comment and must be ignored.
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
         .comment(Some(b'#'))

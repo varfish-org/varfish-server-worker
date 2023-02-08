@@ -205,10 +205,9 @@ fn load_acmg_db(path: &Path) -> Result<AcmgDb, anyhow::Error> {
     let before_loading = Instant::now();
     let mut result = AcmgDb::default();
 
+    // Setup CSV reader for ordinary TSV file - header is written on top and used; no comment.
     let mut reader = csv::ReaderBuilder::new()
-        .comment(Some(b'#'))
         .delimiter(b'\t')
-        .has_headers(false)
         .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;

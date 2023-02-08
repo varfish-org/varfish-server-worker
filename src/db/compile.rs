@@ -44,7 +44,8 @@ fn copy_db_def(
     let chk_md5 = md5sum(&file_path)?.to_lowercase();
     if md5_str != chk_md5 {
         return Err(anyhow::anyhow!(
-            "MD5 mismatch, expected={} vs actual={}",
+            "MD5 mismatch, for {:?}: expected={} vs actual={}",
+            &file_path,
             md5_str,
             chk_md5
         ));
@@ -456,27 +457,27 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     Ok(())
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::{run, Args};
-//     use crate::{common::Args as CommonArgs, db::compile::ArgGenomeRelease};
-//     use clap_verbosity_flag::Verbosity;
-//     use temp_testdir::TempDir;
+#[cfg(test)]
+mod tests {
+    use super::{run, Args};
+    use crate::{common::Args as CommonArgs, db::compile::ArgGenomeRelease};
+    use clap_verbosity_flag::Verbosity;
+    use temp_testdir::TempDir;
 
-//     #[test]
-//     fn run_smoke() -> Result<(), anyhow::Error> {
-//         let tmp_dir = TempDir::default();
-//         let common_args = CommonArgs {
-//             verbose: Verbosity::new(0, 0),
-//         };
-//         let args = Args {
-//             genome_release: ArgGenomeRelease::Grch37,
-//             path_db_downloader: "tests/db/build/varfish-db-downloader".into(),
-//             path_worker_db: tmp_dir.to_path_buf(),
-//         };
+    #[test]
+    fn run_smoke() -> Result<(), anyhow::Error> {
+        let tmp_dir = TempDir::default();
+        let common_args = CommonArgs {
+            verbose: Verbosity::new(0, 0),
+        };
+        let args = Args {
+            genome_release: ArgGenomeRelease::Grch37,
+            path_db_downloader: "tests/db/compile/varfish-db-downloader".into(),
+            path_worker_db: tmp_dir.to_path_buf(),
+        };
 
-//         run(&common_args, &args)?;
+        run(&common_args, &args)?;
 
-//         Ok(())
-//     }
-// }
+        Ok(())
+    }
+}

@@ -58,6 +58,7 @@ pub mod gene_region {
         );
         let chrom_map = build_chrom_map();
 
+        // Setup CSV reader for BED file - header is written as comment and must be ignored.
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .delimiter(b'\t')
@@ -844,6 +845,7 @@ pub mod vardbs {
         P: AsRef<Path>,
         Q: AsRef<Path>,
     {
+        // Setup CSV reader for BED file - header is written as comment and must be ignored.
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .comment(Some(b'#'))
