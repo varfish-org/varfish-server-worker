@@ -1,7 +1,10 @@
 //! Supporting code for SV query definition.
 
-use crate::world_flatbuffers::var_fish_server_worker::{
-    Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
+use crate::{
+    db::conf::{Database, TadSet},
+    world_flatbuffers::var_fish_server_worker::{
+        Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
+    },
 };
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
@@ -41,14 +44,6 @@ impl GenomicRegion {
             range: None,
         }
     }
-}
-
-/// Database of transcripts
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
-#[serde(rename_all = "kebab-case")]
-pub enum Database {
-    Refseq,
-    Ensembl,
 }
 
 /// Encode the type of an SV
@@ -371,17 +366,6 @@ pub enum RecessiveMode {
     Recessive,
     /// Compound recessive mode of inheritance
     CompoundRecessive,
-}
-
-/// Options for TAD sets to use.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
-pub enum TadSet {
-    /// hESC  cell line
-    #[serde(rename = "hesc")]
-    Hesc,
-    /// IMR90 cell line
-    #[serde(rename = "im390")]
-    Imr90,
 }
 
 fn default_as_true() -> bool {
@@ -1216,7 +1200,7 @@ mod tests {
     #[test]
     fn test_genomic_region_serde_smoke() {
         assert_tokens(
-            &Database::Refseq,
+            &Database::RefSeq,
             &[Token::UnitVariant {
                 name: "Database",
                 variant: "refseq",
@@ -1227,7 +1211,7 @@ mod tests {
     #[test]
     fn test_database_smoke() {
         assert_tokens(
-            &Database::Refseq,
+            &Database::RefSeq,
             &[Token::UnitVariant {
                 name: "Database",
                 variant: "refseq",
@@ -1578,7 +1562,7 @@ mod tests {
 
     #[test]
     fn test_case_query_serde_smoke() {
-        let query = CaseQuery::new(Database::Refseq);
+        let query = CaseQuery::new(Database::RefSeq);
         assert_tokens(
             &query,
             &[

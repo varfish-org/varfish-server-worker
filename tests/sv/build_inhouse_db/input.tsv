@@ -1,3 +1,0 @@
-release	chromosome	bin	start	chromosome2	end	pe_orientation	sv_type	num_hom_alt	num_hom_ref	num_het	num_hemi_alt	num_hemi_ref
-GRCh37	chr1	0	1000	chr1	2000	3to5	DEL	0	2	1	0	0
-GRCh37	chr1	0	1100	chr1	2100	3to5	DEL	2	0	1	0	0

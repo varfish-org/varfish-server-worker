@@ -8,12 +8,10 @@ use serde::Deserialize;
 use tracing::{debug, info};
 
 use crate::{
-    common::{open_maybe_gz, CHROMS},
-    sv::conf::GenesConf,
+    common::{open_read_maybe_gz, CHROMS},
+    db::conf::{Database, FeatureDbs, GeneDbs, GeneXlink},
     world_flatbuffers::var_fish_server_worker::{GeneRegionDatabase, XlinkDatabase},
 };
-
-use super::schema::Database;
 
 /// Alias for the interval tree that we use.
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
@@ -140,7 +138,7 @@ impl XlinkDb {
 
     pub fn gene_id_to_symbols(&self, database: Database, gene_id: u32) -> Vec<String> {
         match database {
-            Database::Refseq => self.entrez_id_to_symbols(gene_id),
+            Database::RefSeq => self.entrez_id_to_symbols(gene_id),
             Database::Ensembl => self.ensembl_to_symbols(gene_id),
         }
     }
@@ -183,10 +181,14 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
     Ok(result)
 }
 
-/// Information to store for an ACMG entry.
+/// Information from ACMG file.
 #[derive(Deserialize, Default, Clone, Debug)]
 pub struct AcmgRecord {
-    /// Entrez gene ID
+    /// HGNC gene symbol.
+    pub gene_symbol: String,
+    /// ENSEMBL gene ID.
+    pub ensembl_gene_id: String,
+    /// Entrez / NCBI gene ID.
     pub entrez_id: u32,
 }
 
@@ -203,9 +205,10 @@ fn load_acmg_db(path: &Path) -> Result<AcmgDb, anyhow::Error> {
     let before_loading = Instant::now();
     let mut result = AcmgDb::default();
 
+    // Setup CSV reader for ordinary TSV file - header is written on top and used; no comment.
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+        .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;
     for record in reader.deserialize() {
@@ -257,8 +260,10 @@ fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
     let mut result = OmimDb::default();
 
     let mut reader = csv::ReaderBuilder::new()
+        .comment(Some(b'#'))
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+        .has_headers(false)
+        .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;
     for record in reader.deserialize() {
@@ -293,7 +298,7 @@ impl GeneDb {
         query: Range<u32>,
     ) -> Vec<u32> {
         match database {
-            Database::Refseq => self.refseq.overlapping_gene_ids(chrom_no, query),
+            Database::RefSeq => self.refseq.overlapping_gene_ids(chrom_no, query),
             Database::Ensembl => self.ensembl.overlapping_gene_ids(chrom_no, query),
         }
     }
@@ -301,18 +306,46 @@ impl GeneDb {
 
 // Load all gene information, such as region, id mapping and symbols.
 #[tracing::instrument]
-pub fn load_gene_db(path_db: &str, conf: &GenesConf) -> Result<GeneDb, anyhow::Error> {
+pub fn load_gene_db(
+    path_db: &str,
+    gene_conf: &GeneDbs,
+    feature_conf: &FeatureDbs,
+) -> Result<GeneDb, anyhow::Error> {
     info!("Loading gene dbs");
+
     let result = GeneDb {
-        refseq: load_gene_regions_db(Path::new(path_db).join(&conf.refseq.regions.path).as_path())?,
-        ensembl: load_gene_regions_db(
+        refseq: load_gene_regions_db(
             Path::new(path_db)
-                .join(&conf.ensembl.regions.path)
+                .join(
+                    feature_conf.gene_regions[Database::RefSeq]
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for RefSeq regions?"),
+                )
                 .as_path(),
         )?,
-        xlink: load_xlink_db(Path::new(path_db).join(&conf.xlink.path).as_path())?,
-        acmg: load_acmg_db(Path::new(path_db).join(&conf.acmg.path).as_path())?,
-        omim: load_omim_db(Path::new(path_db).join(&conf.omim.path).as_path())?,
+        ensembl: load_gene_regions_db(
+            Path::new(path_db)
+                .join(
+                    feature_conf.gene_regions[Database::Ensembl]
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for ENSEMBL regions?"),
+                )
+                .as_path(),
+        )?,
+        xlink: load_xlink_db(
+            Path::new(path_db)
+                .join(
+                    gene_conf.xlink[GeneXlink::Hgnc]
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for HGNC xlink?"),
+                )
+                .as_path(),
+        )?,
+        acmg: load_acmg_db(Path::new(path_db).join(&gene_conf.acmg.path).as_path())?,
+        omim: load_omim_db(Path::new(path_db).join(&gene_conf.mim2gene.path).as_path())?,
     };
 
     Ok(result)

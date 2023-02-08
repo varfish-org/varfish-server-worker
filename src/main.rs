@@ -1,6 +1,7 @@
 //! VarFish Server Worker main executable
 
 pub mod common;
+pub mod db;
 pub mod sv;
 
 #[allow(
@@ -39,11 +40,29 @@ struct Cli {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// SV related commands
+    /// Database-related commands.
+    Db(Db),
+    /// SV related commands.
     Sv(Sv),
 }
 
-/// Parsing of top-level CLI commands.
+/// Parsing of "db *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Db {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: DbCommands,
+}
+
+/// Enum supporting the parsing of "db *" sub commands.
+#[derive(Debug, Subcommand)]
+enum DbCommands {
+    Compile(db::compile::Args),
+    MkInhouse(db::mk_inhouse::Args),
+}
+
+/// Parsing of "sv *" sub commands.
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
 struct Sv {
@@ -55,11 +74,6 @@ struct Sv {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SvCommands {
-    BgDbToBin(sv::bg_db_to_bin::Args),
-    ClinvarSvToBin(sv::clinvar_sv_to_bin::Args),
-    GeneRegionToBin(sv::gene_region_to_bin::Args),
-    XlinkToBin(sv::xlink_to_bin::Args),
-    InhouseDbBuild(sv::inhouse_db_build::Args),
     Query(sv::query::Args),
 }
 
@@ -86,22 +100,15 @@ fn main() -> Result<(), anyhow::Error> {
     let term = Term::stderr();
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
+            Commands::Db(db) => match &db.command {
+                DbCommands::Compile(args) => {
+                    db::compile::run(&cli.common, args)?;
+                }
+                DbCommands::MkInhouse(args) => {
+                    db::mk_inhouse::run(&cli.common, args)?;
+                }
+            },
             Commands::Sv(sv) => match &sv.command {
-                SvCommands::BgDbToBin(args) => {
-                    sv::bg_db_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::ClinvarSvToBin(args) => {
-                    sv::clinvar_sv_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::XlinkToBin(args) => {
-                    sv::xlink_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::GeneRegionToBin(args) => {
-                    sv::gene_region_to_bin::run(&cli.common, args)?;
-                }
-                SvCommands::InhouseDbBuild(args) => {
-                    sv::inhouse_db_build::run(&cli.common, args)?;
-                }
                 SvCommands::Query(args) => {
                     sv::query::run(&cli.common, args)?;
                 }

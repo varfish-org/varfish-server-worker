@@ -9,7 +9,7 @@ use tracing::{debug, info};
 
 use crate::{
     common::{trace_rss_now, CHROMS},
-    sv::conf::BackgroundDbsConf,
+    db::conf::StrucVarDbs,
     world_flatbuffers::var_fish_server_worker::BackgroundDatabase,
     world_flatbuffers::var_fish_server_worker::SvType as FlatSvType,
 };
@@ -169,9 +169,9 @@ pub struct BgDbBundle {
     pub dbvar: BgDb,
     pub dgv: BgDb,
     pub dgv_gs: BgDb,
-    pub exac: BgDb,
-    pub g1k: BgDb,
-    pub inhouse: BgDb,
+    pub exac: Option<BgDb>,
+    pub g1k: Option<BgDb>,
+    pub inhouse: Option<BgDb>,
 }
 
 /// Store background database counts for a structural variant.
@@ -228,46 +228,124 @@ impl BgDbBundle {
                 slack_bnd,
                 sv,
             ),
-            exac: self.exac.count_overlaps(
-                chrom_map,
-                query.svdb_exac_enabled,
-                query.svdb_exac_min_overlap,
-                slack_ins,
-                slack_bnd,
-                sv,
-            ),
-            g1k: self.g1k.count_overlaps(
-                chrom_map,
-                query.svdb_g1k_enabled,
-                query.svdb_g1k_min_overlap,
-                slack_ins,
-                slack_bnd,
-                sv,
-            ),
-            inhouse: self.inhouse.count_overlaps(
-                chrom_map,
-                query.svdb_inhouse_enabled,
-                query.svdb_inhouse_min_overlap,
-                slack_ins,
-                slack_bnd,
-                sv,
-            ),
+            exac: self.exac.as_ref().map_or(0, |exac| {
+                exac.count_overlaps(
+                    chrom_map,
+                    query.svdb_exac_enabled,
+                    query.svdb_exac_min_overlap,
+                    slack_ins,
+                    slack_bnd,
+                    sv,
+                )
+            }),
+            g1k: self.g1k.as_ref().map_or(0, |g1k| {
+                g1k.count_overlaps(
+                    chrom_map,
+                    query.svdb_g1k_enabled,
+                    query.svdb_g1k_min_overlap,
+                    slack_ins,
+                    slack_bnd,
+                    sv,
+                )
+            }),
+            inhouse: self.inhouse.as_ref().map_or(0, |inhouse| {
+                inhouse.count_overlaps(
+                    chrom_map,
+                    query.svdb_inhouse_enabled,
+                    query.svdb_inhouse_min_overlap,
+                    slack_ins,
+                    slack_bnd,
+                    sv,
+                )
+            }),
         }
     }
 }
 
 // Load all background databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_bg_dbs(path_db: &str, conf: &BackgroundDbsConf) -> Result<BgDbBundle, anyhow::Error> {
+pub fn load_bg_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<BgDbBundle, anyhow::Error> {
+    use result::prelude::*;
+
     info!("Loading background dbs");
     let result = BgDbBundle {
-        gnomad: load_bg_db_records(Path::new(path_db).join(&conf.gnomad_sv.path).as_path())?,
-        dbvar: load_bg_db_records(Path::new(path_db).join(&conf.dbvar.path).as_path())?,
-        dgv: load_bg_db_records(Path::new(path_db).join(&conf.dgv.path).as_path())?,
-        dgv_gs: load_bg_db_records(Path::new(path_db).join(&conf.dgv_gs.path).as_path())?,
-        exac: load_bg_db_records(Path::new(path_db).join(&conf.exac.path).as_path())?,
-        g1k: load_bg_db_records(Path::new(path_db).join(&conf.g1k.path).as_path())?,
-        inhouse: load_bg_db_records(Path::new(path_db).join(&conf.inhouse.path).as_path())?,
+        gnomad: load_bg_db_records(
+            Path::new(path_db)
+                .join(
+                    conf.gnomad_sv
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for gnomAD-SV"),
+                )
+                .as_path(),
+        )?,
+        dbvar: load_bg_db_records(
+            Path::new(path_db)
+                .join(
+                    conf.dbvar
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for dbVar"),
+                )
+                .as_path(),
+        )?,
+        dgv: load_bg_db_records(
+            Path::new(path_db)
+                .join(conf.dgv.bin_path.as_ref().expect("no binary path for DGV"))
+                .as_path(),
+        )?,
+        dgv_gs: load_bg_db_records(
+            Path::new(path_db)
+                .join(
+                    conf.dgv_gs
+                        .bin_path
+                        .as_ref()
+                        .expect("no binary path for DGV GS"),
+                )
+                .as_path(),
+        )?,
+        exac: conf
+            .exac
+            .as_ref()
+            .map(|exac| {
+                load_bg_db_records(
+                    Path::new(path_db)
+                        .join(exac.bin_path.as_ref().expect("no binary path for ExAC CNV"))
+                        .as_path(),
+                )
+            })
+            .invert()?,
+        g1k: conf
+            .g1k
+            .as_ref()
+            .map(|g1k| {
+                load_bg_db_records(
+                    Path::new(path_db)
+                        .join(
+                            g1k.bin_path
+                                .as_ref()
+                                .expect("no binary path for Thousand Genomes SV"),
+                        )
+                        .as_path(),
+                )
+            })
+            .invert()?,
+        inhouse: conf
+            .inhouse
+            .as_ref()
+            .map(|inhouse| {
+                load_bg_db_records(
+                    Path::new(path_db)
+                        .join(
+                            inhouse
+                                .bin_path
+                                .as_ref()
+                                .expect("no binary path for in-house SV DB?"),
+                        )
+                        .as_path(),
+                )
+            })
+            .invert()?,
     };
 
     Ok(result)

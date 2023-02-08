@@ -7,8 +7,8 @@ use serde::Serialize;
 use tracing::{debug, info, warn};
 
 use crate::{
-    common::{build_chrom_map, open_maybe_gz, CHROMS},
-    sv::conf::KnownPathogenicSvsConf,
+    common::{build_chrom_map, open_read_maybe_gz, CHROMS},
+    db::conf::StrucVarDbs,
 };
 
 use super::schema::{StructuralVariant, SvType};
@@ -104,10 +104,12 @@ fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
         result.trees.push(IntervalTree::new());
     }
 
+    // Setup CSV reader for BED file - header is written as comment and must be ignored.
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
+        .comment(Some(b'#'))
         .delimiter(b'\t')
-        .from_reader(open_maybe_gz(path.to_str().unwrap())?);
+        .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
     let mut total_count = 0;
     for record in reader.deserialize() {
         let record: input::Record = record?;
@@ -135,17 +137,10 @@ fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
 
 // Load all pathogenic SV databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_patho_dbs(
-    path_db: &str,
-    conf: &KnownPathogenicSvsConf,
-) -> Result<PathoDbBundle, anyhow::Error> {
+pub fn load_patho_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<PathoDbBundle, anyhow::Error> {
     info!("Loading pathogenic SV dbs");
     let result = PathoDbBundle {
-        mms: load_patho_db_records(
-            Path::new(path_db)
-                .join(&conf.mms_wetzel_danbro.path)
-                .as_path(),
-        )?,
+        mms: load_patho_db_records(Path::new(path_db).join(&conf.patho_mms.path).as_path())?,
     };
 
     Ok(result)
