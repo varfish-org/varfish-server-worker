@@ -1,13 +1,14 @@
 //! Code supporting the `server rest` sub command.
 
-use std::{path::PathBuf, str::FromStr, time::Instant};
+use std::{collections::HashMap, path::PathBuf, str::FromStr, time::Instant};
 
+use actix_web::web::Data;
 use clap::Parser;
 use enum_map::{enum_map, EnumMap};
 use tracing::info;
 
 use crate::{
-    common::trace_rss_now,
+    common::{build_chrom_map, trace_rss_now},
     db::conf::{GenomeRelease, Top},
     sv::query::{
         bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
@@ -15,21 +16,84 @@ use crate::{
     },
 };
 
+pub struct WebServerData {
+    pub chrom_map: HashMap<String, usize>,
+    pub dbs: EnumMap<GenomeRelease, Databases>,
+}
+
 /// Implementation of the actix server.
 pub mod actix_server {
-    use actix_web::{App, HttpServer};
-    use enum_map::EnumMap;
+    use std::str::FromStr;
 
-    use crate::{db::conf::GenomeRelease, sv::query::Databases};
+    use actix_web::{
+        get,
+        web::{self, Data, Json, Path},
+        App, HttpServer, Responder, ResponseError,
+    };
+    use serde::Serialize;
+    use tracing::trace;
 
-    use super::Args;
+    use crate::{common::CHROMS, db::conf::TadSet as TadSetChoice};
+    use crate::{db::conf::GenomeRelease, sv::query::records::ChromRange};
+
+    use super::{Args, WebServerData};
+
+    #[derive(Debug)]
+    struct MyError {
+        err: anyhow::Error,
+    }
+
+    impl std::fmt::Display for MyError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self.err)
+        }
+    }
+
+    impl MyError {
+        fn new(err: anyhow::Error) -> Self {
+            MyError { err }
+        }
+    }
+
+    impl ResponseError for MyError {}
+
+    /// Result type of `fetch_tads`.
+    #[derive(Serialize, Debug)]
+    struct Tad {
+        chromosome: String,
+        begin: u32,
+        end: u32,
+    }
+
+    /// List the TADs of the given TAD set
+    #[get("/public/svs/tads/{release}/{tad_set}/")]
+    async fn fetch_tads(
+        data: Data<WebServerData>,
+        path: Path<(String, String)>,
+        chrom_range: web::Query<ChromRange>,
+    ) -> actix_web::Result<impl Responder, MyError> {
+        let genome_release =
+            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+        trace!("genome_release = {:?}", genome_release);
+        let tad_set = TadSetChoice::from_str(&path.1).map_err(|e| MyError::new(e.into()))?;
+        trace!("tad_set = {:?}", tad_set);
+        let tads = data.dbs[genome_release]
+            .tad_sets
+            .fetch_tads(tad_set, &chrom_range, &data.chrom_map)
+            .into_iter()
+            .map(|record| Tad {
+                chromosome: CHROMS[record.chrom_no as usize].to_string(),
+                begin: record.begin,
+                end: record.end,
+            })
+            .collect::<Vec<Tad>>();
+        trace!("tads = {:?}", &tads);
+        Ok(Json(tads))
+    }
 
     #[actix_web::main]
-    pub async fn main(
-        args: &Args,
-        _dbs: &EnumMap<GenomeRelease, Databases>,
-    ) -> std::io::Result<()> {
-        HttpServer::new(|| App::new())
+    pub async fn main(args: &Args, dbs: Data<WebServerData>) -> std::io::Result<()> {
+        HttpServer::new(move || App::new().app_data(dbs.clone()).service(fetch_tads))
             .bind((args.listen_host.as_str(), args.listen_port))?
             .run()
             .await
@@ -59,6 +123,17 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);
 
+    match args_common.verbose.log_level() {
+        Some(level) => match level {
+            log::Level::Trace | log::Level::Debug => {
+                std::env::set_var("RUST_LOG", "debug");
+                env_logger::init();
+            }
+            _ => (),
+        },
+        None => (),
+    }
+
     info!("Loading database config...");
     let db_conf: Top = {
         let path_conf = if let Some(path_conf) = &args.path_conf {
@@ -72,7 +147,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     info!("Loading databases...");
     let before_loading = Instant::now();
-    let dbs: EnumMap<GenomeRelease, Databases> = enum_map! {
+    let dbs = enum_map! {
         GenomeRelease::Grch37 => Databases {
             bg_dbs: load_bg_dbs(&args.path_db, &db_conf.vardbs[GenomeRelease::Grch37].strucvar)?,
             patho_dbs: load_patho_dbs(&args.path_db, &db_conf.vardbs[GenomeRelease::Grch37].strucvar)?,
@@ -87,10 +162,15 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         before_loading.elapsed()
     );
 
+    let data = Data::new(WebServerData {
+        chrom_map: build_chrom_map(),
+        dbs,
+    });
+
     trace_rss_now();
 
     info!("Launching server ...");
-    actix_server::main(&args, &dbs)?;
+    actix_server::main(&args, data)?;
 
     info!("All done. Have a nice day!");
     Ok(())

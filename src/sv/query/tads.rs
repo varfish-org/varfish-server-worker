@@ -12,6 +12,7 @@ use crate::{
 
 use super::{
     interpreter::{BND_SLACK, INS_SLACK},
+    records::ChromRange,
     schema::{StructuralVariant, SvType},
 };
 
@@ -45,6 +46,33 @@ pub struct TadSet {
 }
 
 impl TadSet {
+    /// Fetch TADs overlapping with a `ChromRange`.
+    pub fn fetch_tads(
+        &self,
+        chrom_range: &ChromRange,
+        chrom_map: &HashMap<String, usize>,
+    ) -> Vec<Record> {
+        let mut result = Vec::new();
+
+        let queries = {
+            let chrom_idx = *chrom_map
+                .get(&chrom_range.chromosome)
+                .expect("invalid chromosome");
+            vec![(chrom_idx, chrom_range.begin..chrom_range.end)]
+        };
+
+        for (chrom_idx, query) in queries {
+            self.records_trees[chrom_idx]
+                .find(query.clone())
+                .iter()
+                .for_each(|cursor| {
+                    result.push(self.records[chrom_idx][*cursor.data() as usize].clone())
+                });
+        }
+
+        result
+    }
+
     pub fn overlapping_tads(
         &self,
         sv: &StructuralVariant,
@@ -159,6 +187,18 @@ pub struct TadSetBundle {
 }
 
 impl TadSetBundle {
+    pub fn fetch_tads(
+        &self,
+        tad_set: TadSetChoice,
+        chrom_range: &ChromRange,
+        chrom_map: &HashMap<String, usize>,
+    ) -> Vec<Record> {
+        match tad_set {
+            TadSetChoice::Hesc => self.hesc.fetch_tads(chrom_range, chrom_map),
+            TadSetChoice::Imr90 => self.imr90.fetch_tads(chrom_range, chrom_map),
+        }
+    }
+
     pub fn overlapping_tads(
         &self,
         tad_set: TadSetChoice,

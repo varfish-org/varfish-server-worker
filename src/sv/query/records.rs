@@ -11,6 +11,17 @@ use super::schema::{
     SvSubType, SvType,
 };
 
+/// Chromosomal interval.
+#[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
+pub struct ChromRange {
+    /// Chromosome name.
+    pub chromosome: String,
+    /// 0-based begin position.
+    pub begin: u32,
+    /// 0-based end position.
+    pub end: u32,
+}
+
 /// Structural variant as written out by VarFish Annotator.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
 pub struct StructuralVariant {
@@ -45,6 +56,16 @@ pub struct StructuralVariant {
     /// Mapping of sample to genotype information for the SV.
     #[serde(deserialize_with = "deserialize_genotype")]
     pub genotype: IndexMap<String, Genotype>,
+}
+
+impl Into<ChromRange> for StructuralVariant {
+    fn into(self) -> ChromRange {
+        ChromRange {
+            chromosome: self.chromosome,
+            begin: self.start.saturating_sub(1),
+            end: self.end,
+        }
+    }
 }
 
 impl From<StructuralVariant> for SchemaStructuralVariant {
