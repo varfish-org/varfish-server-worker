@@ -18,6 +18,8 @@ jobs:
 
       - uses: actions/checkout@v2
         if: ${{ steps.release.outputs.release_created }}
+        with:
+          lfs: true
 
       - name: Install flatbuffers
         uses: ./.github/actions/install-flatbuffers
