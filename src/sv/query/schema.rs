@@ -8,7 +8,7 @@ use crate::{
 };
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
+use strum_macros::{Display, EnumIter, EnumString};
 
 /// Range with 1-based positions
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -1081,7 +1081,11 @@ impl TryInto<VariationType> for FlatVariationType {
 }
 
 /// Variation type from Clinvar.
-#[derive(PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+#[derive(
+    Serialize, PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default, EnumString, Display,
+)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum VariationType {
     #[default]
     Complex,
@@ -1095,8 +1099,22 @@ pub enum VariationType {
 }
 
 /// Clinvar pathogenicity.
-#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Eq, Hash, Copy, Clone, Debug, Default)]
+#[derive(
+    Serialize,
+    Deserialize,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Hash,
+    Copy,
+    Clone,
+    Debug,
+    Default,
+    EnumString,
+    Display,
+)]
 #[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
 pub enum Pathogenicity {
     Benign,
     LikelyBenign,

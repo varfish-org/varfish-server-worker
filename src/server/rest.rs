@@ -27,13 +27,18 @@ pub mod actix_server {
 
     use actix_web::{
         get,
+        middleware::Logger,
         web::{self, Data, Json, Path},
         App, HttpServer, Responder, ResponseError,
     };
-    use serde::Serialize;
-    use tracing::trace;
+    use serde::{Serialize, Deserialize};
+    use thousands::Separable;
 
-    use crate::{common::CHROMS, db::conf::TadSet as TadSetChoice};
+    use crate::{
+        common::CHROMS,
+        db::conf::TadSet as TadSetChoice,
+        sv::query::schema::{Pathogenicity, SvType, VariationType},
+    };
     use crate::{db::conf::GenomeRelease, sv::query::records::ChromRange};
 
     use super::{Args, WebServerData};
@@ -57,7 +62,7 @@ pub mod actix_server {
 
     impl ResponseError for MyError {}
 
-    /// Result type of `fetch_tads`.
+    /// Result type of ""/public/svs/tads/{release}/{tad_set}/".
     #[derive(Serialize, Debug)]
     struct Tad {
         chromosome: String,
@@ -65,7 +70,7 @@ pub mod actix_server {
         end: u32,
     }
 
-    /// List the TADs of the given TAD set
+    /// List the overlapping TADs of the given TAD set.
     #[get("/public/svs/tads/{release}/{tad_set}/")]
     async fn fetch_tads(
         data: Data<WebServerData>,
@@ -74,9 +79,7 @@ pub mod actix_server {
     ) -> actix_web::Result<impl Responder, MyError> {
         let genome_release =
             GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
-        trace!("genome_release = {:?}", genome_release);
         let tad_set = TadSetChoice::from_str(&path.1).map_err(|e| MyError::new(e.into()))?;
-        trace!("tad_set = {:?}", tad_set);
         let tads = data.dbs[genome_release]
             .tad_sets
             .fetch_tads(tad_set, &chrom_range, &data.chrom_map)
@@ -87,16 +90,117 @@ pub mod actix_server {
                 end: record.end,
             })
             .collect::<Vec<Tad>>();
-        trace!("tads = {:?}", &tads);
         Ok(Json(tads))
+    }
+
+    /// Result type of "/public/svs/pathogenic/{release}/".
+    #[derive(Serialize, Debug)]
+    struct KnownPathogenic {
+        chromosome: String,
+        begin: u32,
+        end: u32,
+        sv_type: SvType,
+        id: String,
+    }
+
+    /// List the overlapping TADs of the given TAD set.
+    #[get("/public/svs/pathogenic/{release}/")]
+    async fn fetch_pathogenic(
+        data: Data<WebServerData>,
+        path: Path<(String,)>,
+        chrom_range: web::Query<ChromRange>,
+    ) -> actix_web::Result<impl Responder, MyError> {
+        let genome_release =
+            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+        let known_pathogenics = data.dbs[genome_release]
+            .patho_dbs
+            .fetch_records(&chrom_range, &data.chrom_map)
+            .into_iter()
+            .map(|record| KnownPathogenic {
+                chromosome: chrom_range.chromosome.clone(),
+                begin: record.begin,
+                end: record.end,
+                sv_type: record.sv_type,
+                id: record.id,
+            })
+            .collect::<Vec<KnownPathogenic>>();
+        Ok(Json(known_pathogenics))
+    }
+
+    /// Result type of "/public/svs/clinvar/{release}/".
+    #[derive(Serialize, Debug)]
+    struct ClinvarEntry {
+        chromosome: String,
+        begin: u32,
+        end: u32,
+        variation_type: VariationType,
+        pathogenicity: Pathogenicity,
+        vcv: String,
+        name: String,
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
+    pub struct ClinVarSvQuery {
+        /// Chromosome name.
+        pub chromosome: String,
+        /// 0-based begin position.
+        pub begin: u32,
+        /// 0-based end position.
+        pub end: u32,
+        /// Minimal pathogenicity.
+        pub min_pathogenicity: Option<Pathogenicity>,
+    }
+    /// List the overlapping TADs of the given TAD set.
+    #[get("/public/svs/clinvar/{release}/")]
+    async fn fetch_clinvar_sv(
+        data: Data<WebServerData>,
+        path: Path<(String,)>,
+        query: web::Query<ClinVarSvQuery>,
+    ) -> actix_web::Result<impl Responder, MyError> {
+        let genome_release =
+            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+        let chrom_range = ChromRange {
+            chromosome: query.chromosome.clone(),
+            begin: query.begin,
+            end: query.end,
+        };
+        let clinvar_entries = data.dbs[genome_release]
+            .clinvar_sv
+            .fetch_records(&chrom_range, &data.chrom_map, query.min_pathogenicity)
+            .into_iter()
+            .map(|record| ClinvarEntry {
+                chromosome: chrom_range.chromosome.clone(),
+                begin: record.begin,
+                end: record.end,
+                variation_type: record.variation_type,
+                pathogenicity: record.pathogenicity,
+                vcv: format!("VCV{:09}", record.vcv),
+                name: format!(
+                    "{:?} @ {}:{}-{} ({})",
+                    record.variation_type,
+                    &chrom_range.chromosome,
+                    (record.begin + 1).separate_with_commas(),
+                    record.end.separate_with_commas(),
+                    record.pathogenicity
+                ),
+            })
+            .collect::<Vec<ClinvarEntry>>();
+        Ok(Json(clinvar_entries))
     }
 
     #[actix_web::main]
     pub async fn main(args: &Args, dbs: Data<WebServerData>) -> std::io::Result<()> {
-        HttpServer::new(move || App::new().app_data(dbs.clone()).service(fetch_tads))
-            .bind((args.listen_host.as_str(), args.listen_port))?
-            .run()
-            .await
+        HttpServer::new(move || {
+            App::new()
+                .app_data(dbs.clone())
+                .service(fetch_tads)
+                .service(fetch_pathogenic)
+                .service(fetch_clinvar_sv)
+                .wrap(Logger::default())
+        })
+        .bind((args.listen_host.as_str(), args.listen_port))?
+        .run()
+        .await
     }
 }
 
@@ -127,7 +231,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         match level {
             log::Level::Trace | log::Level::Debug => {
                 std::env::set_var("RUST_LOG", "debug");
-                env_logger::init();
+                env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
             }
             _ => (),
         }
