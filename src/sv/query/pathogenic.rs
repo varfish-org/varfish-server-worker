@@ -61,6 +61,7 @@ impl PathoDb {
 }
 
 /// Bundle of databases of known pathogenic variants.
+#[derive(Default, Debug)]
 pub struct PathoDbBundle {
     pub mms: PathoDb,
 }

@@ -79,7 +79,7 @@ pub struct Args {
 }
 
 /// Load database configuration and perform sanity checks as configured.
-fn load_db_conf(args: &Args) -> Result<Top, anyhow::Error> {
+pub fn load_db_conf(args: &Args) -> Result<Top, anyhow::Error> {
     // Get full path to database configuration.
     let path_config = if let Some(path_conf) = &args.path_conf {
         PathBuf::from(path_conf)
@@ -368,6 +368,7 @@ fn run_query(
 }
 
 /// Bundle the used database to reduce argument count.
+#[derive(Default, Debug)]
 pub struct Databases {
     pub bg_dbs: BgDbBundle,
     pub patho_dbs: PathoDbBundle,

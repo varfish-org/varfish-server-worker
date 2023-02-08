@@ -152,6 +152,7 @@ impl TadSet {
 }
 
 /// Bundle of TAD sets packaged with VarFish.
+#[derive(Default, Debug)]
 pub struct TadSetBundle {
     pub hesc: TadSet,
     pub imr90: TadSet,

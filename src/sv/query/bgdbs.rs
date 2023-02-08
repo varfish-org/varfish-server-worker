@@ -44,7 +44,7 @@ pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
 
 /// Code for background database overlappers.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct BgDb {
     /// Records, stored by chromosome.
     pub records: Vec<Vec<BgDbRecord>>,
@@ -90,7 +90,7 @@ impl BgDb {
 }
 
 /// Information to store for background database.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct BgDbRecord {
     /// 0-based begin position.
     pub begin: u32,
@@ -164,6 +164,7 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
 }
 
 /// Bundle of all background databases (including in-house).
+#[derive(Default, Debug)]
 pub struct BgDbBundle {
     pub gnomad: BgDb,
     pub dbvar: BgDb,

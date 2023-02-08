@@ -260,9 +260,7 @@ fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
     let mut result = OmimDb::default();
 
     let mut reader = csv::ReaderBuilder::new()
-        .comment(Some(b'#'))
         .delimiter(b'\t')
-        .has_headers(false)
         .from_reader(open_read_maybe_gz(path.to_str().unwrap())?);
 
     let mut total_count = 0;
@@ -281,6 +279,7 @@ fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
 }
 
 /// Bundle of gene region DBs and the xlink info packaged with VarFish.
+#[derive(Default, Debug)]
 pub struct GeneDb {
     pub refseq: GeneRegionDb,
     pub ensembl: GeneRegionDb,
