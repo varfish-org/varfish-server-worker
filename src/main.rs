@@ -2,6 +2,7 @@
 
 pub mod common;
 pub mod db;
+pub mod server;
 pub mod sv;
 
 #[allow(
@@ -44,6 +45,8 @@ enum Commands {
     Db(Db),
     /// SV related commands.
     Sv(Sv),
+    /// Server related commands.
+    Server(Server),
 }
 
 /// Parsing of "db *" sub commands.
@@ -75,6 +78,20 @@ struct Sv {
 #[derive(Debug, Subcommand)]
 enum SvCommands {
     Query(sv::query::Args),
+}
+
+/// Enum supporting the parsing of "server *" sub commands.
+#[derive(Debug, Subcommand)]
+enum ServerCommands {
+    Rest(server::rest::Args),
+}
+/// Parsing of "sv *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Server {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: ServerCommands,
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -112,6 +129,9 @@ fn main() -> Result<(), anyhow::Error> {
                 SvCommands::Query(args) => {
                     sv::query::run(&cli.common, args)?;
                 }
+            },
+            Commands::Server(server) => match &server.command {
+                ServerCommands::Rest(args) => server::rest::run(&cli.common, args)?,
             },
         }
 
