@@ -354,7 +354,9 @@ fn merge_split_files(
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .has_headers(false)
-        .from_writer(open_write_maybe_gz(path_output_tsv)?);
+        .from_writer(open_write_maybe_gz(path_output_tsv).map_err(|e| {
+            anyhow::anyhow!("Cannot open {:?} for writing: {:?}", &path_output_tsv, e)
+        })?);
 
     // Write header as comment.
     writer.write_record([
@@ -495,4 +497,63 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     )?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{run, Args};
+    use crate::{common::Args as CommonArgs, db::mk_inhouse::ArgGenomeRelease};
+    use clap_verbosity_flag::Verbosity;
+    use temp_testdir::TempDir;
+
+    #[test]
+    fn run_smoke_gts_path() -> Result<(), anyhow::Error> {
+        let tmp_dir = TempDir::default();
+        std::fs::copy(
+            "tests/db/mk-inhouse/default.toml",
+            tmp_dir.join("conf.toml"),
+        )?;
+        std::fs::create_dir_all(tmp_dir.join("vardbs/grch37/strucvar"))?;
+
+        let common_args = CommonArgs {
+            verbose: Verbosity::new(0, 0),
+        };
+        let args = Args {
+            genome_release: ArgGenomeRelease::Grch37,
+            path_worker_db: tmp_dir.to_path_buf(),
+            path_input_tsvs: vec!["tests/db/mk-inhouse/oneline.gts.tsv".to_string()],
+            min_overlap: 0.8,
+            slack_bnd: 50,
+            slack_ins: 50,
+        };
+
+        run(&common_args, &args)?;
+
+        Ok(())
+    }
+    #[test]
+    fn run_smoke_at_path() -> Result<(), anyhow::Error> {
+        let tmp_dir = TempDir::default();
+        std::fs::copy(
+            "tests/db/mk-inhouse/default.toml",
+            tmp_dir.join("conf.toml"),
+        )?;
+        std::fs::create_dir_all(tmp_dir.join("vardbs/grch37/strucvar"))?;
+
+        let common_args = CommonArgs {
+            verbose: Verbosity::new(0, 0),
+        };
+        let args = Args {
+            genome_release: ArgGenomeRelease::Grch37,
+            path_worker_db: tmp_dir.to_path_buf(),
+            path_input_tsvs: vec!["@tests/db/mk-inhouse/list.txt".to_string()],
+            min_overlap: 0.8,
+            slack_bnd: 50,
+            slack_ins: 50,
+        };
+
+        run(&common_args, &args)?;
+
+        Ok(())
+    }
 }

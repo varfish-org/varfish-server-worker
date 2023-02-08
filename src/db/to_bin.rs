@@ -460,7 +460,7 @@ pub mod vardbs {
 
     use crate::common::{build_chrom_map, md5sum, open_read_maybe_gz, sha256sum, trace_rss_now};
     use crate::db::conf::DbDef;
-    use crate::db::inhouse::output::Record as InhouseDbRecord;
+    use crate::db::mk_inhouse::output::Record as InhouseDbRecord;
     use crate::sv::query::schema::SvType;
     use crate::world_flatbuffers::var_fish_server_worker::{
         BackgroundDatabase, BackgroundDatabaseArgs, BgDbRecord, SvType as FlatSvType,
@@ -474,7 +474,7 @@ pub mod vardbs {
         use serde::Deserialize;
         use tracing::error;
 
-        use crate::db::inhouse::output::Record as InhouseDbRecord;
+        use crate::db::mk_inhouse::output::Record as InhouseDbRecord;
         use crate::sv::query::schema::SvType;
 
         /// dbVar database record as read from TSV file.

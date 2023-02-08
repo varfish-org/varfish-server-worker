@@ -2,5 +2,5 @@
 
 pub mod compile;
 pub mod conf;
-pub mod inhouse;
+pub mod mk_inhouse;
 pub mod to_bin;

@@ -59,7 +59,7 @@ struct Db {
 #[derive(Debug, Subcommand)]
 enum DbCommands {
     Compile(db::compile::Args),
-    MkInhouse(db::inhouse::Args),
+    MkInhouse(db::mk_inhouse::Args),
 }
 
 /// Parsing of "sv *" sub commands.
@@ -105,7 +105,7 @@ fn main() -> Result<(), anyhow::Error> {
                     db::compile::run(&cli.common, args)?;
                 }
                 DbCommands::MkInhouse(args) => {
-                    db::inhouse::run(&cli.common, args)?;
+                    db::mk_inhouse::run(&cli.common, args)?;
                 }
             },
             Commands::Sv(sv) => match &sv.command {
