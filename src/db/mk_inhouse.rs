@@ -275,7 +275,11 @@ fn merge_to_out(
     // Read in all records and perform the "merge compression"
     let mut reader = JsonLinesReader::new(reader);
     while let Ok(Some(record)) = reader.read::<input::Record>() {
-        let record = output::Record::from_db_record(record);
+        let record = {
+            let mut record = output::Record::from_db_record(record);
+            record.begin -= 1; // need to get 0-based coordinates for DB
+            record
+        };
         let slack = match record.sv_type {
             SvType::Bnd => args.slack_bnd,
             SvType::Ins => args.slack_ins,

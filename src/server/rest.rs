@@ -47,23 +47,64 @@ pub mod actix_server {
     use super::{Args, WebServerData};
 
     #[derive(Debug)]
-    struct MyError {
+    struct CustomError {
         err: anyhow::Error,
     }
 
-    impl std::fmt::Display for MyError {
+    impl std::fmt::Display for CustomError {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "{:?}", self.err)
         }
     }
 
-    impl MyError {
+    impl CustomError {
         fn new(err: anyhow::Error) -> Self {
-            MyError { err }
+            CustomError { err }
         }
     }
 
-    impl ResponseError for MyError {}
+    impl ResponseError for CustomError {}
+
+    /// Chromosomal range for parsing from REST.
+    ///
+    /// We allow floats here as igv.js likes to put floats for coordinates.
+    #[derive(Deserialize, Debug)]
+    struct QueryChromRange {
+        chromosome: String,
+        begin: f64,
+        end: f64,
+    }
+
+    impl From<QueryChromRange> for ChromRange {
+        fn from(val: QueryChromRange) -> Self {
+            ChromRange {
+                chromosome: val.chromosome,
+                begin: val.begin as u32,
+                end: val.end as u32,
+            }
+        }
+    }
+
+    /// Parameters for `fetch_tads`.
+    #[derive(Deserialize, Debug, Clone)]
+    struct FetchTadsRequest {
+        chromosome: String,
+        begin: f64,
+        end: f64,
+        /// A padding of 1 forces igv.js to display book-ended domains to be
+        /// displayed on different vertical positions.
+        padding: Option<u32>,
+    }
+
+    impl From<FetchTadsRequest> for ChromRange {
+        fn from(val: FetchTadsRequest) -> Self {
+            ChromRange {
+                chromosome: val.chromosome,
+                begin: val.begin as u32,
+                end: val.end as u32,
+            }
+        }
+    }
 
     /// Result type of ""/public/svs/tads/{release}/{tad_set}/".
     #[derive(Serialize, Debug)]
@@ -78,19 +119,22 @@ pub mod actix_server {
     async fn fetch_tads(
         data: Data<WebServerData>,
         path: Path<(String, String)>,
-        chrom_range: web::Query<ChromRange>,
-    ) -> actix_web::Result<impl Responder, MyError> {
+        query: web::Query<FetchTadsRequest>,
+    ) -> actix_web::Result<impl Responder, CustomError> {
         let genome_release =
-            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
-        let tad_set = TadSetChoice::from_str(&path.1).map_err(|e| MyError::new(e.into()))?;
+            GenomeRelease::from_str(&path.0).map_err(|e| CustomError::new(e.into()))?;
+        let tad_set = TadSetChoice::from_str(&path.1).map_err(|e| CustomError::new(e.into()))?;
+        let chrom_range: ChromRange = query.clone().into_inner().into();
         let tads = data.dbs[genome_release]
             .tad_sets
             .fetch_tads(tad_set, &chrom_range, &data.chrom_map)
             .into_iter()
             .map(|record| Tad {
                 chromosome: CHROMS[record.chrom_no as usize].to_string(),
-                begin: record.begin,
-                end: record.end,
+                begin: record
+                    .begin
+                    .saturating_sub(query.padding.unwrap_or_default()),
+                end: record.end.saturating_add(query.padding.unwrap_or_default()),
             })
             .collect::<Vec<Tad>>();
         Ok(Json(tads))
@@ -111,10 +155,11 @@ pub mod actix_server {
     async fn fetch_pathogenic(
         data: Data<WebServerData>,
         path: Path<(String,)>,
-        chrom_range: web::Query<ChromRange>,
-    ) -> actix_web::Result<impl Responder, MyError> {
+        chrom_range: web::Query<QueryChromRange>,
+    ) -> actix_web::Result<impl Responder, CustomError> {
         let genome_release =
-            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+            GenomeRelease::from_str(&path.0).map_err(|e| CustomError::new(e.into()))?;
+        let chrom_range: ChromRange = chrom_range.into_inner().into();
         let known_pathogenics = data.dbs[genome_release]
             .patho_dbs
             .fetch_records(&chrom_range, &data.chrom_map)
@@ -142,14 +187,15 @@ pub mod actix_server {
         name: String,
     }
 
+    /// We allow begin and end to be floats as igv.js likes to put floats.
     #[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
     pub struct ClinVarSvQuery {
         /// Chromosome name.
         pub chromosome: String,
         /// 0-based begin position.
-        pub begin: u32,
+        pub begin: f64,
         /// 0-based end position.
-        pub end: u32,
+        pub end: f64,
         /// Minimal pathogenicity.
         pub min_pathogenicity: Option<Pathogenicity>,
     }
@@ -160,13 +206,13 @@ pub mod actix_server {
         data: Data<WebServerData>,
         path: Path<(String,)>,
         query: web::Query<ClinVarSvQuery>,
-    ) -> actix_web::Result<impl Responder, MyError> {
+    ) -> actix_web::Result<impl Responder, CustomError> {
         let genome_release =
-            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+            GenomeRelease::from_str(&path.0).map_err(|e| CustomError::new(e.into()))?;
         let chrom_range = ChromRange {
             chromosome: query.chromosome.clone(),
-            begin: query.begin,
-            end: query.end,
+            begin: query.begin as u32,
+            end: query.end as u32,
         };
         let clinvar_entries = data.dbs[genome_release]
             .clinvar_sv
@@ -192,25 +238,51 @@ pub mod actix_server {
         Ok(Json(clinvar_entries))
     }
 
+    #[derive(Serialize)]
+    struct BgdbResponseRecord {
+        pub chromosome: String,
+        pub begin: u32,
+        pub end: u32,
+        pub sv_type: SvType,
+        pub count: u32,
+        pub name: String,
+    }
+
     /// List the overlapping background database entries.
     #[get("/public/svs/bgdb/{release}/{database}/")]
     async fn fetch_bgdb_records(
         data: Data<WebServerData>,
         path: Path<(String, String)>,
-        query: web::Query<ChromRange>,
-    ) -> actix_web::Result<impl Responder, MyError> {
+        query: web::Query<QueryChromRange>,
+    ) -> actix_web::Result<impl Responder, CustomError> {
         let genome_release =
-            GenomeRelease::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
-        let database = BgDbType::from_str(&path.0).map_err(|e| MyError::new(e.into()))?;
+            GenomeRelease::from_str(&path.0).map_err(|e| CustomError::new(e.into()))?;
+        let database = BgDbType::from_str(&path.1).map_err(|e| CustomError::new(e.into()))?;
         let chrom_range = ChromRange {
             chromosome: query.chromosome.clone(),
-            begin: query.begin,
-            end: query.end,
+            begin: query.begin as u32,
+            end: query.end as u32,
         };
-        let records =
-            data.dbs[genome_release]
-                .bg_dbs
-                .fetch_records(&chrom_range, &data.chrom_map, database);
+        let records: Vec<_> = data.dbs[genome_release]
+            .bg_dbs
+            .fetch_records(&chrom_range, &data.chrom_map, database)
+            .into_iter()
+            .map(|record| BgdbResponseRecord {
+                chromosome: query.chromosome.clone(),
+                begin: record.begin,
+                end: record.end,
+                sv_type: record.sv_type,
+                count: record.count,
+                name: format!(
+                    "{:?} @ {}:{}-{} (carriers: {})",
+                    record.sv_type,
+                    &query.chromosome,
+                    (record.begin + 1).separate_with_commas(),
+                    record.end.separate_with_commas(),
+                    record.count
+                ),
+            })
+            .collect();
         Ok(Json(records))
     }
 
@@ -222,6 +294,7 @@ pub mod actix_server {
                 .service(fetch_tads)
                 .service(fetch_pathogenic)
                 .service(fetch_clinvar_sv)
+                .service(fetch_bgdb_records)
                 .wrap(Logger::default())
         })
         .bind((args.listen_host.as_str(), args.listen_port))?

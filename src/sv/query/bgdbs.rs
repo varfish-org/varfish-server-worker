@@ -5,7 +5,7 @@ use std::{collections::HashMap, fs::File, ops::Range, path::Path, time::Instant}
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use memmap2::Mmap;
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumString;
+use strum_macros::{Display, EnumString};
 use tracing::{debug, info};
 
 use crate::{
@@ -186,7 +186,7 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
 }
 
 /// Enumeration of background database types.
-#[derive(Serialize, Deserialize, Debug, PartialEq, EnumString)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, EnumString, Display)]
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 pub enum BgDbType {
