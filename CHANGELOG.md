@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.3.0...v0.4.0) (2023-02-09)
+
+
+### Features
+
+* add "server rest" sub command ([#57](https://www.github.com/bihealth/varfish-server-worker/issues/57)) ([#58](https://www.github.com/bihealth/varfish-server-worker/issues/58)) ([4b41010](https://www.github.com/bihealth/varfish-server-worker/commit/4b41010fb4acddf18f44904358d61a21dcfe8df6))
+* implement "db compile" sub command ([#54](https://www.github.com/bihealth/varfish-server-worker/issues/54)) ([#55](https://www.github.com/bihealth/varfish-server-worker/issues/55)) ([7aa8c69](https://www.github.com/bihealth/varfish-server-worker/commit/7aa8c692bcef4d39c7b8aa6b82be5a5087ea8658))
+
 ## [0.3.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.2.1...v0.3.0) (2023-02-01)
 
 
