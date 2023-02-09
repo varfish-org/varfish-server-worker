@@ -11,6 +11,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-web = "4.3.0"
 anyhow = { version = "1.0.68", features = ["backtrace"] }
 base16ct = "0.1.1"
 bio = "1.1.0"
@@ -20,6 +21,7 @@ clap-verbosity-flag = "2.0.0"
 console = "0.15.5"
 csv = "1.1.6"
 enum-map = { version = "2.4.2", features = ["serde"] }
+env_logger = "0.10.0"
 flatbuffers = "23.1.21"
 flate2 = "1.0.25"
 indexmap = { version = "1.9.2", features = ["serde"] }

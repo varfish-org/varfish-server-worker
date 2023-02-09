@@ -58,6 +58,16 @@ $ varfish-server-worker sv query \
     --path-input-svs VARFISH_ANNOTATED.gts.tsv.gz
 ```
 
+## The `server rest` Command
+
+This runs the REST API.
+
+
+```
+$ varfish-server-worker server rest \
+    --path-db PATH_DB
+```
+
 ## Development Setup
 
 You will need a recent version of flatbuffers, e.g.:

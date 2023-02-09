@@ -11,7 +11,10 @@ use crate::{
     db::conf::StrucVarDbs,
 };
 
-use super::schema::{StructuralVariant, SvType};
+use super::{
+    records::ChromRange,
+    schema::{StructuralVariant, SvType},
+};
 
 /// Alias for the interval tree that we use.
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
@@ -39,6 +42,24 @@ pub struct PathoDb {
 }
 
 impl PathoDb {
+    pub fn fetch_records(
+        &self,
+        chrom_range: &ChromRange,
+        chrom_map: &HashMap<String, usize>,
+    ) -> Vec<Record> {
+        let chrom_idx = *chrom_map
+            .get(&chrom_range.chromosome)
+            .expect("invalid chromosome");
+        let range = chrom_range.begin..chrom_range.end;
+
+        self.trees[chrom_idx]
+            .find(range)
+            .iter()
+            .map(|e| &self.records[chrom_idx][*e.data() as usize])
+            .cloned()
+            .collect()
+    }
+
     pub fn overlapping_records(
         &self,
         sv: &StructuralVariant,
@@ -61,11 +82,20 @@ impl PathoDb {
 }
 
 /// Bundle of databases of known pathogenic variants.
+#[derive(Default, Debug)]
 pub struct PathoDbBundle {
     pub mms: PathoDb,
 }
 
 impl PathoDbBundle {
+    pub fn fetch_records(
+        &self,
+        chrom_range: &ChromRange,
+        chrom_map: &HashMap<String, usize>,
+    ) -> Vec<Record> {
+        self.mms.fetch_records(chrom_range, chrom_map)
+    }
+
     pub fn overlapping_records(
         &self,
         sv: &StructuralVariant,

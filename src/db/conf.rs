@@ -2,10 +2,12 @@
 
 use enum_map::{Enum, EnumMap};
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumString;
 
 /// Enum for the supported genome releases.
-#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default)]
+#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default, EnumString)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum GenomeRelease {
     /// GRCh37
     #[default]
@@ -15,8 +17,9 @@ pub enum GenomeRelease {
 }
 
 /// Enum for the supported gene/transcript databases.
-#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default)]
+#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default, EnumString)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum Database {
     /// RefSeq
     #[default]
@@ -26,8 +29,9 @@ pub enum Database {
 }
 
 /// Enum for the supported TADs.
-#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default)]
+#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default, EnumString)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum TadSet {
     /// hESC
     #[default]
@@ -37,8 +41,9 @@ pub enum TadSet {
 }
 
 /// Enum for the supported gene ID cross-link tables.
-#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default)]
+#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default, EnumString)]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum GeneXlink {
     /// HGNC (complete for Entrez/NCBI gene IDs)
     #[default]

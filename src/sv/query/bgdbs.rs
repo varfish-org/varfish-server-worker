@@ -4,7 +4,8 @@ use std::{collections::HashMap, fs::File, ops::Range, path::Path, time::Instant}
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use memmap2::Mmap;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 use tracing::{debug, info};
 
 use crate::{
@@ -14,7 +15,10 @@ use crate::{
     world_flatbuffers::var_fish_server_worker::SvType as FlatSvType,
 };
 
-use super::schema::{CaseQuery, StructuralVariant, SvType};
+use super::{
+    records::ChromRange,
+    schema::{CaseQuery, StructuralVariant, SvType},
+};
 
 pub trait BeginEnd {
     /// 0-base begin position
@@ -44,7 +48,7 @@ pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
 
 /// Code for background database overlappers.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct BgDb {
     /// Records, stored by chromosome.
     pub records: Vec<Vec<BgDbRecord>>,
@@ -53,6 +57,24 @@ pub struct BgDb {
 }
 
 impl BgDb {
+    pub fn fetch_records(
+        &self,
+        genomic_region: &ChromRange,
+        chrom_map: &HashMap<String, usize>,
+    ) -> Vec<BgDbRecord> {
+        let chrom_idx = *chrom_map
+            .get(&genomic_region.chromosome)
+            .expect("invalid chromosome");
+        let range = genomic_region.begin..genomic_region.end;
+
+        self.trees[chrom_idx]
+            .find(range)
+            .iter()
+            .map(|e| &self.records[chrom_idx][*e.data() as usize])
+            .cloned()
+            .collect()
+    }
+
     pub fn count_overlaps(
         &self,
         chrom_map: &HashMap<String, usize>,
@@ -90,7 +112,7 @@ impl BgDb {
 }
 
 /// Information to store for background database.
-#[derive(Default)]
+#[derive(Serialize, Default, Debug, Clone)]
 pub struct BgDbRecord {
     /// 0-based begin position.
     pub begin: u32,
@@ -163,7 +185,21 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
     Ok(result)
 }
 
+/// Enumeration of background database types.
+#[derive(Serialize, Deserialize, Debug, PartialEq, EnumString, Display)]
+#[serde(rename_all = "kebab-case")]
+#[strum(serialize_all = "kebab-case")]
+pub enum BgDbType {
+    GnomadSv,
+    Dgv,
+    DgvGs,
+    Exac,
+    G1k,
+    Inhouse,
+}
+
 /// Bundle of all background databases (including in-house).
+#[derive(Default, Debug)]
 pub struct BgDbBundle {
     pub gnomad: BgDb,
     pub dbvar: BgDb,
@@ -187,6 +223,34 @@ pub struct BgDbOverlaps {
 }
 
 impl BgDbBundle {
+    pub fn fetch_records(
+        &self,
+        genome_range: &ChromRange,
+        chrom_map: &HashMap<String, usize>,
+        db_type: BgDbType,
+    ) -> Vec<BgDbRecord> {
+        match db_type {
+            BgDbType::GnomadSv => self.gnomad.fetch_records(genome_range, chrom_map),
+            BgDbType::Dgv => self.dgv.fetch_records(genome_range, chrom_map),
+            BgDbType::DgvGs => self.dgv_gs.fetch_records(genome_range, chrom_map),
+            BgDbType::Exac => self
+                .exac
+                .as_ref()
+                .map(|exac| exac.fetch_records(genome_range, chrom_map))
+                .unwrap_or_default(),
+            BgDbType::G1k => self
+                .g1k
+                .as_ref()
+                .map(|g1k| g1k.fetch_records(genome_range, chrom_map))
+                .unwrap_or_default(),
+            BgDbType::Inhouse => self
+                .inhouse
+                .as_ref()
+                .map(|inhouse| inhouse.fetch_records(genome_range, chrom_map))
+                .unwrap_or_default(),
+        }
+    }
+
     pub fn count_overlaps(
         &self,
         sv: &StructuralVariant,

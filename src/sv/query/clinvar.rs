@@ -13,13 +13,16 @@ use crate::{
     world_flatbuffers::var_fish_server_worker::ClinvarSvDatabase,
 };
 
-use super::schema::{Pathogenicity, StructuralVariant, SvType, VariationType};
+use super::{
+    records::ChromRange,
+    schema::{Pathogenicity, StructuralVariant, SvType, VariationType},
+};
 
 /// Alias for the interval tree that we use.
 type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
 
 /// Information to store for ClinVar SV database.
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct Record {
     /// 0-based begin position.
     pub begin: u32,
@@ -43,6 +46,26 @@ pub struct ClinvarSv {
 }
 
 impl ClinvarSv {
+    /// Fetches records of overlapping entries.
+    pub fn fetch_records(
+        &self,
+        chrom_range: &ChromRange,
+        chrom_map: &HashMap<String, usize>,
+        min_patho: Option<Pathogenicity>,
+    ) -> Vec<Record> {
+        let chrom_idx = *chrom_map
+            .get(&chrom_range.chromosome)
+            .expect("invalid chromosome");
+        let range = chrom_range.begin..chrom_range.end;
+
+        self.trees[chrom_idx]
+            .find(range)
+            .iter()
+            .map(|e| self.records[chrom_idx][*e.data() as usize].clone())
+            .filter(|record| record.pathogenicity >= min_patho.unwrap_or(Pathogenicity::Benign))
+            .collect()
+    }
+
     /// Returns the overlapping VCVs
     pub fn overlapping_vcvs(
         &self,
