@@ -288,14 +288,19 @@ pub mod actix_server {
 
     #[actix_web::main]
     pub async fn main(args: &Args, dbs: Data<WebServerData>) -> std::io::Result<()> {
+        let tracks_dir = std::path::Path::new(&args.path_db.clone())
+            .join("public")
+            .join("tracks");
+
         HttpServer::new(move || {
-            App::new()
+            let app = App::new()
                 .app_data(dbs.clone())
                 .service(fetch_tads)
                 .service(fetch_pathogenic)
                 .service(fetch_clinvar_sv)
-                .service(fetch_bgdb_records)
-                .wrap(Logger::default())
+                .service(fetch_bgdb_records);
+            let app = app.service(actix_files::Files::new("/public/tracks", &tracks_dir));
+            app.wrap(Logger::default())
         })
         .bind((args.listen_host.as_str(), args.listen_port))?
         .run()
