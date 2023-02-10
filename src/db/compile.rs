@@ -208,7 +208,7 @@ fn convert_xlink(args: &Args, dbdefs: &mut EnumMap<GeneXlink, DbDef>) -> Result<
     )?;
     to_bin::xlink::convert_to_bin(
         base_path.join("hgnc.tsv"),
-        base_path.join("refseq.bin"),
+        base_path.join("hgnc.bin"),
         &args.path_worker_db,
         &mut dbdefs[GeneXlink::Hgnc],
     )?;
