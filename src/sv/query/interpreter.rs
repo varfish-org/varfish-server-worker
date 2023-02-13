@@ -7,6 +7,7 @@ use tracing::trace;
 
 use super::{
     bgdbs::BgDbOverlaps,
+    masked::MaskedBreakpointCount,
     schema::{CaseQuery, GenotypeChoice, Range, StructuralVariant, SvSubType, SvType},
 };
 
@@ -35,7 +36,11 @@ impl QueryInterpreter {
     }
 
     /// Determine whether this record passes the genotype criteria.
-    pub fn passes_genotype(&self, sv: &StructuralVariant) -> Result<bool, anyhow::Error> {
+    pub fn passes_genotype(
+        &self,
+        sv: &StructuralVariant,
+        masked_count: &MaskedBreakpointCount,
+    ) -> Result<bool, anyhow::Error> {
         // Ensure that the sample sets in query and sv are the same
         let query_samples = self.query.genotype.keys().collect::<HashSet<&String>>();
         let sv_samples = sv.call_info.keys().collect::<HashSet<&String>>();
@@ -68,6 +73,7 @@ impl QueryInterpreter {
                 for criteria in &self.query.genotype_criteria {
                     if criteria.is_applicable_to(query_genotype, sv.sv_sub_type, sv.size())
                         && criteria.is_call_info_pass(call_info)
+                        && criteria.is_masked_pass(masked_count)
                     {
                         is_any_criteria_pass = true;
                         break; // one matching criteria is enough
@@ -233,20 +239,22 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<CountBg>(
+    pub fn passes<CountBg, CountMasked>(
         &self,
         sv: &StructuralVariant,
         count_bg: &mut CountBg,
+        count_masked: &mut CountMasked,
     ) -> Result<bool, anyhow::Error>
     where
         CountBg: FnMut(&StructuralVariant) -> BgDbOverlaps,
+        CountMasked: FnMut(&StructuralVariant) -> MaskedBreakpointCount,
     {
         // We first check for matching genotype.  If this succeeds then we execute the
         // overlapper for known pathogenic and then for frequency in background.
         trace!("checking whether SV passes filter");
         if !self.passes_selection(sv)
             || !self.passes_genomic_region(sv)
-            || !self.passes_genotype(sv)?
+            || !self.passes_genotype(sv, &count_masked(sv))?
         {
             trace!("... SV does not pass filter");
             Ok(false)
@@ -259,7 +267,6 @@ impl QueryInterpreter {
     // TODO: gene allow list
     // TODO: regulatory ensembl/vista
     // TODO: regulatory custom
-    // TODO: tad boundary
     // TODO: recessive mdoe
 }
 

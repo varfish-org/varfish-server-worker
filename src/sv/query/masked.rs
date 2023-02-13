@@ -9,7 +9,7 @@ use tracing::{debug, info};
 
 use crate::{
     common::{trace_rss_now, CHROMS},
-    db::conf::MaskedRegionDbs,
+    db::conf::FeatureDbs,
     world_flatbuffers::var_fish_server_worker::MaskedDatabase,
 };
 
@@ -196,13 +196,14 @@ impl MaskedDbBundle {
 
 // Load all masked region databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_bg_dbs(path_db: &str, conf: &MaskedRegionDbs) -> Result<MaskedDbBundle, anyhow::Error> {
+pub fn load_masked_dbs(path_db: &str, conf: &FeatureDbs) -> Result<MaskedDbBundle, anyhow::Error> {
     info!("Loading masked region dbs");
     let result = MaskedDbBundle {
         repeat: load_masked_db_records(
             Path::new(path_db)
                 .join(
-                    conf.repeat
+                    conf.masked
+                        .repeat
                         .bin_path
                         .as_ref()
                         .expect("no binary path for repeat masked"),
@@ -212,7 +213,8 @@ pub fn load_bg_dbs(path_db: &str, conf: &MaskedRegionDbs) -> Result<MaskedDbBund
         segdup: load_masked_db_records(
             Path::new(path_db)
                 .join(
-                    conf.segdup
+                    conf.masked
+                        .segdup
                         .bin_path
                         .as_ref()
                         .expect("no binary path for segmental duplications"),
