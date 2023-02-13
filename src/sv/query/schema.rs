@@ -390,11 +390,11 @@ pub struct GenotypeCriteria {
     pub select_sv_max_size: Option<u32>,
 
     // Maximal number of ends/breakpoints within segmental duplications
-    pub max_brk_seqdup: Option<u32>,
+    pub max_brk_segdup: Option<u32>,
     // Maximal number of ends/breakpoints within repeat-masked sequence
     pub max_brk_repeat: Option<u32>,
     // Maximal number of ends/breakpoints within segmental duplications or repeat-masked sequence
-    pub max_brk_seqduprepeat: Option<u32>,
+    pub max_brk_segduprepeat: Option<u32>,
 
     /// The FORMAT/GT field should be one of, unless None
     pub gt_one_of: Option<Vec<String>>,
@@ -481,8 +481,8 @@ impl GenotypeCriteria {
             select_sv_min_size: None,
             select_sv_max_size: None,
             max_brk_repeat: None,
-            max_brk_seqdup: None,
-            max_brk_seqduprepeat: None,
+            max_brk_segdup: None,
+            max_brk_segduprepeat: None,
             gt_one_of: None,
             min_gq: None,
             min_pr_cov: None,
@@ -835,19 +835,19 @@ impl GenotypeCriteria {
     }
 
     pub fn is_masked_pass(&self, masked_count: &MaskedBreakpointCount) -> bool {
-        let pass_max_brk_seqdup = self
-            .max_brk_seqdup
-            .map_or(true, |max_brk_seqdup| masked_count.segdup <= max_brk_seqdup);
+        let pass_max_brk_segdup = self
+            .max_brk_segdup
+            .map_or(true, |max_brk_segdup| masked_count.segdup <= max_brk_segdup);
         let pass_max_brk_repeat = self
             .max_brk_repeat
             .map_or(true, |max_brk_repeat| masked_count.repeat <= max_brk_repeat);
-        let pass_max_brk_seqduprepeat =
-            self.max_brk_seqduprepeat
-                .map_or(true, |max_brk_seqduprepeat| {
-                    masked_count.segdup + masked_count.repeat <= max_brk_seqduprepeat
+        let pass_max_brk_segduprepeat =
+            self.max_brk_segduprepeat
+                .map_or(true, |max_brk_segduprepeat| {
+                    masked_count.segdup + masked_count.repeat <= max_brk_segduprepeat
                 });
 
-        pass_max_brk_seqdup && pass_max_brk_repeat && pass_max_brk_seqduprepeat
+        pass_max_brk_segdup && pass_max_brk_repeat && pass_max_brk_segduprepeat
     }
 }
 
@@ -1395,7 +1395,7 @@ mod tests {
             &[
                 Token::Struct {
                     name: "GenotypeCriteria",
-                    len: 36,
+                    len: 39,
                 },
                 Token::Str("genotype"),
                 Token::UnitVariant {
@@ -1408,6 +1408,12 @@ mod tests {
                 Token::Str("select_sv_min_size"),
                 Token::None,
                 Token::Str("select_sv_max_size"),
+                Token::None,
+                Token::Str("max_brk_segdup"),
+                Token::None,
+                Token::Str("max_brk_repeat"),
+                Token::None,
+                Token::Str("max_brk_segduprepeat"),
                 Token::None,
                 Token::Str("gt_one_of"),
                 Token::None,

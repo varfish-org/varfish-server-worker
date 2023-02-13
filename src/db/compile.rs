@@ -126,6 +126,32 @@ fn convert_gene_regions(
     Ok(())
 }
 
+/// Convert masked regions to binary.
+fn convert_masked(args: &Args, dbdefs: &mut MaskedRegionDbs) -> Result<(), anyhow::Error> {
+    debug!("Converting masked regions");
+
+    let base_path = args
+        .path_worker_db
+        .join("features")
+        .join(args.genome_release.to_string())
+        .join("masked");
+
+    to_bin::masked::convert_to_bin(
+        base_path.join("repeat.bed.gz"),
+        base_path.join("repeat.bin"),
+        &args.path_worker_db,
+        &mut dbdefs.repeat,
+    )?;
+    to_bin::masked::convert_to_bin(
+        base_path.join("segdup.bed.gz"),
+        base_path.join("segdup.bin"),
+        &args.path_worker_db,
+        &mut dbdefs.segdup,
+    )?;
+
+    Ok(())
+}
+
 /// Copy over the tads.
 fn copy_tads(args: &Args) -> Result<EnumMap<TadSet, DbDef>, anyhow::Error> {
     let path_out = args
@@ -476,6 +502,9 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         genome_release
     );
     convert_gene_regions(args, &mut conf.features[genome_release].gene_regions)?;
+
+    info!("Converting features/{:?}/masked to binary", genome_release);
+    convert_masked(args, &mut conf.features[genome_release].masked)?;
 
     info!("Converting vardbs/genes/xlink to binary");
     convert_xlink(args, &mut conf.genes.xlink)?;
