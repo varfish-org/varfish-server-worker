@@ -2539,6 +2539,7 @@ dependencies = [
  "multimap",
  "pretty_assertions",
  "procfs",
+ "regex",
  "result",
  "rust-htslib",
  "serde",

@@ -11,7 +11,7 @@ pub mod schema;
 pub mod tads;
 
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     fs::File,
     path::{Path, PathBuf},
     time::Instant,
@@ -27,7 +27,7 @@ use tracing::info;
 use uuid::Uuid;
 
 use crate::{
-    common::{build_chrom_map, open_read_maybe_gz, trace_rss_now},
+    common::{build_chrom_map, numeric_gene_id, open_read_maybe_gz, trace_rss_now},
     db::{
         compile::ArgGenomeRelease,
         conf::{Database, GenomeRelease, TadSet as TadSetChoice, Top},
@@ -242,6 +242,8 @@ fn run_query(
             ..ResultPayload::default()
         };
 
+        let mut ovl_gene_ids = Vec::new();
+
         let is_pass = interpreter.passes(
             &schema_sv,
             &mut |sv: &SchemaSv| {
@@ -258,6 +260,17 @@ fn run_query(
                 result_payload.masked_breakpoints =
                     dbs.masked.masked_breakpoint_count(sv, &chrom_map);
                 result_payload.masked_breakpoints.clone()
+            },
+            &mut |sv: &SchemaSv| {
+                ovl_gene_ids = dbs.genes.overlapping_gene_ids(
+                    interpreter.query.database,
+                    *chrom_map
+                        .get(&sv.chrom)
+                        .expect("cannot translate chromosome") as u32,
+                    sv.pos.saturating_sub(1)..sv.end,
+                );
+                ovl_gene_ids.sort();
+                ovl_gene_ids.clone()
             },
         )?;
 
@@ -285,18 +298,7 @@ fn run_query(
                 .map(|vcv| format!("VCV{vcv:09}"))
                 .collect();
 
-            // Get overlapping genes and genes in overlapping TADs
-            let ovl_gene_ids = {
-                let mut ovl_gene_ids = dbs.genes.overlapping_gene_ids(
-                    interpreter.query.database,
-                    *chrom_map
-                        .get(&schema_sv.chrom)
-                        .expect("cannot translate chromosome") as u32,
-                    schema_sv.pos.saturating_sub(1)..schema_sv.end,
-                );
-                ovl_gene_ids.sort();
-                ovl_gene_ids
-            };
+            // Get genes in overlapping TADs
             let tad_gene_ids = {
                 let gene_ids: HashSet<_> = HashSet::from_iter(ovl_gene_ids.iter());
                 let tads =
@@ -393,6 +395,79 @@ pub struct Databases {
     pub clinvar_sv: ClinvarSv,
 }
 
+/// Translate gene allow list to gene identifier sfrom
+fn translate_gene_allowlist(
+    gene_allowlist: &Vec<String>,
+    dbs: &Databases,
+    query: &CaseQuery,
+) -> HashSet<u32> {
+    let mut result = HashSet::new();
+
+    let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
+    let re_ensembl = regex::Regex::new(r"ENSG\d+").expect("invalid regex in source code");
+
+    let symbol_to_id: HashMap<_, _> =
+        HashMap::from_iter(dbs.genes.xlink.records.iter().map(|record| {
+            (
+                record.symbol.clone(),
+                match query.database {
+                    Database::RefSeq => record.entrez_id,
+                    Database::Ensembl => record.ensembl_gene_id,
+                },
+            )
+        }));
+
+    for gene in gene_allowlist {
+        let gene = gene.trim();
+        if re_entrez.is_match(gene) {
+            if let Ok(gene_id) = numeric_gene_id(gene) {
+                match query.database {
+                    Database::RefSeq => {
+                        result.insert(gene_id);
+                    }
+                    Database::Ensembl => {
+                        if let Some(record_ids) = dbs.genes.xlink.from_ensembl.get_vec(&gene_id) {
+                            for record_id in record_ids {
+                                result
+                                    .insert(dbs.genes.xlink.records[*record_id as usize].entrez_id);
+                            }
+                        };
+                    }
+                }
+            } else {
+                warn!("Cannot map candidate Entrez gene identifier {}", &gene);
+                continue;
+            }
+        } else if re_ensembl.is_match(gene) {
+            if let Ok(gene_id) = numeric_gene_id(gene) {
+                match query.database {
+                    Database::RefSeq => {
+                        if let Some(record_ids) = dbs.genes.xlink.from_entrez.get_vec(&gene_id) {
+                            for record_id in record_ids {
+                                result.insert(
+                                    dbs.genes.xlink.records[*record_id as usize].ensembl_gene_id,
+                                );
+                            }
+                        };
+                    }
+                    Database::Ensembl => {
+                        result.insert(gene_id);
+                    }
+                }
+            } else {
+                warn!("Cannot map candidate ENSEMBL gene identifier {}", &gene);
+                continue;
+            }
+        } else if let Some(gene_id) = symbol_to_id.get(gene) {
+            result.insert(*gene_id);
+        } else {
+            warn!("Could not map candidate gene symbol {}", &gene);
+        }
+    }
+
+    result
+}
+
 /// Main entry point for `sv query` sub command.
 pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = Instant::now();
@@ -428,9 +503,25 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &serde_json::to_string(&query)?
     );
 
+    info!("Translating gene allow list...");
+    let gene_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
+        if gene_allowlist.is_empty() {
+            None
+        } else {
+            Some(translate_gene_allowlist(gene_allowlist, &dbs, &query))
+        }
+    } else {
+        None
+    };
+
     info!("Running queries...");
     let before_query = Instant::now();
-    let query_stats = run_query(&QueryInterpreter::new(query), args, &db_conf, &dbs)?;
+    let query_stats = run_query(
+        &QueryInterpreter::new(query, gene_allowlist),
+        args,
+        &db_conf,
+        &dbs,
+    )?;
     info!("... done running query in {:?}", before_query.elapsed());
     info!(
         "summary: {} records passed out of {}",
