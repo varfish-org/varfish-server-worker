@@ -98,6 +98,8 @@ impl From<StructuralVariant> for SchemaStructuralVariant {
                         average_normalized_cov: v.anc,
                         point_count: to_u32(v.pc),
                         average_mapping_quality: v.amq,
+                        effective_genotype: None,  // only set later on
+                        matched_gt_criteria: None, // only set later on
                     },
                 )
             })),

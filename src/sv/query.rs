@@ -244,7 +244,7 @@ fn run_query(
 
         let mut ovl_gene_ids = Vec::new();
 
-        let is_pass = interpreter.passes(
+        let passes = interpreter.passes(
             &schema_sv,
             &mut |sv: &SchemaSv| {
                 result_payload.overlap_counts = dbs.bg_dbs.count_overlaps(
@@ -274,9 +274,19 @@ fn run_query(
             },
         )?;
 
-        if is_pass {
+        if passes.pass_all {
             if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
                 result_payload.sv_length = Some(schema_sv.end - schema_sv.pos + 1);
+            }
+
+            // Copy effective and compatible genotypes to output.
+            for (sample, compatible) in passes.compatible.iter() {
+                let call_info = result_payload
+                    .call_info
+                    .get_mut(sample)
+                    .expect("must exist");
+                call_info.effective_genotype = *passes.effective.get(sample).expect("must exist");
+                call_info.matched_gt_criteria = Some(compatible.clone());
             }
 
             // Count passing record in statistics

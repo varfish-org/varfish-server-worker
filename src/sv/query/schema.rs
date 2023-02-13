@@ -229,6 +229,25 @@ pub enum GenotypeChoice {
     NonReference,
 }
 
+/// Enum for effective genotypes.
+///
+/// This is very similar to `GenotypeChoice` but has no `Any`.  Also, note that the order
+/// of the values corresponds to the priority when the effective genotype is returned.
+#[derive(Serialize, Deserialize, PartialEq, PartialOrd, Debug, Clone, Copy)]
+#[serde(rename_all = "kebab-case")]
+pub enum Genotype {
+    /// Homozygous alternative genotype
+    Hom,
+    /// Heterozygous genotype
+    Het,
+    /// Not wild-type genotype
+    Variant,
+    /// Reference genotype
+    Ref,
+    /// Not variant genotype
+    NonVariant,
+}
+
 /// ENSEMBL regulatory feature
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy)]
 pub enum EnsemblRegulatoryFeature {
@@ -527,7 +546,9 @@ impl GenotypeCriteria {
         sv_sub_type: SvSubType,
         sv_size: Option<u32>,
     ) -> bool {
-        if genotype != self.genotype || !self.select_sv_sub_type.contains(&sv_sub_type) {
+        if (genotype != GenotypeChoice::Any && genotype != self.genotype)
+            || !self.select_sv_sub_type.contains(&sv_sub_type)
+        {
             false
         } else if sv_sub_type == SvSubType::Bnd || sv_sub_type.is_ins() {
             true // no further size check
@@ -1007,10 +1028,14 @@ pub enum StrandOrientation {
 }
 
 /// Information on the call as combined by the annotator.
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct CallInfo {
     /// The genotype, if applicable, e.g., "0/1", "./1", "."
     pub genotype: Option<String>,
+    /// The effective genotype, if set.
+    pub effective_genotype: Option<Genotype>,
+    /// All compatible genotypes by the genotype criteria list.
+    pub matched_gt_criteria: Option<Vec<Genotype>>,
     /// Genotype quality score, if applicable
     pub quality: Option<f32>,
     /// Paired-end coverage, if applicable
@@ -1542,6 +1567,7 @@ mod tests {
             average_normalized_cov: Some(0.491),
             point_count: Some(5),
             average_mapping_quality: Some(60.0),
+            ..Default::default()
         };
 
         assert!(crit.is_call_info_pass(&pass_info));
@@ -1572,11 +1598,12 @@ mod tests {
             average_normalized_cov: Some(0.491),
             point_count: Some(5),
             average_mapping_quality: Some(60.0),
+            ..Default::default()
         };
 
         assert!(!crit.is_call_info_pass(&CallInfo {
             genotype: Some("1/1".to_owned()),
-            ..fail_info
+            ..fail_info.clone()
         }));
         assert!(!crit.is_call_info_pass(&CallInfo {
             quality: Some(9.9),
@@ -1737,17 +1764,22 @@ mod tests {
             average_normalized_cov: Some(0.491),
             point_count: Some(5),
             average_mapping_quality: Some(60.0),
+            ..Default::default()
         };
         assert_tokens(
             &info,
             &[
                 Token::Struct {
                     name: "CallInfo",
-                    len: 10,
+                    len: 12,
                 },
                 Token::Str("genotype"),
                 Token::Some,
                 Token::Str("0/1"),
+                Token::Str("effective_genotype"),
+                Token::None,
+                Token::Str("matched_gt_criteria"),
+                Token::None,
                 Token::Str("quality"),
                 Token::Some,
                 Token::F32(10.0),
