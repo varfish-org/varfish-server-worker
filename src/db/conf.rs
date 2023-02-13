@@ -83,6 +83,15 @@ pub struct Top {
     pub vardbs: EnumMap<GenomeRelease, VarDbs>,
 }
 
+/// Configuration of masked region databases.
+#[derive(Serialize, Deserialize, PartialEq, Debug, Default)]
+pub struct MaskedRegionDbs {
+    /// Relative path to the file with repeat masker database with checksum.
+    pub repeat: DbDef,
+    /// Relative path to the file with segmental duplication database with checksum.
+    pub segdup: DbDef,
+}
+
 /// Configuration of genomic features.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Default)]
 pub struct FeatureDbs {
@@ -94,6 +103,8 @@ pub struct FeatureDbs {
     pub gene_regions: EnumMap<Database, DbDef>,
     /// TAD definitions (by domain, not boundary).
     pub tads: EnumMap<TadSet, DbDef>,
+    /// Definition of masked regions for repeats.
+    pub masked: MaskedRegionDbs,
 }
 
 pub fn default_max_dist() -> u32 {

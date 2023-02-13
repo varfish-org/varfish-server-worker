@@ -327,17 +327,62 @@ pub mod clinvar {
             pub begin: u32,
             /// 1-based end position
             pub end: u32,
+            /// unused
+            #[allow(dead_code)]
+            bin: u32,
+            /// unused
+            #[allow(dead_code)]
+            reference: String,
+            /// unused
+            #[allow(dead_code)]
+            alternative: String,
+            /// unused
+            #[allow(dead_code)]
+            clinvar_version: String,
+            /// unused
+            #[allow(dead_code)]
+            set_type: String,
             /// ClinVar SV variation type
             #[serde(deserialize_with = "from_variation_type_label")]
             pub variation_type: VariationType,
+            /// unused
+            #[allow(dead_code)]
+            symbols: String,
+            /// unused
+            #[allow(dead_code)]
+            hgnc_ids: String,
             /// The ClinVar VCV identifier
             pub vcv: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_clinvar_review_status_label: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_clinvar_pathogenicity_label: String,
             /// Pathogenicity
             #[serde(
                 alias = "summary_clinvar_pathogenicity",
                 deserialize_with = "from_pathogenicity_summary"
             )]
             pub pathogenicity: Pathogenicity,
+            /// unused
+            #[allow(dead_code)]
+            summary_clinvar_gold_stars: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_review_status_label: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_pathogenicity_label: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_pathogenicity: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_gold_stars: String,
+            /// unused
+            #[allow(dead_code)]
+            details: String,
         }
 
         /// Deserialize "VariationType" from ClinVar TSV file
@@ -388,7 +433,9 @@ pub mod clinvar {
         let chrom_map = build_chrom_map();
 
         let mut reader = csv::ReaderBuilder::new()
+            .comment(Some(b'#'))
             .delimiter(b'\t')
+            .has_headers(false)
             .from_reader(open_read_maybe_gz(path_input_tsv)?);
         let before_parsing = Instant::now();
 

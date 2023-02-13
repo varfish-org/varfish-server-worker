@@ -25,6 +25,18 @@ table BackgroundDatabase {
   records:[BgDbRecord];
 }
 
+// Masked region database record.
+struct MaskedDbRecord {
+  chrom_no: ubyte;
+  begin: uint;
+  end: uint;
+}
+
+// Masked Region database consists of a Vector of BgDbRecord.
+table MaskedDatabase {
+  records:[MaskedDbRecord];
+}
+
 // Gene region record.
 struct GeneRegionRecord {
   chrom_no: ubyte;

@@ -4,6 +4,7 @@ pub mod bgdbs;
 pub mod clinvar;
 pub mod genes;
 pub mod interpreter;
+pub mod masked;
 pub mod pathogenic;
 pub mod records;
 pub mod schema;
