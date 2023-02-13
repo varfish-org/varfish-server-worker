@@ -32,6 +32,12 @@ path = ""
 [features.grch37.tads.imr90]
 path = ""
 
+[features.grch37.masked.repeat]
+path = ""
+
+[features.grch37.masked.segdup]
+path = ""
+
 [features.grch38]
 max_dist = 0
 
@@ -45,6 +51,12 @@ path = ""
 path = ""
 
 [features.grch38.tads.imr90]
+path = ""
+
+[features.grch38.masked.repeat]
+path = ""
+
+[features.grch38.masked.segdup]
 path = ""
 
 [vardbs.grch37.seqvar]

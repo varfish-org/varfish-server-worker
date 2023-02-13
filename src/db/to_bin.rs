@@ -31,7 +31,7 @@ pub mod gene_region {
         pub struct Record {
             /// Chromosome name
             pub chromosome: String,
-            /// 1-based start position
+            /// 0-based begin position
             pub begin: u32,
             /// 1-based end position
             pub end: u32,
@@ -93,6 +93,125 @@ pub mod gene_region {
         let gene_region_db = GeneRegionDatabase::create(
             &mut builder,
             &GeneRegionDatabaseArgs {
+                records: Some(records),
+            },
+        );
+        builder.finish_minimal(gene_region_db);
+        let mut output_file = File::create(&path_output_bin)?;
+        output_file.write_all(builder.finished_data())?;
+        output_file.flush()?;
+        debug!(
+            "total time spent writing {} records: {:?}",
+            output_records.len().separate_with_commas(),
+            before_writing.elapsed()
+        );
+
+        // Update the DbDef.
+        dbdef.bin_path = Some(
+            path_output_bin
+                .as_ref()
+                .strip_prefix(path_worker_db)?
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+        dbdef.bin_md5 = Some(md5sum(path_output_bin.as_ref())?);
+        dbdef.bin_sha256 = Some(sha256sum(path_output_bin.as_ref())?);
+
+        Ok(())
+    }
+}
+
+/// Code for converting masked regions from text-based to binary format.
+pub mod masked {
+    use std::{
+        fs::File,
+        io::Write,
+        path::{Path, PathBuf},
+        time::Instant,
+    };
+
+    use thousands::Separable;
+    use tracing::debug;
+
+    use crate::{
+        common::{build_chrom_map, md5sum, open_read_maybe_gz, sha256sum, trace_rss_now},
+        db::conf::DbDef,
+        world_flatbuffers::var_fish_server_worker::{
+            MaskedDatabase, MaskedDatabaseArgs, MaskedDbRecord,
+        },
+    };
+
+    /// Module with code supporting the parsing.
+    mod input {
+        use serde::Deserialize;
+
+        /// Record as created by VarFish DB Downloader.
+        #[derive(Debug, Deserialize)]
+        pub struct Record {
+            /// Chromosome name
+            pub chromosome: String,
+            /// 0-based begin position
+            pub begin: u32,
+            /// 1-based end position
+            pub end: u32,
+            /// Masked region label
+            pub label: String,
+        }
+    }
+
+    /// Perform conversion to flatbuffers `.bin` file.
+    pub fn convert_to_bin<P, Q>(
+        path_input_tsv: P,
+        path_output_bin: Q,
+        path_worker_db: &PathBuf,
+        dbdef: &mut DbDef,
+    ) -> Result<(), anyhow::Error>
+    where
+        P: AsRef<Path>,
+        Q: AsRef<Path>,
+    {
+        debug!(
+            "Converting masked region from BED {:?} to binary {:?}",
+            path_input_tsv.as_ref(),
+            path_output_bin.as_ref()
+        );
+        let chrom_map = build_chrom_map();
+
+        // Setup CSV reader for BED file - header is written as comment and must be ignored.
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .delimiter(b'\t')
+            .comment(Some(b'#'))
+            .from_reader(open_read_maybe_gz(path_input_tsv.as_ref())?);
+        let before_parsing = Instant::now();
+
+        let mut output_records = Vec::new();
+        for record in reader.deserialize() {
+            let record: input::Record = record?;
+            output_records.push(MaskedDbRecord::new(
+                *chrom_map
+                    .get(&record.chromosome)
+                    .unwrap_or_else(|| panic!("unknown chrom {:?}", &record.chromosome))
+                    as u8,
+                record.begin,
+                record.end,
+            ));
+        }
+
+        debug!(
+            "total time spent reading {:?} records: {:?}",
+            output_records.len().separate_with_commas(),
+            before_parsing.elapsed()
+        );
+        trace_rss_now();
+
+        let before_writing = Instant::now();
+        let mut builder = flatbuffers::FlatBufferBuilder::new();
+        let records = builder.create_vector(output_records.as_slice());
+        let gene_region_db = MaskedDatabase::create(
+            &mut builder,
+            &MaskedDatabaseArgs {
                 records: Some(records),
             },
         );
@@ -327,17 +446,62 @@ pub mod clinvar {
             pub begin: u32,
             /// 1-based end position
             pub end: u32,
+            /// unused
+            #[allow(dead_code)]
+            bin: u32,
+            /// unused
+            #[allow(dead_code)]
+            reference: String,
+            /// unused
+            #[allow(dead_code)]
+            alternative: String,
+            /// unused
+            #[allow(dead_code)]
+            clinvar_version: String,
+            /// unused
+            #[allow(dead_code)]
+            set_type: String,
             /// ClinVar SV variation type
             #[serde(deserialize_with = "from_variation_type_label")]
             pub variation_type: VariationType,
+            /// unused
+            #[allow(dead_code)]
+            symbols: String,
+            /// unused
+            #[allow(dead_code)]
+            hgnc_ids: String,
             /// The ClinVar VCV identifier
             pub vcv: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_clinvar_review_status_label: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_clinvar_pathogenicity_label: String,
             /// Pathogenicity
             #[serde(
                 alias = "summary_clinvar_pathogenicity",
                 deserialize_with = "from_pathogenicity_summary"
             )]
             pub pathogenicity: Pathogenicity,
+            /// unused
+            #[allow(dead_code)]
+            summary_clinvar_gold_stars: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_review_status_label: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_pathogenicity_label: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_pathogenicity: String,
+            /// unused
+            #[allow(dead_code)]
+            summary_paranoid_gold_stars: String,
+            /// unused
+            #[allow(dead_code)]
+            details: String,
         }
 
         /// Deserialize "VariationType" from ClinVar TSV file
@@ -388,7 +552,9 @@ pub mod clinvar {
         let chrom_map = build_chrom_map();
 
         let mut reader = csv::ReaderBuilder::new()
+            .comment(Some(b'#'))
             .delimiter(b'\t')
+            .has_headers(false)
             .from_reader(open_read_maybe_gz(path_input_tsv)?);
         let before_parsing = Instant::now();
 

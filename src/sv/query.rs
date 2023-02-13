@@ -4,6 +4,7 @@ pub mod bgdbs;
 pub mod clinvar;
 pub mod genes;
 pub mod interpreter;
+pub mod masked;
 pub mod pathogenic;
 pub mod records;
 pub mod schema;
@@ -33,7 +34,7 @@ use crate::{
     },
     sv::query::{
         bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
-        interpreter::QueryInterpreter, pathogenic::load_patho_dbs,
+        interpreter::QueryInterpreter, masked::load_masked_dbs, pathogenic::load_patho_dbs,
         pathogenic::Record as KnownPathogenicRecord, records::StructuralVariant as RecordSv,
         schema::CaseQuery, schema::StructuralVariant as SchemaSv, tads::load_tads,
     },
@@ -43,6 +44,7 @@ use self::{
     bgdbs::{BgDbBundle, BgDbOverlaps},
     clinvar::ClinvarSv,
     genes::GeneDb,
+    masked::{MaskedBreakpointCount, MaskedDbBundle},
     pathogenic::PathoDbBundle,
     schema::{CallInfo, StrandOrientation, SvSubType, SvType},
     tads::TadSetBundle,
@@ -110,6 +112,8 @@ struct Gene {
 /// The structured result information of the result record.
 #[derive(Debug, Default, Serialize)]
 struct ResultPayload {
+    /// The name of the calling tool.
+    caller: String,
     /// The overlapping VCVs
     clinvar_ovl_vcvs: Vec<String>,
     /// The directly overlapping genes.
@@ -128,6 +132,8 @@ struct ResultPayload {
     sv_length: Option<u32>,
     /// Overlap counts with background databases.
     overlap_counts: BgDbOverlaps,
+    /// Overlap counts with masked sequenced.
+    masked_breakpoints: MaskedBreakpointCount,
     /// Distance to next TAD boundary.
     tad_boundary_distance: Option<u32>,
 }
@@ -232,19 +238,28 @@ fn run_query(
 
         let mut result_payload = ResultPayload {
             call_info: schema_sv.call_info.clone(),
+            caller: record_sv.caller.clone(),
             ..ResultPayload::default()
         };
 
-        let is_pass = interpreter.passes(&schema_sv, &mut |sv: &SchemaSv| {
-            result_payload.overlap_counts = dbs.bg_dbs.count_overlaps(
-                sv,
-                &interpreter.query,
-                &chrom_map,
-                db_conf.vardbs[gr].strucvar.slack_ins,
-                db_conf.vardbs[gr].strucvar.slack_bnd,
-            );
-            result_payload.overlap_counts.clone()
-        })?;
+        let is_pass = interpreter.passes(
+            &schema_sv,
+            &mut |sv: &SchemaSv| {
+                result_payload.overlap_counts = dbs.bg_dbs.count_overlaps(
+                    sv,
+                    &interpreter.query,
+                    &chrom_map,
+                    db_conf.vardbs[gr].strucvar.slack_ins,
+                    db_conf.vardbs[gr].strucvar.slack_bnd,
+                );
+                result_payload.overlap_counts.clone()
+            },
+            &mut |sv: &SchemaSv| {
+                result_payload.masked_breakpoints =
+                    dbs.masked.masked_breakpoint_count(sv, &chrom_map);
+                result_payload.masked_breakpoints.clone()
+            },
+        )?;
 
         if is_pass {
             if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
@@ -373,6 +388,7 @@ pub struct Databases {
     pub bg_dbs: BgDbBundle,
     pub patho_dbs: PathoDbBundle,
     pub tad_sets: TadSetBundle,
+    pub masked: MaskedDbBundle,
     pub genes: GeneDb,
     pub clinvar_sv: ClinvarSv,
 }
@@ -394,6 +410,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         bg_dbs: load_bg_dbs(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
         patho_dbs: load_patho_dbs(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
         tad_sets: load_tads(&args.path_db, &db_conf.features[gr])?,
+        masked: load_masked_dbs(&args.path_db, &db_conf.features[gr])?,
         genes: load_gene_db(&args.path_db, &db_conf.genes, &db_conf.features[gr])?,
         clinvar_sv: load_clinvar_sv(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
     };

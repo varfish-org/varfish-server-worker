@@ -17,7 +17,8 @@ use crate::{
 };
 
 use super::conf::{
-    default_min_overlap, default_slack_bnd, default_slack_ins, Database, DbDef, StrucVarDbs, TadSet,
+    default_min_overlap, default_slack_bnd, default_slack_ins, Database, DbDef, MaskedRegionDbs,
+    StrucVarDbs, TadSet,
 };
 
 /// Copy one database definition file set.
@@ -125,6 +126,32 @@ fn convert_gene_regions(
     Ok(())
 }
 
+/// Convert masked regions to binary.
+fn convert_masked(args: &Args, dbdefs: &mut MaskedRegionDbs) -> Result<(), anyhow::Error> {
+    debug!("Converting masked regions");
+
+    let base_path = args
+        .path_worker_db
+        .join("features")
+        .join(args.genome_release.to_string())
+        .join("masked");
+
+    to_bin::masked::convert_to_bin(
+        base_path.join("repeat.bed.gz"),
+        base_path.join("repeat.bin"),
+        &args.path_worker_db,
+        &mut dbdefs.repeat,
+    )?;
+    to_bin::masked::convert_to_bin(
+        base_path.join("segdup.bed.gz"),
+        base_path.join("segdup.bin"),
+        &args.path_worker_db,
+        &mut dbdefs.segdup,
+    )?;
+
+    Ok(())
+}
+
 /// Copy over the tads.
 fn copy_tads(args: &Args) -> Result<EnumMap<TadSet, DbDef>, anyhow::Error> {
     let path_out = args
@@ -141,6 +168,37 @@ fn copy_tads(args: &Args) -> Result<EnumMap<TadSet, DbDef>, anyhow::Error> {
     Ok(enum_map! {
         TadSet::Hesc => copy_db_def(&args.path_worker_db, &path_out, &base_path, "hesc", ".bed")?,
         TadSet::Imr90 => copy_db_def(&args.path_worker_db, &path_out, &base_path, "imr90", ".bed")?,
+    })
+}
+
+/// Copy over the masked sequence list.
+fn copy_masked(args: &Args) -> Result<MaskedRegionDbs, anyhow::Error> {
+    let path_out = args
+        .path_worker_db
+        .join("features")
+        .join(args.genome_release.to_string())
+        .join("masked");
+    let base_path = args
+        .path_db_downloader
+        .join("features")
+        .join(args.genome_release.to_string())
+        .join("masked");
+
+    Ok(MaskedRegionDbs {
+        repeat: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "repeat",
+            ".bed.gz",
+        )?,
+        segdup: copy_db_def(
+            &args.path_worker_db,
+            &path_out,
+            &base_path,
+            "segdup",
+            ".bed.gz",
+        )?,
     })
 }
 
@@ -421,6 +479,9 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("Copying features/{:?}/tads", genome_release);
     conf.features[genome_release].tads = copy_tads(args)?;
 
+    info!("Copying features/{:?}/masked", genome_release);
+    conf.features[genome_release].masked = copy_masked(args)?;
+
     info!("Copying genes/acmg");
     conf.genes.acmg = copy_acmg(args)?;
 
@@ -441,6 +502,9 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         genome_release
     );
     convert_gene_regions(args, &mut conf.features[genome_release].gene_regions)?;
+
+    info!("Converting features/{:?}/masked to binary", genome_release);
+    convert_masked(args, &mut conf.features[genome_release].masked)?;
 
     info!("Converting vardbs/genes/xlink to binary");
     convert_xlink(args, &mut conf.genes.xlink)?;
@@ -468,7 +532,7 @@ mod tests {
     fn run_smoke() -> Result<(), anyhow::Error> {
         let tmp_dir = TempDir::default();
         let common_args = CommonArgs {
-            verbose: Verbosity::new(0, 0),
+            verbose: Verbosity::new(1, 0),
         };
         let args = Args {
             genome_release: ArgGenomeRelease::Grch37,

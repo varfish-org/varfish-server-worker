@@ -36,6 +36,8 @@ pub struct StructuralVariant {
     /// 1-based start position of the variant (or position on first chromosome for
     /// break-ends)
     pub start: u32,
+    /// The name of the calling tool.
+    pub caller: String,
     /// Type of the structural variant
     #[serde(deserialize_with = "deserialize_sv_type")]
     pub sv_type: SvType,

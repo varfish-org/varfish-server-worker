@@ -11,7 +11,7 @@ use crate::{
     common::{build_chrom_map, trace_rss_now},
     db::conf::{GenomeRelease, Top},
     sv::query::{
-        bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
+        bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db, masked::load_masked_dbs,
         pathogenic::load_patho_dbs, tads::load_tads, Databases,
     },
 };
@@ -359,6 +359,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
             bg_dbs: load_bg_dbs(&args.path_db, &db_conf.vardbs[GenomeRelease::Grch37].strucvar)?,
             patho_dbs: load_patho_dbs(&args.path_db, &db_conf.vardbs[GenomeRelease::Grch37].strucvar)?,
             tad_sets: load_tads(&args.path_db, &db_conf.features[GenomeRelease::Grch37])?,
+            masked: load_masked_dbs(&args.path_db, &db_conf.features[GenomeRelease::Grch37])?,
             genes: load_gene_db(&args.path_db, &db_conf.genes, &db_conf.features[GenomeRelease::Grch37])?,
             clinvar_sv: load_clinvar_sv(&args.path_db, &db_conf.vardbs[GenomeRelease::Grch37].strucvar)?,
         },

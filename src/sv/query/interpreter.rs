@@ -7,6 +7,7 @@ use tracing::trace;
 
 use super::{
     bgdbs::BgDbOverlaps,
+    masked::MaskedBreakpointCount,
     schema::{CaseQuery, GenotypeChoice, Range, StructuralVariant, SvSubType, SvType},
 };
 
@@ -35,7 +36,11 @@ impl QueryInterpreter {
     }
 
     /// Determine whether this record passes the genotype criteria.
-    pub fn passes_genotype(&self, sv: &StructuralVariant) -> Result<bool, anyhow::Error> {
+    pub fn passes_genotype(
+        &self,
+        sv: &StructuralVariant,
+        masked_count: &MaskedBreakpointCount,
+    ) -> Result<bool, anyhow::Error> {
         // Ensure that the sample sets in query and sv are the same
         let query_samples = self.query.genotype.keys().collect::<HashSet<&String>>();
         let sv_samples = sv.call_info.keys().collect::<HashSet<&String>>();
@@ -62,12 +67,25 @@ impl QueryInterpreter {
                 .get(sample)
                 .expect("cannot happen: checked for sample quality earlier");
 
-            // We do not have to check if any genotype is fine for this sample
-            if query_genotype != GenotypeChoice::Any {
+            if query_genotype == GenotypeChoice::Any {
+                // If any genotype is fine for this sample, we still check the breakpoint/masked info.
+                // We check all criteria in this case and any passing is OK.
+                let mut is_any_criteria_pass = false;
+                for criteria in &self.query.genotype_criteria {
+                    if criteria.is_masked_pass(masked_count) {
+                        is_any_criteria_pass = true;
+                        break;
+                    }
+                }
+                if !is_any_criteria_pass {
+                    return Ok(false);
+                }
+            } else {
                 let mut is_any_criteria_pass = false;
                 for criteria in &self.query.genotype_criteria {
                     if criteria.is_applicable_to(query_genotype, sv.sv_sub_type, sv.size())
                         && criteria.is_call_info_pass(call_info)
+                        && criteria.is_masked_pass(masked_count)
                     {
                         is_any_criteria_pass = true;
                         break; // one matching criteria is enough
@@ -233,20 +251,22 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<CountBg>(
+    pub fn passes<CountBg, CountMasked>(
         &self,
         sv: &StructuralVariant,
         count_bg: &mut CountBg,
+        count_masked: &mut CountMasked,
     ) -> Result<bool, anyhow::Error>
     where
         CountBg: FnMut(&StructuralVariant) -> BgDbOverlaps,
+        CountMasked: FnMut(&StructuralVariant) -> MaskedBreakpointCount,
     {
         // We first check for matching genotype.  If this succeeds then we execute the
         // overlapper for known pathogenic and then for frequency in background.
         trace!("checking whether SV passes filter");
         if !self.passes_selection(sv)
             || !self.passes_genomic_region(sv)
-            || !self.passes_genotype(sv)?
+            || !self.passes_genotype(sv, &count_masked(sv))?
         {
             trace!("... SV does not pass filter");
             Ok(false)
@@ -259,7 +279,6 @@ impl QueryInterpreter {
     // TODO: gene allow list
     // TODO: regulatory ensembl/vista
     // TODO: regulatory custom
-    // TODO: tad boundary
     // TODO: recessive mdoe
 }
 
@@ -853,56 +872,74 @@ mod tests {
         // The following tests fail because the SV does not match the match criteria for
         // dfiferent reasons.
 
-        assert!(!interpreter.passes_genotype(&StructuralVariant {
-            end: 1100,
-            ..sv_fail.clone()
-        })?); // too small to match
+        assert!(!interpreter.passes_genotype(
+            &StructuralVariant {
+                end: 1100,
+                ..sv_fail.clone()
+            },
+            &Default::default()
+        )?); // too small to match
 
-        assert!(!interpreter.passes_genotype(&StructuralVariant {
-            end: 10000,
-            ..sv_fail.clone()
-        })?); // too large to match
+        assert!(!interpreter.passes_genotype(
+            &StructuralVariant {
+                end: 10000,
+                ..sv_fail.clone()
+            },
+            &Default::default()
+        )?); // too large to match
 
-        assert!(!interpreter.passes_genotype(&StructuralVariant {
-            sv_type: SvType::Dup,
-            sv_sub_type: SvSubType::Dup,
-            ..sv_fail.clone()
-        })?); // wrong sv sub type
+        assert!(!interpreter.passes_genotype(
+            &StructuralVariant {
+                sv_type: SvType::Dup,
+                sv_sub_type: SvSubType::Dup,
+                ..sv_fail.clone()
+            },
+            &Default::default()
+        )?); // wrong sv sub type
 
-        assert!(!interpreter.passes_genotype(&StructuralVariant {
-            call_info: IndexMap::from([(
-                "sample".to_owned(),
-                CallInfo {
-                    quality: Some(1.0),
-                    ..call_info.clone()
-                },
-            )]),
-            ..sv_fail.clone()
-        })?); // quality too low
+        assert!(!interpreter.passes_genotype(
+            &StructuralVariant {
+                call_info: IndexMap::from([(
+                    "sample".to_owned(),
+                    CallInfo {
+                        quality: Some(1.0),
+                        ..call_info.clone()
+                    },
+                )]),
+                ..sv_fail.clone()
+            },
+            &Default::default()
+        )?); // quality too low
 
-        assert!(!interpreter.passes_genotype(&StructuralVariant {
-            call_info: IndexMap::from([(
-                "sample".to_owned(),
-                CallInfo {
-                    genotype: Some("0/0".to_owned()),
-                    paired_end_cov: Some(1),
-                    ..call_info
-                },
-            )]),
-            ..sv_fail.clone()
-        })?); // pr coverage too low
+        assert!(!interpreter.passes_genotype(
+            &StructuralVariant {
+                call_info: IndexMap::from([(
+                    "sample".to_owned(),
+                    CallInfo {
+                        genotype: Some("0/0".to_owned()),
+                        paired_end_cov: Some(1),
+                        ..call_info
+                    },
+                )]),
+                ..sv_fail.clone()
+            },
+            &Default::default()
+        )?); // pr coverage too low
 
-        assert!(!interpreter.passes_genotype(&StructuralVariant {
-            call_info: IndexMap::from([(
-                "sample".to_owned(),
-                CallInfo {
-                    genotype: Some("0/0".to_owned()),
-                    split_read_cov: Some(1),
-                    ..call_info
-                },
-            )]),
-            ..sv_fail
-        })?); // sr coverage too low
+        assert!(!interpreter.passes_genotype(
+            &StructuralVariant {
+                call_info: IndexMap::from([(
+                    "sample".to_owned(),
+                    CallInfo {
+                        genotype: Some("0/0".to_owned()),
+                        split_read_cov: Some(1),
+                        ..call_info
+                    },
+                )]),
+                ..sv_fail
+            },
+            &Default::default()
+        )?); // sr coverage too low
 
         Ok(())
     }
@@ -957,7 +994,7 @@ mod tests {
             )]),
         };
 
-        assert!(interpreter.passes_genotype(&sv)?);
+        assert!(interpreter.passes_genotype(&sv, &Default::default())?);
 
         Ok(())
     }
@@ -1011,7 +1048,7 @@ mod tests {
             call_info: IndexMap::from([("sample".to_owned(), call_info)]),
         };
 
-        assert!(interpreter.passes_genotype(&sv_pass)?);
+        assert!(interpreter.passes_genotype(&sv_pass, &Default::default())?);
         Ok(())
     }
 
@@ -1040,7 +1077,11 @@ mod tests {
             dbvar: 5,
         };
 
-        assert!(interpreter.passes(&sv_pass, &mut |_sv| counts_pass.clone())?);
+        assert!(
+            interpreter.passes(&sv_pass, &mut |_sv| counts_pass.clone(), &mut |_sv| {
+                Default::default()
+            })?
+        );
 
         Ok(())
     }
