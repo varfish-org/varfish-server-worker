@@ -27,12 +27,16 @@ fn overlaps(s1: u32, e1: u32, s2: u32, e2: u32) -> bool {
 #[derive(Debug)]
 pub struct QueryInterpreter {
     pub query: CaseQuery,
+    pub gene_allowlist: Option<HashSet<u32>>,
 }
 
 impl QueryInterpreter {
     /// Construct new `QueryInterpreter` with the given query settings.
-    pub fn new(query: CaseQuery) -> Self {
-        QueryInterpreter { query }
+    pub fn new(query: CaseQuery, gene_allowlist: Option<HashSet<u32>>) -> Self {
+        QueryInterpreter {
+            query,
+            gene_allowlist,
+        }
     }
 
     /// Determine whether this record passes the genotype criteria.
@@ -250,16 +254,32 @@ impl QueryInterpreter {
             && passes_inhouse
     }
 
+    /// Determin whether the `sv` passes the gene allow list filter.
+    pub fn passes_genes(&self, ovl_gene_ids: &[u32]) -> bool {
+        if let Some(gene_allowlist) = self.gene_allowlist.as_ref() {
+            if gene_allowlist.is_empty() {
+                true
+            } else {
+                let ovl_gene_ids: HashSet<u32> = HashSet::from_iter(ovl_gene_ids.iter().copied());
+                !ovl_gene_ids.is_disjoint(gene_allowlist)
+            }
+        } else {
+            true
+        }
+    }
+
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<CountBg, CountMasked>(
+    pub fn passes<CountBg, CountMasked, OvlGeneIds>(
         &self,
         sv: &StructuralVariant,
         count_bg: &mut CountBg,
         count_masked: &mut CountMasked,
+        ovl_gene_ids: &mut OvlGeneIds,
     ) -> Result<bool, anyhow::Error>
     where
         CountBg: FnMut(&StructuralVariant) -> BgDbOverlaps,
         CountMasked: FnMut(&StructuralVariant) -> MaskedBreakpointCount,
+        OvlGeneIds: FnMut(&StructuralVariant) -> Vec<u32>,
     {
         // We first check for matching genotype.  If this succeeds then we execute the
         // overlapper for known pathogenic and then for frequency in background.
@@ -267,6 +287,7 @@ impl QueryInterpreter {
         if !self.passes_selection(sv)
             || !self.passes_genomic_region(sv)
             || !self.passes_genotype(sv, &count_masked(sv))?
+            || !self.passes_genes(&ovl_gene_ids(sv))
         {
             trace!("... SV does not pass filter");
             Ok(false)
@@ -276,7 +297,6 @@ impl QueryInterpreter {
         }
     }
 
-    // TODO: gene allow list
     // TODO: regulatory ensembl/vista
     // TODO: regulatory custom
     // TODO: recessive mdoe
@@ -308,7 +328,7 @@ mod tests {
     #[test]
     fn test_query_interpreter_smoke() {
         let query = CaseQuery::new(Database::RefSeq);
-        let _interpreter = QueryInterpreter::new(query);
+        let _interpreter = QueryInterpreter::new(query, None);
     }
 
     #[test]
@@ -317,7 +337,7 @@ mod tests {
             sv_types: vec![SvType::Del],
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -339,7 +359,7 @@ mod tests {
             sv_types: vec![SvType::Ins],
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -361,7 +381,7 @@ mod tests {
             sv_sub_types: vec![SvSubType::Ins],
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -384,7 +404,7 @@ mod tests {
             sv_size_max: Some(500),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -406,7 +426,7 @@ mod tests {
             sv_size_min: Some(5000),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -428,7 +448,7 @@ mod tests {
             sv_size_max: Some(1),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -450,7 +470,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 150, 160)]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -472,7 +492,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -494,7 +514,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 201, 250)]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -516,7 +536,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -538,7 +558,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 150, 160)]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -560,7 +580,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -582,7 +602,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 201, 250)]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -604,7 +624,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -626,7 +646,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 150, 160)]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -648,7 +668,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -670,7 +690,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::new("chr2", 150, 160)]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -692,7 +712,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -714,7 +734,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 201, 250)]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -736,7 +756,7 @@ mod tests {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_fail = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -771,7 +791,7 @@ mod tests {
             svdb_inhouse_max_count: Some(10),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let counts_pass = BgDbOverlaps {
             dgv: 5,
@@ -805,7 +825,7 @@ mod tests {
             svdb_inhouse_max_count: Some(10),
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let counts_fail = BgDbOverlaps {
             dgv: 11,
@@ -843,7 +863,7 @@ mod tests {
             }],
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let call_info = CallInfo {
             genotype: Some("0/1".to_owned()),
@@ -967,7 +987,7 @@ mod tests {
             }],
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv = StructuralVariant {
             chrom: "1".to_owned(),
@@ -1022,7 +1042,7 @@ mod tests {
             }],
             ..CaseQuery::new(Database::RefSeq)
         };
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let call_info = CallInfo {
             genotype: Some("0/1".to_owned()),
@@ -1055,7 +1075,7 @@ mod tests {
     #[test]
     fn test_query_interpreter_passes_smoke() -> Result<(), anyhow::Error> {
         let query = CaseQuery::new(Database::RefSeq);
-        let interpreter = QueryInterpreter::new(query);
+        let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {
             chrom: "chr1".to_owned(),
@@ -1077,11 +1097,12 @@ mod tests {
             dbvar: 5,
         };
 
-        assert!(
-            interpreter.passes(&sv_pass, &mut |_sv| counts_pass.clone(), &mut |_sv| {
-                Default::default()
-            })?
-        );
+        assert!(interpreter.passes(
+            &sv_pass,
+            &mut |_sv| counts_pass.clone(),
+            &mut |_sv| { Default::default() },
+            &mut |_sv| { Default::default() }
+        )?);
 
         Ok(())
     }
