@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.4.0...v0.5.0) (2023-02-13)
+
+
+### Features
+
+* annotate SVs with masked sequence overlap ([#63](https://www.github.com/bihealth/varfish-server-worker/issues/63)) ([#66](https://www.github.com/bihealth/varfish-server-worker/issues/66)) ([0fd9403](https://www.github.com/bihealth/varfish-server-worker/commit/0fd940362f820913a71fbca5c53194206e097792))
+* implement gene allow lists for "sv query" ([#65](https://www.github.com/bihealth/varfish-server-worker/issues/65)) ([#67](https://www.github.com/bihealth/varfish-server-worker/issues/67)) ([aa9da21](https://www.github.com/bihealth/varfish-server-worker/commit/aa9da21b27a0ba30b8a2589f543a44643815abc2))
+* serve genome browser tracks from database ([#59](https://www.github.com/bihealth/varfish-server-worker/issues/59)) ([#60](https://www.github.com/bihealth/varfish-server-worker/issues/60)) ([040c522](https://www.github.com/bihealth/varfish-server-worker/commit/040c5227b251d76594acfa93f714305e0910eca5))
+* write out effective and matched genotype from rules ([#64](https://www.github.com/bihealth/varfish-server-worker/issues/64)) ([#68](https://www.github.com/bihealth/varfish-server-worker/issues/68)) ([2c2c793](https://www.github.com/bihealth/varfish-server-worker/commit/2c2c7934d3fe333d72b709847a1c4c4a48375973))
+
+
+### Bug Fixes
+
+* hgnc xlink path ([#62](https://www.github.com/bihealth/varfish-server-worker/issues/62)) ([985cc33](https://www.github.com/bihealth/varfish-server-worker/commit/985cc334e99e6d693c3a665b34a825d28f4c81b6))
+
 ## [0.4.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.3.0...v0.4.0) (2023-02-09)
 
 
