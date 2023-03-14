@@ -180,7 +180,6 @@ where
         .map_err(|e| anyhow::anyhow!("Could not open .md5 file {:?}: {}", &path, e))?;
     let md5_str = fcontents
         .split_whitespace()
-        .into_iter()
         .next()
         .ok_or(anyhow::anyhow!("Could not get MD5 sum from {:?}", path))?;
     Ok(md5_str.to_owned())

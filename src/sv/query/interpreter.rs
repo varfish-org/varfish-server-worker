@@ -1024,7 +1024,7 @@ mod tests {
                             CallInfo {
                                 genotype: Some("0/0".to_owned()),
                                 split_read_cov: Some(1),
-                                ..call_info.clone()
+                                ..call_info
                             },
                         )]),
                         ..sv_fail
