@@ -38,8 +38,8 @@ pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
         0f32
     } else {
         let ovl_len = (ovl_e - ovl_b) as f32;
-        let x1 = (lhs_e - lhs_b) as f32 / ovl_len;
-        let x2 = (rhs_e - rhs_b) as f32 / ovl_len;
+        let x1 = ovl_len / (lhs_e - lhs_b) as f32;
+        let x2 = ovl_len / (rhs_e - rhs_b) as f32;
         x1.min(x2)
     }
 }
