@@ -1,5 +1,13 @@
 # Changelog
 
+### [0.5.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.5.0...v0.5.1) (2023-03-14)
+
+
+### Bug Fixes
+
+* reciprocal overlap computation ([#69](https://www.github.com/bihealth/varfish-server-worker/issues/69)) ([6165d9f](https://www.github.com/bihealth/varfish-server-worker/commit/6165d9f4f8df412ccb5bfbd6a8d4783f6f3d0e15))
+* region deserialization in sv query ([#70](https://www.github.com/bihealth/varfish-server-worker/issues/70)) ([7a577e3](https://www.github.com/bihealth/varfish-server-worker/commit/7a577e3f5f2711f0247e6fc0e7f332af450e1197))
+
 ## [0.5.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.4.0...v0.5.0) (2023-02-13)
 
 
