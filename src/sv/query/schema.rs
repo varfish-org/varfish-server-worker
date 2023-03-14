@@ -7,7 +7,8 @@ use crate::{
     },
 };
 use indexmap::IndexMap;
-use serde::{Deserialize, Serialize};
+use regex::Regex;
+use serde::{Deserialize, Deserializer, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
 use super::masked::MaskedBreakpointCount;
@@ -939,6 +940,7 @@ pub struct CaseQuery {
     /// List of genes to require.
     pub gene_allowlist: Option<Vec<String>>,
     /// Genomic region to limit consideration to.
+    #[serde(deserialize_with = "deserialize_genomic_region")]
     pub genomic_region: Option<Vec<GenomicRegion>>,
 
     /// Regulatory region padding to use.
@@ -963,6 +965,47 @@ pub struct CaseQuery {
     pub recessive_mode: Option<RecessiveMode>,
     /// The index to use for recessive inheritance.
     pub recessive_index: Option<String>,
+}
+
+fn deserialize_genomic_region<'de, D>(
+    deserializer: D,
+) -> Result<Option<Vec<GenomicRegion>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let re = Regex::new(
+        r"^(?P<chrom>(chr)?(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y|M|MT)(:(?P<start>\d+(,\d+)*)-(?P<stop>\d+(,\d+)*))?)$"
+    ).unwrap();
+
+    let tokens: Option<Vec<String>> = Deserialize::deserialize(deserializer)?;
+
+    Ok(tokens.map(|tokens| {
+        tokens
+            .iter()
+            .filter_map(|token| {
+                if let Some(caps) = re.captures(token) {
+                    let chrom = caps.name("chrom").unwrap().as_str().to_string();
+                    let chrom = if let Some(chrom) = chrom.strip_prefix("chr") {
+                        chrom.to_string()
+                    } else {
+                        chrom
+                    };
+                    let range = if let (Some(start), Some(stop)) =
+                        (caps.name("start"), caps.name("stop"))
+                    {
+                        let start: u32 = start.as_str().parse().unwrap();
+                        let end: u32 = stop.as_str().parse().unwrap();
+                        Some(Range { start, end })
+                    } else {
+                        None
+                    };
+                    Some(GenomicRegion { chrom, range })
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+    }))
 }
 
 impl CaseQuery {
