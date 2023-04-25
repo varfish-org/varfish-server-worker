@@ -284,6 +284,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "aquamarine"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a941c39708478e8eea39243b5983f1c42d2717b3620ee91f4a52115fd02ac43f"
+dependencies = [
+ "itertools 0.9.0",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "askama_escape"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -339,7 +352,7 @@ dependencies = [
  "enum-map 1.1.1",
  "fxhash",
  "getset",
- "itertools",
+ "itertools 0.10.5",
  "itertools-num",
  "lazy_static",
  "multimap",
@@ -1099,6 +1112,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "hpo"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e6e0d85a67f9597d5242d39b1cdd35e9f4719fc352cf3bafb1cf0add6cdb685"
+dependencies = [
+ "aquamarine",
+ "smallvec",
+ "statrs",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "hts-sys"
 version = "2.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1216,6 +1242,15 @@ dependencies = [
  "io-lifetimes",
  "rustix",
  "windows-sys 0.42.0",
+]
+
+[[package]]
+name = "itertools"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
+dependencies = [
+ "either",
 ]
 
 [[package]]
@@ -2531,6 +2566,7 @@ dependencies = [
  "flatbuffers",
  "flatc-rust",
  "flate2",
+ "hpo",
  "indexmap",
  "lazy_static",
  "log",

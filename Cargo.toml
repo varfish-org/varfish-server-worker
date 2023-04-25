@@ -25,6 +25,7 @@ enum-map = { version = "2.4.2", features = ["serde"] }
 env_logger = "0.10.0"
 flatbuffers = "23.1.21"
 flate2 = "1.0.25"
+hpo = "0.7.0"
 indexmap = { version = "1.9.2", features = ["serde"] }
 lazy_static = "1.4.0"
 log = "0.4.17"
