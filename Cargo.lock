@@ -2560,6 +2560,7 @@ dependencies = [
  "clap-verbosity-flag",
  "console",
  "csv",
+ "derive_more",
  "enum-map 2.4.2",
  "env_logger",
  "file_diff",

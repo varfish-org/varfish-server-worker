@@ -568,6 +568,8 @@ pub mod actix_server {
     pub mod hpo_sim {
         /// Entry point `/hpo/sim/term-term` allows the similary computation between two sets of HPO terms.
         pub mod term_term {
+            use std::str::FromStr;
+
             use actix_web::{
                 get,
                 web::{self, Data, Json, Path},
@@ -583,6 +585,33 @@ pub mod actix_server {
 
             use crate::server::pheno::{actix_server::CustomError, WebServerData};
 
+            /// Enum for representing similarity method to use.
+            #[derive(Default, Debug, Clone, Copy, derive_more::Display)]
+            pub enum SimilarityMethod {
+                #[default]
+                #[display(fmt = "resnik::omim")]
+                ResnikOmim,
+            }
+
+            impl FromStr for SimilarityMethod {
+                type Err = anyhow::Error;
+
+                fn from_str(s: &str) -> Result<Self, Self::Err> {
+                    Ok(match s {
+                        "resnik::omim" => Self::ResnikOmim,
+                        _ => anyhow::bail!("unknown similarity method: {}", s),
+                    })
+                }
+            }
+
+            impl Into<Builtins> for SimilarityMethod {
+                fn into(self) -> Builtins {
+                    match self {
+                        Self::ResnikOmim => Builtins::Resnik(InformationContentKind::Omim),
+                    }
+                }
+            }
+
             /// Parameters for `handle`.
             ///
             /// This allows to compute differences between
@@ -597,6 +626,31 @@ pub mod actix_server {
                 /// The second set of HPO terms to compute similarity for.
                 #[serde(deserialize_with = "super::super::vec_str_deserialize")]
                 pub rhs: Vec<String>,
+                /// The similarity method to use.
+                #[serde(
+                    deserialize_with = "help::similarity_deserialize",
+                    default = "help::default_sim"
+                )]
+                pub sim: SimilarityMethod,
+            }
+
+            /// Helpers for deserializing `Request`.
+            mod help {
+                /// Helper to deserialize a similarity
+                pub fn similarity_deserialize<'de, D>(
+                    deserializer: D,
+                ) -> Result<super::SimilarityMethod, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    let s = <String as serde::Deserialize>::deserialize(deserializer)?;
+                    std::str::FromStr::from_str(&s).map_err(serde::de::Error::custom)
+                }
+
+                /// Default value for `Request::sim`.
+                pub fn default_sim() -> super::SimilarityMethod {
+                    super::SimilarityMethod::ResnikOmim
+                }
             }
 
             /// Result entry for `handle`.
@@ -609,10 +663,12 @@ pub mod actix_server {
                 /// The similarity score.
                 pub score: f32,
                 /// The score type that was used to compute the similarity for.
-                pub score_type: String,
+                pub sim: String,
             }
 
-            /// Query for OMIM diseases in the HPO database.
+            /// Query for pairwise term similarity.
+            ///
+            /// In the case of Resnik, this corresponds to `IC(MICA(t_1, t_2))`.
             #[get("/hpo/sim/term-term")]
             async fn handle(
                 data: Data<WebServerData>,
@@ -622,7 +678,7 @@ pub mod actix_server {
                 let ontology: &Ontology = &data.ontology;
                 let mut result = Vec::new();
 
-                let ic = Builtins::GraphIc(InformationContentKind::Omim);
+                let ic: Builtins = query.sim.into();
 
                 // Translate strings from the query into HPO terms.
                 let lhs = query
@@ -645,7 +701,7 @@ pub mod actix_server {
                         lhs: lhs.id().to_string(),
                         rhs: rhs.id().to_string(),
                         score: similarity,
-                        score_type: String::from("graph-ic::omim"),
+                        sim: query.sim.to_string(),
                     };
                     result.push(elem);
                 }
@@ -703,7 +759,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         }
     }
 
-    info!("Loading HPO HPO...");
+    info!("Loading HPO...");
     let before_loading = Instant::now();
     let ontology = Ontology::from_standard(&args.path_hpo_dir)?;
     let data = Data::new(WebServerData { ontology });
@@ -714,7 +770,37 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     trace_rss_now();
 
-    info!("Launching server ...");
+    info!(
+        "Launching server main on http://{}:{} ...",
+        args.listen_host.as_str(),
+        args.listen_port
+    );
+    info!(
+        "  try: http://{}:{}/hpo/genes?gene_symbol=TGDS",
+        args.listen_host.as_str(),
+        args.listen_port
+    );
+    info!(
+        "  try: http://{}:{}/hpo/genes?gene_id=23483&hpo_terms=true",
+        args.listen_host.as_str(),
+        args.listen_port
+    );
+    info!(
+        "  try: http://{}:{}/hpo/omims?omim_id=616145&hpo_terms=true",
+        args.listen_host.as_str(),
+        args.listen_port
+    );
+    info!(
+        "  try: http://{}:{}/hpo/terms?term_id=HP:0000023&genes=true",
+        args.listen_host.as_str(),
+        args.listen_port
+    );
+    info!(
+        "  try: http://{}:{}/hpo/sim/term-term?lhs=HP:0001166,HP:0040069&rhs=HP:0005918,\
+        HP:0004188&sim=resnik::omim",
+        args.listen_host.as_str(),
+        args.listen_port
+    );
     actix_server::main(args, data)?;
 
     info!("All done. Have a nice day!");

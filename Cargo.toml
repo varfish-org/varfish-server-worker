@@ -21,6 +21,7 @@ clap = { version = "4.1.1", features = ["derive", "help"] }
 clap-verbosity-flag = "2.0.0"
 console = "0.15.5"
 csv = "1.1.6"
+derive_more = "0.99.17"
 enum-map = { version = "2.4.2", features = ["serde"] }
 env_logger = "0.10.0"
 flatbuffers = "23.1.21"
