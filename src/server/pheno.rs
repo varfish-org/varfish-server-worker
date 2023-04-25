@@ -176,11 +176,11 @@ pub mod actix_server {
                     let gene_id = GeneId::from(
                         gene_ncbi_id
                             .parse::<u32>()
-                            .map_err(|e| CustomError::new(anyhow::anyhow!(e)).into())?,
+                            .map_err(|e| CustomError::new(anyhow::anyhow!(e)))?,
                     );
                     ontology.gene(&gene_id)
                 } else if let Some(gene_symbol) = &query.gene_symbol {
-                    ontology.gene_by_name(&gene_symbol)
+                    ontology.gene_by_name(gene_symbol)
                 } else {
                     None
                 };
@@ -191,28 +191,26 @@ pub mod actix_server {
                         query.hpo_terms,
                     ));
                 }
-            } else {
-                if let Some(gene_symbol) = &query.gene_symbol {
-                    let mut it = ontology.genes();
-                    let mut gene = it.next();
-                    while gene.is_some() && result.len() < query.max_results {
-                        let symbol = gene.expect("checked above").symbol();
-                        let is_match = match query.match_.unwrap_or_default() {
-                            Match::Prefix => symbol.starts_with(gene_symbol),
-                            Match::Suffix => symbol.ends_with(gene_symbol),
-                            Match::Contains => symbol.contains(gene_symbol),
-                            Match::Exact => panic!("cannot happen here"),
-                        };
-                        if is_match {
-                            result.push(ResultEntry::from_gene_with_ontology(
-                                gene.expect("checked above"),
-                                ontology,
-                                query.hpo_terms,
-                            ));
-                        }
-
-                        gene = it.next();
+            } else if let Some(gene_symbol) = &query.gene_symbol {
+                let mut it = ontology.genes();
+                let mut gene = it.next();
+                while gene.is_some() && result.len() < query.max_results {
+                    let symbol = gene.expect("checked above").symbol();
+                    let is_match = match query.match_.unwrap_or_default() {
+                        Match::Prefix => symbol.starts_with(gene_symbol),
+                        Match::Suffix => symbol.ends_with(gene_symbol),
+                        Match::Contains => symbol.contains(gene_symbol),
+                        Match::Exact => panic!("cannot happen here"),
+                    };
+                    if is_match {
+                        result.push(ResultEntry::from_gene_with_ontology(
+                            gene.expect("checked above"),
+                            ontology,
+                            query.hpo_terms,
+                        ));
                     }
+
+                    gene = it.next();
                 }
             }
 
@@ -303,7 +301,7 @@ pub mod actix_server {
                 let genes = if genes {
                     Some(
                         term.gene_ids()
-                            .into_iter()
+                            .iter()
                             .map(|gene_id| ontology.gene(gene_id))
                             .filter(|term| term.is_some())
                             .map(|term| {
@@ -362,28 +360,26 @@ pub mod actix_server {
                         query.genes,
                     ));
                 }
-            } else {
-                if let Some(name) = &query.name {
-                    let mut it = ontology.hpos();
-                    let mut term = it.next();
-                    while term.is_some() && result.len() < query.max_results {
-                        let term_name = term.as_ref().expect("checked above").name();
-                        let is_match = match query.match_.unwrap_or_default() {
-                            Match::Prefix => term_name.starts_with(name),
-                            Match::Suffix => term_name.ends_with(name),
-                            Match::Contains => term_name.contains(name),
-                            Match::Exact => panic!("cannot happen here"),
-                        };
-                        if is_match {
-                            result.push(ResultEntry::from_term_with_ontology(
-                                term.as_ref().expect("checked above"),
-                                ontology,
-                                query.genes,
-                            ));
-                        }
-
-                        term = it.next();
+            } else if let Some(name) = &query.name {
+                let mut it = ontology.hpos();
+                let mut term = it.next();
+                while term.is_some() && result.len() < query.max_results {
+                    let term_name = term.as_ref().expect("checked above").name();
+                    let is_match = match query.match_.unwrap_or_default() {
+                        Match::Prefix => term_name.starts_with(name),
+                        Match::Suffix => term_name.ends_with(name),
+                        Match::Contains => term_name.contains(name),
+                        Match::Exact => panic!("cannot happen here"),
+                    };
+                    if is_match {
+                        result.push(ResultEntry::from_term_with_ontology(
+                            term.as_ref().expect("checked above"),
+                            ontology,
+                            query.genes,
+                        ));
                     }
+
+                    term = it.next();
                 }
             }
 
