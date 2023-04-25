@@ -17,7 +17,7 @@ pub struct WebServerData {
 /// Implementation of the actix server.
 pub mod actix_server {
     use actix_web::{middleware::Logger, web::Data, App, HttpServer, ResponseError};
-    use serde::{Deserialize, Serialize};
+    use serde::{Deserialize, Deserializer, Serialize};
 
     use super::{Args, WebServerData};
 
@@ -69,7 +69,19 @@ pub mod actix_server {
         pub name: String,
     }
 
-    // Code for `/hpo/genes`.
+    /// Helper to deserialize a comma-separated list of strings.
+    fn vec_str_deserialize<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let str_sequence = String::deserialize(deserializer)?;
+        Ok(str_sequence
+            .split(',')
+            .map(|item| item.to_owned())
+            .collect())
+    }
+
+    /// Code for `/hpo/genes`.
     pub mod hpo_genes {
         use actix_web::{
             get,
@@ -227,7 +239,7 @@ pub mod actix_server {
         }
     }
 
-    // Code for `/hpo/terms`.
+    /// Code for `/hpo/terms`.
     pub mod hpo_terms {
         use actix_web::{
             get,
@@ -387,7 +399,7 @@ pub mod actix_server {
         }
     }
 
-    // Code for `/hpo/omims`.
+    /// Code for `/hpo/omims`.
     pub mod hpo_omims {
         use actix_web::{
             get,
@@ -552,6 +564,97 @@ pub mod actix_server {
         }
     }
 
+    /// Code for `/hpo/sim/{term-term,term-gene}` endpoint.
+    pub mod hpo_sim {
+        /// Entry point `/hpo/sim/term-term` allows the similary computation between two sets of HPO terms.
+        pub mod term_term {
+            use actix_web::{
+                get,
+                web::{self, Data, Json, Path},
+                Responder,
+            };
+            use hpo::{
+                similarity::{Builtins, Similarity},
+                term::InformationContentKind,
+                HpoTermId, Ontology,
+            };
+            use itertools::Itertools;
+            use serde::{Deserialize, Serialize};
+
+            use crate::server::pheno::{actix_server::CustomError, WebServerData};
+
+            /// Parameters for `handle`.
+            ///
+            /// This allows to compute differences between
+            ///
+            /// - `lhs` -- first set of terms to compute similarity for
+            /// - `rhs` -- econd set of terms to compute similarity for
+            #[derive(Deserialize, Debug, Clone)]
+            struct Request {
+                /// The one set of HPO terms to compute similarity for.
+                #[serde(deserialize_with = "super::super::vec_str_deserialize")]
+                pub lhs: Vec<String>,
+                /// The second set of HPO terms to compute similarity for.
+                #[serde(deserialize_with = "super::super::vec_str_deserialize")]
+                pub rhs: Vec<String>,
+            }
+
+            /// Result entry for `handle`.
+            #[derive(Serialize, Debug, Clone)]
+            struct ResultEntry {
+                /// The lhs entry.
+                pub lhs: String,
+                /// The rhs entry.
+                pub rhs: String,
+                /// The similarity score.
+                pub score: f32,
+                /// The score type that was used to compute the similarity for.
+                pub score_type: String,
+            }
+
+            /// Query for OMIM diseases in the HPO database.
+            #[get("/hpo/sim/term-term")]
+            async fn handle(
+                data: Data<WebServerData>,
+                _path: Path<()>,
+                query: web::Query<Request>,
+            ) -> actix_web::Result<impl Responder, CustomError> {
+                let ontology: &Ontology = &data.ontology;
+                let mut result = Vec::new();
+
+                let ic = Builtins::GraphIc(InformationContentKind::Omim);
+
+                // Translate strings from the query into HPO terms.
+                let lhs = query
+                    .lhs
+                    .iter()
+                    .map(|lhs| ontology.hpo(HpoTermId::from(lhs.clone())))
+                    .flatten()
+                    .collect::<Vec<_>>();
+                let rhs = query
+                    .rhs
+                    .iter()
+                    .map(|rhs| ontology.hpo(HpoTermId::from(rhs.clone())))
+                    .flatten()
+                    .collect::<Vec<_>>();
+
+                // Compute the similarity for each pair.
+                for (lhs, rhs) in lhs.iter().cartesian_product(rhs.iter()) {
+                    let similarity = ic.calculate(lhs, rhs);
+                    let elem = ResultEntry {
+                        lhs: lhs.id().to_string(),
+                        rhs: rhs.id().to_string(),
+                        score: similarity,
+                        score_type: String::from("graph-ic::omim"),
+                    };
+                    result.push(elem);
+                }
+
+                Ok(Json(result))
+            }
+        }
+    }
+
     #[actix_web::main]
     pub async fn main(args: &Args, dbs: Data<WebServerData>) -> std::io::Result<()> {
         HttpServer::new(move || {
@@ -560,6 +663,7 @@ pub mod actix_server {
                 .service(hpo_genes::handle)
                 .service(hpo_terms::handle)
                 .service(hpo_omims::handle)
+                .service(hpo_sim::term_term::handle)
                 .wrap(Logger::default())
         })
         .bind((args.listen_host.as_str(), args.listen_port))?

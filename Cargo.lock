@@ -2568,6 +2568,7 @@ dependencies = [
  "flate2",
  "hpo",
  "indexmap",
+ "itertools 0.10.5",
  "lazy_static",
  "log",
  "md-5",
