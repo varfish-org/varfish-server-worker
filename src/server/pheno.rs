@@ -14,6 +14,51 @@ pub struct WebServerData {
     pub ontology: Ontology,
 }
 
+/// Similarity computation using the Phenomizer method.
+pub(crate) mod phenomizer {
+    use hpo::{
+        similarity::{Builtins, Similarity},
+        term::{HpoGroup, InformationContentKind},
+        Ontology,
+    };
+
+    /// Compute symmetric similarity score.
+    pub(crate) fn score(q: &HpoGroup, d: &HpoGroup, o: &Ontology) -> f32 {
+        let s = Builtins::Resnik(InformationContentKind::Omim);
+        0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s)
+    }
+
+    /// "Directed" score part of phenomizer score.
+    fn score_dir(qs: &HpoGroup, ds: &HpoGroup, o: &Ontology, s: &impl Similarity) -> f32 {
+        // Handle case of empty `qs`.
+        if qs.is_empty() {
+            return 0f32;
+        }
+
+        // For each `q in qs` compute max similarity to any `d in ds`.
+        let mut tmp: Vec<f32> = Vec::new();
+        for q in qs {
+            if let Some(q) = o.hpo(q) {
+                tmp.push(
+                    ds.iter()
+                        .map(|d| {
+                            if let Some(d) = o.hpo(d) {
+                                Some(q.similarity_score(&d, s))
+                            } else {
+                                None
+                            }
+                        })
+                        .flatten()
+                        .max_by(|a, b| a.partial_cmp(b).expect("try to compare NaN"))
+                        .unwrap_or_default(),
+                );
+            }
+        }
+
+        tmp.iter().sum::<f32>() / (qs.len() as f32)
+    }
+}
+
 /// Implementation of the actix server.
 pub mod actix_server {
     use actix_web::{middleware::Logger, web::Data, App, HttpServer, ResponseError};
@@ -79,6 +124,24 @@ pub mod actix_server {
             .split(',')
             .map(|item| item.to_owned())
             .collect())
+    }
+
+    /// Helper to deserialize a comma-separated list of strings.
+    fn option_vec_str_deserialize<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let str_sequence = String::deserialize(deserializer)?;
+        if str_sequence.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(
+                str_sequence
+                    .split(',')
+                    .map(|item| item.to_owned())
+                    .collect(),
+            ))
+        }
     }
 
     /// Code for `/hpo/genes`.
@@ -566,7 +629,8 @@ pub mod actix_server {
 
     /// Code for `/hpo/sim/{term-term,term-gene}` endpoint.
     pub mod hpo_sim {
-        /// Entry point `/hpo/sim/term-term` allows the similary computation between two sets of HPO terms.
+        /// Entry point `/hpo/sim/term-term` allows the pairwise similary computation between two
+        /// sets of HPO terms.
         pub mod term_term {
             use std::str::FromStr;
 
@@ -709,6 +773,176 @@ pub mod actix_server {
                 Ok(Json(result))
             }
         }
+
+        /// Entry point `/hpo/sim/term-gene` that allows the similarity computation between a
+        /// set of terms and a gene.
+        pub mod term_gene {
+            use std::str::FromStr;
+
+            use actix_web::{
+                get,
+                web::{self, Data, Json, Path},
+                Responder,
+            };
+
+            use hpo::{
+                annotations::{AnnotationId, GeneId},
+                term::HpoGroup,
+                HpoTermId, Ontology,
+            };
+            use serde::{Deserialize, Serialize};
+
+            use super::super::CustomError;
+            use crate::server::pheno::{phenomizer, WebServerData};
+
+            /// Enum for representing similarity method to use.
+            #[derive(Default, Debug, Clone, Copy, derive_more::Display)]
+            pub enum SimilarityMethod {
+                #[default]
+                #[display(fmt = "phenomizer")]
+                Phenomizer,
+            }
+
+            impl FromStr for SimilarityMethod {
+                type Err = anyhow::Error;
+
+                fn from_str(s: &str) -> Result<Self, Self::Err> {
+                    Ok(match s {
+                        "resnik::omim" => Self::Phenomizer,
+                        _ => anyhow::bail!("unknown similarity method: {}", s),
+                    })
+                }
+            }
+
+            /// Parameters for `handle`.
+            ///
+            /// This allows to compute differences between
+            ///
+            /// - `terms` -- set of terms to use as query
+            /// - `gene_ids` -- set of ids for genes to use as "database"
+            /// - `gene_symbols` -- set of symbols for genes to use as "database"
+            #[derive(Deserialize, Debug, Clone)]
+            struct Request {
+                /// Set of terms to use as query.
+                #[serde(deserialize_with = "super::super::vec_str_deserialize")]
+                pub terms: Vec<String>,
+                /// The set of ids for genes to use as "database".
+                #[serde(
+                    default = "Option::default",
+                    skip_serializing_if = "Option::is_none",
+                    deserialize_with = "super::super::option_vec_str_deserialize"
+                )]
+                pub gene_ids: Option<Vec<String>>,
+                /// The set of symbols for genes to use as "database".
+                #[serde(
+                    default = "Option::default",
+                    skip_serializing_if = "Option::is_none",
+                    deserialize_with = "super::super::option_vec_str_deserialize"
+                )]
+                pub gene_symbols: Option<Vec<String>>,
+                /// The similarity method to use.
+                #[serde(
+                    deserialize_with = "help::similarity_deserialize",
+                    default = "help::default_sim"
+                )]
+                pub sim: SimilarityMethod,
+            }
+
+            /// Helpers for deserializing `Request`.
+            mod help {
+                /// Helper to deserialize a similarity method.
+                pub fn similarity_deserialize<'de, D>(
+                    deserializer: D,
+                ) -> Result<super::SimilarityMethod, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    let s = <String as serde::Deserialize>::deserialize(deserializer)?;
+                    std::str::FromStr::from_str(&s).map_err(serde::de::Error::custom)
+                }
+
+                /// Default value for `Request::sim`.
+                pub fn default_sim() -> super::SimilarityMethod {
+                    super::SimilarityMethod::Phenomizer
+                }
+            }
+
+            /// Result entry for one gene.
+            #[derive(Serialize, Debug, Clone)]
+            struct ResultEntry {
+                /// The gene ID of the entry.
+                pub gene_id: u32,
+                /// The gene HGNC symbol of the gene.
+                pub gene_symbol: String,
+                /// The similarity score.
+                pub score: f32,
+                /// The score type that was used to compute the similarity for.
+                pub sim: String,
+            }
+
+            /// Query for similarity between a set of terms to each entry in a list of genes.
+            #[get("/hpo/sim/term-gene")]
+            async fn handle(
+                data: Data<WebServerData>,
+                _path: Path<()>,
+                query: web::Query<Request>,
+            ) -> actix_web::Result<impl Responder, CustomError> {
+                let ontology: &Ontology = &data.ontology;
+
+                // Translate strings from the query into an `HpoGroup`.
+                let query_terms = {
+                    let mut query_terms = HpoGroup::new();
+                    for term in &query.terms {
+                        if let Some(term) = ontology.hpo(HpoTermId::from(term.clone())) {
+                            query_terms.insert(term.id());
+                        }
+                    }
+                    query_terms
+                };
+
+                // Translate strings from the query into genes via symbol or gene ID.
+                let genes = if let Some(gene_ids) = &query.gene_ids {
+                    Ok(gene_ids
+                        .iter()
+                        .map(|gene_id| {
+                            if let Ok(gene_id) = gene_id.parse::<u32>() {
+                                ontology.gene(&GeneId::from(gene_id))
+                            } else {
+                                None
+                            }
+                        })
+                        .flatten()
+                        .collect::<Vec<_>>())
+                } else if let Some(gene_symbols) = &query.gene_symbols {
+                    Ok(gene_symbols
+                        .iter()
+                        .map(|gene_symbol| ontology.gene_by_name(gene_symbol))
+                        .flatten()
+                        .collect::<Vec<_>>())
+                } else {
+                    Err(CustomError::new(anyhow::anyhow!(
+                        "either `gene_ids` or `gene_symbols` must be given"
+                    )))
+                }?;
+
+                // Compute the similarity for the given term for each.  Create one result record
+                // for each gene.
+                let mut result = Vec::new();
+                for gene in genes {
+                    let gene_terms = gene.hpo_terms();
+                    let score = phenomizer::score(&query_terms, &gene_terms, &ontology);
+
+                    result.push(ResultEntry {
+                        gene_id: gene.id().as_u32(),
+                        gene_symbol: gene.name().to_string(),
+                        score,
+                        sim: query.sim.to_string(),
+                    });
+                }
+
+                Ok(Json(result))
+            }
+        }
     }
 
     #[actix_web::main]
@@ -720,6 +954,7 @@ pub mod actix_server {
                 .service(hpo_terms::handle)
                 .service(hpo_omims::handle)
                 .service(hpo_sim::term_term::handle)
+                .service(hpo_sim::term_gene::handle)
                 .wrap(Logger::default())
         })
         .bind((args.listen_host.as_str(), args.listen_port))?
@@ -763,10 +998,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let before_loading = Instant::now();
     let ontology = Ontology::from_standard(&args.path_hpo_dir)?;
     let data = Data::new(WebServerData { ontology });
-    info!(
-        "...done loading databases in {:?}",
-        before_loading.elapsed()
-    );
+    info!("...done loading HPO in {:?}", before_loading.elapsed());
 
     trace_rss_now();
 
@@ -798,6 +1030,11 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!(
         "  try: http://{}:{}/hpo/sim/term-term?lhs=HP:0001166,HP:0040069&rhs=HP:0005918,\
         HP:0004188&sim=resnik::omim",
+        args.listen_host.as_str(),
+        args.listen_port
+    );
+    info!(
+        "  try: http://{}:{}/hpo/sim/term-gene?terms=HP:0001166,HP:0000098&gene_symbols=FBN1,TGDS,TTN",
         args.listen_host.as_str(),
         args.listen_port
     );

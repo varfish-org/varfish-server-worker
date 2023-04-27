@@ -85,6 +85,7 @@ enum SvCommands {
 enum ServerCommands {
     Rest(server::rest::Args),
     Pheno(server::pheno::Args),
+    PhenoPrepare(server::pheno_prepare::Args),
 }
 /// Parsing of "sv *" sub commands.
 #[derive(Debug, Args)]
@@ -134,6 +135,9 @@ fn main() -> Result<(), anyhow::Error> {
             Commands::Server(server) => match &server.command {
                 ServerCommands::Rest(args) => server::rest::run(&cli.common, args)?,
                 ServerCommands::Pheno(args) => server::pheno::run(&cli.common, args)?,
+                ServerCommands::PhenoPrepare(args) => {
+                    server::pheno_prepare::run(&cli.common, args)?
+                }
             },
         }
 
