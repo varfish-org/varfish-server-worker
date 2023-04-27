@@ -1,9 +1,10 @@
 //! Code for preparing the empiric P-value distributions for the phenotypes.
 
-use indicatif::ParallelProgressIterator;
+use indicatif::{ParallelProgressIterator, ProgressState};
 use prost::Message;
 use rayon::prelude::*;
 use rocksdb::{DBWithThreadMode, MultiThreaded};
+use std::fmt::Write;
 use std::time::Instant;
 
 use clap::Parser;
@@ -73,9 +74,10 @@ fn run_simulation(
     let genes = ontology.genes().collect::<Vec<_>>();
 
     // Run simulations for each gene in parallel.
-    let style = indicatif::ProgressStyle::with_template(
-        "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
-    )?;
+    let style = indicatif::ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {human_pos}/{human_len} ({eta})")
+        .unwrap()
+        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap())
+        .progress_chars("#>-");
     genes
         .par_iter()
         .progress_with_style(style)
