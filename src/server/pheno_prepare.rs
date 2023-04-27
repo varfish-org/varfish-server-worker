@@ -102,7 +102,7 @@ fn run_simulation(
                     }
 
                     // Compute similarity.
-                    phenomizer::score(&ts, &gene.hpo_terms(), &ontology)
+                    phenomizer::score(&ts, gene.hpo_terms(), ontology)
                 })
                 .collect::<prost::alloc::vec::Vec<_>>();
             scores.sort_by(|a, b| a.partial_cmp(b).expect("NaN value"));
@@ -122,7 +122,7 @@ fn run_simulation(
             // Write to RocksDB.
             let cf_resnik = db.cf_handle("resnik_pvalues").unwrap();
             let key = format!("{ncbi_gene_id}:{num_terms}");
-            db.put_cf(&cf_resnik, &key.as_bytes(), &sim_res)
+            db.put_cf(&cf_resnik, key.as_bytes(), sim_res)
                 .expect("writing to RocksDB failed");
         });
     info!("  ... done in {:?}", before.elapsed());
@@ -161,7 +161,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     // write out metadata
     let cf_meta = db.cf_handle("meta").unwrap();
     db.put_cf(&cf_meta, "hpo-version", ontology.hpo_version())?;
-    db.put_cf(&cf_meta, "app-version", VERSION.to_string())?;
+    db.put_cf(&cf_meta, "app-version", VERSION)?;
     let cf_resnik = db.cf_handle("resnik_pvalues").unwrap();
     info!("...done opening RocksDB in {:?}", before_rocksdb.elapsed());
 
@@ -176,7 +176,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
             .build_global()?;
     }
     for num_terms in args.min_terms..=args.max_terms {
-        run_simulation(&db, &ontology, &args, num_terms)?;
+        run_simulation(&db, &ontology, args, num_terms)?;
     }
     info!(
         "... done with simulations in {:?}",

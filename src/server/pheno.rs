@@ -41,14 +41,7 @@ pub(crate) mod phenomizer {
             if let Some(q) = o.hpo(q) {
                 tmp.push(
                     ds.iter()
-                        .map(|d| {
-                            if let Some(d) = o.hpo(d) {
-                                Some(q.similarity_score(&d, s))
-                            } else {
-                                None
-                            }
-                        })
-                        .flatten()
+                        .filter_map(|d| o.hpo(d).map(|d| q.similarity_score(&d, s)))
                         .max_by(|a, b| a.partial_cmp(b).expect("try to compare NaN"))
                         .unwrap_or_default(),
                 );
@@ -668,10 +661,12 @@ pub mod actix_server {
                 }
             }
 
-            impl Into<Builtins> for SimilarityMethod {
-                fn into(self) -> Builtins {
-                    match self {
-                        Self::ResnikOmim => Builtins::Resnik(InformationContentKind::Omim),
+            impl From<SimilarityMethod> for Builtins {
+                fn from(val: SimilarityMethod) -> Self {
+                    match val {
+                        SimilarityMethod::ResnikOmim => {
+                            Builtins::Resnik(InformationContentKind::Omim)
+                        }
                     }
                 }
             }
@@ -748,14 +743,12 @@ pub mod actix_server {
                 let lhs = query
                     .lhs
                     .iter()
-                    .map(|lhs| ontology.hpo(HpoTermId::from(lhs.clone())))
-                    .flatten()
+                    .filter_map(|lhs| ontology.hpo(HpoTermId::from(lhs.clone())))
                     .collect::<Vec<_>>();
                 let rhs = query
                     .rhs
                     .iter()
-                    .map(|rhs| ontology.hpo(HpoTermId::from(rhs.clone())))
-                    .flatten()
+                    .filter_map(|rhs| ontology.hpo(HpoTermId::from(rhs.clone())))
                     .collect::<Vec<_>>();
 
                 // Compute the similarity for each pair.
@@ -904,20 +897,18 @@ pub mod actix_server {
                 let genes = if let Some(gene_ids) = &query.gene_ids {
                     Ok(gene_ids
                         .iter()
-                        .map(|gene_id| {
+                        .filter_map(|gene_id| {
                             if let Ok(gene_id) = gene_id.parse::<u32>() {
                                 ontology.gene(&GeneId::from(gene_id))
                             } else {
                                 None
                             }
                         })
-                        .flatten()
                         .collect::<Vec<_>>())
                 } else if let Some(gene_symbols) = &query.gene_symbols {
                     Ok(gene_symbols
                         .iter()
-                        .map(|gene_symbol| ontology.gene_by_name(gene_symbol))
-                        .flatten()
+                        .filter_map(|gene_symbol| ontology.gene_by_name(gene_symbol))
                         .collect::<Vec<_>>())
                 } else {
                     Err(CustomError::new(anyhow::anyhow!(
@@ -930,7 +921,7 @@ pub mod actix_server {
                 let mut result = Vec::new();
                 for gene in genes {
                     let gene_terms = gene.hpo_terms();
-                    let score = phenomizer::score(&query_terms, &gene_terms, &ontology);
+                    let score = phenomizer::score(&query_terms, gene_terms, ontology);
 
                     result.push(ResultEntry {
                         gene_id: gene.id().as_u32(),
