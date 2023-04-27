@@ -36,9 +36,6 @@ pub struct Args {
     /// Run simulations for `min_terms..=max_terms` terms.
     #[arg(long, default_value_t = 10)]
     pub max_terms: usize,
-    /// Will sample eCDF to this number of points.
-    #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u64).range(100..))]
-    pub ecdf_samples: u64,
 
     /// Number of threads to use for simulation (default is 1 thread per core).
     #[arg(long)]
@@ -76,7 +73,9 @@ fn run_simulation(
     let genes = ontology.genes().collect::<Vec<_>>();
 
     // Run simulations for each gene in parallel.
-    let style = indicatif::ProgressStyle::default_bar();
+    let style = indicatif::ProgressStyle::with_template(
+        "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
+    )?;
     genes
         .par_iter()
         .progress_with_style(style)
@@ -154,6 +153,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let before_rocksdb = Instant::now();
     let options = {
         let mut options = rocksdb::Options::default();
+        options.create_if_missing(true);
+        options.create_missing_column_families(true);
         options.prepare_for_bulk_load();
         options
     };
