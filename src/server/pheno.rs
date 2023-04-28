@@ -1034,3 +1034,46 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("All done. Have a nice day!");
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use hpo::{annotations::OmimDiseaseId, term::HpoGroup, HpoTermId, Ontology};
+    use pretty_assertions::assert_eq;
+
+    use crate::server::pheno::phenomizer;
+
+    fn load_hpo() -> Result<Ontology, anyhow::Error> {
+        Ok(Ontology::from_standard("tests/db/hpo")?)
+    }
+
+    fn prepare(terms: &[&str]) -> HpoGroup {
+        HpoGroup::from(
+            terms
+                .iter()
+                .map(|s| HpoTermId::from(s.to_string()))
+                .collect::<Vec<_>>(),
+        )
+    }
+
+    #[test]
+    fn phenomizer_score_gene() -> Result<(), anyhow::Error> {
+        let hpo = load_hpo()?;
+
+        let query = &[
+            // slender build
+            "HP:0001533",
+            // high, narrow palate
+            "HP:0002705",
+        ];
+        let omim_marfan = hpo
+            .omim_disease(&OmimDiseaseId::from(154700))
+            .expect("marfan symdrome must be in HPO");
+        let hpo_marfan = omim_marfan.hpo_terms();
+
+        let score = phenomizer::score(&prepare(query), &hpo_marfan, &hpo);
+
+        assert!((score - 2.31318).abs() < 0.00001);
+
+        Ok(())
+    }
+}
