@@ -71,7 +71,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("Opening RocksDB for reading...");
     let before_rocksdb = Instant::now();
     let path_rocksdb = format!("{}/resnik", args.path_hpo_dir);
-    let db = rocksdb::DB::open_for_read_only(&rocksdb::Options::default(), &path_rocksdb, false)?;
+    let db = rocksdb::DB::open_cf_for_read_only(&rocksdb::Options::default(), &path_rocksdb, ["meta", "resnik_pvalues"], false)?;
     let cf_resnik = db.cf_handle("resnik_pvalues").unwrap();
     info!("...done opening RocksDB in {:?}", before_rocksdb.elapsed());
 
@@ -125,9 +125,15 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     info!("Starting priorization...");
     let before_priorization = Instant::now();
+    let num_terms = std::cmp::min(10, query.len());
     for gene in genes {
+        let ncbi_gene_id = gene.id().as_u32();
+        let key = format!("{ncbi_gene_id}:{num_terms}");
+        let data = db.get_cf(&key.as_bytes())?.expect("key not found");
+        let res = SimulationResults::decode(&data[..])?;
+
         let score = phenomizer::score(&query, gene.hpo_terms(), &hpo);
-        info!("  {:?} -> {}", gene, score);
+        info!("  {:?} -> {}", gene.name(), score);
     }
     info!(
         "... done with prioritization in {:?}",
