@@ -1038,7 +1038,6 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 #[cfg(test)]
 mod test {
     use hpo::{annotations::OmimDiseaseId, term::HpoGroup, HpoTermId, Ontology};
-    use pretty_assertions::assert_eq;
 
     use crate::server::pheno::phenomizer;
 
