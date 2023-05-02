@@ -11,8 +11,9 @@ use clap::Parser;
 use hpo::{annotations::AnnotationId, term::HpoGroup, HpoTermId, Ontology};
 use tracing::info;
 
-use crate::server::data::SimulationResults;
-use crate::{common::trace_rss_now, server::pheno::phenomizer};
+use crate::common::trace_rss_now;
+use crate::pheno::algos::phenomizer;
+use crate::pheno::pbs::SimulationResults;
 
 /// The version of `varfish-server-worker` package.
 const VERSION: &str = env!("CARGO_PKG_VERSION");

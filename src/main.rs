@@ -2,6 +2,7 @@
 
 pub mod common;
 pub mod db;
+pub mod pheno;
 pub mod server;
 pub mod sv;
 
@@ -43,6 +44,8 @@ struct Cli {
 enum Commands {
     /// Database-related commands.
     Db(Db),
+    /// Phenotype-related commands.
+    Pheno(Pheno),
     /// SV related commands.
     Sv(Sv),
     /// Server related commands.
@@ -65,6 +68,22 @@ enum DbCommands {
     MkInhouse(db::mk_inhouse::Args),
 }
 
+/// Parsing of "pheno *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Pheno {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: PhenoCommands,
+}
+
+/// Enum supporting the parsing of "db *" sub commands.
+#[derive(Debug, Subcommand)]
+enum PhenoCommands {
+    Prepare(pheno::prepare::Args),
+    Query(pheno::query::Args),
+}
+
 /// Parsing of "sv *" sub commands.
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
@@ -85,8 +104,6 @@ enum SvCommands {
 enum ServerCommands {
     Rest(server::rest::Args),
     Pheno(server::pheno::Args),
-    PhenoPrepare(server::pheno_prepare::Args),
-    PhenoCli(server::pheno_cli::Args),
 }
 /// Parsing of "sv *" sub commands.
 #[derive(Debug, Args)]
@@ -128,6 +145,10 @@ fn main() -> Result<(), anyhow::Error> {
                     db::mk_inhouse::run(&cli.common, args)?;
                 }
             },
+            Commands::Pheno(pheno) => match &pheno.command {
+                PhenoCommands::Prepare(args) => pheno::prepare::run(&cli.common, args)?,
+                PhenoCommands::Query(args) => pheno::query::run(&cli.common, args)?,
+            },
             Commands::Sv(sv) => match &sv.command {
                 SvCommands::Query(args) => {
                     sv::query::run(&cli.common, args)?;
@@ -136,10 +157,6 @@ fn main() -> Result<(), anyhow::Error> {
             Commands::Server(server) => match &server.command {
                 ServerCommands::Rest(args) => server::rest::run(&cli.common, args)?,
                 ServerCommands::Pheno(args) => server::pheno::run(&cli.common, args)?,
-                ServerCommands::PhenoPrepare(args) => {
-                    server::pheno_prepare::run(&cli.common, args)?
-                }
-                ServerCommands::PhenoCli(args) => server::pheno_cli::run(&cli.common, args)?,
             },
         }
 

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package varfish_server_worker.server.data;
+package varfish_server_worker.pheno.pbs;
 
 // Stores the empirical cumulative distribution function for a gene.
 message SimulationResults {

@@ -14,44 +14,6 @@ pub struct WebServerData {
     pub ontology: Ontology,
 }
 
-/// Similarity computation using the Phenomizer method.
-pub(crate) mod phenomizer {
-    use hpo::{
-        similarity::{Builtins, Similarity},
-        term::{HpoGroup, InformationContentKind},
-        Ontology,
-    };
-
-    /// Compute symmetric similarity score.
-    pub(crate) fn score(q: &HpoGroup, d: &HpoGroup, o: &Ontology) -> f32 {
-        let s = Builtins::Resnik(InformationContentKind::Gene);
-        0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s)
-    }
-
-    /// "Directed" score part of phenomizer score.
-    fn score_dir(qs: &HpoGroup, ds: &HpoGroup, o: &Ontology, s: &impl Similarity) -> f32 {
-        // Handle case of empty `qs`.
-        if qs.is_empty() {
-            return 0f32;
-        }
-
-        // For each `q in qs` compute max similarity to any `d in ds`.
-        let mut tmp: Vec<f32> = Vec::new();
-        for q in qs {
-            if let Some(q) = o.hpo(q) {
-                tmp.push(
-                    ds.iter()
-                        .filter_map(|d| o.hpo(d).map(|d| q.similarity_score(&d, s)))
-                        .max_by(|a, b| a.partial_cmp(b).expect("try to compare NaN"))
-                        .unwrap_or_default(),
-                );
-            }
-        }
-
-        tmp.iter().sum::<f32>() / (qs.len() as f32)
-    }
-}
-
 /// Implementation of the actix server.
 pub mod actix_server {
     use actix_web::{middleware::Logger, web::Data, App, HttpServer, ResponseError};
@@ -786,7 +748,7 @@ pub mod actix_server {
             use serde::{Deserialize, Serialize};
 
             use super::super::CustomError;
-            use crate::server::pheno::{phenomizer, WebServerData};
+            use crate::{pheno::algos::phenomizer, server::pheno::WebServerData};
 
             /// Enum for representing similarity method to use.
             #[derive(Default, Debug, Clone, Copy, derive_more::Display)]
@@ -1033,46 +995,4 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     info!("All done. Have a nice day!");
     Ok(())
-}
-
-#[cfg(test)]
-mod test {
-    use hpo::{annotations::OmimDiseaseId, term::HpoGroup, HpoTermId, Ontology};
-
-    use crate::server::pheno::phenomizer;
-
-    fn load_hpo() -> Result<Ontology, anyhow::Error> {
-        Ok(Ontology::from_standard("tests/db/hpo")?)
-    }
-
-    fn prepare(terms: &[&str]) -> HpoGroup {
-        HpoGroup::from(
-            terms
-                .iter()
-                .map(|s| HpoTermId::from(s.to_string()))
-                .collect::<Vec<_>>(),
-        )
-    }
-
-    #[test]
-    fn phenomizer_score_gene() -> Result<(), anyhow::Error> {
-        let hpo = load_hpo()?;
-
-        let query = &[
-            // slender build
-            "HP:0001533",
-            // high, narrow palate
-            "HP:0002705",
-        ];
-        let omim_marfan = hpo
-            .omim_disease(&OmimDiseaseId::from(154700))
-            .expect("marfan symdrome must be in HPO");
-        let hpo_marfan = omim_marfan.hpo_terms();
-
-        let score = phenomizer::score(&prepare(query), &hpo_marfan, &hpo);
-
-        assert!((score - 2.31318).abs() < 0.00001);
-
-        Ok(())
-    }
 }

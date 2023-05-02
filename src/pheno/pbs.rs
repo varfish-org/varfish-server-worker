@@ -2,5 +2,5 @@
 
 include!(concat!(
     env!("OUT_DIR"),
-    "/varfish_server_worker.server.data.rs"
+    "/varfish_server_worker.pheno.pbs.rs"
 ));
