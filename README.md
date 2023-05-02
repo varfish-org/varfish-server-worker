@@ -1,3 +1,9 @@
+[![Crates.io](https://img.shields.io/crates/d/varfish-server-worker.svg)](https://crates.io/crates/varfish-server-worker)
+[![Crates.io](https://img.shields.io/crates/v/varfish-server-worker.svg)](https://crates.io/crates/varfish-server-worker)
+[![Crates.io](https://img.shields.io/crates/l/varfish-server-worker.svg)](https://crates.io/crates/varfish-server-worker)
+[![CI](https://github.com/bihealth/varfish-server-worker/actions/workflows/rust.yml/badge.svg)](https://github.com/bihealth/varfish-server-worker/actions/workflows/rust.yml)
+[![codecov](https://codecov.io/gh/bihealth/varfish-server-worker/branch/main/graph/badge.svg?token=t5oheMdukf)](https://codecov.io/gh/bihealth/varfish-server-worker)
+
 # VarFish Server Worker
 
 This repository contains the worker used by VarFish Server to execute certain background task.
