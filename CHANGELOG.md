@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.5.1...v0.6.0) (2023-05-02)
+
+
+### Features
+
+* add "serve pheno" REST API service ([#72](https://www.github.com/bihealth/varfish-server-worker/issues/72)) ([#73](https://www.github.com/bihealth/varfish-server-worker/issues/73)) ([17c9dd5](https://www.github.com/bihealth/varfish-server-worker/commit/17c9dd53c0a14949087e03b840dd0e7f50a1b55e))
+
 ### [0.5.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.5.0...v0.5.1) (2023-03-14)
 
 
