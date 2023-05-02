@@ -24,7 +24,7 @@ pub(crate) mod phenomizer {
 
     /// Compute symmetric similarity score.
     pub(crate) fn score(q: &HpoGroup, d: &HpoGroup, o: &Ontology) -> f32 {
-        let s = Builtins::Resnik(InformationContentKind::Omim);
+        let s = Builtins::Resnik(InformationContentKind::Gene);
         0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s)
     }
 
@@ -646,8 +646,8 @@ pub mod actix_server {
             #[derive(Default, Debug, Clone, Copy, derive_more::Display)]
             pub enum SimilarityMethod {
                 #[default]
-                #[display(fmt = "resnik::omim")]
-                ResnikOmim,
+                #[display(fmt = "resnik::gene")]
+                ResnikGene,
             }
 
             impl FromStr for SimilarityMethod {
@@ -655,7 +655,7 @@ pub mod actix_server {
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
                     Ok(match s {
-                        "resnik::omim" => Self::ResnikOmim,
+                        "resnik::gene" => Self::ResnikGene,
                         _ => anyhow::bail!("unknown similarity method: {}", s),
                     })
                 }
@@ -664,8 +664,8 @@ pub mod actix_server {
             impl From<SimilarityMethod> for Builtins {
                 fn from(val: SimilarityMethod) -> Self {
                     match val {
-                        SimilarityMethod::ResnikOmim => {
-                            Builtins::Resnik(InformationContentKind::Omim)
+                        SimilarityMethod::ResnikGene => {
+                            Builtins::Resnik(InformationContentKind::Gene)
                         }
                     }
                 }
@@ -708,7 +708,7 @@ pub mod actix_server {
 
                 /// Default value for `Request::sim`.
                 pub fn default_sim() -> super::SimilarityMethod {
-                    super::SimilarityMethod::ResnikOmim
+                    super::SimilarityMethod::ResnikGene
                 }
             }
 
@@ -801,7 +801,7 @@ pub mod actix_server {
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
                     Ok(match s {
-                        "resnik::omim" => Self::Phenomizer,
+                        "resnik::gene" => Self::Phenomizer,
                         _ => anyhow::bail!("unknown similarity method: {}", s),
                     })
                 }
@@ -1020,7 +1020,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     );
     info!(
         "  try: http://{}:{}/hpo/sim/term-term?lhs=HP:0001166,HP:0040069&rhs=HP:0005918,\
-        HP:0004188&sim=resnik::omim",
+        HP:0004188&sim=resnik::gene",
         args.listen_host.as_str(),
         args.listen_port
     );
