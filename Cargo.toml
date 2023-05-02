@@ -3,10 +3,11 @@ name = "varfish-server-worker"
 version = "0.5.1"
 authors = ["Manuel Holtgrewe <manuel.holtgrewe@bih-charite.de>"]
 description = "Rust-based workers for varfish-server"
-license-file = "LICENSE.md"
+license = "MIT"
 homepage = "https://github.com/bihealth/varfish-server-workers"
 edition = "2021"
 readme = "README.md"
+rust-version = "1.64.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
