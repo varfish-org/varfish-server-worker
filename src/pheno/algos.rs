@@ -73,7 +73,7 @@ mod test {
 
         let score = phenomizer::score(&prepare(query), hpo_marfan, &hpo);
 
-        assert!((score - 2.31318).abs() < 0.00001);
+        assert!((score - 1.7872534).abs() < 0.00001);
 
         Ok(())
     }

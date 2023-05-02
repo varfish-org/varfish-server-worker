@@ -85,7 +85,6 @@ fn run_simulation(
         .for_each(|gene| {
             // Obtain sorted list of similarity scores from simulations.
             let mut scores = (0..num_simulations)
-                .into_par_iter()
                 .map(|_| {
                     // Pick `num_terms` random terms with circuit breakers on number of tries.
                     let max_tries = 1000;
