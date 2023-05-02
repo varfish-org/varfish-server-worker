@@ -12,6 +12,7 @@ use crate::common::trace_rss_now;
 /// Data to keep in the web server.
 pub struct WebServerData {
     pub ontology: Ontology,
+    pub db: rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>,
 }
 
 /// Implementation of the actix server.
@@ -740,15 +741,11 @@ pub mod actix_server {
                 Responder,
             };
 
-            use hpo::{
-                annotations::{AnnotationId, GeneId},
-                term::HpoGroup,
-                HpoTermId, Ontology,
-            };
+            use hpo::{annotations::GeneId, term::HpoGroup, HpoTermId, Ontology};
             use serde::{Deserialize, Serialize};
 
             use super::super::CustomError;
-            use crate::{pheno::algos::phenomizer, server::pheno::WebServerData};
+            use crate::{pheno::query, server::pheno::WebServerData};
 
             /// Enum for representing similarity method to use.
             #[derive(Default, Debug, Clone, Copy, derive_more::Display)]
@@ -842,13 +839,15 @@ pub mod actix_server {
                 _path: Path<()>,
                 query: web::Query<Request>,
             ) -> actix_web::Result<impl Responder, CustomError> {
-                let ontology: &Ontology = &data.ontology;
+                let _ = &query.sim;
+
+                let hpo: &Ontology = &data.ontology;
 
                 // Translate strings from the query into an `HpoGroup`.
                 let query_terms = {
                     let mut query_terms = HpoGroup::new();
                     for term in &query.terms {
-                        if let Some(term) = ontology.hpo(HpoTermId::from(term.clone())) {
+                        if let Some(term) = hpo.hpo(HpoTermId::from(term.clone())) {
                             query_terms.insert(term.id());
                         }
                     }
@@ -861,7 +860,7 @@ pub mod actix_server {
                         .iter()
                         .filter_map(|gene_id| {
                             if let Ok(gene_id) = gene_id.parse::<u32>() {
-                                ontology.gene(&GeneId::from(gene_id))
+                                hpo.gene(&GeneId::from(gene_id))
                             } else {
                                 None
                             }
@@ -870,7 +869,7 @@ pub mod actix_server {
                 } else if let Some(gene_symbols) = &query.gene_symbols {
                     Ok(gene_symbols
                         .iter()
-                        .filter_map(|gene_symbol| ontology.gene_by_name(gene_symbol))
+                        .filter_map(|gene_symbol| hpo.gene_by_name(gene_symbol))
                         .collect::<Vec<_>>())
                 } else {
                     Err(CustomError::new(anyhow::anyhow!(
@@ -878,20 +877,9 @@ pub mod actix_server {
                     )))
                 }?;
 
-                // Compute the similarity for the given term for each.  Create one result record
-                // for each gene.
-                let mut result = Vec::new();
-                for gene in genes {
-                    let gene_terms = gene.hpo_terms();
-                    let score = phenomizer::score(&query_terms, gene_terms, ontology);
-
-                    result.push(ResultEntry {
-                        gene_id: gene.id().as_u32(),
-                        gene_symbol: gene.name().to_string(),
-                        score,
-                        sim: query.sim.to_string(),
-                    });
-                }
+                // Perform similarity computation.
+                let result = query::run_query(&query_terms, &genes, &hpo, &data.db)
+                    .map_err(|e| CustomError::new(e))?;
 
                 Ok(Json(result))
             }
@@ -950,8 +938,20 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("Loading HPO...");
     let before_loading = Instant::now();
     let ontology = Ontology::from_standard(&args.path_hpo_dir)?;
-    let data = Data::new(WebServerData { ontology });
     info!("...done loading HPO in {:?}", before_loading.elapsed());
+
+    info!("Opening RocksDB for reading...");
+    let before_rocksdb = Instant::now();
+    let path_rocksdb = format!("{}/resnik", args.path_hpo_dir);
+    let db = rocksdb::DB::open_cf_for_read_only(
+        &rocksdb::Options::default(),
+        &path_rocksdb,
+        ["meta", "resnik_pvalues"],
+        true,
+    )?;
+    info!("...done opening RocksDB in {:?}", before_rocksdb.elapsed());
+
+    let data = Data::new(WebServerData { ontology, db });
 
     trace_rss_now();
 
