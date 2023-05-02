@@ -25,6 +25,9 @@ jobs:
       - name: Install flatbuffers
         uses: ./.github/actions/install-flatbuffers
 
+      - name: Setup protoc
+        uses: arduino/setup-protoc@v1.1.2
+
       - name: Check format
         run: |
           flatc -o target/flatbuffers --rust src/world.fbs
@@ -46,6 +49,9 @@ jobs:
 
       - name: Install flatbuffers
         uses: ./.github/actions/install-flatbuffers
+
+      - name: Setup protoc
+        uses: arduino/setup-protoc@v1.1.2
 
       - name: Lint with clippy
         uses: actions-rs/clippy-check@v1
