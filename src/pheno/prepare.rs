@@ -16,7 +16,7 @@ use crate::pheno::algos::phenomizer;
 use crate::pheno::pbs::SimulationResults;
 
 /// The version of `varfish-server-worker` package.
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Command line arguments for `server prepare-pheno` sub command.
 #[derive(Parser, Debug)]
