@@ -22,19 +22,27 @@ clap = { version = "4.1.1", features = ["derive", "help"] }
 clap-verbosity-flag = "2.0.0"
 console = "0.15.5"
 csv = "1.1.6"
+derive_more = "0.99.17"
 enum-map = { version = "2.4.2", features = ["serde"] }
 env_logger = "0.10.0"
+fastrand = "1.9.0"
 flatbuffers = "23.1.21"
 flate2 = "1.0.25"
+hpo = "0.7.0"
 indexmap = { version = "1.9.2", features = ["serde"] }
+indicatif = { version = "0.17.3", features = ["rayon"] }
+itertools = "0.10.5"
 lazy_static = "1.4.0"
 log = "0.4.17"
 md-5 = "0.10.5"
 memmap2 = "0.5.8"
 multimap = "0.8.3"
 procfs = "0.14.2"
+prost = "0.11.9"
+rayon = "1.7.0"
 regex = "1.7.1"
 result = "1.0.0"
+rocksdb = { version = "0.20.1", features = ["multi-threaded-cf"] }
 rust-htslib = { version = "0.40.2", default-features = false }
 serde = { version = "1.0.152", features = ["serde_derive"] }
 serde-jsonlines = "0.4.0"
@@ -53,6 +61,7 @@ uuid = { version = "1.2.2", features = ["v4", "fast-rng", "serde"] }
 
 [build-dependencies]
 flatc-rust = "0.2.0"
+prost-build = "0.11.9"
 
 [dev-dependencies]
 file_diff = "1.0.0"

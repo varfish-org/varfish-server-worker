@@ -326,7 +326,7 @@ pub struct Args {
     pub listen_port: u16,
 }
 
-/// Main entry point for `sv query` sub command.
+/// Main entry point for `server rest` sub command.
 pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     info!("args_common = {:?}", &args_common);
     info!("args = {:?}", &args);

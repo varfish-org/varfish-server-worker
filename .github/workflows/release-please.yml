@@ -30,6 +30,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Setup protoc
+        uses: arduino/setup-protoc@v1.1.2
+
       - uses: Swatinem/rust-cache@v1.3.0
         if: ${{ steps.release.outputs.release_created }}
 
