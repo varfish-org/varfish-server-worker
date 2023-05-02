@@ -878,8 +878,8 @@ pub mod actix_server {
                 }?;
 
                 // Perform similarity computation.
-                let result = query::run_query(&query_terms, &genes, &hpo, &data.db)
-                    .map_err(|e| CustomError::new(e))?;
+                let result = query::run_query(&query_terms, &genes, hpo, &data.db)
+                    .map_err(CustomError::new)?;
 
                 Ok(Json(result))
             }
@@ -945,7 +945,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let path_rocksdb = format!("{}/resnik", args.path_hpo_dir);
     let db = rocksdb::DB::open_cf_for_read_only(
         &rocksdb::Options::default(),
-        &path_rocksdb,
+        path_rocksdb,
         ["meta", "resnik_pvalues"],
         true,
     )?;

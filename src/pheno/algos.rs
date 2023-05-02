@@ -71,7 +71,7 @@ mod test {
             .expect("marfan symdrome must be in HPO");
         let hpo_marfan = omim_marfan.hpo_terms();
 
-        let score = phenomizer::score(&prepare(query), &hpo_marfan, &hpo);
+        let score = phenomizer::score(&prepare(query), hpo_marfan, &hpo);
 
         assert!((score - 2.31318).abs() < 0.00001);
 

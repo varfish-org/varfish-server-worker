@@ -119,7 +119,7 @@ pub fn run_query(
 
     let num_terms = std::cmp::min(10, patient.len());
     let mut result = query_result::Container {
-        hpo_version: hpo.hpo_version().clone(),
+        hpo_version: hpo.hpo_version(),
         varfish_version: VERSION.to_string(),
         score_method: SimilarityMethod::Phenomizer.to_string(),
         query: patient
@@ -138,10 +138,10 @@ pub fn run_query(
         let ncbi_gene_id = gene.id().as_u32();
         let key = format!("{ncbi_gene_id}:{num_terms}");
         let data = db
-            .get_cf(&cf_resnik, &key.as_bytes())?
+            .get_cf(&cf_resnik, key.as_bytes())?
             .expect("key not found");
         let res = SimulationResults::decode(&data[..])?;
-        let score = phenomizer::score(&patient, gene.hpo_terms(), &hpo);
+        let score = phenomizer::score(patient, gene.hpo_terms(), hpo);
 
         let lower_bound = res.scores[..].partition_point(|x| *x < score);
         let upper_bound = res.scores[..].partition_point(|x| *x <= score);
@@ -244,8 +244,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         .iter()
         .map(|g| {
             hpo.gene_by_name(&g.gene_symbol)
-                .expect(&format!("gene {} not found", &g.gene_symbol))
-                .clone()
+                .unwrap_or_else(|| panic!("gene {} not found", &g.gene_symbol))
         })
         .collect::<Vec<_>>();
     info!("... done loadin genes in {:?}", before_load_genes.elapsed());
@@ -258,7 +257,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         .iter()
         .map(|t| {
             HpoTermId::try_from(t.term_id.as_str())
-                .expect(&format!("term {} no valid HPO term ID", &t.term_id))
+                .unwrap_or_else(|_| panic!("term {} no valid HPO term ID", &t.term_id))
         })
         .collect::<Vec<_>>();
     let query = {
