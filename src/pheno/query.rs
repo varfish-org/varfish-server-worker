@@ -89,7 +89,7 @@ pub mod query_result {
     #[derive(Serialize, Debug, Clone)]
     pub struct TermDetails {
         /// The query HPO term.
-        pub term_query: HpoTerm,
+        pub term_query: Option<HpoTerm>,
         /// The gene's HPO term.
         pub term_gene: HpoTerm,
         /// The similarity score.
@@ -150,48 +150,58 @@ pub fn run_query(
         let p = 1.0 - (idx as f64) / (res.scores.len() as f64);
         let log_p = -10.0 * p.log10();
 
+        // For each term in the gene, provide query term with the highest similarity.
+        let mut terms = gene
+            .hpo_terms()
+            .iter()
+            .map(|gene_term_id| {
+                let gene_term = hpo.hpo(gene_term_id).expect("gene HPO term not found");
+                let (best_term, best_score) = patient
+                    .iter()
+                    .map(|query_term_id| {
+                        let query_term = hpo.hpo(query_term_id).expect("query HPO term not found");
+                        let score = gene_term.similarity_score(
+                            &query_term,
+                            &Builtins::Resnik(hpo::term::InformationContentKind::Gene),
+                        );
+                        (query_term, score)
+                    })
+                    .max_by(|(_, score1), (_, score2)| score1.partial_cmp(score2).unwrap())
+                    .expect("could not determine best query term");
+
+                let term_query = if best_score > 0.0 {
+                    Some(HpoTerm {
+                        term_id: best_term.id().to_string(),
+                        term_name: Some(best_term.name().to_string()),
+                    })
+                } else {
+                    None
+                };
+
+                TermDetails {
+                    term_query,
+                    term_gene: HpoTerm {
+                        term_id: gene_term.id().to_string(),
+                        term_name: Some(gene_term.name().to_string()),
+                    },
+                    score: best_score,
+                }
+            })
+            .collect::<Vec<_>>();
+        terms.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+
         result.result.push(query_result::Record {
             gene_symbol: gene.name().to_string(),
             p_value: p as f32,
             score: log_p as f32,
-            // For each term in the gene, provide query term with the highest similarity.
-            terms: Some(
-                gene.hpo_terms()
-                    .iter()
-                    .map(|gene_term_id| {
-                        let gene_term = hpo.hpo(gene_term_id).expect("gene HPO term not found");
-                        let (best_term, best_score) = patient
-                            .iter()
-                            .map(|query_term_id| {
-                                let query_term =
-                                    hpo.hpo(query_term_id).expect("query HPO term not found");
-                                let score = gene_term.similarity_score(
-                                    &query_term,
-                                    &Builtins::Resnik(hpo::term::InformationContentKind::Gene),
-                                );
-                                (query_term, score)
-                            })
-                            .max_by(|(_, score1), (_, score2)| score1.partial_cmp(score2).unwrap())
-                            .expect("could not determine best query term");
-
-                        TermDetails {
-                            term_query: HpoTerm {
-                                term_id: best_term.id().to_string(),
-                                term_name: Some(best_term.name().to_string()),
-                            },
-                            term_gene: HpoTerm {
-                                term_id: gene_term.id().to_string(),
-                                term_name: Some(gene_term.name().to_string()),
-                            },
-                            score: best_score,
-                        }
-                    })
-                    .collect::<Vec<_>>(),
-            ),
+            terms: Some(terms),
         });
-
-        info!("  {:?} -> {}\t{}\t{}", gene.name(), score, log_p, p);
     }
+
+    result
+        .result
+        .sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+
     Ok(result)
 }
 
@@ -274,6 +284,21 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     );
 
     println!("{:#?}", result);
+
+    info!(
+        "{: >4} | {: <10} | {: >10} | {: >10}",
+        "rank", "gene", "P-value", "score"
+    );
+    info!("     |            |            |");
+    for (i, gene) in result.result.iter().enumerate() {
+        info!(
+            "{: >4} | {: <10} | {: >10.5} | {: >10.2}",
+            i + 1,
+            gene.gene_symbol,
+            gene.p_value,
+            gene.score
+        );
+    }
 
     info!("All done. Have a nice day!");
     Ok(())
