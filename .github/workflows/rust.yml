@@ -27,6 +27,8 @@ jobs:
 
       - name: Setup protoc
         uses: arduino/setup-protoc@v1.1.2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check format
         run: |
@@ -52,6 +54,8 @@ jobs:
 
       - name: Setup protoc
         uses: arduino/setup-protoc@v1.1.2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lint with clippy
         uses: actions-rs/clippy-check@v1
@@ -78,6 +82,8 @@ jobs:
 
       - name: Setup protoc
         uses: arduino/setup-protoc@v1.1.2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: Swatinem/rust-cache@v1.3.0
 
