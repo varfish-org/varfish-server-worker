@@ -132,6 +132,26 @@ fn run_simulation(
     Ok(())
 }
 
+pub fn rocksdb_tuning(options: rocksdb::Options) -> rocksdb::Options {
+    let mut options = options;
+
+    options.create_if_missing(true);
+    options.create_missing_column_families(true);
+
+    options.prepare_for_bulk_load();
+
+    // compress all files with Zstandard
+    options.set_compression_per_level(&[]);
+    options.set_compression_type(rocksdb::DBCompressionType::Zstd);
+    // We only want to set level to 2 but have to set the rest as well using the Rust interface.
+    // The (default) values for the other levels were taken from the output of a RocksDB
+    // output folder created with default settings.
+    options.set_compression_options(-14, 2, 0, 0);
+    // options.set_zstd_max_train_bytes(100 * 1024);
+
+    options
+}
+
 /// Main entry point for `server prepare-pheno` sub command.
 pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     info!("args_common = {:?}", &args_common);
@@ -154,13 +174,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     info!("Opening RocksDB for writing...");
     let before_rocksdb = Instant::now();
-    let options = {
-        let mut options = rocksdb::Options::default();
-        options.create_if_missing(true);
-        options.create_missing_column_families(true);
-        options.prepare_for_bulk_load();
-        options
-    };
+    let options = rocksdb_tuning(rocksdb::Options::default());
     let db = rocksdb::DB::open_cf(&options, &args.path_out_rocksdb, ["meta", "resnik_pvalues"])?;
     // write out metadata
     let cf_meta = db.cf_handle("meta").unwrap();
