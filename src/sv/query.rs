@@ -113,7 +113,7 @@ struct Gene {
 #[derive(Debug, Default, Serialize)]
 struct ResultPayload {
     /// The name of the calling tool.
-    caller: String,
+    callers: Vec<String>,
     /// The overlapping VCVs
     clinvar_ovl_vcvs: Vec<String>,
     /// The directly overlapping genes.
@@ -238,7 +238,7 @@ fn run_query(
 
         let mut result_payload = ResultPayload {
             call_info: schema_sv.call_info.clone(),
-            caller: record_sv.caller.clone(),
+            callers: record_sv.callers.clone(),
             ..ResultPayload::default()
         };
 

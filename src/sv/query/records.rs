@@ -36,8 +36,9 @@ pub struct StructuralVariant {
     /// 1-based start position of the variant (or position on first chromosome for
     /// break-ends)
     pub start: u32,
-    /// The name of the calling tool.
-    pub caller: String,
+    /// The names of the calling tools.
+    #[serde(deserialize_with = "deserialize_callers")]
+    pub callers: Vec<String>,
     /// Type of the structural variant
     #[serde(deserialize_with = "deserialize_sv_type")]
     pub sv_type: SvType,
@@ -105,6 +106,14 @@ impl From<StructuralVariant> for SchemaStructuralVariant {
             })),
         }
     }
+}
+
+fn deserialize_callers<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    Ok(s.split(';').map(|s| s.to_string()).collect())
 }
 
 fn deserialize_sv_type<'de, D>(deserializer: D) -> Result<SvType, D::Error>
