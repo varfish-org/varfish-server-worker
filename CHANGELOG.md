@@ -1,5 +1,15 @@
 # Changelog
 
+### [0.6.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.6.0...v0.6.1) (2023-05-03)
+
+
+### Bug Fixes
+
+* "db mk-inhouse" command for breakends ([#79](https://www.github.com/bihealth/varfish-server-worker/issues/79)) ([9b33e1d](https://www.github.com/bihealth/varfish-server-worker/commit/9b33e1d31cdbef31c636da40d1394eac63fb322f))
+* command "sv query" for types BND and INS ([#81](https://www.github.com/bihealth/varfish-server-worker/issues/81)) ([5be2274](https://www.github.com/bihealth/varfish-server-worker/commit/5be2274c86f86f3ae32b255f3e778ddebc1c7a28))
+* correctly interpret "callers" column ([#82](https://www.github.com/bihealth/varfish-server-worker/issues/82)) ([8e083c8](https://www.github.com/bihealth/varfish-server-worker/commit/8e083c87b3d5e7d263ade2d4540f06250b20bc6b))
+* overlap queries for BND and INS ([#83](https://www.github.com/bihealth/varfish-server-worker/issues/83)) ([4de4eda](https://www.github.com/bihealth/varfish-server-worker/commit/4de4eda55c2caa34881305339a194eae2125b2f1))
+
 ## [0.6.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.5.1...v0.6.0) (2023-05-02)
 
 
