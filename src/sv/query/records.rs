@@ -38,7 +38,7 @@ pub struct StructuralVariant {
     pub start: u32,
     /// The names of the calling tools.
     #[serde(deserialize_with = "deserialize_callers")]
-    pub callers: String,
+    pub callers: Vec<String>,
     /// Type of the structural variant
     #[serde(deserialize_with = "deserialize_sv_type")]
     pub sv_type: SvType,
