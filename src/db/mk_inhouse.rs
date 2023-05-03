@@ -280,12 +280,17 @@ fn merge_to_out(
             record.begin -= 1; // need to get 0-based coordinates for DB
             record
         };
-        let slack = match record.sv_type {
-            SvType::Bnd => args.slack_bnd,
-            SvType::Ins => args.slack_ins,
-            _ => 0,
-        };
-        let query = ((record.begin - 1 - slack) as i32)..((record.end + slack) as i32);
+        let begin = match record.sv_type {
+            SvType::Bnd => record.begin - 1 - args.slack_bnd,
+            SvType::Ins => record.begin - 1 - args.slack_ins,
+            _ => record.begin,
+        } as i32;
+        let end = match record.sv_type {
+            SvType::Bnd => record.begin + args.slack_bnd,
+            SvType::Ins => record.begin + args.slack_ins,
+            _ => record.end,
+        } as i32;
+        let query = begin..end;
         let mut found_any_cluster = false;
         for mut it_tree in tree.find_mut(&query) {
             let cluster_idx = *it_tree.data();
@@ -312,7 +317,10 @@ fn merge_to_out(
         if !found_any_cluster {
             // create new cluster
             tree.insert(
-                ((record.begin - 1) as i32)..(record.end as i32),
+                match record.sv_type {
+                    SvType::Bnd | SvType::Ins => ((record.begin - 1) as i32)..(record.begin as i32),
+                    _ => ((record.begin - 1) as i32)..(record.end as i32),
+                },
                 clusters.len(),
             );
             clusters.push(vec![records.len()]);
