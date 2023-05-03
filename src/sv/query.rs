@@ -244,6 +244,12 @@ fn run_query(
 
         let mut ovl_gene_ids = Vec::new();
 
+        let sv_query = if matches!(schema_sv.sv_type, SvType::Ins | SvType::Bnd) {
+            schema_sv.pos.saturating_sub(1)..schema_sv.pos
+        } else {
+            schema_sv.pos.saturating_sub(1)..schema_sv.end
+        };
+
         let passes = interpreter.passes(
             &schema_sv,
             &mut |sv: &SchemaSv| {
@@ -267,7 +273,7 @@ fn run_query(
                     *chrom_map
                         .get(&sv.chrom)
                         .expect("cannot translate chromosome") as u32,
-                    sv.pos.saturating_sub(1)..sv.end,
+                    sv_query.clone(),
                 );
                 ovl_gene_ids.sort();
                 ovl_gene_ids.clone()
