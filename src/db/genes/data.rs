@@ -43,10 +43,32 @@ pub mod acmg_sf {
 /// Code for data from the NCBI gene database (aka "Entrez").
 pub mod ncbi {
     use serde::{Deserialize, Serialize};
+    use serde_with::DisplayFromStr;
+
+    /// Reference into function record.
+    #[serde_with::skip_serializing_none]
+    #[serde_with::serde_as]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct RifEntry {
+        /// The RIF text.
+        pub text: String,
+        /// PubMed IDs.
+        #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
+        pub pmids: Option<Vec<u32>>,
+    }
 
     /// A record from the NCBI gene database.
+    #[serde_with::skip_serializing_none]
+    #[serde_with::serde_as]
     #[derive(Debug, Serialize, Deserialize)]
-    pub struct Record {}
+    pub struct Record {
+        /// NCBI Gene ID.
+        pub gene_id: String,
+        /// Gene summary.
+        pub summary: Option<String>,
+        /// "Rereference into Function" entries.
+        pub rif_entries: Option<Vec<RifEntry>>,
+    }
 }
 
 /// Code for data from the HGNC database.
@@ -210,10 +232,21 @@ pub mod hgnc {
 
 #[cfg(test)]
 mod tests {
-    use super::{acmg_sf, hgnc};
+    use super::*;
 
     #[test]
-    fn deserialize_acmg_sf_record() {}
+    fn deserialize_acmg_sf_record() -> Result<(), anyhow::Error> {
+        let path_json = "tests/db/genes/gene_info.example.jsonl";
+        let str_json = std::fs::read_to_string(path_json)?;
+        let records = str_json
+            .lines()
+            .map(|s| serde_json::from_str::<ncbi::Record>(s).unwrap())
+            .collect::<Vec<_>>();
+
+        insta::assert_yaml_snapshot!(records);
+
+        Ok(())
+    }
 
     #[test]
     fn deserialize_ncbi_record() -> Result<(), anyhow::Error> {
