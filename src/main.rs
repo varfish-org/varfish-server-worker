@@ -66,6 +66,22 @@ struct Db {
 enum DbCommands {
     Compile(db::compile::Args),
     MkInhouse(db::mk_inhouse::Args),
+    Genes(Genes),
+}
+
+/// Parsing of "db genes *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Genes {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: GenesCommands,
+}
+
+/// Enum supporting the parsing of "db genes *" sub commands.
+#[derive(Debug, Subcommand)]
+enum GenesCommands {
+    Build(db::genes::build::Args),
 }
 
 /// Parsing of "pheno *" sub commands.
@@ -102,6 +118,7 @@ enum SvCommands {
 /// Enum supporting the parsing of "server *" sub commands.
 #[derive(Debug, Subcommand)]
 enum ServerCommands {
+    Genes(server::genes::Args),
     Rest(server::rest::Args),
     Pheno(server::pheno::Args),
 }
@@ -144,6 +161,11 @@ fn main() -> Result<(), anyhow::Error> {
                 DbCommands::MkInhouse(args) => {
                     db::mk_inhouse::run(&cli.common, args)?;
                 }
+                DbCommands::Genes(args) => match &args.command {
+                    GenesCommands::Build(args) => {
+                        db::genes::build::run(&cli.common, args)?;
+                    }
+                },
             },
             Commands::Pheno(pheno) => match &pheno.command {
                 PhenoCommands::Prepare(args) => pheno::prepare::run(&cli.common, args)?,
@@ -155,6 +177,7 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             },
             Commands::Server(server) => match &server.command {
+                ServerCommands::Genes(args) => server::genes::run(&cli.common, args)?,
                 ServerCommands::Rest(args) => server::rest::run(&cli.common, args)?,
                 ServerCommands::Pheno(args) => server::pheno::run(&cli.common, args)?,
             },

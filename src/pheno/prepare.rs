@@ -75,10 +75,7 @@ fn run_simulation(
     let genes = ontology.genes().collect::<Vec<_>>();
 
     // Run simulations for each gene in parallel.
-    let style = indicatif::ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {human_pos}/{human_len} ({eta})")
-        .unwrap()
-        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap())
-        .progress_chars("#>-");
+    let style = indicatif_style();
     genes
         .par_iter()
         .progress_with_style(style)
@@ -129,6 +126,14 @@ fn run_simulation(
     info!("  ... done in {:?}", before.elapsed());
 
     Ok(())
+}
+
+/// Construct the `indicatif` style for progress bars.
+pub fn indicatif_style() -> indicatif::ProgressStyle {
+    indicatif::ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {human_pos}/{human_len} ({eta})")
+        .unwrap()
+        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap())
+        .progress_chars("#>-")
 }
 
 pub fn rocksdb_tuning(options: rocksdb::Options) -> rocksdb::Options {

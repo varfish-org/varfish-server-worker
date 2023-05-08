@@ -18,6 +18,7 @@ anyhow = { version = "1.0.68", features = ["backtrace"] }
 base16ct = "0.1.1"
 bio = "1.1.0"
 byte-unit = "4.0.18"
+chrono = { version = "0.4.24", features = ["serde"] }
 clap = { version = "4.1.1", features = ["derive", "help"] }
 clap-verbosity-flag = "2.0.0"
 console = "0.15.5"
@@ -33,6 +34,7 @@ indexmap = { version = "1.9.2", features = ["serde"] }
 indicatif = { version = "0.17.3", features = ["rayon"] }
 itertools = "0.10.5"
 lazy_static = "1.4.0"
+linked-hash-map = { version = "0.5.6", features = ["serde", "serde_impl"] }
 log = "0.4.17"
 md-5 = "0.10.5"
 memmap2 = "0.5.8"
@@ -47,6 +49,7 @@ rust-htslib = { version = "0.40.2", default-features = false }
 serde = { version = "1.0.152", features = ["serde_derive"] }
 serde-jsonlines = "0.4.0"
 serde_json = "1.0.91"
+serde_with = "3.0.0"
 sha2 = "0.10.6"
 shellexpand = "3.0.0"
 strum = "0.24.1"
@@ -68,6 +71,7 @@ file_diff = "1.0.0"
 serde_test = "1.0.152"
 pretty_assertions = "1"
 temp_testdir = "0.2"
+insta = { version = "1.29.0", features = ["yaml"] }
 
 [[bin]]
 name = "varfish-server-worker"
