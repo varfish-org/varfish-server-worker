@@ -34,6 +34,7 @@ indexmap = { version = "1.9.2", features = ["serde"] }
 indicatif = { version = "0.17.3", features = ["rayon"] }
 itertools = "0.10.5"
 lazy_static = "1.4.0"
+linked-hash-map = { version = "0.5.6", features = ["serde", "serde_impl"] }
 log = "0.4.17"
 md-5 = "0.10.5"
 memmap2 = "0.5.8"

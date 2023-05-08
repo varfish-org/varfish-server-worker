@@ -118,6 +118,7 @@ enum SvCommands {
 /// Enum supporting the parsing of "server *" sub commands.
 #[derive(Debug, Subcommand)]
 enum ServerCommands {
+    Genes(server::genes::Args),
     Rest(server::rest::Args),
     Pheno(server::pheno::Args),
 }
@@ -176,6 +177,7 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             },
             Commands::Server(server) => match &server.command {
+                ServerCommands::Genes(args) => server::genes::run(&cli.common, args)?,
                 ServerCommands::Rest(args) => server::rest::run(&cli.common, args)?,
                 ServerCommands::Pheno(args) => server::pheno::run(&cli.common, args)?,
             },
