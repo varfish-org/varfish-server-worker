@@ -5,15 +5,25 @@ use serde::{Deserialize, Serialize};
 /// Entry in the genes RocksDB database.
 ///
 /// Note that the HGNC ID is used for the keys, e.g., `"HGNC:5"`.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Record {}
+#[serde_with::skip_serializing_none]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Record {
+    /// Information from the ACMG secondary finding list.
+    pub acmg_sf: Option<acmg_sf::Record>,
+    /// Information from the gnomAD constraints database.
+    pub gnomad_constraints: Option<gnomad_constraints::Record>,
+    /// Information from the HGNC database.
+    pub hgnc: hgnc::Record,
+    /// Information from the NCBI gene database (aka "Entrez").
+    pub ncbi: Option<ncbi::Record>,
+}
 
 /// Code for data from the ACMG secondary findings list.
 pub mod acmg_sf {
     use serde::{Deserialize, Serialize};
 
     /// A record from the ACMG secondary findings list.
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct Record {
         /// The HGNC ID.
         pub hgnc_id: String,
@@ -40,34 +50,204 @@ pub mod acmg_sf {
     }
 }
 
-/// Code for data from the NCBI gene database (aka "Entrez").
-pub mod ncbi {
-    use serde::{Deserialize, Serialize};
-    use serde_with::DisplayFromStr;
+/// Code for data from the gnomAD constraints.
+pub mod gnomad_constraints {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-    /// Reference into function record.
-    #[serde_with::skip_serializing_none]
-    #[serde_with::serde_as]
-    #[derive(Debug, Serialize, Deserialize)]
-    pub struct RifEntry {
-        /// The RIF text.
-        pub text: String,
-        /// PubMed IDs.
-        #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
-        pub pmids: Option<Vec<u32>>,
+    /// Deserialize `Option::None` as `"NA"`.
+    ///
+    /// cf. https://stackoverflow.com/a/56384732/84349
+    fn deserialize_option_na<'de, D, T: Deserialize<'de>>(
+        deserializer: D,
+    ) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // We define a local enum type inside of the function because it is untagged,
+        // serde will deserialize as the first variant that it can.
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum MaybeNA<U> {
+            // If it can be parsed as Option<T>, it will be...
+            Value(Option<U>),
+            // ... otherwise try parsing as a string.
+            NAString(String),
+        }
+
+        // Deserialize into local enum.
+        let value: MaybeNA<T> = Deserialize::deserialize(deserializer)?;
+        match value {
+            // If parsed as T or None, return that.
+            MaybeNA::Value(value) => Ok(value),
+
+            // Otherwise, if value is string an "n/a", return None (and fail if it is
+            // any other string)
+            MaybeNA::NAString(string) => {
+                if string == "NA" {
+                    Ok(None)
+                } else {
+                    Err(serde::de::Error::custom("Unexpected string"))
+                }
+            }
+        }
     }
 
-    /// A record from the NCBI gene database.
+    /// Serialize `Option::None` as `"NA"`.
+    fn serialize_option_na<S, T>(x: &Option<T>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize,
+    {
+        match x {
+            Some(x) => s.serialize_some(x),
+            None => s.serialize_str("NA"),
+        }
+    }
+
+    /// A record from the gnomAD constraints database.
     #[serde_with::skip_serializing_none]
-    #[serde_with::serde_as]
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct Record {
-        /// NCBI Gene ID.
-        pub gene_id: String,
-        /// Gene summary.
-        pub summary: Option<String>,
-        /// "Rereference into Function" entries.
-        pub rif_entries: Option<Vec<RifEntry>>,
+        /// The Ensembl gene ID.
+        pub ensembl_gene_id: String,
+        /// The NCBI gene ID.
+        pub entrez_id: String,
+        /// The HGNC gene symbol.
+        pub gene_symbol: String,
+        /// The expected number of loss-of-function variants.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub exp_lof: Option<f64>,
+        /// The expected number of missense variants.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub exp_mis: Option<f64>,
+        /// The expected number of synonymous variants.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub exp_syn: Option<f64>,
+        /// The missense-related Z-score.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub mis_z: Option<f64>,
+        /// The observed number of loss-of-function variants.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub obs_lof: Option<u32>,
+        /// The observed number of missense variants.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub obs_mis: Option<u32>,
+        /// The observed number of synonymous variants.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub obs_syn: Option<u32>,
+        /// The loss-of-function observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_lof: Option<f64>,
+        /// The lower bound of the loss-of-function observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_lof_lower: Option<f64>,
+        /// The upper bound of the loss-of-function observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_lof_upper: Option<f64>,
+        /// The missense observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_mis: Option<f64>,
+        /// The lower bound of the missense observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_mis_lower: Option<f64>,
+        /// The upper bound of the missense observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_mis_upper: Option<f64>,
+        /// The synonymous observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_syn: Option<f64>,
+        /// The lower bound of the synonymous observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_syn_lower: Option<f64>,
+        /// The upper bound of the synonymous observed/expected ratio.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub oe_syn_upper: Option<f64>,
+        /// The probability of loss-of-function intolerance (pLI score).
+        #[serde(
+            rename = "pLI",
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub pli: Option<f64>,
+        /// The synonymous-related Z-score.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub syn_z: Option<f64>,
+        /// The probability of loss-of-function intolerance (pLI score) from ExAC.
+        #[serde(
+            rename = "exac_pLI",
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub exac_pli: Option<f64>,
+        /// The observed number of loss-of-function variants from ExAC.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub exac_obs_lof: Option<f64>,
+        /// The expected number of loss-of-function variants from ExAC.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub exac_exp_lof: Option<f64>,
+        /// The loss-of-function observed/expected ratio from ExAC.
+        #[serde(
+            serialize_with = "serialize_option_na",
+            deserialize_with = "deserialize_option_na"
+        )]
+        pub exac_oe_lof: Option<f64>,
     }
 }
 
@@ -80,7 +260,7 @@ pub mod hgnc {
     use serde_with::DisplayFromStr;
 
     /// Status of the symbol report, which can be either "Approved" or "Entry Withdrawn".
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum Status {
         #[serde(rename = "Approved")]
         Approve,
@@ -89,7 +269,7 @@ pub mod hgnc {
     }
 
     /// Information from the locus-specific dabase.
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct Lsdb {
         /// The name of the Locus Specific Mutation Database.
         pub name: String,
@@ -123,7 +303,7 @@ pub mod hgnc {
     /// Also see the [HGNC website](https://www.genenames.org/download/archive/).
     #[serde_with::skip_serializing_none]
     #[serde_with::serde_as]
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct Record {
         /// HGNC ID. A unique ID created by the HGNC for every approved symbol.
         pub hgnc_id: String,
@@ -214,7 +394,7 @@ pub mod hgnc {
         pub iuphar: Option<String>,
         /// ID to link to the Mamit-tRNA database
         #[serde(rename = "mamit-trnadb")]
-        pub mamit_trnadb: Option<String>,
+        pub mamit_trnadb: Option<u32>,
         /// Symbol used within the Human Cell Differentiation Molecule database.
         pub cd: Option<String>,
         /// lncRNA Database ID.
@@ -230,13 +410,44 @@ pub mod hgnc {
     }
 }
 
+/// Code for data from the NCBI gene database (aka "Entrez").
+pub mod ncbi {
+    use serde::{Deserialize, Serialize};
+    use serde_with::DisplayFromStr;
+
+    /// Reference into function record.
+    #[serde_with::skip_serializing_none]
+    #[serde_with::serde_as]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct RifEntry {
+        /// The RIF text.
+        pub text: String,
+        /// PubMed IDs.
+        #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
+        pub pmids: Option<Vec<u32>>,
+    }
+
+    /// A record from the NCBI gene database.
+    #[serde_with::skip_serializing_none]
+    #[serde_with::serde_as]
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct Record {
+        /// NCBI Gene ID.
+        pub gene_id: String,
+        /// Gene summary.
+        pub summary: Option<String>,
+        /// "Rereference into Function" entries.
+        pub rif_entries: Option<Vec<RifEntry>>,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn deserialize_acmg_sf_record() -> Result<(), anyhow::Error> {
-        let path_json = "tests/db/genes/gene_info.example.jsonl";
+        let path_json = "tests/db/genes/ncbi/gene_info.jsonl";
         let str_json = std::fs::read_to_string(path_json)?;
         let records = str_json
             .lines()
@@ -249,8 +460,37 @@ mod tests {
     }
 
     #[test]
+    fn deserialize_hgnc_record() -> Result<(), anyhow::Error> {
+        let path_json = "tests/db/genes/hgnc/hgnc_info.jsonl";
+        let str_json = std::fs::read_to_string(path_json)?;
+        let records = str_json
+            .lines()
+            .map(|s| serde_json::from_str::<hgnc::Record>(s).unwrap())
+            .collect::<Vec<_>>();
+
+        insta::assert_yaml_snapshot!(records);
+
+        Ok(())
+    }
+
+    #[test]
+    fn deserialize_gnomad_constraints() -> Result<(), anyhow::Error> {
+        let path_tsv = "tests/db/genes/gnomad_constraints/gnomad_constraints.tsv";
+        let str_tsv = std::fs::read_to_string(path_tsv)?;
+        let mut rdr = csv::ReaderBuilder::new()
+            .delimiter(b'\t')
+            .has_headers(true)
+            .from_reader(str_tsv.as_bytes());
+        let records = rdr
+            .deserialize()
+            .collect::<Result<Vec<gnomad_constraints::Record>, csv::Error>>()?;
+        insta::assert_yaml_snapshot!(records);
+        Ok(())
+    }
+
+    #[test]
     fn deserialize_ncbi_record() -> Result<(), anyhow::Error> {
-        let path_tsv = "tests/db/genes/acmg_sf.example.tsv";
+        let path_tsv = "tests/db/genes/acmg/acmg.tsv";
         let str_tsv = std::fs::read_to_string(path_tsv).unwrap();
         let mut rdr = csv::ReaderBuilder::new()
             .delimiter(b'\t')
@@ -259,20 +499,6 @@ mod tests {
         let records = rdr
             .deserialize()
             .collect::<Result<Vec<acmg_sf::Record>, csv::Error>>()?;
-        insta::assert_yaml_snapshot!(records);
-
-        Ok(())
-    }
-
-    #[test]
-    fn deserialize_hgnc_record() -> Result<(), anyhow::Error> {
-        let path_json = "tests/db/genes/hgnc_info.example.jsonl";
-        let str_json = std::fs::read_to_string(path_json)?;
-        let records = str_json
-            .lines()
-            .map(|s| serde_json::from_str::<hgnc::Record>(s).unwrap())
-            .collect::<Vec<_>>();
-
         insta::assert_yaml_snapshot!(records);
 
         Ok(())

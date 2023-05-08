@@ -66,6 +66,22 @@ struct Db {
 enum DbCommands {
     Compile(db::compile::Args),
     MkInhouse(db::mk_inhouse::Args),
+    Genes(Genes),
+}
+
+/// Parsing of "db genes *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Genes {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: GenesCommands,
+}
+
+/// Enum supporting the parsing of "db genes *" sub commands.
+#[derive(Debug, Subcommand)]
+enum GenesCommands {
+    Build(db::genes::build::Args),
 }
 
 /// Parsing of "pheno *" sub commands.
@@ -144,6 +160,11 @@ fn main() -> Result<(), anyhow::Error> {
                 DbCommands::MkInhouse(args) => {
                     db::mk_inhouse::run(&cli.common, args)?;
                 }
+                DbCommands::Genes(args) => match &args.command {
+                    GenesCommands::Build(args) => {
+                        db::genes::build::run(&cli.common, args)?;
+                    }
+                },
             },
             Commands::Pheno(pheno) => match &pheno.command {
                 PhenoCommands::Prepare(args) => pheno::prepare::run(&cli.common, args)?,
