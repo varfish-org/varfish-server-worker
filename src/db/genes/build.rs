@@ -137,7 +137,7 @@ fn write_rocksdb(
     let cf_genes = db.cf_handle("genes").unwrap();
 
     tracing::info!("  writing meta data to database");
-    db.put_cf(&cf_meta, "builder-version", format!("{VERSION}"))?;
+    db.put_cf(&cf_meta, "builder-version", VERSION)?;
     // TODO: read meta information about input data and write out
 
     tracing::info!("  compose genes data into database");
