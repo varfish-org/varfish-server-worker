@@ -250,7 +250,7 @@ pub mod test {
             verbose: Verbosity::new(1, 0),
         };
         let args = Args {
-            path_in_download: String::from("tests/db/genes"),
+            path_in_download: String::from("tests/db"),
             path_out_rocksdb: tmp_dir
                 .to_path_buf()
                 .into_os_string()
