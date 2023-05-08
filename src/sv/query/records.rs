@@ -33,8 +33,8 @@ pub struct StructuralVariant {
     pub chromosome_no: u32,
     /// UCSC bin on chromosome
     pub bin: u32,
-    /// 1-based start position of the variant (or position on first chromosome for
-    /// break-ends)
+    /// 1-based start position of the variant (or position on first chromosome
+    /// for break-ends)
     pub start: u32,
     /// The names of the calling tools.
     #[serde(deserialize_with = "deserialize_callers")]

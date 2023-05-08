@@ -232,8 +232,9 @@ pub enum GenotypeChoice {
 
 /// Enum for effective genotypes.
 ///
-/// This is very similar to `GenotypeChoice` but has no `Any`.  Also, note that the order
-/// of the values corresponds to the priority when the effective genotype is returned.
+/// This is very similar to `GenotypeChoice` but has no `Any`.  Also, note that
+/// the order of the values corresponds to the priority when the effective
+/// genotype is returned.
 #[derive(Serialize, Deserialize, PartialEq, PartialOrd, Debug, Clone, Copy)]
 #[serde(rename_all = "kebab-case")]
 pub enum Genotype {
@@ -360,7 +361,8 @@ pub struct RegulatoryCustomConfig {
     pub cell_types: Vec<String>,
     /// The selected element type
     pub element_types: Vec<String>,
-    /// Alternatively, overlapping with interaction in cell type (includes all elements)
+    /// Alternatively, overlapping with interaction in cell type (includes all
+    /// elements)
     pub overlaps_interaction: bool,
 }
 
@@ -394,7 +396,8 @@ fn default_as_true() -> bool {
     true
 }
 
-/// Define rule to apply to a given sub set of structural variants for matching a genotype.
+/// Define rule to apply to a given sub set of structural variants for matching
+/// a genotype.
 ///
 /// See documentation of VarFish Server for full documentation.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -478,7 +481,8 @@ pub struct GenotypeCriteria {
     /// Whether missing split read information leads to filter out variant
     #[serde(default = "default_as_true")]
     pub missing_sr_ok: bool,
-    /// Whether missing split read or paired read information leads to filter out variant
+    /// Whether missing split read or paired read information leads to filter
+    /// out variant
     #[serde(default = "default_as_true")]
     pub missing_srpr_ok: bool,
     /// Whether missing read depth information leads to filter out variant
@@ -564,9 +568,9 @@ impl GenotypeCriteria {
 
     /// Returns whether the `GenotypeCriteria` is pass for the given `CallInfo`.
     ///
-    /// Note that this only check the genotype and quality criteria.  Whether the
-    /// `GenotypeCriteria` is applicable to the `CallInfo` has to be checked
-    /// independently.
+    /// Note that this only check the genotype and quality criteria.  Whether
+    /// the `GenotypeCriteria` is applicable to the `CallInfo` has to be
+    /// checked independently.
     pub fn is_call_info_pass(&self, call_info: &CallInfo) -> bool {
         // The pattern below is always the same: if the constraint in self is
         // None then pass regardlessly of what `call_info` has.  Otherwise
@@ -1107,8 +1111,8 @@ pub struct CallInfo {
 pub struct StructuralVariant {
     /// Chromosome name
     pub chrom: String,
-    /// 1-based start position of the variant (or position on first chromosome for
-    /// break-ends)
+    /// 1-based start position of the variant (or position on first chromosome
+    /// for break-ends)
     pub pos: u32,
     /// Type of the structural variant
     pub sv_type: SvType,
@@ -1128,8 +1132,8 @@ pub struct StructuralVariant {
 impl StructuralVariant {
     /// Return the size of the structural variant.
     ///
-    /// Size is not applicable for insertions and break-ends, so `None` is returned
-    /// in this case.
+    /// Size is not applicable for insertions and break-ends, so `None` is
+    /// returned in this case.
     pub fn size(&self) -> Option<u32> {
         if self.sv_type == SvType::Ins
             || self.sv_type == SvType::Bnd

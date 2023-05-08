@@ -84,8 +84,8 @@ pub mod actix_server {
 
         /// Parameters for `fetch_genes_details`.
         ///
-        /// This allows to query for details on one or more genes.  The first given of the
-        /// following is interpreted.
+        /// This allows to query for details on one or more genes.  The first
+        /// given of the following is interpreted.
         ///
         /// - `hgnc_id` -- specify HGNC ID(s); comma-separated list
         ///
@@ -120,7 +120,6 @@ pub mod actix_server {
             _path: Path<()>,
             query: web::Query<Request>,
         ) -> actix_web::Result<impl Responder, CustomError> {
-            eprintln!("{:?}", &query);
             let cf_genes = data
                 .db
                 .cf_handle("genes")

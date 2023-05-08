@@ -97,7 +97,8 @@ pub mod query_result {
     }
 }
 
-/// Run the actual phenotypic similarity query for patient terms and list of genes.
+/// Run the actual phenotypic similarity query for patient terms and list of
+/// genes.
 ///
 /// # Arguments
 ///

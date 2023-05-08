@@ -119,7 +119,8 @@ pub mod actix_server {
 
         /// Parameters for `fetch_hpo_genes`.
         ///
-        /// This allows to query for genes.  The first given of the following is interpreted.
+        /// This allows to query for genes.  The first given of the following is
+        /// interpreted.
         ///
         /// - `gene_id` -- specify gene ID
         /// - `gene_symbol` -- specify the gene symbol
@@ -274,7 +275,8 @@ pub mod actix_server {
 
         /// Parameters for `handle`.
         ///
-        /// This allows to query for terms.  The first given of the following is interpreted.
+        /// This allows to query for terms.  The first given of the following is
+        /// interpreted.
         ///
         /// - `term_id` -- specify term ID
         /// - `gene_symbol` -- specify the gene symbol
@@ -437,7 +439,8 @@ pub mod actix_server {
 
         /// Parameters for `handle`.
         ///
-        /// This allows to query for diseases.  The first given of the following is interpreted.
+        /// This allows to query for diseases.  The first given of the following
+        /// is interpreted.
         ///
         /// - `omim_id` -- specify disease ID
         /// - `name` -- specify the name to query for
@@ -585,8 +588,8 @@ pub mod actix_server {
 
     /// Code for `/hpo/sim/{term-term,term-gene}` endpoint.
     pub mod hpo_sim {
-        /// Entry point `/hpo/sim/term-term` allows the pairwise similary computation between two
-        /// sets of HPO terms.
+        /// Entry point `/hpo/sim/term-term` allows the pairwise similary
+        /// computation between two sets of HPO terms.
         pub mod term_term {
             use std::str::FromStr;
 
@@ -730,8 +733,8 @@ pub mod actix_server {
             }
         }
 
-        /// Entry point `/hpo/sim/term-gene` that allows the similarity computation between a
-        /// set of terms and a gene.
+        /// Entry point `/hpo/sim/term-gene` that allows the similarity
+        /// computation between a set of terms and a gene.
         pub mod term_gene {
             use std::str::FromStr;
 
@@ -772,7 +775,8 @@ pub mod actix_server {
             ///
             /// - `terms` -- set of terms to use as query
             /// - `gene_ids` -- set of ids for genes to use as "database"
-            /// - `gene_symbols` -- set of symbols for genes to use as "database"
+            /// - `gene_symbols` -- set of symbols for genes to use as
+            ///   "database"
             #[derive(Deserialize, Debug, Clone)]
             struct Request {
                 /// Set of terms to use as query.
@@ -832,7 +836,8 @@ pub mod actix_server {
                 pub sim: String,
             }
 
-            /// Query for similarity between a set of terms to each entry in a list of genes.
+            /// Query for similarity between a set of terms to each entry in a
+            /// list of genes.
             #[get("/hpo/sim/term-gene")]
             async fn handle(
                 data: Data<WebServerData>,

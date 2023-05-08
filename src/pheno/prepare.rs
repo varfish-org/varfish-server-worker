@@ -12,6 +12,7 @@ use hpo::{annotations::AnnotationId, term::HpoGroup, HpoTermId, Ontology};
 use tracing::info;
 
 use crate::common::trace_rss_now;
+use crate::db::{rocksdb_compact_cf, rocksdb_tuning};
 use crate::pheno::algos::phenomizer;
 use crate::pheno::pbs::SimulationResults;
 
@@ -136,26 +137,6 @@ pub fn indicatif_style() -> indicatif::ProgressStyle {
         .progress_chars("#>-")
 }
 
-pub fn rocksdb_tuning(options: rocksdb::Options) -> rocksdb::Options {
-    let mut options = options;
-
-    options.create_if_missing(true);
-    options.create_missing_column_families(true);
-
-    options.prepare_for_bulk_load();
-
-    // compress all files with Zstandard
-    options.set_compression_per_level(&[]);
-    options.set_compression_type(rocksdb::DBCompressionType::Zstd);
-    // We only want to set level to 2 but have to set the rest as well using the Rust interface.
-    // The (default) values for the other levels were taken from the output of a RocksDB
-    // output folder created with default settings.
-    options.set_compression_options(-14, 2, 0, 0);
-    // options.set_zstd_max_train_bytes(100 * 1024);
-
-    options
-}
-
 /// Main entry point for `server prepare-pheno` sub command.
 pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     info!("args_common = {:?}", &args_common);
@@ -178,13 +159,20 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     info!("Opening RocksDB for writing...");
     let before_rocksdb = Instant::now();
-    let options = rocksdb_tuning(rocksdb::Options::default());
-    let db = rocksdb::DB::open_cf(&options, &args.path_out_rocksdb, ["meta", "resnik_pvalues"])?;
+    let options = rocksdb_tuning(rocksdb::Options::default(), None);
+    let cf_names = &["meta", "resnik_pvalues"];
+    let db = rocksdb::DB::open_cf_with_opts(
+        &options,
+        &args.path_out_rocksdb,
+        cf_names
+            .iter()
+            .map(|name| (name.to_string(), options.clone()))
+            .collect::<Vec<_>>(),
+    )?;
     // write out metadata
     let cf_meta = db.cf_handle("meta").unwrap();
     db.put_cf(&cf_meta, "hpo-version", ontology.hpo_version())?;
     db.put_cf(&cf_meta, "app-version", VERSION)?;
-    let cf_resnik = db.cf_handle("resnik_pvalues").unwrap();
     info!("...done opening RocksDB in {:?}", before_rocksdb.elapsed());
 
     info!("Running simulations...");
@@ -208,30 +196,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     tracing::info!("Enforcing manual compaction");
-    db.compact_range_cf(&cf_meta, None::<&[u8]>, None::<&[u8]>);
-    db.compact_range_cf(&cf_resnik, None::<&[u8]>, None::<&[u8]>);
-
-    let compaction_start = Instant::now();
-    let mut last_printed = compaction_start;
-    while db
-        .property_int_value(rocksdb::properties::COMPACTION_PENDING)?
-        .unwrap()
-        > 0
-        || db
-            .property_int_value(rocksdb::properties::NUM_RUNNING_COMPACTIONS)?
-            .unwrap()
-            > 0
-    {
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        if last_printed.elapsed() > std::time::Duration::from_millis(1000) {
-            log::info!(
-                "... waiting for compaction for {:?}",
-                compaction_start.elapsed()
-            );
-            last_printed = Instant::now();
-        }
-    }
-
+    rocksdb_compact_cf(cf_names, &db)?;
     info!("All done. Have a nice day!");
     Ok(())
 }

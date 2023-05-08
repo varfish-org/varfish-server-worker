@@ -13,6 +13,7 @@ use clap_verbosity_flag::{InfoLevel, Verbosity};
 
 use clap::Parser;
 use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
+use hgvs::static_data::Assembly;
 use md5::{Digest, Md5};
 use sha2::Sha256;
 use tracing::{debug, trace};
@@ -28,7 +29,7 @@ pub struct Args {
 /// Helper to print the current memory resident set size via `tracing`.
 pub fn trace_rss_now() {
     let me = procfs::process::Process::myself().unwrap();
-    let page_size = procfs::page_size().unwrap();
+    let page_size = procfs::page_size();
     debug!(
         "RSS now: {}",
         Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
@@ -38,7 +39,7 @@ pub fn trace_rss_now() {
 /// Helper to print the current memory resident set size to a `Term`.
 pub fn print_rss_now(term: &console::Term) -> Result<(), anyhow::Error> {
     let me = procfs::process::Process::myself().unwrap();
-    let page_size = procfs::page_size().unwrap();
+    let page_size = procfs::page_size();
     term.write_line(&format!(
         "RSS now: {}",
         Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
@@ -215,11 +216,227 @@ where
     Ok(std::io::BufReader::new(file).lines())
 }
 
+/// Canonical chromosome names.
+///
+/// Note that the mitochondrial genome runs under two names.
+pub const CANONICAL: &[&str] = &[
+    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17",
+    "18", "19", "20", "21", "22", "X", "Y", "M", "MT",
+];
+
+/// Return whether the given chromosome name is a canonical one.
+///
+/// The prefix `"chr"` is stripped from the name before checking.
+pub fn is_canonical(chrom: &str) -> bool {
+    let chrom = chrom.strip_prefix("chr").unwrap_or(chrom);
+    CANONICAL.contains(&chrom)
+}
+
+/// Select the genome release to use.
+#[derive(
+    clap::ValueEnum,
+    Clone,
+    Copy,
+    Debug,
+    strum::Display,
+    PartialEq,
+    Eq,
+    enum_map::Enum,
+    PartialOrd,
+    Ord,
+    Hash,
+)]
+pub enum GenomeRelease {
+    // GRCh37 / hg19
+    #[strum(serialize = "GRCh37")]
+    Grch37,
+    /// GRCh38 / hg38
+    #[strum(serialize = "GRCh38")]
+    Grch38,
+}
+
+impl GenomeRelease {
+    pub fn name(&self) -> String {
+        match self {
+            GenomeRelease::Grch37 => String::from("GRCh37"),
+            GenomeRelease::Grch38 => String::from("GRCh38"),
+        }
+    }
+}
+
+impl From<GenomeRelease> for Assembly {
+    fn from(val: GenomeRelease) -> Self {
+        match val {
+            GenomeRelease::Grch37 => Assembly::Grch37p10,
+            GenomeRelease::Grch38 => Assembly::Grch38,
+        }
+    }
+}
+
+impl From<Assembly> for GenomeRelease {
+    fn from(assembly: Assembly) -> Self {
+        match assembly {
+            Assembly::Grch37 | Assembly::Grch37p10 => GenomeRelease::Grch37,
+            Assembly::Grch38 => GenomeRelease::Grch38,
+        }
+    }
+}
+
+impl std::str::FromStr for GenomeRelease {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_ascii_lowercase();
+        if s.starts_with("grch37") {
+            Ok(GenomeRelease::Grch37)
+        } else if s.starts_with("grch38") {
+            Ok(GenomeRelease::Grch38)
+        } else {
+            Err(anyhow::anyhow!("Unknown genome release: {}", s))
+        }
+    }
+}
+
+/// Code for reading VCF.
+pub mod db_keys {
+    use std::ops::Deref;
+
+    use noodles_vcf::{record::Chromosome, Record as VcfRecord};
+
+    /// A chromosomal position `CHROM-POS`.
+    #[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone)]
+    pub struct Pos {
+        pub chrom: String,
+        pub pos: u32,
+    }
+
+    impl Pos {
+        /// Create from the given VCF record.
+        pub fn new(chrom: &str, pos: u32) -> Self {
+            Pos {
+                chrom: chrom.to_string(),
+                pos,
+            }
+        }
+    }
+
+    impl From<Pos> for Vec<u8> {
+        fn from(val: Pos) -> Self {
+            let mut result = Vec::new();
+
+            result.extend_from_slice(chrom_name_to_key(&val.chrom).as_bytes());
+            result.extend_from_slice(&val.pos.to_be_bytes());
+
+            result
+        }
+    }
+
+    /// A chromosomal change `CHROM-POS-REF-ALT`.
+    #[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone)]
+    pub struct Var {
+        pub chrom: String,
+        pub pos: u32,
+        pub reference: String,
+        pub alternative: String,
+    }
+
+    impl Var {
+        /// Create from the given VCF record.
+        pub fn from_vcf(value: &VcfRecord) -> Option<Self> {
+            let chrom = match value.chromosome() {
+                Chromosome::Name(name) | Chromosome::Symbol(name) => name.to_owned(),
+            };
+            let pos: usize = value.position().into();
+            let pos = pos as u32;
+            let reference = value.reference_bases().to_string();
+            let alternate_bases = value.alternate_bases().deref();
+            if alternate_bases.is_empty() {
+                return None;
+            }
+            let alternative = alternate_bases[0].to_string();
+
+            Some(Var {
+                chrom,
+                pos,
+                reference,
+                alternative,
+            })
+        }
+    }
+
+    impl From<Var> for Vec<u8> {
+        fn from(val: Var) -> Self {
+            let mut result = Vec::new();
+
+            result.extend_from_slice(chrom_name_to_key(&val.chrom).as_bytes());
+            result.extend_from_slice(&val.pos.to_be_bytes());
+            result.extend_from_slice(val.reference.as_bytes());
+            result.push(b'>');
+            result.extend_from_slice(val.alternative.as_bytes());
+
+            result
+        }
+    }
+
+    /// Convert chromosome to key in RocksDB.
+    pub fn chrom_name_to_key(name: &str) -> String {
+        let chrom = if let Some(stripped) = name.strip_prefix("chr") {
+            stripped
+        } else {
+            name
+        };
+        let chrom = if chrom == "M" {
+            String::from("MT")
+        } else if "XY".contains(chrom) {
+            format!(" {chrom}")
+        } else {
+            String::from(chrom)
+        };
+        assert!(chrom.len() <= 2);
+        assert!(!chrom.is_empty());
+        if chrom.len() == 1 {
+            format!("0{chrom}")
+        } else {
+            chrom
+        }
+    }
+
+    /// Convert from RocksDB chromosome key part to chromosome name.
+    pub fn chrom_key_to_name(key: &str) -> String {
+        assert!(key.len() == 2);
+        if key.starts_with('0') || key.starts_with(' ') {
+            key[1..].to_string()
+        } else {
+            key.to_string()
+        }
+    }
+}
+
+/// Utilities for RocksDB databases.
+pub mod rocksdb_utils {
+    /// Function to fetch a meta value as a string from a RocksDB.
+    pub fn fetch_meta(
+        db: &rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>,
+        key: &str,
+    ) -> Result<Option<String>, anyhow::Error> {
+        let cf_meta = db
+            .cf_handle("meta")
+            .ok_or(anyhow::anyhow!("unknown column family: meta"))?;
+        let raw_data = db.get_cf(&cf_meta, key.as_bytes())?;
+        raw_data
+            .map(|raw_data| {
+                String::from_utf8(raw_data.to_vec())
+                    .map_err(|e| anyhow::anyhow!("problem decoding utf8 (key={}): {}", key, e))
+            })
+            .transpose()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::common::{md5sum, sha256sum};
 
-    use super::{numeric_gene_id, read_md5_file};
+    use super::*;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -258,5 +475,31 @@ mod tests {
         assert_eq!(1, numeric_gene_id("1")?);
 
         Ok(())
+    }
+
+    #[test]
+    fn test_chrom_name_to_key() {
+        assert_eq!(db_keys::chrom_name_to_key("chr1"), "01");
+        assert_eq!(db_keys::chrom_name_to_key("chr21"), "21");
+        assert_eq!(db_keys::chrom_name_to_key("chrX"), " X");
+        assert_eq!(db_keys::chrom_name_to_key("chrY"), " Y");
+        assert_eq!(db_keys::chrom_name_to_key("chrM"), "MT");
+        assert_eq!(db_keys::chrom_name_to_key("chrMT"), "MT");
+
+        assert_eq!(db_keys::chrom_name_to_key("1"), "01");
+        assert_eq!(db_keys::chrom_name_to_key("21"), "21");
+        assert_eq!(db_keys::chrom_name_to_key("X"), " X");
+        assert_eq!(db_keys::chrom_name_to_key("Y"), " Y");
+        assert_eq!(db_keys::chrom_name_to_key("M"), "MT");
+        assert_eq!(db_keys::chrom_name_to_key("MT"), "MT");
+    }
+
+    #[test]
+    fn test_chrom_key_to_name() {
+        assert_eq!(db_keys::chrom_key_to_name("01"), "1");
+        assert_eq!(db_keys::chrom_key_to_name("21"), "21");
+        assert_eq!(db_keys::chrom_key_to_name(" X"), "X");
+        assert_eq!(db_keys::chrom_key_to_name(" Y"), "Y");
+        assert_eq!(db_keys::chrom_key_to_name("MT"), "MT");
     }
 }

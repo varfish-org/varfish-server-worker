@@ -7,7 +7,7 @@ use indicatif::ProgressIterator;
 use tracing::info;
 
 use crate::{
-    db::genes::data,
+    db::{genes::data, rocksdb_tuning},
     pheno::prepare::{indicatif_style, VERSION},
 };
 
@@ -101,26 +101,6 @@ fn load_ncbi(path: String) -> Result<HashMap<String, ncbi::Record>, anyhow::Erro
     Ok(result)
 }
 
-/// Construct tuned RocksDB options.
-fn build_rocksdb_options() -> rocksdb::Options {
-    let mut options = rocksdb::Options::default();
-
-    options.create_if_missing(true);
-    options.create_missing_column_families(true);
-    options.prepare_for_bulk_load();
-    options.set_disable_auto_compactions(true);
-
-    // Compress all files with zstd.
-    options.set_compression_per_level(&[]);
-    options.set_compression_type(rocksdb::DBCompressionType::Zstd);
-    // We only want to set level to 2 but have to set the rest as well using the Rust interface.
-    // The (default) values for the other levels were taken from the output of a RocksDB
-    // output folder created with default settings.
-    options.set_compression_options(-14, 2, 0, 0);
-
-    options
-}
-
 /// Write gene database to a RocksDB.
 fn write_rocksdb(
     acmg_by_hgnc_id: HashMap<String, acmg_sf::Record>,
@@ -130,8 +110,15 @@ fn write_rocksdb(
     args: &&Args,
 ) -> Result<(), anyhow::Error> {
     // Construct RocksDB options and open file for writing.
-    let options = build_rocksdb_options();
-    let db = rocksdb::DB::open_cf(&options, &args.path_out_rocksdb, ["meta", "genes"])?;
+    let options = rocksdb_tuning(rocksdb::Options::default(), None);
+    let db = rocksdb::DB::open_cf_with_opts(
+        &options,
+        &args.path_out_rocksdb,
+        ["meta", "genes"]
+            .iter()
+            .map(|name| (name.to_string(), options.clone()))
+            .collect::<Vec<_>>(),
+    )?;
 
     let cf_meta = db.cf_handle("meta").unwrap();
     let cf_genes = db.cf_handle("genes").unwrap();

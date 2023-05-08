@@ -58,7 +58,8 @@ pub mod gene_region {
         );
         let chrom_map = build_chrom_map();
 
-        // Setup CSV reader for BED file - header is written as comment and must be ignored.
+        // Setup CSV reader for BED file - header is written as comment and must be
+        // ignored.
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .delimiter(b'\t')
@@ -178,7 +179,8 @@ pub mod masked {
         );
         let chrom_map = build_chrom_map();
 
-        // Setup CSV reader for BED file - header is written as comment and must be ignored.
+        // Setup CSV reader for BED file - header is written as comment and must be
+        // ignored.
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .delimiter(b'\t')
@@ -613,7 +615,8 @@ pub mod clinvar {
     }
 }
 
-/// Code for converting other structural variant database to binary (incl. in-house).
+/// Code for converting other structural variant database to binary (incl.
+/// in-house).
 pub mod vardbs {
     use std::fs::File;
     use std::io::Write;
@@ -634,8 +637,8 @@ pub mod vardbs {
 
     use self::input::InputRecord;
 
-    /// Code supporting the I/O of public database records and a common `InputRecord` for
-    /// common representation.
+    /// Code supporting the I/O of public database records and a common
+    /// `InputRecord` for common representation.
     mod input {
         use serde::Deserialize;
         use tracing::error;
@@ -690,7 +693,8 @@ pub mod vardbs {
             pub num_carriers: u32,
         }
 
-        /// ExAC CNV database record as read from TSV file for deserialization from TSV.
+        /// ExAC CNV database record as read from TSV file for deserialization
+        /// from TSV.
         #[derive(Deserialize, Debug)]
         pub struct ExacRecord {
             /// chromosome name
@@ -1011,7 +1015,8 @@ pub mod vardbs {
         P: AsRef<Path>,
         Q: AsRef<Path>,
     {
-        // Setup CSV reader for BED file - header is written as comment and must be ignored.
+        // Setup CSV reader for BED file - header is written as comment and must be
+        // ignored.
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .comment(Some(b'#'))
