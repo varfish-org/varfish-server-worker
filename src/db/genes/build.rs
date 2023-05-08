@@ -72,7 +72,7 @@ fn load_hgnc(path: String) -> Result<HashMap<String, hgnc::Record>, anyhow::Erro
     info!("  loading HGNC information from {}", path);
     let mut result = HashMap::new();
 
-    let reader = std::fs::File::open(path).map(|f| std::io::BufReader::new(f))?;
+    let reader = std::fs::File::open(path).map(std::io::BufReader::new)?;
     for line in reader.lines() {
         let line = line?;
         let record = serde_json::from_str::<hgnc::Record>(&line)?;
@@ -91,7 +91,7 @@ fn load_ncbi(path: String) -> Result<HashMap<String, ncbi::Record>, anyhow::Erro
     info!("  loading NCBI information from {}", path);
     let mut result = HashMap::new();
 
-    let reader = std::fs::File::open(path).map(|f| std::io::BufReader::new(f))?;
+    let reader = std::fs::File::open(path).map(std::io::BufReader::new)?;
     for line in reader.lines() {
         let line = line?;
         let record = serde_json::from_str::<ncbi::Record>(&line)?;
@@ -142,7 +142,7 @@ fn write_rocksdb(
 
     tracing::info!("  compose genes data into database");
     let style = indicatif_style();
-    for hgnc_record in hgnc.values().into_iter().progress_with_style(style) {
+    for hgnc_record in hgnc.values().progress_with_style(style) {
         let hgnc_id = hgnc_record.hgnc_id.clone();
         let record = data::Record {
             acmg_sf: acmg_by_hgnc_id.get(&hgnc_id).cloned(),

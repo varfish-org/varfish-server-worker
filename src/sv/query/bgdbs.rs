@@ -156,11 +156,11 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         let begin = match record.sv_type() {
             FlatSvType::Bnd | FlatSvType::Ins => record.begin() - 1,
             _ => record.begin(),
-        } as u32;
+        };
         let end = match record.sv_type() {
             FlatSvType::Bnd | FlatSvType::Ins => record.begin(),
             _ => record.end(),
-        } as u32;
+        };
         let key = begin..end;
 
         result.trees[chrom_no].insert(key, result.records[chrom_no].len() as u32);
