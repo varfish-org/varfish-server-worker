@@ -118,7 +118,8 @@ struct ResultPayload {
     clinvar_ovl_vcvs: Vec<String>,
     /// The directly overlapping genes.
     ovl_genes: Vec<Gene>,
-    /// Genes that are not directly overlapping but contained in overlapping TADs.
+    /// Genes that are not directly overlapping but contained in overlapping
+    /// TADs.
     tad_genes: Vec<Gene>,
     /// Overlapping known pathogenic SV records.
     known_pathogenic: Vec<KnownPathogenicRecord>,

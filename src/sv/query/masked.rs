@@ -67,7 +67,8 @@ impl MaskedDb {
         }
     }
 
-    /// Counts how many of `sv`'s breakpoints (0, 1, 2) overlap with a masked region.
+    /// Counts how many of `sv`'s breakpoints (0, 1, 2) overlap with a masked
+    /// region.
     ///
     /// For insertions and breake-ends, the one primary breakpoint counts as 2.
     pub fn masked_breakpoint_count(

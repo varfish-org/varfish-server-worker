@@ -223,7 +223,8 @@ pub mod gnomad_constraints {
             deserialize_with = "deserialize_option_na"
         )]
         pub syn_z: Option<f64>,
-        /// The probability of loss-of-function intolerance (pLI score) from ExAC.
+        /// The probability of loss-of-function intolerance (pLI score) from
+        /// ExAC.
         #[serde(
             rename = "exac_pLI",
             serialize_with = "serialize_option_na",
@@ -259,7 +260,8 @@ pub mod hgnc {
     use serde::{Deserialize, Serialize};
     use serde_with::DisplayFromStr;
 
-    /// Status of the symbol report, which can be either "Approved" or "Entry Withdrawn".
+    /// Status of the symbol report, which can be either "Approved" or "Entry
+    /// Withdrawn".
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub enum Status {
         #[serde(rename = "Approved")]
@@ -311,8 +313,8 @@ pub mod hgnc {
         pub symbol: String,
         /// HGNC approved name for the gene.
         pub name: String,
-        /// A group name for a set of related locus types as defined by the HGNC (e.g. non-coding
-        /// RNA).
+        /// A group name for a set of related locus types as defined by the HGNC
+        /// (e.g. non-coding RNA).
         pub locus_group: Option<String>,
         /// The locus type as defined by the HGNC (e.g. RNA, transfer).
         pub locus_type: Option<String>,
@@ -364,7 +366,8 @@ pub mod hgnc {
         pub mgd_id: Option<Vec<String>>,
         /// Rat genome database gene ID(s).
         pub rgd_id: Option<Vec<String>>,
-        /// The name of the Locus Specific Mutation Database and URL for the gene.
+        /// The name of the Locus Specific Mutation Database and URL for the
+        /// gene.
         #[serde_as(as = "Option<Vec<DisplayFromStr>>")]
         pub lsdb: Option<Vec<Lsdb>>,
         /// Symbol used within COSMIC.
@@ -377,7 +380,8 @@ pub mod hgnc {
         pub homeodb: Option<u32>,
         /// snoRNABase ID.
         pub snornabase: Option<String>,
-        /// Symbol used to link to the SLC tables database at bioparadigms.org for the gene.
+        /// Symbol used to link to the SLC tables database at bioparadigms.org
+        /// for the gene.
         pub bioparadigms_slc: Option<String>,
         /// Orphanet ID.
         pub orphanet: Option<u32>,
@@ -390,7 +394,8 @@ pub mod hgnc {
         pub merops: Option<String>,
         /// Symbol used within international ImMunoGeneTics information system.
         pub imgt: Option<String>,
-        /// The objectId used to link to the IUPHAR/BPS Guide to PHARMACOLOGY database.
+        /// The objectId used to link to the IUPHAR/BPS Guide to PHARMACOLOGY
+        /// database.
         pub iuphar: Option<String>,
         /// ID to link to the Mamit-tRNA database
         #[serde(rename = "mamit-trnadb")]
@@ -405,7 +410,8 @@ pub mod hgnc {
         pub intermediate_filament_db: Option<String>,
         /// The HGNC ID that the Alliance of Genome Resources (AGR) use.
         pub agr: Option<String>,
-        /// NCBI and Ensembl transcript IDs/acessions including the version number.
+        /// NCBI and Ensembl transcript IDs/acessions including the version
+        /// number.
         pub mane_select: Option<Vec<String>>,
     }
 }

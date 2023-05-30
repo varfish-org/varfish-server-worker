@@ -62,11 +62,14 @@ struct Db {
 }
 
 /// Enum supporting the parsing of "db *" sub commands.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 enum DbCommands {
+    Copy(annonars::db_utils::cli::copy::Args),
     Compile(db::compile::Args),
     MkInhouse(db::mk_inhouse::Args),
     Genes(Genes),
+    Seqvars(Seqvars),
 }
 
 /// Parsing of "db genes *" sub commands.
@@ -82,6 +85,42 @@ struct Genes {
 #[derive(Debug, Subcommand)]
 enum GenesCommands {
     Build(db::genes::build::Args),
+}
+
+/// Parsing of "db seqvars *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Seqvars {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: SeqvarsCommands,
+}
+
+/// Enum supporting the parsing of "db seqvars *" sub commands.
+#[derive(Debug, Subcommand)]
+enum SeqvarsCommands {
+    Build(SeqvarsBuild),
+}
+
+/// Enum supporting the parsing of "db seqvars *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct SeqvarsBuild {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: SeqvarsBuildCommands,
+}
+
+/// Enum supporting the parsing of "db seqvars *" sub commands.
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, Subcommand)]
+enum SeqvarsBuildCommands {
+    Dbsnp(annonars::dbsnp::cli::import::Args),
+    GnomadNuclear(annonars::gnomad_nuclear::cli::import::Args),
+    GnomadMtdna(annonars::gnomad_mtdna::cli::import::Args),
+    Helixmtdb(annonars::helixmtdb::cli::import::Args),
+    UcscConservation(annonars::cons::cli::import::Args),
+    Tsv(annonars::tsv::cli::import::Args),
 }
 
 /// Parsing of "pheno *" sub commands.
@@ -118,6 +157,7 @@ enum SvCommands {
 /// Enum supporting the parsing of "server *" sub commands.
 #[derive(Debug, Subcommand)]
 enum ServerCommands {
+    Annos(server::annos::Args),
     Genes(server::genes::Args),
     Rest(server::rest::Args),
     Pheno(server::pheno::Args),
@@ -150,6 +190,11 @@ fn main() -> Result<(), anyhow::Error> {
         .compact()
         .finish();
 
+    // Common variables for CLI commands from annonars.
+    let annonars_common = annonars::common::cli::Args {
+        verbose: cli.common.verbose.clone(),
+    };
+
     // Install collector and go into sub commands.
     let term = Term::stderr();
     tracing::subscriber::with_default(collector, || {
@@ -166,6 +211,31 @@ fn main() -> Result<(), anyhow::Error> {
                         db::genes::build::run(&cli.common, args)?;
                     }
                 },
+                DbCommands::Seqvars(args) => match &args.command {
+                    SeqvarsCommands::Build(args) => match &args.command {
+                        SeqvarsBuildCommands::Dbsnp(args) => {
+                            annonars::dbsnp::cli::import::run(&annonars_common, args)?;
+                        }
+                        SeqvarsBuildCommands::GnomadNuclear(args) => {
+                            annonars::gnomad_nuclear::cli::import::run(&annonars_common, args)?;
+                        }
+                        SeqvarsBuildCommands::GnomadMtdna(args) => {
+                            annonars::gnomad_mtdna::cli::import::run(&annonars_common, args)?;
+                        }
+                        SeqvarsBuildCommands::Helixmtdb(args) => {
+                            annonars::helixmtdb::cli::import::run(&annonars_common, args)?;
+                        }
+                        SeqvarsBuildCommands::UcscConservation(args) => {
+                            annonars::cons::cli::import::run(&annonars_common, args)?;
+                        }
+                        SeqvarsBuildCommands::Tsv(args) => {
+                            annonars::tsv::cli::import::run(&annonars_common, args)?;
+                        }
+                    },
+                },
+                DbCommands::Copy(args) => {
+                    annonars::db_utils::cli::copy::run(&annonars_common, args)?
+                }
             },
             Commands::Pheno(pheno) => match &pheno.command {
                 PhenoCommands::Prepare(args) => pheno::prepare::run(&cli.common, args)?,
@@ -177,6 +247,7 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             },
             Commands::Server(server) => match &server.command {
+                ServerCommands::Annos(args) => server::annos::run(&cli.common, args)?,
                 ServerCommands::Genes(args) => server::genes::run(&cli.common, args)?,
                 ServerCommands::Rest(args) => server::rest::run(&cli.common, args)?,
                 ServerCommands::Pheno(args) => server::pheno::run(&cli.common, args)?,

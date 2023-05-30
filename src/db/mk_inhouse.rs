@@ -36,8 +36,8 @@ pub mod input {
 
     use crate::sv::query::schema::{StrandOrientation, SvType};
 
-    /// Representation of the fields from the `StructuralVariant` table from VarFish Server
-    /// that we need for building the background records.
+    /// Representation of the fields from the `StructuralVariant` table from
+    /// VarFish Server that we need for building the background records.
     #[derive(Debug, Deserialize, Serialize, Clone)]
     pub struct Record {
         /// genome build
@@ -260,9 +260,10 @@ fn split_input_by_chrom_and_sv_type(
 
 /// Read in all records from `reader`, merge overlapping ones.
 ///
-/// The idea to merge here is to get rid of large stacks of SVs with a reciprocal overlap
-/// that is more strict than the 0.75 that is generally used for querying.  We merge with
-/// existing clusters with the reciprocal overlap is >=0.8 for all members.
+/// The idea to merge here is to get rid of large stacks of SVs with a
+/// reciprocal overlap that is more strict than the 0.75 that is generally used
+/// for querying.  We merge with existing clusters with the reciprocal overlap
+/// is >=0.8 for all members.
 fn merge_to_out(
     args: &Args,
     reader: &mut BufReader<File>,
@@ -414,7 +415,8 @@ pub struct Args {
     /// Input files to cluster, prefix with `@` to file with line-wise paths.
     #[arg(required = true)]
     pub path_input_tsvs: Vec<String>,
-    /// Minimal reciprocal overlap to use (slightly more strict that the normal query value of 0.75).
+    /// Minimal reciprocal overlap to use (slightly more strict that the normal
+    /// query value of 0.75).
     #[arg(long, default_value_t = 0.8)]
     pub min_overlap: f32,
     /// Padding to use for BNDs
@@ -465,8 +467,9 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         .join("strucvar");
     let path_out_tsv = base_path.join("inhouse.tsv.gz");
 
-    // Read the output of the previous step by chromosome and SV type, perform overlapping
-    // and merge such "compressed" data set to the final output file.
+    // Read the output of the previous step by chromosome and SV type, perform
+    // overlapping and merge such "compressed" data set to the final output
+    // file.
     merge_split_files(&tmp_dir, args, &path_out_tsv)?;
 
     // Update database configuration.

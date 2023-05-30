@@ -134,7 +134,8 @@ fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
         result.trees.push(IntervalTree::new());
     }
 
-    // Setup CSV reader for BED file - header is written as comment and must be ignored.
+    // Setup CSV reader for BED file - header is written as comment and must be
+    // ignored.
     let mut reader = csv::ReaderBuilder::new()
         .has_headers(false) // BED has no header
         .comment(Some(b'#'))

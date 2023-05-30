@@ -88,7 +88,8 @@ pub struct Top {
 pub struct MaskedRegionDbs {
     /// Relative path to the file with repeat masker database with checksum.
     pub repeat: DbDef,
-    /// Relative path to the file with segmental duplication database with checksum.
+    /// Relative path to the file with segmental duplication database with
+    /// checksum.
     pub segdup: DbDef,
 }
 
@@ -147,7 +148,8 @@ pub struct StrucVarDbs {
     /// Radius around INS sites used when building the database.
     #[serde(default = "default_slack_ins")]
     pub slack_ins: u32,
-    /// Minimal reciprocal overlap for SVs of the same type, used when building the database.
+    /// Minimal reciprocal overlap for SVs of the same type, used when building
+    /// the database.
     #[serde(default = "default_min_overlap")]
     pub min_overlap: f32,
 

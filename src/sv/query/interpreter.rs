@@ -32,7 +32,8 @@ pub struct QueryInterpreter {
 
 /// Result type for `QueryInterpreter::passes_genotype()`.
 ///
-/// If passes for any genotype then `effective` will be set to a value that is not `None`.
+/// If passes for any genotype then `effective` will be set to a value that is
+/// not `None`.
 #[derive(Debug, Default)]
 pub struct PassesResult {
     /// Whether genotype passes for all samples.
@@ -74,10 +75,11 @@ impl QueryInterpreter {
             ..Default::default()
         };
 
-        // Now check whether for each sample, the selected genotype in `self.query.genotype`
-        // matches what we have in terms of `CallInfo` for the sample in `sv`.  For this, we
-        // go through all `GenotypeCriteria` in `self.query.genotype_criteria` and look
-        // for all matching such records (by genotype, sv sub type, size)...
+        // Now check whether for each sample, the selected genotype in
+        // `self.query.genotype` matches what we have in terms of `CallInfo` for
+        // the sample in `sv`.  For this, we go through all `GenotypeCriteria`
+        // in `self.query.genotype_criteria` and look for all matching such
+        // records (by genotype, sv sub type, size)...
         for sample in query_samples {
             let query_genotype = *self
                 .query
@@ -106,7 +108,8 @@ impl QueryInterpreter {
                     && criteria.is_call_info_pass(call_info)
                     && criteria.is_masked_pass(masked_count)
                 {
-                    // Translate genotype from criteria to one for output as effective or compatible.
+                    // Translate genotype from criteria to one for output as effective or
+                    // compatible.
                     let candidate = match criteria.genotype {
                         GenotypeChoice::Ref => Some(Genotype::Ref),
                         GenotypeChoice::Het => Some(Genotype::Het),
