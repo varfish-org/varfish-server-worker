@@ -75,6 +75,7 @@ pub mod actix_server {
             Responder,
         };
         use linked_hash_map::LinkedHashMap;
+        use prost::Message;
         use serde::{Deserialize, Serialize};
         use serde_with::{formats::CommaSeparator, StringWithSeparator};
 
@@ -110,7 +111,7 @@ pub mod actix_server {
             pub builder_version: String,
             // TODO: add data version
             /// The resulting gene information.
-            pub genes: LinkedHashMap<String, genes::data::Record>,
+            pub genes: LinkedHashMap<String, genes::pbs::Record>,
         }
 
         /// Query for genes in the HPO database.
@@ -127,7 +128,7 @@ pub mod actix_server {
             let mut genes = LinkedHashMap::new();
             if let Some(hgnc_id) = query.hgnc_id.as_ref() {
                 for hgnc_id in hgnc_id {
-                    let raw_json = data
+                    let raw_buf = data
                         .db
                         .get_cf(&cf_genes, hgnc_id)
                         .map_err(|e| {
@@ -136,15 +137,10 @@ pub mod actix_server {
                         .ok_or_else(|| {
                             CustomError::new(anyhow::anyhow!("no such gene: {}", hgnc_id))
                         })?;
-                    let json = std::str::from_utf8(&raw_json).map_err(|e| {
-                        CustomError::new(anyhow::anyhow!("problem decoding value: {}", e))
-                    })?;
-                    let record: genes::data::Record = serde_json::from_str(json).map_err(|e| {
-                        CustomError::new(anyhow::anyhow!(
-                            "problem converting to gene record: {}",
-                            e
-                        ))
-                    })?;
+                    let record = genes::pbs::Record::decode(std::io::Cursor::new(raw_buf))
+                        .map_err(|e| {
+                            CustomError::new(anyhow::anyhow!("problem decoding value: {}", e))
+                        })?;
                     genes.insert(hgnc_id.to_string(), record);
                 }
             }

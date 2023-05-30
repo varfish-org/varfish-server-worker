@@ -12,7 +12,6 @@ use hpo::{annotations::AnnotationId, term::HpoGroup, HpoTermId, Ontology};
 use tracing::info;
 
 use crate::common::trace_rss_now;
-use crate::db::{rocksdb_compact_cf, rocksdb_tuning};
 use crate::pheno::algos::phenomizer;
 use crate::pheno::pbs::SimulationResults;
 
@@ -159,7 +158,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     info!("Opening RocksDB for writing...");
     let before_rocksdb = Instant::now();
-    let options = rocksdb_tuning(rocksdb::Options::default(), None);
+    let options = annonars::common::rocks_utils::tune_options(rocksdb::Options::default(), None);
     let cf_names = &["meta", "resnik_pvalues"];
     let db = rocksdb::DB::open_cf_with_opts(
         &options,
@@ -196,7 +195,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     tracing::info!("Enforcing manual compaction");
-    rocksdb_compact_cf(cf_names, &db)?;
+    annonars::common::rocks_utils::force_compaction_cf(&db, cf_names, Some("  "), true)?;
     info!("All done. Have a nice day!");
     Ok(())
 }
