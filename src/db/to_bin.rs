@@ -1,4 +1,4 @@
-//! Code for converting text-based files to binary ones (via flatbuffers).
+//! Code for converting text-based files to binary ones (via protobuf).
 
 /// Code for converting gene region from text-based to binary format.
 pub mod gene_region {
@@ -9,6 +9,7 @@ pub mod gene_region {
         time::Instant,
     };
 
+    use prost::Message;
     use thousands::Separable;
     use tracing::debug;
 
@@ -16,9 +17,9 @@ pub mod gene_region {
         common::{
             build_chrom_map, md5sum, numeric_gene_id, open_read_maybe_gz, sha256sum, trace_rss_now,
         },
-        db::conf::DbDef,
-        world_flatbuffers::var_fish_server_worker::{
-            GeneRegionDatabase, GeneRegionDatabaseArgs, GeneRegionRecord,
+        db::{
+            conf::DbDef,
+            pbs::{GeneRegionDatabase, GeneRegionRecord},
         },
     };
 
@@ -32,15 +33,15 @@ pub mod gene_region {
             /// Chromosome name
             pub chromosome: String,
             /// 0-based begin position
-            pub begin: u32,
+            pub begin: i32,
             /// 1-based end position
-            pub end: u32,
+            pub end: i32,
             /// ENSEMBL or Entrez gene ID
             pub gene_id: String,
         }
     }
 
-    /// Perform conversion to flatbuffers `.bin` file.
+    /// Perform conversion to protocolbuffers `.bin` file.
     pub fn convert_to_bin<P, Q>(
         path_input_tsv: P,
         path_output_bin: Q,
@@ -67,43 +68,35 @@ pub mod gene_region {
             .from_reader(open_read_maybe_gz(path_input_tsv.as_ref())?);
         let before_parsing = Instant::now();
 
-        let mut output_records = Vec::new();
+        let mut records = Vec::new();
         for record in reader.deserialize() {
             let record: input::Record = record?;
-            output_records.push(GeneRegionRecord::new(
-                *chrom_map
+            records.push(GeneRegionRecord {
+                chrom_no: *chrom_map
                     .get(&record.chromosome)
                     .unwrap_or_else(|| panic!("unknown chrom {:?}", &record.chromosome))
-                    as u8,
-                record.begin,
-                record.end,
-                numeric_gene_id(&record.gene_id)?,
-            ));
+                    as i32,
+                start: record.begin + 1,
+                stop: record.end,
+                gene_id: numeric_gene_id(&record.gene_id)?,
+            });
         }
+        let gene_region_db = GeneRegionDatabase { records };
 
         debug!(
             "total time spent reading {:?} records: {:?}",
-            output_records.len().separate_with_commas(),
+            gene_region_db.records.len().separate_with_commas(),
             before_parsing.elapsed()
         );
         trace_rss_now();
 
         let before_writing = Instant::now();
-        let mut builder = flatbuffers::FlatBufferBuilder::new();
-        let records = builder.create_vector(output_records.as_slice());
-        let gene_region_db = GeneRegionDatabase::create(
-            &mut builder,
-            &GeneRegionDatabaseArgs {
-                records: Some(records),
-            },
-        );
-        builder.finish_minimal(gene_region_db);
         let mut output_file = File::create(&path_output_bin)?;
-        output_file.write_all(builder.finished_data())?;
+        output_file.write_all(&gene_region_db.encode_to_vec())?;
         output_file.flush()?;
         debug!(
             "total time spent writing {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            gene_region_db.records.len().separate_with_commas(),
             before_writing.elapsed()
         );
 
@@ -132,14 +125,15 @@ pub mod masked {
         time::Instant,
     };
 
+    use prost::Message;
     use thousands::Separable;
     use tracing::debug;
 
     use crate::{
         common::{build_chrom_map, md5sum, open_read_maybe_gz, sha256sum, trace_rss_now},
-        db::conf::DbDef,
-        world_flatbuffers::var_fish_server_worker::{
-            MaskedDatabase, MaskedDatabaseArgs, MaskedDbRecord,
+        db::{
+            conf::DbDef,
+            pbs::{MaskedDatabase, MaskedDbRecord},
         },
     };
 
@@ -153,15 +147,15 @@ pub mod masked {
             /// Chromosome name
             pub chromosome: String,
             /// 0-based begin position
-            pub begin: u32,
+            pub begin: i32,
             /// 1-based end position
-            pub end: u32,
+            pub end: i32,
             /// Masked region label
             pub label: String,
         }
     }
 
-    /// Perform conversion to flatbuffers `.bin` file.
+    /// Perform conversion to protocolbuffers `.bin` file.
     pub fn convert_to_bin<P, Q>(
         path_input_tsv: P,
         path_output_bin: Q,
@@ -188,42 +182,34 @@ pub mod masked {
             .from_reader(open_read_maybe_gz(path_input_tsv.as_ref())?);
         let before_parsing = Instant::now();
 
-        let mut output_records = Vec::new();
+        let mut records = Vec::new();
         for record in reader.deserialize() {
             let record: input::Record = record?;
-            output_records.push(MaskedDbRecord::new(
-                *chrom_map
+            records.push(MaskedDbRecord {
+                chrom_no: *chrom_map
                     .get(&record.chromosome)
                     .unwrap_or_else(|| panic!("unknown chrom {:?}", &record.chromosome))
-                    as u8,
-                record.begin,
-                record.end,
-            ));
+                    as i32,
+                start: record.begin + 1,
+                stop: record.end,
+            });
         }
+        let masked_region_db = MaskedDatabase { records };
 
         debug!(
             "total time spent reading {:?} records: {:?}",
-            output_records.len().separate_with_commas(),
+            masked_region_db.records.len().separate_with_commas(),
             before_parsing.elapsed()
         );
         trace_rss_now();
 
         let before_writing = Instant::now();
-        let mut builder = flatbuffers::FlatBufferBuilder::new();
-        let records = builder.create_vector(output_records.as_slice());
-        let gene_region_db = MaskedDatabase::create(
-            &mut builder,
-            &MaskedDatabaseArgs {
-                records: Some(records),
-            },
-        );
-        builder.finish_minimal(gene_region_db);
         let mut output_file = File::create(&path_output_bin)?;
-        output_file.write_all(builder.finished_data())?;
+        output_file.write_all(&masked_region_db.encode_to_vec())?;
         output_file.flush()?;
         debug!(
             "total time spent writing {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            masked_region_db.records.len().separate_with_commas(),
             before_writing.elapsed()
         );
 
@@ -252,14 +238,15 @@ pub mod xlink {
         time::Instant,
     };
 
+    use prost::Message;
     use thousands::Separable;
     use tracing::debug;
 
     use crate::{
         common::{md5sum, numeric_gene_id, open_read_maybe_gz, sha256sum, trace_rss_now},
-        db::conf::DbDef,
-        world_flatbuffers::var_fish_server_worker::{
-            XlinkDatabase, XlinkDatabaseArgs, XlinkRecord,
+        db::{
+            conf::DbDef,
+            pbs::{XlinkDatabase, XlinkRecord},
         },
     };
 
@@ -275,7 +262,7 @@ pub mod xlink {
         }
     }
 
-    /// Perform conversion to flatbuffers `.bin` file.
+    /// Perform conversion to protocolbuffers `.bin` file.
     pub fn convert_to_bin<P, Q>(
         path_input_tsv: P,
         path_output_bin: Q,
@@ -286,12 +273,9 @@ pub mod xlink {
         P: AsRef<Path>,
         Q: AsRef<Path>,
     {
-        let mut output_records = Vec::new();
-        let mut output_strings = Vec::new();
+        let mut records = Vec::new();
 
         let before_parsing = Instant::now();
-
-        let mut builder = flatbuffers::FlatBufferBuilder::new();
 
         debug!("parsing xlink TSV file from {:?}", path_input_tsv.as_ref());
         let mut reader = csv::ReaderBuilder::new()
@@ -303,39 +287,29 @@ pub mod xlink {
             if let (Some(entrez_id), Some(ensembl_gene_id), Some(gene_symbol)) =
                 (record.entrez_id, record.ensembl_gene_id, record.gene_symbol)
             {
-                output_records.push(XlinkRecord::new(
+                records.push(XlinkRecord {
                     entrez_id,
-                    numeric_gene_id(&ensembl_gene_id)?,
-                ));
-                let flat_str = builder.create_shared_string(&gene_symbol);
-                output_strings.push(flat_str);
+                    ensembl_id: numeric_gene_id(&ensembl_gene_id)?,
+                    symbol: gene_symbol,
+                });
             }
         }
+        let xlink_db = XlinkDatabase { records };
 
         debug!(
             "total time spent reading {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            xlink_db.records.len().separate_with_commas(),
             before_parsing.elapsed()
         );
         trace_rss_now();
 
         let before_writing = Instant::now();
-        let records = builder.create_vector(&output_records);
-        let strings = builder.create_vector(&output_strings);
-        let xlink_db = XlinkDatabase::create(
-            &mut builder,
-            &XlinkDatabaseArgs {
-                records: Some(records),
-                symbols: Some(strings),
-            },
-        );
-        builder.finish_minimal(xlink_db);
-        let mut output_file = File::create(path_output_bin.as_ref())?;
-        output_file.write_all(builder.finished_data())?;
+        let mut output_file = File::create(&path_output_bin)?;
+        output_file.write_all(&xlink_db.encode_to_vec())?;
         output_file.flush()?;
         debug!(
             "total time spent writing {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            xlink_db.records.len().separate_with_commas(),
             before_writing.elapsed()
         );
         trace_rss_now();
@@ -365,15 +339,14 @@ pub mod clinvar {
         time::Instant,
     };
 
+    use prost::Message;
     use thousands::Separable;
     use tracing::debug;
 
     use crate::{
         common::{build_chrom_map, md5sum, open_read_maybe_gz, sha256sum, trace_rss_now},
         db::conf::DbDef,
-        world_flatbuffers::var_fish_server_worker::{
-            ClinvarSvDatabase, ClinvarSvDatabaseArgs, ClinvarSvRecord,
-        },
+        sv::query::clinvar::pbs::{SvDatabase, SvRecord},
     };
 
     /// Module with code supporting the parsing.
@@ -445,9 +418,9 @@ pub mod clinvar {
             /// Chromosome name
             pub chromosome: String,
             /// 1-based start position
-            pub begin: u32,
+            pub begin: i32,
             /// 1-based end position
-            pub end: u32,
+            pub end: i32,
             /// unused
             #[allow(dead_code)]
             bin: u32,
@@ -540,7 +513,7 @@ pub mod clinvar {
             .map_err(|e| anyhow::anyhow!("could not parse VCV id {:?}: {}", &clean_id, &e))
     }
 
-    /// Perform conversion to flatbuffers `.bin` file.
+    /// Perform conversion to protocolbuffers `.bin` file.
     pub fn convert_to_bin<P, Q>(
         path_input_tsv: P,
         path_output_bin: Q,
@@ -560,42 +533,38 @@ pub mod clinvar {
             .from_reader(open_read_maybe_gz(path_input_tsv)?);
         let before_parsing = Instant::now();
 
-        let mut output_records = Vec::new();
+        let mut records = Vec::new();
         for record in reader.deserialize() {
             let record: input::Record = record?;
-            output_records.push(ClinvarSvRecord::new(
-                *chrom_map.get(&record.chromosome).expect("unknown chrom") as u8,
-                record.begin,
-                record.end,
-                record.variation_type.into(),
-                record.pathogenicity.into(),
-                numeric_vcv_id(&record.vcv)?,
-            ));
+            let variation_type: crate::sv::query::clinvar::pbs::VariationType =
+                record.variation_type.into();
+            let pathogenicity: crate::sv::query::clinvar::pbs::Pathogenicity =
+                record.pathogenicity.into();
+            records.push(SvRecord {
+                chrom_no: *chrom_map.get(&record.chromosome).expect("unknown chrom") as i32,
+                start: record.begin + 1,
+                stop: record.end,
+                variation_type: variation_type as i32,
+                pathogenicity: pathogenicity as i32,
+                vcv: numeric_vcv_id(&record.vcv)?,
+            });
         }
+        let clinvar_db = SvDatabase { records };
 
         debug!(
             "total time spent reading {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            clinvar_db.records.len().separate_with_commas(),
             before_parsing.elapsed()
         );
         trace_rss_now();
 
         let before_writing = Instant::now();
-        let mut builder = flatbuffers::FlatBufferBuilder::new();
-        let records = builder.create_vector(output_records.as_slice());
-        let clinvar_sv_db = ClinvarSvDatabase::create(
-            &mut builder,
-            &ClinvarSvDatabaseArgs {
-                records: Some(records),
-            },
-        );
-        builder.finish_minimal(clinvar_sv_db);
-        let mut output_file = File::create(path_output_bin.as_ref())?;
-        output_file.write_all(builder.finished_data())?;
+        let mut output_file = File::create(&path_output_bin)?;
+        output_file.write_all(&clinvar_db.encode_to_vec())?;
         output_file.flush()?;
         debug!(
             "total time spent writing {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            clinvar_db.records.len().separate_with_commas(),
             before_writing.elapsed()
         );
 
@@ -624,16 +593,16 @@ pub mod vardbs {
     use std::time::Instant;
 
     use anyhow::anyhow;
+    use prost::Message;
     use thousands::Separable;
     use tracing::debug;
 
     use crate::common::{build_chrom_map, md5sum, open_read_maybe_gz, sha256sum, trace_rss_now};
+    use crate::db;
     use crate::db::conf::DbDef;
     use crate::db::mk_inhouse::output::Record as InhouseDbRecord;
+    use crate::db::pbs::{BackgroundDatabase, BgDbRecord};
     use crate::sv::query::schema::SvType;
-    use crate::world_flatbuffers::var_fish_server_worker::{
-        BackgroundDatabase, BackgroundDatabaseArgs, BgDbRecord, SvType as FlatSvType,
-    };
 
     use self::input::InputRecord;
 
@@ -652,9 +621,9 @@ pub mod vardbs {
             /// chromosome name
             pub chromosome: String,
             /// begin position, 0-based
-            pub begin: u32,
+            pub begin: i32,
             /// end position, 0-based
-            pub end: u32,
+            pub end: i32,
             /// number of overall carriers
             pub num_carriers: u32,
             /// type of the SV
@@ -667,9 +636,9 @@ pub mod vardbs {
             /// chromosome name
             pub chromosome: String,
             /// begin position, 0-based
-            pub begin: u32,
+            pub begin: i32,
             /// end position, 0-based
-            pub end: u32,
+            pub end: i32,
             /// The structural variant type
             sv_type: String,
             /// Number of observed gains.
@@ -684,9 +653,9 @@ pub mod vardbs {
             /// chromosome name
             pub chromosome: String,
             /// begin position, 0-based
-            pub begin_outer: u32,
+            pub begin_outer: i32,
             /// outer end position, 0-based
-            pub end_outer: u32,
+            pub end_outer: i32,
             /// The structural variant type
             pub sv_sub_type: String,
             /// Number of carriers.
@@ -700,9 +669,9 @@ pub mod vardbs {
             /// chromosome name
             pub chromosome: String,
             /// outer start position, 0-based
-            pub begin: u32,
+            pub begin: i32,
             /// outer end position, 0-based
-            pub end: u32,
+            pub end: i32,
             /// The structural vairant type
             pub sv_type: String,
         }
@@ -713,9 +682,9 @@ pub mod vardbs {
             /// chromosome name
             pub chromosome: String,
             /// begin position, 0-based
-            pub begin: u32,
+            pub begin: i32,
             /// end position, 0-based
-            pub end: u32,
+            pub end: i32,
             /// The structural vairant type
             pub sv_type: String,
             /// Number of hom. alt. alleles.
@@ -730,9 +699,9 @@ pub mod vardbs {
             /// chromosome name
             pub chromosome: String,
             /// begin position, 0-based
-            pub begin: u32,
+            pub begin: i32,
             /// end position, 0-based
-            pub end: u32,
+            pub end: i32,
             /// The structural vairant type
             pub svtype: String,
             /// Number of homozygous alternative carriers
@@ -750,9 +719,9 @@ pub mod vardbs {
             /// SV type
             pub sv_type: SvType,
             /// 0-based begin position
-            pub begin: u32,
+            pub begin: i32,
             /// 0-based end position
-            pub end: u32,
+            pub end: i32,
             /// Number of carriers (or alleles), depending on database.
             pub count: u32,
         }
@@ -910,7 +879,7 @@ pub mod vardbs {
                 Ok(Some(InputRecord {
                     chromosome: self.chromosome.clone(),
                     chromosome2: self.chromosome,
-                    begin: self.begin,
+                    begin: self.begin - 1,
                     end: self.end,
                     sv_type,
                     count: self.n_homalt + self.n_het,
@@ -976,34 +945,34 @@ pub mod vardbs {
                 .try_into()
                 .map_err(|err| anyhow!("problem with parsing: {:?}", &err))?;
             if let Some(record) = maybe_record {
-                result.push(BgDbRecord::new(
-                    *chrom_map
+                result.push(BgDbRecord {
+                    chrom_no: *chrom_map
                         .get(&record.chromosome)
                         .unwrap_or_else(|| panic!("unknown chrom: {:?}", &record.chromosome))
-                        as u8,
-                    *chrom_map
+                        as i32,
+                    chrom_no2: *chrom_map
                         .get(&record.chromosome2)
                         .unwrap_or_else(|| panic!("unknown chrom2: {:?}", &record.chromosome2))
-                        as u8,
-                    match record.sv_type {
-                        SvType::Del => FlatSvType::Del,
-                        SvType::Dup => FlatSvType::Dup,
-                        SvType::Inv => FlatSvType::Inv,
-                        SvType::Ins => FlatSvType::Ins,
-                        SvType::Bnd => FlatSvType::Bnd,
-                        SvType::Cnv => FlatSvType::Cnv,
-                    },
-                    record.begin,
-                    record.end,
-                    record.count,
-                ));
+                        as i32,
+                    sv_type: match record.sv_type {
+                        SvType::Del => db::pbs::SvType::Del,
+                        SvType::Dup => db::pbs::SvType::Dup,
+                        SvType::Inv => db::pbs::SvType::Inv,
+                        SvType::Ins => db::pbs::SvType::Ins,
+                        SvType::Bnd => db::pbs::SvType::Bnd,
+                        SvType::Cnv => db::pbs::SvType::Cnv,
+                    } as i32,
+                    start: record.begin + 1,
+                    stop: record.end,
+                    count: record.count,
+                });
             }
         }
 
         Ok(result)
     }
 
-    /// Perform conversion to flatbuffers `.bin` file.
+    /// Perform conversion to protobuf `.bin` file.
     pub fn convert_to_bin<P, Q>(
         path_input_tsv: P,
         path_output_bin: Q,
@@ -1024,7 +993,7 @@ pub mod vardbs {
             .from_reader(open_read_maybe_gz(path_input_tsv.as_ref())?);
         let before_parsing = Instant::now();
 
-        let output_records = match input_type {
+        let records = match input_type {
             InputFileType::Dbvar => deserialize_loop::<input::DbVarRecord>(&mut reader)?,
             InputFileType::Dgv => deserialize_loop::<input::DgvRecord>(&mut reader)?,
             InputFileType::DgvGs => deserialize_loop::<input::DgvGsRecord>(&mut reader)?,
@@ -1033,30 +1002,22 @@ pub mod vardbs {
             InputFileType::Gnomad => deserialize_loop::<input::GnomadRecord>(&mut reader)?,
             InputFileType::InhouseDb => deserialize_loop::<InhouseDbRecord>(&mut reader)?,
         };
+        let bg_db = BackgroundDatabase { records };
 
         debug!(
             "total time spent reading {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            bg_db.records.len().separate_with_commas(),
             before_parsing.elapsed()
         );
         trace_rss_now();
 
         let before_writing = Instant::now();
-        let mut builder = flatbuffers::FlatBufferBuilder::new();
-        let records = builder.create_vector(output_records.as_slice());
-        let bg_db = BackgroundDatabase::create(
-            &mut builder,
-            &BackgroundDatabaseArgs {
-                records: Some(records),
-            },
-        );
-        builder.finish_minimal(bg_db);
-        let mut output_file = File::create(path_output_bin.as_ref())?;
-        output_file.write_all(builder.finished_data())?;
+        let mut output_file = File::create(&path_output_bin)?;
+        output_file.write_all(&bg_db.encode_to_vec())?;
         output_file.flush()?;
         debug!(
             "total time spent writing {} records: {:?}",
-            output_records.len().separate_with_commas(),
+            bg_db.records.len().separate_with_commas(),
             before_writing.elapsed()
         );
 

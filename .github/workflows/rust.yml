@@ -22,9 +22,6 @@ jobs:
           override: true
           components: rustfmt
 
-      - name: Install flatbuffers
-        uses: ./.github/actions/install-flatbuffers
-
       - name: Setup protoc
         uses: arduino/setup-protoc@v1.1.2
         with:
@@ -32,8 +29,6 @@ jobs:
 
       - name: Check format
         run: |
-          flatc -o target/flatbuffers --rust src/world.fbs
-          rustfmt target/flatbuffers/world_generated.rs
           cargo fmt -- --check
 
   Linting:
@@ -48,9 +43,6 @@ jobs:
           toolchain: stable
           override: true
           components: clippy
-
-      - name: Install flatbuffers
-        uses: ./.github/actions/install-flatbuffers
 
       - name: Setup protoc
         uses: arduino/setup-protoc@v1.1.2
@@ -76,9 +68,6 @@ jobs:
         with:
           toolchain: stable
           override: true
-
-      - name: Install flatbuffers
-        uses: ./.github/actions/install-flatbuffers
 
       - name: Setup protoc
         uses: arduino/setup-protoc@v1.1.2

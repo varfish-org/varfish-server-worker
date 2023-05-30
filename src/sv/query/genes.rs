@@ -1,28 +1,30 @@
 //! Code for supporting annotation with overlapping genes.
 
-use std::{collections::HashSet, fs::File, ops::Range, path::Path, time::Instant};
+use std::{collections::HashSet, ops::Range, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
-use memmap2::Mmap;
+use prost::Message;
 use serde::Deserialize;
 use tracing::{debug, info};
 
 use crate::{
     common::{open_read_maybe_gz, CHROMS},
-    db::conf::{Database, FeatureDbs, GeneDbs, GeneXlink},
-    world_flatbuffers::var_fish_server_worker::{GeneRegionDatabase, XlinkDatabase},
+    db::{
+        conf::{Database, FeatureDbs, GeneDbs, GeneXlink},
+        pbs,
+    },
 };
 
 /// Alias for the interval tree that we use.
-type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
+type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
 
 /// Information to store for a TAD set entry.
 #[derive(Default, Clone, Debug)]
 pub struct GeneRegionRecord {
     /// 0-based begin position.
-    pub begin: u32,
+    pub begin: i32,
     /// End position.
-    pub end: u32,
+    pub end: i32,
     /// gene ID
     pub gene_id: u32,
 }
@@ -38,7 +40,7 @@ pub struct GeneRegionDb {
 
 impl GeneRegionDb {
     /// Return IDs of overlapping genes.
-    pub fn overlapping_gene_ids(&self, chrom_no: u32, query: Range<u32>) -> Vec<u32> {
+    pub fn overlapping_gene_ids(&self, chrom_no: u32, query: Range<i32>) -> Vec<u32> {
         self.trees[chrom_no as usize]
             .find(query)
             .iter()
@@ -58,22 +60,20 @@ fn load_gene_regions_db(path: &Path) -> Result<GeneRegionDb, anyhow::Error> {
         result.trees.push(IntervalTree::new());
     }
 
-    let file = File::open(path)?;
-    let mmap = unsafe { Mmap::map(&file)? };
-    let gene_region_db = flatbuffers::root::<GeneRegionDatabase>(&mmap)?;
-    let records = gene_region_db
-        .records()
-        .expect("no records in gene region db");
+    let fcontents =
+        std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
+    let gene_region_db = pbs::GeneRegionDatabase::decode(std::io::Cursor::new(fcontents))
+        .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
     let mut total_count = 0;
-    for record in &records {
-        let chrom_no = record.chrom_no() as usize;
-        let key = record.begin()..record.end();
+    for record in gene_region_db.records.into_iter() {
+        let chrom_no = record.chrom_no as usize;
+        let key = (record.start - 1)..record.stop;
         result.trees[chrom_no].insert(key, result.records[chrom_no].len() as u32);
         result.records[chrom_no].push(GeneRegionRecord {
-            begin: record.begin(),
-            end: record.end(),
-            gene_id: record.gene_id(),
+            begin: record.start - 1,
+            end: record.stop,
+            gene_id: record.gene_id,
         });
 
         total_count += 1;
@@ -151,24 +151,23 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
     let before_loading = Instant::now();
     let mut result = XlinkDb::default();
 
-    let file = File::open(path)?;
-    let mmap = unsafe { Mmap::map(&file)? };
-    let xlink_db = flatbuffers::root::<XlinkDatabase>(&mmap)?;
-    let records = xlink_db.records().expect("no records in xlink db");
-    let strings = xlink_db.symbols().expect("no sybmols in xlink db");
+    let fcontents =
+        std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
+    let xlink_db = pbs::XlinkDatabase::decode(std::io::Cursor::new(fcontents))
+        .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
     let mut total_count = 0;
-    for (idx, record) in records.iter().enumerate() {
+    for record in xlink_db.records.into_iter() {
         result
             .from_entrez
-            .insert(record.entrez_id(), result.records.len() as u32);
+            .insert(record.entrez_id, result.records.len() as u32);
         result
             .from_ensembl
-            .insert(record.ensembl_id(), result.records.len() as u32);
+            .insert(record.ensembl_id, result.records.len() as u32);
         result.records.push(XlinkDbRecord {
-            entrez_id: record.entrez_id(),
-            ensembl_gene_id: record.ensembl_id(),
-            symbol: strings.get(idx).to_owned(),
+            entrez_id: record.entrez_id,
+            ensembl_gene_id: record.ensembl_id,
+            symbol: record.symbol,
         });
         total_count += 1;
     }
@@ -295,7 +294,7 @@ impl GeneDb {
         &self,
         database: Database,
         chrom_no: u32,
-        query: Range<u32>,
+        query: Range<i32>,
     ) -> Vec<u32> {
         match database {
             Database::RefSeq => self.refseq.overlapping_gene_ids(chrom_no, query),

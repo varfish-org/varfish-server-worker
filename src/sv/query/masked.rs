@@ -1,16 +1,15 @@
 //! Overlap with masked regions (e.g., repeats, segmental duplications)
 
-use std::{collections::HashMap, fs::File, path::Path, time::Instant};
+use std::{collections::HashMap, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
-use memmap2::Mmap;
+use prost::Message;
 use serde::Serialize;
 use tracing::{debug, info};
 
 use crate::{
     common::{trace_rss_now, CHROMS},
-    db::conf::FeatureDbs,
-    world_flatbuffers::var_fish_server_worker::MaskedDatabase,
+    db::{conf::FeatureDbs, pbs},
 };
 
 use super::{
@@ -20,7 +19,7 @@ use super::{
 };
 
 /// Alias for the interval tree that we use.
-type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
+type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
 
 /// Code for masked regions overlappers.
 #[derive(Default, Debug)]
@@ -94,17 +93,17 @@ impl MaskedDb {
 #[derive(Serialize, Default, Debug, Clone)]
 pub struct MaskedDbRecord {
     /// 0-based begin position.
-    pub begin: u32,
+    pub begin: i32,
     /// End position.
-    pub end: u32,
+    pub end: i32,
 }
 
 impl BeginEnd for MaskedDbRecord {
-    fn begin(&self) -> u32 {
+    fn begin(&self) -> i32 {
         self.begin
     }
 
-    fn end(&self) -> u32 {
+    fn end(&self) -> i32 {
         self.end
     }
 }
@@ -121,18 +120,18 @@ pub fn load_masked_db_records(path: &Path) -> Result<MaskedDb, anyhow::Error> {
         result.trees.push(IntervalTree::new());
     }
 
-    let file = File::open(path)?;
-    let mmap = unsafe { Mmap::map(&file)? };
-    let masked_db = flatbuffers::root::<MaskedDatabase>(&mmap)?;
-    let records = masked_db.records().expect("no records in masked db");
+    let fcontents =
+        std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
+    let masked_db = pbs::MaskedDatabase::decode(std::io::Cursor::new(fcontents))
+        .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
-    for record in &records {
-        let chrom_no = record.chrom_no() as usize;
-        let key = record.begin()..record.end();
+    for record in masked_db.records.into_iter() {
+        let chrom_no = record.chrom_no as usize;
+        let key = (record.start - 1)..record.stop;
         result.trees[chrom_no].insert(key, result.records[chrom_no].len() as u32);
         result.records[chrom_no].push(MaskedDbRecord {
-            begin: record.begin(),
-            end: record.end(),
+            begin: record.start - 1,
+            end: record.stop,
         });
     }
     debug!(

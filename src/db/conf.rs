@@ -98,7 +98,7 @@ pub struct MaskedRegionDbs {
 pub struct FeatureDbs {
     /// Maximal distance to feature to consider.
     #[serde(default = "default_max_dist")]
-    pub max_dist: u32,
+    pub max_dist: i32,
 
     /// Gene regions for the supported databases.
     pub gene_regions: EnumMap<Database, DbDef>,
@@ -108,7 +108,7 @@ pub struct FeatureDbs {
     pub masked: MaskedRegionDbs,
 }
 
-pub fn default_max_dist() -> u32 {
+pub fn default_max_dist() -> i32 {
     10_000
 }
 /// Configuration of gene databases.
@@ -144,10 +144,10 @@ pub struct SeqVarDbs {
 pub struct StrucVarDbs {
     /// Radius around BND sites used when building the database.
     #[serde(default = "default_slack_bnd")]
-    pub slack_bnd: u32,
+    pub slack_bnd: i32,
     /// Radius around INS sites used when building the database.
     #[serde(default = "default_slack_ins")]
-    pub slack_ins: u32,
+    pub slack_ins: i32,
     /// Minimal reciprocal overlap for SVs of the same type, used when building
     /// the database.
     #[serde(default = "default_min_overlap")]
@@ -175,11 +175,11 @@ pub struct StrucVarDbs {
     pub clinvar: DbDef,
 }
 
-pub fn default_slack_bnd() -> u32 {
+pub fn default_slack_bnd() -> i32 {
     50
 }
 
-pub fn default_slack_ins() -> u32 {
+pub fn default_slack_ins() -> i32 {
     50
 }
 

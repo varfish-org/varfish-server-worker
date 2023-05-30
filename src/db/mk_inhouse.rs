@@ -47,11 +47,11 @@ pub mod input {
         /// UCSC bin
         pub bin: u32,
         /// start position, 1-based
-        pub start: u32,
+        pub start: i32,
         /// chromosome2 name
         pub chromosome2: String,
         /// end position, 1-based
-        pub end: u32,
+        pub end: i32,
         /// paired-end orientation
         #[serde(deserialize_with = "from_varfish_pe_orientation")]
         pub pe_orientation: StrandOrientation,
@@ -112,11 +112,11 @@ pub mod output {
         /// chromosome name
         pub chromosome: String,
         /// start position, 1-based
-        pub begin: u32,
+        pub begin: i32,
         /// chromosome2 name
         pub chromosome2: String,
         /// end position, 1-based
-        pub end: u32,
+        pub end: i32,
         /// paired-end orientation
         pub pe_orientation: StrandOrientation,
         /// type of the SV
@@ -161,7 +161,7 @@ pub mod output {
         pub fn from_db_record(record: InputRecord) -> Self {
             Record {
                 chromosome: record.chromosome,
-                begin: record.start,
+                begin: record.start - 1,
                 chromosome2: record.chromosome2,
                 end: record.end,
                 pe_orientation: record.pe_orientation,
@@ -285,12 +285,12 @@ fn merge_to_out(
             SvType::Bnd => record.begin - 1 - args.slack_bnd,
             SvType::Ins => record.begin - 1 - args.slack_ins,
             _ => record.begin,
-        } as i32;
+        };
         let end = match record.sv_type {
             SvType::Bnd => record.begin + args.slack_bnd,
             SvType::Ins => record.begin + args.slack_ins,
             _ => record.end,
-        } as i32;
+        };
         let query = begin..end;
         let mut found_any_cluster = false;
         for mut it_tree in tree.find_mut(&query) {
@@ -319,8 +319,8 @@ fn merge_to_out(
             // create new cluster
             tree.insert(
                 match record.sv_type {
-                    SvType::Bnd | SvType::Ins => ((record.begin - 1) as i32)..(record.begin as i32),
-                    _ => ((record.begin - 1) as i32)..(record.end as i32),
+                    SvType::Bnd | SvType::Ins => (record.begin - 1)..record.begin,
+                    _ => (record.begin - 1)..record.end,
                 },
                 clusters.len(),
             );
@@ -421,10 +421,10 @@ pub struct Args {
     pub min_overlap: f32,
     /// Padding to use for BNDs
     #[arg(long, default_value_t = 50)]
-    pub slack_bnd: u32,
+    pub slack_bnd: i32,
     /// Padding to use for INS
     #[arg(long, default_value_t = 50)]
-    pub slack_ins: u32,
+    pub slack_ins: i32,
 }
 
 /// Main entry point for the `sv bg-db-to-bin` command.
