@@ -21,9 +21,9 @@ expression: records
   oe_syn: 0.92733
   oe_syn_lower: 0.699
   oe_syn_upper: 1.246
-  pLI: 0.00078803
+  pli: 0.00078803
   syn_z: 0.33557
-  exac_pLI: 0.0010612
+  exac_pli: 0.0010612
   exac_obs_lof: 5
   exac_exp_lof: 6.3596
   exac_oe_lof: 0.78621
@@ -46,9 +46,9 @@ expression: records
   oe_syn: 1.0229
   oe_syn_lower: 0.897
   oe_syn_upper: 1.168
-  pLI: 0.99995
+  pli: 0.99995
   syn_z: -0.22259
-  exac_pLI: 0.99998
+  exac_pli: 0.99998
   exac_obs_lof: 2
   exac_exp_lof: 38.79
   exac_oe_lof: 0.05156
@@ -71,9 +71,9 @@ expression: records
   oe_syn: 1.0026
   oe_syn_lower: 0.981
   oe_syn_upper: 1.023
-  pLI: 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000025582
+  pli: 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000025582
   syn_z: -0.16611
-  exac_pLI: 0.000000000000000000000000000000012111
+  exac_pli: 0.000000000000000000000000000000012111
   exac_obs_lof: 247
   exac_exp_lof: 893.88
   exac_oe_lof: 0.27632
