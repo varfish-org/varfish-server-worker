@@ -553,10 +553,15 @@ pub mod actix_server {
         #[derive(Deserialize, Debug, Clone)]
         #[serde(rename_all = "kebab-case")]
         struct Request {
+            /// Genome release version.
             pub genome_release: String,
+            /// Chromosome name.
             pub chromosome: String,
+            /// 1-based start position.
             pub pos: u32,
+            /// Reference allele.
             pub reference: String,
+            /// Alternative allele.
             pub alternative: String,
         }
 

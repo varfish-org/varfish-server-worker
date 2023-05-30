@@ -1,6 +1,10 @@
 //! Code related to the "db genes build" subcommand.
 
-use std::{collections::HashMap, io::BufRead, time::Instant};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader, Read},
+    time::Instant,
+};
 
 use clap::Parser;
 use indicatif::ProgressIterator;
@@ -12,7 +16,7 @@ use crate::{
     pheno::prepare::{indicatif_style, VERSION},
 };
 
-use super::data::{acmg_sf, gnomad_constraints, hgnc, ncbi};
+use super::data::{acmg_sf, dbnsfp_gene, gnomad_constraints, hgnc, ncbi};
 
 /// Command line arguments for `db genes build` sub command.
 #[derive(Parser, Debug)]
@@ -64,6 +68,34 @@ fn load_gnomad_constraints(
     Ok(result)
 }
 
+/// Load dbNSFP genes information.
+///
+/// # Result
+///
+/// A map from HGNC gene symbol to dbNSFP gene information.
+fn load_dbnsfp(path: String) -> Result<HashMap<String, dbnsfp_gene::Record>, anyhow::Error> {
+    info!("  loading dbNSFP gene information from {}", path);
+    let mut result = HashMap::new();
+
+    let reader: Box<dyn Read> = if path.ends_with(".gz") {
+        Box::new(flate2::bufread::MultiGzDecoder::new(BufReader::new(
+            std::fs::File::open(path)?,
+        )))
+    } else {
+        Box::new(BufReader::new(std::fs::File::open(path)?))
+    };
+
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .from_reader(reader);
+    for record in reader.deserialize::<dbnsfp_gene::Record>() {
+        let record = record?;
+        result.insert(record.gene_name.clone(), record);
+    }
+
+    Ok(result)
+}
+
 /// Load HGNC information.
 ///
 /// # Result
@@ -106,6 +138,7 @@ fn load_ncbi(path: String) -> Result<HashMap<String, ncbi::Record>, anyhow::Erro
 fn convert_record(record: data::Record) -> super::pbs::Record {
     let data::Record {
         acmg_sf,
+        dbnsfp,
         gnomad_constraints,
         hgnc,
         ncbi,
@@ -138,6 +171,212 @@ fn convert_record(record: data::Record) -> super::pbs::Record {
             inheritance,
             sf_list_version,
             variants_to_report,
+        }
+    });
+
+    let dbnsfp = dbnsfp.map(|dbnsfp| {
+        let dbnsfp_gene::Record {
+            gene_name,
+            ensembl_gene,
+            chr,
+            gene_old_names,
+            gene_other_names,
+            uniprot_acc,
+            uniprot_id,
+            entrez_gene_id,
+            ccds_id,
+            refseq_id,
+            ucsc_id,
+            mim_id,
+            omim_id,
+            gene_full_name,
+            pathway_uniprot,
+            pathway_biocarta_short,
+            pathway_biocarta_full,
+            pathway_consensus_path_db,
+            pathway_kegg_id,
+            pathway_kegg_full,
+            function_description,
+            disease_description,
+            mim_phenotype_id,
+            mim_disease,
+            orphanet_disorder_id,
+            orphanet_disorder,
+            orphanet_association_type,
+            trait_association_gwas,
+            hpo_id,
+            hpo_name,
+            go_biological_process,
+            go_cellular_component,
+            go_molecular_function,
+            tissue_specificity_uniprot,
+            expression_egenetics,
+            expression_gnf_atlas,
+            interactions_intact,
+            interactions_biogrid,
+            interactions_consensus_path_db,
+            haploinsufficiency,
+            hipred_score,
+            hipred,
+            ghis,
+            prec,
+            known_rec_info,
+            rvis_evs,
+            rvis_percentile_evs,
+            lof_fdr_exac,
+            rvis_exac,
+            rvis_percentile_exac,
+            exac_pli,
+            exac_prec,
+            exac_pnull,
+            exac_nontcga_pli,
+            exac_nontcga_prec,
+            exac_nontcga_pnull,
+            exac_nonpsych_pli,
+            exac_nonpsych_prec,
+            exac_nonpsych_pnull,
+            gnomad_pli,
+            gnomad_prec,
+            gnomad_pnull,
+            exac_del_score,
+            exac_dup_score,
+            exac_cnv_score,
+            exac_cnv_flag,
+            gdi,
+            gdi_phred,
+            gdp_all_disease_causing,
+            gdp_all_mendelian,
+            gdp_all_mendelian_ad,
+            gdp_mendelian_ar,
+            gdp_pid,
+            gdp_pid_ad,
+            gdp_pid_ar,
+            gdp_cancer,
+            gdb_cancer_rec,
+            gdp_cancer_dom,
+            loftool_score,
+            sorva_lof_maf_5_het_or_hom,
+            sorva_lof_maf_5_hom_or_comphet,
+            sorva_lof_maf_1_het_or_hom,
+            sorva_lof_maf_1_hom_or_comphet,
+            sorva_lof_or_mis_maf_5_het_or_hom,
+            sorva_lof_or_mis_maf_5_hom_or_comphet,
+            sorva_lof_or_mis_maf_1_het_or_hom,
+            sorva_lof_or_mis_maf_1_hom_or_comphet,
+            essential_gene,
+            essential_gene_crispr,
+            essential_gene_crispr2,
+            essential_gene_gene_trap,
+            gene_indispensability_score,
+            gene_indispensability_pred,
+            mgi_mouse_gene,
+            mgi_mouse_phenotype,
+            zfin_zebrafish_gene,
+            zfin_zebrafish_structure,
+            zfin_zebrafish_phenotype_quality,
+            zfin_zebrafish_phenotype_tag,
+        } = dbnsfp;
+
+        super::pbs::DbnsfpRecord {
+            gene_name,
+            ensembl_gene,
+            chr,
+            gene_old_names,
+            gene_other_names,
+            uniprot_acc,
+            uniprot_id,
+            entrez_gene_id,
+            ccds_id,
+            refseq_id,
+            ucsc_id,
+            mim_id,
+            omim_id,
+            gene_full_name,
+            pathway_uniprot,
+            pathway_biocarta_short,
+            pathway_biocarta_full,
+            pathway_consensus_path_db,
+            pathway_kegg_id,
+            pathway_kegg_full,
+            function_description,
+            disease_description,
+            mim_phenotype_id,
+            mim_disease,
+            orphanet_disorder_id,
+            orphanet_disorder,
+            orphanet_association_type,
+            trait_association_gwas,
+            hpo_id,
+            hpo_name,
+            go_biological_process,
+            go_cellular_component,
+            go_molecular_function,
+            tissue_specificity_uniprot,
+            expression_egenetics,
+            expression_gnf_atlas,
+            interactions_intact,
+            interactions_biogrid,
+            interactions_consensus_path_db,
+            haploinsufficiency,
+            hipred_score,
+            hipred,
+            ghis,
+            prec,
+            known_rec_info,
+            rvis_evs,
+            rvis_percentile_evs,
+            lof_fdr_exac,
+            rvis_exac,
+            rvis_percentile_exac,
+            exac_pli,
+            exac_prec,
+            exac_pnull,
+            exac_nontcga_pli,
+            exac_nontcga_prec,
+            exac_nontcga_pnull,
+            exac_nonpsych_pli,
+            exac_nonpsych_prec,
+            exac_nonpsych_pnull,
+            gnomad_pli,
+            gnomad_prec,
+            gnomad_pnull,
+            exac_del_score,
+            exac_dup_score,
+            exac_cnv_score,
+            exac_cnv_flag,
+            gdi,
+            gdi_phred,
+            gdp_all_disease_causing,
+            gdp_all_mendelian,
+            gdp_all_mendelian_ad,
+            gdp_mendelian_ar,
+            gdp_pid,
+            gdp_pid_ad,
+            gdp_pid_ar,
+            gdp_cancer,
+            gdb_cancer_rec,
+            gdp_cancer_dom,
+            loftool_score,
+            sorva_lof_maf_5_het_or_hom,
+            sorva_lof_maf_5_hom_or_comphet,
+            sorva_lof_maf_1_het_or_hom,
+            sorva_lof_maf_1_hom_or_comphet,
+            sorva_lof_or_mis_maf_5_het_or_hom,
+            sorva_lof_or_mis_maf_5_hom_or_comphet,
+            sorva_lof_or_mis_maf_1_het_or_hom,
+            sorva_lof_or_mis_maf_1_hom_or_comphet,
+            essential_gene,
+            essential_gene_crispr,
+            essential_gene_crispr2,
+            essential_gene_gene_trap,
+            gene_indispensability_score,
+            gene_indispensability_pred,
+            mgi_mouse_gene,
+            mgi_mouse_phenotype,
+            zfin_zebrafish_gene,
+            zfin_zebrafish_structure,
+            zfin_zebrafish_phenotype_quality,
+            zfin_zebrafish_phenotype_tag,
         }
     });
 
@@ -340,6 +579,7 @@ fn convert_record(record: data::Record) -> super::pbs::Record {
 
     super::pbs::Record {
         acmg_sf,
+        dbnsfp,
         gnomad_constraints,
         hgnc,
         ncbi,
@@ -349,6 +589,7 @@ fn convert_record(record: data::Record) -> super::pbs::Record {
 /// Write gene database to a RocksDB.
 fn write_rocksdb(
     acmg_by_hgnc_id: HashMap<String, acmg_sf::Record>,
+    dbnsfp_by_symbol: HashMap<String, dbnsfp_gene::Record>,
     constraints_by_ensembl_id: HashMap<String, gnomad_constraints::Record>,
     hgnc: HashMap<String, hgnc::Record>,
     ncbi_by_ncbi_id: HashMap<String, ncbi::Record>,
@@ -378,6 +619,7 @@ fn write_rocksdb(
         let hgnc_id = hgnc_record.hgnc_id.clone();
         let record = convert_record(data::Record {
             acmg_sf: acmg_by_hgnc_id.get(&hgnc_id).cloned(),
+            dbnsfp: dbnsfp_by_symbol.get(&hgnc_record.symbol).cloned(),
             gnomad_constraints: hgnc_record
                 .ensembl_gene_id
                 .as_ref()
@@ -413,6 +655,8 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         "{}/genes/gnomad_constraints/gnomad_constraints.tsv",
         args.path_in_download
     ))?;
+    let dbnsfp_by_symbol =
+        load_dbnsfp(format!("{}/genes/dbnsfp/genes.tsv", args.path_in_download))?;
     let hgnc = load_hgnc(format!(
         "{}/genes/hgnc/hgnc_info.jsonl",
         args.path_in_download
@@ -430,6 +674,7 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("Writing genes database...");
     write_rocksdb(
         acmg_by_hgnc_id,
+        dbnsfp_by_symbol,
         constraints_by_ensembl_id,
         hgnc,
         ncbi_by_ncbi_id,
