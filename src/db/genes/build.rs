@@ -330,7 +330,7 @@ fn convert_record(record: data::Record) -> super::pbs::Record {
                         .into_iter()
                         .map(|rif_entry| super::pbs::RifEntry {
                             pmids: rif_entry.pmids.unwrap_or_default(),
-                            text: rif_entry.text.clone(),
+                            text: rif_entry.text,
                         })
                         .collect()
                 })
@@ -395,7 +395,7 @@ fn write_rocksdb(
 
     // Finally, compact manually.
     tracing::info!("  enforce manual compaction");
-    annonars::common::rocks_utils::force_compaction_cf(&db, &["meta", "genes"], Some("  "), true)?;
+    annonars::common::rocks_utils::force_compaction_cf(&db, ["meta", "genes"], Some("  "), true)?;
 
     Ok(())
 }
