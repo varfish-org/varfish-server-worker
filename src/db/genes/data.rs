@@ -1,4 +1,4 @@
-//! Code for storing gene-related data.
+//! Code for loading gene-related data from the TSV.
 
 use serde::{Deserialize, Serialize};
 
@@ -442,7 +442,7 @@ pub mod ncbi {
         pub gene_id: String,
         /// Gene summary.
         pub summary: Option<String>,
-        /// "Rereference into Function" entries.
+        /// "Reference into Function" entries.
         pub rif_entries: Option<Vec<RifEntry>>,
     }
 }

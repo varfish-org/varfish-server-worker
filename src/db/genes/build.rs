@@ -4,10 +4,11 @@ use std::{collections::HashMap, io::BufRead, time::Instant};
 
 use clap::Parser;
 use indicatif::ProgressIterator;
+use prost::Message;
 use tracing::info;
 
 use crate::{
-    db::{genes::data, rocksdb_tuning},
+    db::genes::data,
     pheno::prepare::{indicatif_style, VERSION},
 };
 
@@ -101,6 +102,250 @@ fn load_ncbi(path: String) -> Result<HashMap<String, ncbi::Record>, anyhow::Erro
     Ok(result)
 }
 
+/// Convert from `data::*` records to `pbs::*` records.
+fn convert_record(record: data::Record) -> super::pbs::Record {
+    let data::Record {
+        acmg_sf,
+        gnomad_constraints,
+        hgnc,
+        ncbi,
+    } = record;
+
+    let acmg_sf = acmg_sf.map(|acmg_sf| {
+        let acmg_sf::Record {
+            hgnc_id,
+            ensembl_gene_id,
+            ncbi_gene_id,
+            gene_symbol,
+            mim_gene_id,
+            disease_phenotype,
+            disorder_mim,
+            phenotype_category,
+            inheritance,
+            sf_list_version,
+            variants_to_report,
+        } = acmg_sf;
+
+        super::pbs::AcmgSecondaryFindingRecord {
+            hgnc_id,
+            ensembl_gene_id,
+            ncbi_gene_id,
+            gene_symbol,
+            mim_gene_id,
+            disease_phenotype,
+            disorder_mim,
+            phenotype_category,
+            inheritance,
+            sf_list_version,
+            variants_to_report,
+        }
+    });
+
+    let gnomad_constraints = gnomad_constraints.map(|gnomad_constraints| {
+        let gnomad_constraints::Record {
+            ensembl_gene_id,
+            entrez_id,
+            gene_symbol,
+            exp_lof,
+            exp_mis,
+            exp_syn,
+            mis_z,
+            obs_lof,
+            obs_mis,
+            obs_syn,
+            oe_lof,
+            oe_lof_lower,
+            oe_lof_upper,
+            oe_mis,
+            oe_mis_lower,
+            oe_mis_upper,
+            oe_syn,
+            oe_syn_lower,
+            oe_syn_upper,
+            pli,
+            syn_z,
+            exac_pli,
+            exac_obs_lof,
+            exac_exp_lof,
+            exac_oe_lof,
+        } = gnomad_constraints;
+
+        super::pbs::GnomadConstraintsRecord {
+            ensembl_gene_id,
+            entrez_id,
+            gene_symbol,
+            exp_lof,
+            exp_mis,
+            exp_syn,
+            mis_z,
+            obs_lof,
+            obs_mis,
+            obs_syn,
+            oe_lof,
+            oe_lof_lower,
+            oe_lof_upper,
+            oe_mis,
+            oe_mis_lower,
+            oe_mis_upper,
+            oe_syn,
+            oe_syn_lower,
+            oe_syn_upper,
+            pli,
+            syn_z,
+            exac_pli,
+            exac_obs_lof,
+            exac_exp_lof,
+            exac_oe_lof,
+        }
+    });
+
+    let hgnc = {
+        let hgnc::Record {
+            hgnc_id,
+            symbol,
+            name,
+            locus_group,
+            locus_type,
+            status,
+            location,
+            location_sortable,
+            alias_symbol,
+            alias_name,
+            prev_symbol,
+            prev_name,
+            gene_group,
+            gene_group_id,
+            date_approved_reserved,
+            date_symbol_changed,
+            date_name_changed,
+            date_modified,
+            entrez_id,
+            ensembl_gene_id,
+            vega_id,
+            ucsc_id,
+            ena,
+            refseq_accession,
+            ccds_id,
+            uniprot_ids,
+            pubmed_id,
+            mgd_id,
+            rgd_id,
+            lsdb,
+            cosmic,
+            omim_id,
+            mirbase,
+            homeodb,
+            snornabase,
+            bioparadigms_slc,
+            orphanet,
+            pseudogene_org,
+            horde_id,
+            merops,
+            imgt,
+            iuphar,
+            mamit_trnadb,
+            cd,
+            lncrnadb,
+            enzyme_id,
+            intermediate_filament_db,
+            agr,
+            mane_select,
+        } = hgnc;
+
+        Some(super::pbs::HgncRecord {
+            hgnc_id,
+            symbol,
+            name,
+            locus_group,
+            locus_type,
+            status: status as i32,
+            location,
+            location_sortable,
+            alias_symbol: alias_symbol.unwrap_or_default(),
+            alias_name: alias_name.unwrap_or_default(),
+            prev_symbol: prev_symbol.unwrap_or_default(),
+            prev_name: prev_name.unwrap_or_default(),
+            gene_group: gene_group.unwrap_or_default(),
+            gene_group_id: gene_group_id.unwrap_or_default(),
+            date_approved_reserved: date_approved_reserved
+                .map(|d| d.format("%Y-%m-%d").to_string()),
+            date_symbol_changed: date_symbol_changed.map(|d| d.format("%Y-%m-%d").to_string()),
+            date_name_changed: date_name_changed.map(|d| d.format("%Y-%m-%d").to_string()),
+            date_modified: date_modified.map(|d| d.format("%Y-%m-%d").to_string()),
+            entrez_id,
+            ensembl_gene_id,
+            vega_id,
+            ucsc_id,
+            ena: ena.unwrap_or_default(),
+            refseq_accession: refseq_accession.unwrap_or_default(),
+            ccds_id: ccds_id.unwrap_or_default(),
+            uniprot_ids: uniprot_ids.unwrap_or_default(),
+            pubmed_id: pubmed_id.unwrap_or_default(),
+            mgd_id: mgd_id.unwrap_or_default(),
+            rgd_id: rgd_id.unwrap_or_default(),
+            lsdb: lsdb
+                .map(|lsdb| {
+                    lsdb.iter()
+                        .map(|lsdb| super::pbs::HgncLsdb {
+                            name: lsdb.name.clone(),
+                            url: lsdb.url.clone(),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+            cosmic,
+            omim_id: omim_id.unwrap_or_default(),
+            mirbase,
+            homeodb,
+            snornabase,
+            bioparadigms_slc,
+            orphanet,
+            pseudogene_org,
+            horde_id,
+            merops,
+            imgt,
+            iuphar,
+            mamit_trnadb,
+            cd,
+            lncrnadb,
+            enzyme_id: enzyme_id.unwrap_or_default(),
+            intermediate_filament_db,
+            agr,
+            mane_select: mane_select.unwrap_or_default(),
+        })
+    };
+
+    let ncbi = ncbi.map(|ncbi| {
+        let ncbi::Record {
+            gene_id,
+            summary,
+            rif_entries,
+        } = ncbi;
+        super::pbs::NcbiRecord {
+            gene_id,
+            summary,
+            rif_entries: rif_entries
+                .map(|rif_entries| {
+                    rif_entries
+                        .into_iter()
+                        .map(|rif_entry| super::pbs::RifEntry {
+                            pmids: rif_entry.pmids.unwrap_or_default(),
+                            text: rif_entry.text.clone(),
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+        }
+    });
+
+    super::pbs::Record {
+        acmg_sf,
+        gnomad_constraints,
+        hgnc,
+        ncbi,
+    }
+}
+
 /// Write gene database to a RocksDB.
 fn write_rocksdb(
     acmg_by_hgnc_id: HashMap<String, acmg_sf::Record>,
@@ -110,7 +355,7 @@ fn write_rocksdb(
     args: &&Args,
 ) -> Result<(), anyhow::Error> {
     // Construct RocksDB options and open file for writing.
-    let options = rocksdb_tuning(rocksdb::Options::default(), None);
+    let options = annonars::common::rocks_utils::tune_options(rocksdb::Options::default(), None);
     let db = rocksdb::DB::open_cf_with_opts(
         &options,
         &args.path_out_rocksdb,
@@ -131,7 +376,7 @@ fn write_rocksdb(
     let style = indicatif_style();
     for hgnc_record in hgnc.values().progress_with_style(style) {
         let hgnc_id = hgnc_record.hgnc_id.clone();
-        let record = data::Record {
+        let record = convert_record(data::Record {
             acmg_sf: acmg_by_hgnc_id.get(&hgnc_id).cloned(),
             gnomad_constraints: hgnc_record
                 .ensembl_gene_id
@@ -144,37 +389,13 @@ fn write_rocksdb(
                 .as_ref()
                 .map(|entrez_id| ncbi_by_ncbi_id.get(entrez_id).cloned())
                 .unwrap_or_default(),
-        };
-        db.put_cf(&cf_genes, hgnc_id, serde_json::to_string(&record)?)?;
+        });
+        db.put_cf(&cf_genes, hgnc_id, &record.encode_to_vec())?;
     }
 
     // Finally, compact manually.
     tracing::info!("  enforce manual compaction");
-    db.compact_range_cf(&cf_meta, None::<&[u8]>, None::<&[u8]>);
-    db.compact_range_cf(&cf_genes, None::<&[u8]>, None::<&[u8]>);
-
-    let compaction_start = Instant::now();
-    let mut last_printed = compaction_start;
-    while db
-        .property_int_value(rocksdb::properties::COMPACTION_PENDING)?
-        .unwrap()
-        > 0
-        || db
-            .property_int_value(rocksdb::properties::NUM_RUNNING_COMPACTIONS)?
-            .unwrap()
-            > 0
-    {
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        if last_printed.elapsed() > std::time::Duration::from_millis(1000) {
-            log::info!(
-                "  ... waiting for compaction for {:?}",
-                compaction_start.elapsed()
-            );
-            last_printed = Instant::now();
-        }
-    }
-
-    info!("  RocksDB file is closed now.  Do not forget to remove the zero-byte WAL .log file.");
+    annonars::common::rocks_utils::force_compaction_cf(&db, &["meta", "genes"], Some("  "), true)?;
 
     Ok(())
 }

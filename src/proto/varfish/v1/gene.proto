@@ -1,0 +1,235 @@
+syntax = "proto3";
+
+package varfish.v1.gene;
+
+// Information from ACMG secondary findings list.
+message AcmgSecondaryFindingRecord {
+    // The HGNC ID.
+    string hgnc_id = 1;
+    // The Ensembl gene ID.
+    string ensembl_gene_id = 2;
+    // The NCBI gene ID.
+    string ncbi_gene_id = 3;
+    // The HGNC gene symbol.
+    string gene_symbol = 4;
+    // The MIM gene ID.
+    string mim_gene_id = 5;
+    // The disease phenotype.
+    string disease_phenotype = 6;
+    // The disease MIM id.
+    string disorder_mim = 7;
+    // The phenotype category.
+    string phenotype_category = 8;
+    // The mode of inheritance.
+    string inheritance = 9;
+    // The version of the ACMG SF list of first appearance.
+    string sf_list_version = 10;
+    // The variants to report according to ACMG SF.
+    string variants_to_report = 11;
+}
+
+// Code for data from the gnomAD constraints.
+message GnomadConstraintsRecord {
+  /// The Ensembl gene ID.
+  string ensembl_gene_id = 1;
+  /// The NCBI gene ID.
+  string entrez_id = 2;
+  /// The HGNC gene symbol.
+  string gene_symbol = 3;
+  /// The expected number of loss-of-function variants.
+  optional double exp_lof = 4;
+  /// The expected number of missense variants.
+  optional double exp_mis = 5;
+  /// The expected number of synonymous variants.
+  optional double exp_syn = 6;
+  /// The missense-related Z-score.
+  optional double mis_z = 7;
+  /// The observed number of loss-of-function variants.
+  optional uint32 obs_lof = 8;
+  /// The observed number of missense variants.
+  optional uint32 obs_mis = 9;
+  /// The observed number of synonymous variants.
+  optional uint32 obs_syn = 10;
+  /// The loss-of-function observed/expected ratio.
+  optional double oe_lof = 11;
+  /// The lower bound of the loss-of-function observed/expected ratio.
+  optional double oe_lof_lower = 12;
+  /// The upper bound of the loss-of-function observed/expected ratio.
+  optional double oe_lof_upper = 13;
+  /// The missense observed/expected ratio.
+  optional double oe_mis = 14;
+  /// The lower bound of the missense observed/expected ratio.
+  optional double oe_mis_lower = 15;
+  /// The upper bound of the missense observed/expected ratio.
+  optional double oe_mis_upper = 16;
+  /// The synonymous observed/expected ratio.
+  optional double oe_syn = 17;
+  /// The lower bound of the synonymous observed/expected ratio.
+  optional double oe_syn_lower = 18;
+  /// The upper bound of the synonymous observed/expected ratio.
+  optional double oe_syn_upper = 19;
+  /// The probability of loss-of-function intolerance (pLI score).
+  optional double pli = 20;
+  /// The synonymous-related Z-score.
+  optional double syn_z = 21;
+  /// The probability of loss-of-function intolerance (pLI score) from ExAC.
+  optional double exac_pli = 22;
+  /// The observed number of loss-of-function variants from ExAC.
+  optional double exac_obs_lof = 23;
+  /// The expected number of loss-of-function variants from ExAC.
+  optional double exac_exp_lof = 24;
+  /// The loss-of-function observed/expected ratio from ExAC.
+  optional double exac_oe_lof = 25;
+}
+
+// Status of the symbol report, which can be either "Approved" or "Entry Withdrawn".
+enum HgncStatus {
+    // Approved by HGNC.
+    HGNC_STATUS_APPROVED = 0;
+    // Withdrawn by HGNC.
+    HGNC_STATUS_WITHDRAWN = 1;
+}
+
+// Information from the locus-specific dabase.
+message HgncLsdb {
+    // The name of the Locus Specific Mutation Database.
+    string name = 1;
+    // The URL for the gene.
+    string url = 2;
+}
+
+// A record from the HGNC database.
+message HgncRecord {
+    // HGNC ID. A unique ID created by the HGNC for every approved symbol.
+    string hgnc_id = 1;
+    // The HGNC approved gene symbol.
+    string symbol = 2;
+    // HGNC approved name for the gene.
+    string name = 3;
+    // A group name for a set of related locus types as defined by the HGNC
+    // (e.g. non-coding RNA).
+    optional string locus_group = 4;
+    // The locus type as defined by the HGNC (e.g. RNA, transfer).
+    optional string locus_type = 5;
+    // Status of the symbol report.
+    HgncStatus status = 6;
+    // Cytogenetic location of the gene (e.g. 2q34).
+    optional string location = 7;
+    // Sortable cytogenic location of the gene (e.g. 02q34).
+    optional string location_sortable = 8;
+    // Other symbols used to refer to this gene.
+    repeated string alias_symbol = 9;
+    // Other names used to refer to this gene.
+    repeated string alias_name = 10;
+    // Prevous symbols used to refer to this gene.
+    repeated string prev_symbol = 11;
+    // Previous names used to refer to this gene.
+    repeated string prev_name = 12;
+    // Name given to a gene group.
+    repeated string gene_group = 13;
+    // ID used to designate a gene group.
+    repeated uint32 gene_group_id = 14;
+    // The date the entry was first approved.
+    optional string date_approved_reserved = 15;
+    // The date the gene symbol was last changed.
+    optional string date_symbol_changed = 16;
+    // The date the gene name was last changed.
+    optional string date_name_changed = 17;
+    // Date the entry was last modified.
+    optional string date_modified = 18;
+    // Entrez gene id.
+    optional string entrez_id = 19;
+    // Ensembl gene id.
+    optional string ensembl_gene_id = 20;
+    // Vega gene id.
+    optional string vega_id = 21;
+    // UCSC gene id.
+    optional string ucsc_id = 22;
+    // ENA accession number(s).
+    repeated string ena = 23;
+    // RefSeq nucleotide accession(s).
+    repeated string refseq_accession = 24;
+    // Consensus CDS ID(ds).
+    repeated string ccds_id = 25;
+    // Uniprot IDs.
+    repeated string uniprot_ids = 26;
+    // Pubmed IDs.
+    repeated uint32 pubmed_id = 27;
+    // Mouse genome informatics database ID(s).
+    repeated string mgd_id = 28;
+    // Rat genome database gene ID(s).
+    repeated string rgd_id = 29;
+    // The name of the Locus Specific Mutation Database and URL for the gene.
+    repeated HgncLsdb lsdb = 30;
+    // Symbol used within COSMIC.
+    optional string cosmic = 31;
+    // OMIM ID(s).
+    repeated string omim_id = 32;
+    // miRBase ID.
+    optional string mirbase = 33;
+    // Homeobox Database ID.
+    optional uint32 homeodb = 34;
+    // snoRNABase ID.
+    optional string snornabase = 35;
+    // Symbol used to link to the SLC tables database at bioparadigms.org
+    // for the gene.
+    optional string bioparadigms_slc = 36;
+    // Orphanet ID.
+    optional uint32 orphanet = 37;
+    // Pseudogene.org.
+    optional string pseudogene_org = 38;
+    // Symbol used within HORDE for the gene.
+    optional string horde_id = 39;
+    // ID used to link to the MEROPS peptidase database.
+    optional string merops = 40;
+    // Symbol used within international ImMunoGeneTics information system.
+    optional string imgt = 41;
+    // The objectId used to link to the IUPHAR/BPS Guide to PHARMACOLOGY
+    // database.
+    optional string iuphar = 42;
+    // Symbol used within the Human Cell Differentiation Molecule database.
+    optional string cd = 43;
+    // ID to link to the Mamit-tRNA database
+    optional uint32 mamit_trnadb = 44;
+    // lncRNA Database ID.
+    optional string lncrnadb = 45;
+    // ENZYME EC accession number.
+    repeated string enzyme_id = 46;
+    // ID used to link to the Human Intermediate Filament Database.
+    optional string intermediate_filament_db = 47;
+    // The HGNC ID that the Alliance of Genome Resources (AGR) use.
+    optional string agr = 48;
+    // NCBI and Ensembl transcript IDs/acessions including the version
+    // number.
+    repeated string mane_select = 49;
+}
+
+// Reference into function record.
+message RifEntry {
+    // The RIF text.
+    string text = 1;
+    // PubMed IDs.
+    repeated uint32 pmids = 2;
+} 
+
+// A record from the NCBI gene database.
+message NcbiRecord {
+    // NCBI Gene ID.
+    string gene_id = 1;
+    // Gene summary.
+    optional string summary = 2;
+    // "Reference Into Function" entry.
+    repeated RifEntry rif_entries = 3;
+}
+
+// Entry in the genes RocksDB database.
+message Record {
+    // Information from the ACMG secondary finding list.
+    AcmgSecondaryFindingRecord acmg_sf = 1;
+    // Information from the gnomAD constraints database.
+    GnomadConstraintsRecord gnomad_constraints = 2;
+    // Information from the HGNC database.
+    HgncRecord hgnc = 3;
+    // Information from the NCBI gene database (aka "Entrez").
+    NcbiRecord ncbi = 4;
+}
