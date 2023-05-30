@@ -110,7 +110,7 @@ where
 }
 
 // Compute reciprocal overlap between two ranges.
-pub fn reciprocal_overlap(lhs: Range<u32>, rhs: Range<u32>) -> f32 {
+pub fn reciprocal_overlap(lhs: Range<i32>, rhs: Range<i32>) -> f32 {
     let lhs_b = lhs.start;
     let lhs_e = lhs.end;
     let rhs_b = rhs.start;

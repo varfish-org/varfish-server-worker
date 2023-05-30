@@ -146,13 +146,13 @@ struct ResultRecord {
     svqueryresultset: u64,
     release: String,
     chromosome: String,
-    chromosome_no: u32,
+    chromosome_no: i32,
     bin: u32,
     chromosome2: String,
-    chromosome_no2: u32,
+    chromosome_no2: i32,
     bin2: u32,
-    start: u32,
-    end: u32,
+    start: i32,
+    end: i32,
     pe_orientation: StrandOrientation,
     sv_type: SvType,
     sv_sub_type: SvSubType,
@@ -283,7 +283,7 @@ fn run_query(
 
         if passes.pass_all {
             if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
-                result_payload.sv_length = Some(schema_sv.end - schema_sv.pos + 1);
+                result_payload.sv_length = Some((schema_sv.end - schema_sv.pos + 1) as u32);
             }
 
             // Copy effective and compatible genotypes to output.
@@ -327,7 +327,7 @@ fn run_query(
                         dbs.genes.overlapping_gene_ids(
                             interpreter.query.database,
                             tad.chrom_no,
-                            tad.begin..tad.end,
+                            (tad.begin - 1)..tad.end,
                         )
                     })
                     .for_each(|mut v| tad_gene_ids.append(&mut v));

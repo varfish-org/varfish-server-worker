@@ -6,17 +6,6 @@ pub mod pheno;
 pub mod server;
 pub mod sv;
 
-#[allow(
-    non_snake_case,
-    unused_imports,
-    clippy::extra_unused_lifetimes,
-    clippy::missing_safety_doc,
-    clippy::derivable_impls,
-    clippy::size_of_in_element_count
-)]
-#[path = "../target/flatbuffers/world_generated.rs"]
-pub mod world_flatbuffers;
-
 use clap::{Args, Parser, Subcommand};
 use console::{Emoji, Term};
 

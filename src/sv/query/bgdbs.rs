@@ -1,18 +1,16 @@
 //! Background database overlapping.
 
-use std::{collections::HashMap, fs::File, ops::Range, path::Path, time::Instant};
+use std::{collections::HashMap, ops::Range, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
-use memmap2::Mmap;
+use prost::Message;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use tracing::{debug, info};
 
 use crate::{
     common::{trace_rss_now, CHROMS},
-    db::conf::StrucVarDbs,
-    world_flatbuffers::var_fish_server_worker::BackgroundDatabase,
-    world_flatbuffers::var_fish_server_worker::SvType as FlatSvType,
+    db::{conf::StrucVarDbs, pbs},
 };
 
 use super::{
@@ -22,12 +20,12 @@ use super::{
 
 pub trait BeginEnd {
     /// 0-base begin position
-    fn begin(&self) -> u32;
+    fn begin(&self) -> i32;
     /// 0-based end position
-    fn end(&self) -> u32;
+    fn end(&self) -> i32;
 }
 
-pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
+pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<i32>) -> f32 {
     let lhs_b = lhs.begin();
     let lhs_e = lhs.end();
     let rhs_b = rhs.start;
@@ -45,7 +43,7 @@ pub fn reciprocal_overlap(lhs: &impl BeginEnd, rhs: &Range<u32>) -> f32 {
 }
 
 /// Alias for the interval tree that we use.
-type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
+type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
 
 /// Code for background database overlappers.
 #[derive(Default, Debug)]
@@ -80,17 +78,17 @@ impl BgDb {
         chrom_map: &HashMap<String, usize>,
         enabled: bool,
         min_overlap: Option<f32>,
-        slack_ins: u32,
-        slack_bnd: u32,
+        slack_ins: i32,
+        slack_bnd: i32,
         sv: &StructuralVariant,
     ) -> u32 {
         let chrom_idx = *chrom_map.get(&sv.chrom).expect("invalid chromosome");
         let range = if sv.sv_type == SvType::Ins {
-            sv.pos.saturating_sub(slack_ins)..sv.pos.saturating_add(slack_ins)
+            (sv.pos - slack_ins)..(sv.pos + slack_ins)
         } else if sv.sv_type == SvType::Bnd {
-            sv.pos.saturating_sub(slack_bnd)..sv.pos.saturating_add(slack_bnd)
+            (sv.pos - slack_bnd)..(sv.pos + slack_bnd)
         } else {
-            sv.pos..sv.end
+            (sv.pos - 1)..sv.end
         };
 
         self.trees[chrom_idx]
@@ -115,9 +113,9 @@ impl BgDb {
 #[derive(Serialize, Default, Debug, Clone)]
 pub struct BgDbRecord {
     /// 0-based begin position.
-    pub begin: u32,
+    pub begin: i32,
     /// End position.
-    pub end: u32,
+    pub end: i32,
     /// Type of the background database record.
     pub sv_type: SvType,
     /// Count associated with the record.
@@ -125,11 +123,11 @@ pub struct BgDbRecord {
 }
 
 impl BeginEnd for BgDbRecord {
-    fn begin(&self) -> u32 {
+    fn begin(&self) -> i32 {
         self.begin
     }
 
-    fn end(&self) -> u32 {
+    fn end(&self) -> i32 {
         self.end
     }
 }
@@ -146,37 +144,36 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         result.trees.push(IntervalTree::new());
     }
 
-    let file = File::open(path)?;
-    let mmap = unsafe { Mmap::map(&file)? };
-    let bg_db = flatbuffers::root::<BackgroundDatabase>(&mmap)?;
-    let records = bg_db.records().expect("no records in bg db");
+    let fcontents =
+        std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
+    let bg_db = pbs::BackgroundDatabase::decode(std::io::Cursor::new(fcontents))
+        .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
-    for record in &records {
-        let chrom_no = record.chrom_no() as usize;
-        let begin = match record.sv_type() {
-            FlatSvType::Bnd | FlatSvType::Ins => record.begin() - 1,
-            _ => record.begin(),
+    for record in bg_db.records.into_iter() {
+        let chrom_no = record.chrom_no as usize;
+        let begin = match pbs::SvType::from_i32(record.sv_type).expect("invalid sv_type") {
+            pbs::SvType::Bnd | pbs::SvType::Ins => record.start - 2,
+            _ => record.start - 1,
         };
-        let end = match record.sv_type() {
-            FlatSvType::Bnd | FlatSvType::Ins => record.begin(),
-            _ => record.end(),
+        let end = match pbs::SvType::from_i32(record.sv_type).expect("invalid sv_type") {
+            pbs::SvType::Bnd | pbs::SvType::Ins => record.start - 1,
+            _ => record.stop,
         };
         let key = begin..end;
 
         result.trees[chrom_no].insert(key, result.records[chrom_no].len() as u32);
         result.records[chrom_no].push(BgDbRecord {
-            begin: record.begin(),
-            end: record.end(),
-            sv_type: match record.sv_type() {
-                FlatSvType::Del => SvType::Del,
-                FlatSvType::Dup => SvType::Dup,
-                FlatSvType::Inv => SvType::Inv,
-                FlatSvType::Ins => SvType::Ins,
-                FlatSvType::Bnd => SvType::Bnd,
-                FlatSvType::Cnv => SvType::Cnv,
-                _ => panic!("Invalid SV type from flatbuffer"),
+            begin: record.start - 1,
+            end: record.stop,
+            sv_type: match pbs::SvType::from_i32(record.sv_type).expect("invalid sv_type") {
+                pbs::SvType::Del => SvType::Del,
+                pbs::SvType::Dup => SvType::Dup,
+                pbs::SvType::Inv => SvType::Inv,
+                pbs::SvType::Ins => SvType::Ins,
+                pbs::SvType::Bnd => SvType::Bnd,
+                pbs::SvType::Cnv => SvType::Cnv,
             },
-            count: record.count(),
+            count: record.count,
         });
     }
     debug!(
@@ -265,8 +262,8 @@ impl BgDbBundle {
         sv: &StructuralVariant,
         query: &CaseQuery,
         chrom_map: &HashMap<String, usize>,
-        slack_ins: u32,
-        slack_bnd: u32,
+        slack_ins: i32,
+        slack_bnd: i32,
     ) -> BgDbOverlaps {
         BgDbOverlaps {
             gnomad: self.gnomad.count_overlaps(

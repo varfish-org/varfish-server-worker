@@ -12,13 +12,13 @@ use super::{
 };
 
 /// Slack around break-end positions
-pub static BND_SLACK: u32 = 50;
+pub static BND_SLACK: i32 = 50;
 
 /// Slack around insertion position
-pub static INS_SLACK: u32 = 50;
+pub static INS_SLACK: i32 = 50;
 
 /// Returns whether the intervals `[s1, e1)` and `[s2, e2)` overlap.
-fn overlaps(s1: u32, e1: u32, s2: u32, e2: u32) -> bool {
+fn overlaps(s1: i32, e1: i32, s2: i32, e2: i32) -> bool {
     s1 < e2 && e1 > s2
 }
 
@@ -196,12 +196,9 @@ impl QueryInterpreter {
                     // as for all others, the range matches if `None` (whole chrom) or has overlap
                     let range_matches = match region.range {
                         None => true,
-                        Some(Range { start, end }) => overlaps(
-                            start.saturating_sub(1),
-                            end,
-                            sv.pos.saturating_sub(INS_SLACK),
-                            sv.pos + INS_SLACK,
-                        ),
+                        Some(Range { start, end }) => {
+                            overlaps(start - 1, end, sv.pos - INS_SLACK, sv.pos + INS_SLACK)
+                        }
                     };
                     any_match = any_match || (region.chrom.eq(&sv.chrom) && range_matches);
                 }

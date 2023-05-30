@@ -17,15 +17,15 @@ use super::{
 };
 
 /// Alias for the interval tree that we use.
-type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
+type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
 
 /// Information to store for known pathogenic SV database.
 #[derive(Default, Debug, Serialize, Clone)]
 pub struct Record {
     /// 0-based begin position.
-    pub begin: u32,
+    pub begin: i32,
     /// End position.
-    pub end: u32,
+    pub end: i32,
     /// Type of the known pathogenic SV database.
     pub sv_type: SvType,
     /// Identifier associated with the record.
@@ -115,9 +115,9 @@ mod input {
         /// Chromosome name
         pub chrom: String,
         /// 0-based begin position from BEd.
-        pub begin: u32,
+        pub begin: i32,
         /// 0-based end position from BED.
-        pub end: u32,
+        pub end: i32,
         /// Identifier of the record.
         pub id: String,
     }

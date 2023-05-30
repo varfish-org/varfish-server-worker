@@ -17,9 +17,9 @@ pub struct ChromRange {
     /// Chromosome name.
     pub chromosome: String,
     /// 0-based begin position.
-    pub begin: u32,
+    pub begin: i32,
     /// 0-based end position.
-    pub end: u32,
+    pub end: i32,
 }
 
 /// Structural variant as written out by VarFish Annotator.
@@ -30,12 +30,12 @@ pub struct StructuralVariant {
     /// Chromosome name
     pub chromosome: String,
     /// Chromosome number
-    pub chromosome_no: u32,
+    pub chromosome_no: i32,
     /// UCSC bin on chromosome
     pub bin: u32,
     /// 1-based start position of the variant (or position on first chromosome
     /// for break-ends)
-    pub start: u32,
+    pub start: i32,
     /// The names of the calling tools.
     #[serde(deserialize_with = "deserialize_callers")]
     pub callers: Vec<String>,
@@ -48,11 +48,11 @@ pub struct StructuralVariant {
     /// Potentially the second involved chromosome
     pub chromosome2: Option<String>,
     /// Chromosome number of second chromosome
-    pub chromosome_no2: u32,
+    pub chromosome_no2: i32,
     /// UCSC bin on chromosome2
     pub bin2: u32,
     /// End position (position on second chromosome for break-ends)
-    pub end: u32,
+    pub end: i32,
     /// The strand orientation of the structural variant, if applicable.
     #[serde(deserialize_with = "deserialize_pe_orientation")]
     pub pe_orientation: StrandOrientation,

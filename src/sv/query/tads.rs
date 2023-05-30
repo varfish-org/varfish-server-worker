@@ -17,7 +17,7 @@ use super::{
 };
 
 /// Alias for the interval tree that we use.
-type IntervalTree = ArrayBackedIntervalTree<u32, u32>;
+type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
 
 /// Information to store for a TAD set entry.
 #[derive(Default, Clone, Debug)]
@@ -25,9 +25,9 @@ pub struct Record {
     /// Chromosome number.
     pub chrom_no: u32,
     /// 0-based begin position.
-    pub begin: u32,
+    pub begin: i32,
     /// End position.
-    pub end: u32,
+    pub end: i32,
 }
 
 /// TAD set overlapping information.
@@ -38,9 +38,9 @@ pub struct TadSet {
     /// Interval trees, stored by chromosome.
     pub records_trees: Vec<IntervalTree>,
     /// Maximal distance to boundary to track.
-    pub boundary_max_dist: u32,
+    pub boundary_max_dist: i32,
     /// Boundaries, stored by chromosome.
-    pub boundaries: Vec<Vec<u32>>,
+    pub boundaries: Vec<Vec<i32>>,
     /// Interval triees to boundaries, stored by chromosome.
     pub boundaries_trees: Vec<IntervalTree>,
 }
@@ -233,14 +233,14 @@ mod input {
         /// Chromosome name
         pub chrom: String,
         /// 0-based begin position from BEd.
-        pub begin: u32,
+        pub begin: i32,
         /// 0-based end position from BED.
-        pub end: u32,
+        pub end: i32,
     }
 }
 
 #[tracing::instrument]
-fn load_tad_sets(path: &Path, boundary_max_dist: u32) -> Result<TadSet, anyhow::Error> {
+fn load_tad_sets(path: &Path, boundary_max_dist: i32) -> Result<TadSet, anyhow::Error> {
     debug!("loading TAD set records from {:?}...", path);
     let chrom_map = build_chrom_map();
 

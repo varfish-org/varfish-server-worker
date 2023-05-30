@@ -79,8 +79,8 @@ pub mod actix_server {
         fn from(val: QueryChromRange) -> Self {
             ChromRange {
                 chromosome: val.chromosome,
-                begin: val.begin as u32,
-                end: val.end as u32,
+                begin: val.begin as i32,
+                end: val.end as i32,
             }
         }
     }
@@ -93,15 +93,15 @@ pub mod actix_server {
         end: f64,
         /// A padding of 1 forces igv.js to display book-ended domains to be
         /// displayed on different vertical positions.
-        padding: Option<u32>,
+        padding: Option<i32>,
     }
 
     impl From<FetchTadsRequest> for ChromRange {
         fn from(val: FetchTadsRequest) -> Self {
             ChromRange {
                 chromosome: val.chromosome,
-                begin: val.begin as u32,
-                end: val.end as u32,
+                begin: val.begin as i32,
+                end: val.end as i32,
             }
         }
     }
@@ -110,8 +110,8 @@ pub mod actix_server {
     #[derive(Serialize, Debug)]
     struct Tad {
         chromosome: String,
-        begin: u32,
-        end: u32,
+        begin: i32,
+        end: i32,
     }
 
     /// List the overlapping TADs of the given TAD set.
@@ -131,10 +131,8 @@ pub mod actix_server {
             .into_iter()
             .map(|record| Tad {
                 chromosome: CHROMS[record.chrom_no as usize].to_string(),
-                begin: record
-                    .begin
-                    .saturating_sub(query.padding.unwrap_or_default()),
-                end: record.end.saturating_add(query.padding.unwrap_or_default()),
+                begin: record.begin - query.padding.unwrap_or_default(),
+                end: record.end + query.padding.unwrap_or_default(),
             })
             .collect::<Vec<Tad>>();
         Ok(Json(tads))
@@ -144,8 +142,8 @@ pub mod actix_server {
     #[derive(Serialize, Debug)]
     struct KnownPathogenic {
         chromosome: String,
-        begin: u32,
-        end: u32,
+        begin: i32,
+        end: i32,
         sv_type: SvType,
         id: String,
     }
@@ -179,8 +177,8 @@ pub mod actix_server {
     #[derive(Serialize, Debug)]
     struct ClinvarEntry {
         chromosome: String,
-        begin: u32,
-        end: u32,
+        begin: i32,
+        end: i32,
         variation_type: VariationType,
         pathogenicity: Pathogenicity,
         vcv: String,
@@ -211,8 +209,8 @@ pub mod actix_server {
             GenomeRelease::from_str(&path.0).map_err(|e| CustomError::new(e.into()))?;
         let chrom_range = ChromRange {
             chromosome: query.chromosome.clone(),
-            begin: query.begin as u32,
-            end: query.end as u32,
+            begin: query.begin as i32,
+            end: query.end as i32,
         };
         let clinvar_entries = data.dbs[genome_release]
             .clinvar_sv
@@ -220,17 +218,27 @@ pub mod actix_server {
             .into_iter()
             .map(|record| ClinvarEntry {
                 chromosome: chrom_range.chromosome.clone(),
-                begin: record.begin,
-                end: record.end,
-                variation_type: record.variation_type,
-                pathogenicity: record.pathogenicity,
+                begin: record.start - 1,
+                end: record.stop,
+                variation_type: crate::sv::query::clinvar::pbs::VariationType::from_i32(
+                    record.variation_type,
+                )
+                .expect("unknown variation type")
+                .try_into()
+                .expect("problem with variation type"),
+                pathogenicity: crate::sv::query::clinvar::pbs::Pathogenicity::from_i32(
+                    record.pathogenicity,
+                )
+                .expect("unknown pathogenicity")
+                .try_into()
+                .expect("problem with pathogenicity"),
                 vcv: format!("VCV{:09}", record.vcv),
                 name: format!(
                     "{:?} @ {}:{}-{} ({})",
                     record.variation_type,
                     &chrom_range.chromosome,
-                    (record.begin + 1).separate_with_commas(),
-                    record.end.separate_with_commas(),
+                    record.start.separate_with_commas(),
+                    record.stop.separate_with_commas(),
                     record.pathogenicity
                 ),
             })
@@ -241,8 +249,8 @@ pub mod actix_server {
     #[derive(Serialize)]
     struct BgdbResponseRecord {
         pub chromosome: String,
-        pub begin: u32,
-        pub end: u32,
+        pub begin: i32,
+        pub end: i32,
         pub sv_type: SvType,
         pub count: u32,
         pub name: String,
@@ -260,8 +268,8 @@ pub mod actix_server {
         let database = BgDbType::from_str(&path.1).map_err(|e| CustomError::new(e.into()))?;
         let chrom_range = ChromRange {
             chromosome: query.chromosome.clone(),
-            begin: query.begin as u32,
-            end: query.end as u32,
+            begin: query.begin as i32,
+            end: query.end as i32,
         };
         let records: Vec<_> = data.dbs[genome_release]
             .bg_dbs

@@ -1,27 +1,22 @@
 //! Supporting code for SV query definition.
 
-use crate::{
-    db::conf::{Database, TadSet},
-    world_flatbuffers::var_fish_server_worker::{
-        Pathogenicity as FlatPathogenicity, VariationType as FlatVariationType,
-    },
-};
+use crate::db::conf::{Database, TadSet};
 use indexmap::IndexMap;
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
-use super::masked::MaskedBreakpointCount;
+use super::{clinvar, masked::MaskedBreakpointCount};
 
 /// Range with 1-based positions
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Range {
-    pub start: u32,
-    pub end: u32,
+    pub start: i32,
+    pub end: i32,
 }
 
 impl Range {
-    pub fn new(start: u32, end: u32) -> Self {
+    pub fn new(start: i32, end: i32) -> Self {
         Range { start, end }
     }
 }
@@ -34,7 +29,7 @@ pub struct GenomicRegion {
 }
 
 impl GenomicRegion {
-    pub fn new(chrom: &str, start: u32, end: u32) -> Self {
+    pub fn new(chrom: &str, start: i32, end: i32) -> Self {
         GenomicRegion {
             chrom: chrom.to_owned(),
             range: Some(Range::new(start, end)),
@@ -997,8 +992,8 @@ where
                     let range = if let (Some(start), Some(stop)) =
                         (caps.name("start"), caps.name("stop"))
                     {
-                        let start: u32 = start.as_str().parse().unwrap();
-                        let end: u32 = stop.as_str().parse().unwrap();
+                        let start: i32 = start.as_str().parse().unwrap();
+                        let end: i32 = stop.as_str().parse().unwrap();
                         Some(Range { start, end })
                     } else {
                         None
@@ -1113,7 +1108,7 @@ pub struct StructuralVariant {
     pub chrom: String,
     /// 1-based start position of the variant (or position on first chromosome
     /// for break-ends)
-    pub pos: u32,
+    pub pos: i32,
     /// Type of the structural variant
     pub sv_type: SvType,
     /// Sub type of the structural variant
@@ -1121,7 +1116,7 @@ pub struct StructuralVariant {
     /// Potentially the second involved chromosome
     pub chrom2: Option<String>,
     /// End position (position on second chromosome for break-ends)
-    pub end: u32,
+    pub end: i32,
     /// The strand orientation of the structural variant, if applicable.
     pub strand_orientation: Option<StrandOrientation>,
 
@@ -1142,40 +1137,39 @@ impl StructuralVariant {
         {
             None
         } else {
-            Some(self.end.saturating_sub(self.pos) + 1)
+            Some((self.end - self.pos + 1) as u32)
         }
     }
 }
 
-impl From<VariationType> for FlatVariationType {
+impl From<VariationType> for clinvar::pbs::VariationType {
     fn from(val: VariationType) -> Self {
         match val {
-            VariationType::Complex => FlatVariationType::Complex,
-            VariationType::Microsatellite => FlatVariationType::Microsatellite,
-            VariationType::Dup => FlatVariationType::Dup,
-            VariationType::Del => FlatVariationType::Del,
-            VariationType::Bnd => FlatVariationType::Bnd,
-            VariationType::Cnv => FlatVariationType::Cnv,
-            VariationType::Inv => FlatVariationType::Inv,
-            VariationType::Ins => FlatVariationType::Ins,
+            VariationType::Complex => clinvar::pbs::VariationType::Complex,
+            VariationType::Microsatellite => clinvar::pbs::VariationType::Microsatellite,
+            VariationType::Dup => clinvar::pbs::VariationType::Dup,
+            VariationType::Del => clinvar::pbs::VariationType::Del,
+            VariationType::Bnd => clinvar::pbs::VariationType::Bnd,
+            VariationType::Cnv => clinvar::pbs::VariationType::Cnv,
+            VariationType::Inv => clinvar::pbs::VariationType::Inv,
+            VariationType::Ins => clinvar::pbs::VariationType::Ins,
         }
     }
 }
 
-impl TryInto<VariationType> for FlatVariationType {
+impl TryInto<VariationType> for clinvar::pbs::VariationType {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<VariationType, anyhow::Error> {
         Ok(match self {
-            FlatVariationType::Complex => VariationType::Complex,
-            FlatVariationType::Microsatellite => VariationType::Microsatellite,
-            FlatVariationType::Dup => VariationType::Dup,
-            FlatVariationType::Del => VariationType::Del,
-            FlatVariationType::Bnd => VariationType::Bnd,
-            FlatVariationType::Cnv => VariationType::Cnv,
-            FlatVariationType::Inv => VariationType::Inv,
-            FlatVariationType::Ins => VariationType::Ins,
-            _ => return Err(anyhow::anyhow!("could not convert {:?}", self)),
+            clinvar::pbs::VariationType::Complex => VariationType::Complex,
+            clinvar::pbs::VariationType::Microsatellite => VariationType::Microsatellite,
+            clinvar::pbs::VariationType::Dup => VariationType::Dup,
+            clinvar::pbs::VariationType::Del => VariationType::Del,
+            clinvar::pbs::VariationType::Bnd => VariationType::Bnd,
+            clinvar::pbs::VariationType::Cnv => VariationType::Cnv,
+            clinvar::pbs::VariationType::Inv => VariationType::Inv,
+            clinvar::pbs::VariationType::Ins => VariationType::Ins,
         })
     }
 }
@@ -1224,29 +1218,28 @@ pub enum Pathogenicity {
     Pathogenic,
 }
 
-impl From<Pathogenicity> for FlatPathogenicity {
+impl From<Pathogenicity> for clinvar::pbs::Pathogenicity {
     fn from(val: Pathogenicity) -> Self {
         match val {
-            Pathogenicity::Benign => FlatPathogenicity::Benign,
-            Pathogenicity::LikelyBenign => FlatPathogenicity::LikelyBenign,
-            Pathogenicity::Uncertain => FlatPathogenicity::Uncertain,
-            Pathogenicity::LikelyPathogenic => FlatPathogenicity::LikelyPathogenic,
-            Pathogenicity::Pathogenic => FlatPathogenicity::Pathogenic,
+            Pathogenicity::Benign => clinvar::pbs::Pathogenicity::Benign,
+            Pathogenicity::LikelyBenign => clinvar::pbs::Pathogenicity::LikelyBenign,
+            Pathogenicity::Uncertain => clinvar::pbs::Pathogenicity::Uncertain,
+            Pathogenicity::LikelyPathogenic => clinvar::pbs::Pathogenicity::LikelyPathogenic,
+            Pathogenicity::Pathogenic => clinvar::pbs::Pathogenicity::Pathogenic,
         }
     }
 }
 
-impl TryInto<Pathogenicity> for FlatPathogenicity {
+impl TryInto<Pathogenicity> for clinvar::pbs::Pathogenicity {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Pathogenicity, anyhow::Error> {
         Ok(match self {
-            FlatPathogenicity::Benign => Pathogenicity::Benign,
-            FlatPathogenicity::LikelyBenign => Pathogenicity::LikelyBenign,
-            FlatPathogenicity::Uncertain => Pathogenicity::Uncertain,
-            FlatPathogenicity::LikelyPathogenic => Pathogenicity::LikelyPathogenic,
-            FlatPathogenicity::Pathogenic => Pathogenicity::Pathogenic,
-            _ => return Err(anyhow::anyhow!("could not convert {:?}", self)),
+            clinvar::pbs::Pathogenicity::Benign => Pathogenicity::Benign,
+            clinvar::pbs::Pathogenicity::LikelyBenign => Pathogenicity::LikelyBenign,
+            clinvar::pbs::Pathogenicity::Uncertain => Pathogenicity::Uncertain,
+            clinvar::pbs::Pathogenicity::LikelyPathogenic => Pathogenicity::LikelyPathogenic,
+            clinvar::pbs::Pathogenicity::Pathogenic => Pathogenicity::Pathogenic,
         })
     }
 }
@@ -1259,9 +1252,9 @@ pub struct ClinvarSv {
     /// Chromosome name
     pub chromosome: String,
     /// 1-based start position
-    pub start: u32,
+    pub start: i32,
     /// 1-based end position
-    pub end: u32,
+    pub end: i32,
     /// Clinvar variation type
     pub variation_type: VariationType,
     /// Clinvar pathogenicty
@@ -1289,9 +1282,9 @@ mod tests {
                     len: 2,
                 },
                 Token::Str("start"),
-                Token::U32(1),
+                Token::I32(1),
                 Token::Str("end"),
-                Token::U32(2),
+                Token::I32(2),
                 Token::StructEnd,
             ],
         );
@@ -1926,7 +1919,7 @@ mod tests {
                 Token::Str("chrom"),
                 Token::Str("chr1"),
                 Token::Str("pos"),
-                Token::U32(123),
+                Token::I32(123),
                 Token::Str("sv_type"),
                 Token::UnitVariant {
                     name: "SvType",
@@ -1940,7 +1933,7 @@ mod tests {
                 Token::Str("chrom2"),
                 Token::None,
                 Token::Str("end"),
-                Token::U32(245),
+                Token::I32(245),
                 Token::Str("strand_orientation"),
                 Token::Some,
                 Token::UnitVariant {
