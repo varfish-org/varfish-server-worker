@@ -58,7 +58,6 @@ enum DbCommands {
     Compile(db::compile::Args),
     MkInhouse(db::mk_inhouse::Args),
     Genes(Genes),
-    Seqvars(Seqvars),
 }
 
 /// Parsing of "db genes *" sub commands.
@@ -74,42 +73,6 @@ struct Genes {
 #[derive(Debug, Subcommand)]
 enum GenesCommands {
     Build(db::genes::build::Args),
-}
-
-/// Parsing of "db seqvars *" sub commands.
-#[derive(Debug, Args)]
-#[command(args_conflicts_with_subcommands = true)]
-struct Seqvars {
-    /// The sub command to run
-    #[command(subcommand)]
-    command: SeqvarsCommands,
-}
-
-/// Enum supporting the parsing of "db seqvars *" sub commands.
-#[derive(Debug, Subcommand)]
-enum SeqvarsCommands {
-    Build(SeqvarsBuild),
-}
-
-/// Enum supporting the parsing of "db seqvars *" sub commands.
-#[derive(Debug, Args)]
-#[command(args_conflicts_with_subcommands = true)]
-struct SeqvarsBuild {
-    /// The sub command to run
-    #[command(subcommand)]
-    command: SeqvarsBuildCommands,
-}
-
-/// Enum supporting the parsing of "db seqvars *" sub commands.
-#[allow(clippy::large_enum_variant)]
-#[derive(Debug, Subcommand)]
-enum SeqvarsBuildCommands {
-    Dbsnp(annonars::dbsnp::cli::import::Args),
-    GnomadNuclear(annonars::gnomad_nuclear::cli::import::Args),
-    GnomadMtdna(annonars::gnomad_mtdna::cli::import::Args),
-    Helixmtdb(annonars::helixmtdb::cli::import::Args),
-    UcscConservation(annonars::cons::cli::import::Args),
-    Tsv(annonars::tsv::cli::import::Args),
 }
 
 /// Parsing of "pheno *" sub commands.
@@ -199,28 +162,6 @@ fn main() -> Result<(), anyhow::Error> {
                     GenesCommands::Build(args) => {
                         db::genes::build::run(&cli.common, args)?;
                     }
-                },
-                DbCommands::Seqvars(args) => match &args.command {
-                    SeqvarsCommands::Build(args) => match &args.command {
-                        SeqvarsBuildCommands::Dbsnp(args) => {
-                            annonars::dbsnp::cli::import::run(&annonars_common, args)?;
-                        }
-                        SeqvarsBuildCommands::GnomadNuclear(args) => {
-                            annonars::gnomad_nuclear::cli::import::run(&annonars_common, args)?;
-                        }
-                        SeqvarsBuildCommands::GnomadMtdna(args) => {
-                            annonars::gnomad_mtdna::cli::import::run(&annonars_common, args)?;
-                        }
-                        SeqvarsBuildCommands::Helixmtdb(args) => {
-                            annonars::helixmtdb::cli::import::run(&annonars_common, args)?;
-                        }
-                        SeqvarsBuildCommands::UcscConservation(args) => {
-                            annonars::cons::cli::import::run(&annonars_common, args)?;
-                        }
-                        SeqvarsBuildCommands::Tsv(args) => {
-                            annonars::tsv::cli::import::run(&annonars_common, args)?;
-                        }
-                    },
                 },
                 DbCommands::Copy(args) => {
                     annonars::db_utils::cli::copy::run(&annonars_common, args)?
