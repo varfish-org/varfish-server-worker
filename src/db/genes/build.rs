@@ -627,8 +627,10 @@ fn write_rocksdb(
     // TODO: read meta information about input data and write out
 
     tracing::info!("  compose genes data into database");
-    let style = indicatif_style();
-    for hgnc_record in hgnc.values().progress_with_style(style) {
+    for hgnc_record in hgnc
+        .values()
+        .progress_with(annonars::common::cli::progress_bar(hgnc.len()))
+    {
         let hgnc_id = hgnc_record.hgnc_id.clone();
         let record = convert_record(data::Record {
             acmg_sf: acmg_by_hgnc_id.get(&hgnc_id).cloned(),

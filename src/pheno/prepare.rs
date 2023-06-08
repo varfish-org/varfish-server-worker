@@ -78,7 +78,7 @@ fn run_simulation(
     let style = indicatif_style();
     genes
         .par_iter()
-        .progress_with_style(style)
+        .progress_with(annonars::common::cli::progress_bar(genes.len()))
         .for_each(|gene| {
             // Obtain sorted list of similarity scores from simulations.
             let mut scores = (0..num_simulations)
