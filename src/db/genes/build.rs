@@ -22,9 +22,22 @@ use super::data::{acmg_sf, dbnsfp_gene, gnomad_constraints, hgnc, ncbi};
 #[derive(Parser, Debug)]
 #[command(author, version, about = "Build genes database", long_about = None)]
 pub struct Args {
-    /// Path to the directory with the output of the download directory.
+    /// Path to the TSV file with ACMG secondary findings list.
     #[arg(long, required = true)]
-    pub path_in_download: String,
+    pub path_in_acmg: String,
+    /// Path to the TSV file with gnomAD gene constraints.
+    #[arg(long, required = true)]
+    pub path_in_gnomad_constraints: String,
+    /// Path to the TSV file with dbNSFP gene information.
+    #[arg(long, required = true)]
+    pub path_in_dbnsfp: String,
+    /// Path to the JSONL file with HGNC information.
+    #[arg(long, required = true)]
+    pub path_in_hgnc: String,
+    /// Path to the JSONL file with NCBI information.
+    #[arg(long, required = true)]
+    pub path_in_ncbi: String,
+
     /// Path to output RocksDB.
     #[arg(long, required = true)]
     pub path_out_rocksdb: String,
@@ -35,7 +48,7 @@ pub struct Args {
 /// # Result
 ///
 /// A map from HGNC ID to ACMG SF record.
-fn load_acmg(path: String) -> Result<HashMap<String, acmg_sf::Record>, anyhow::Error> {
+fn load_acmg(path: &str) -> Result<HashMap<String, acmg_sf::Record>, anyhow::Error> {
     info!("  loading ACMG SF list from {}", path);
     let mut result = HashMap::new();
 
@@ -54,7 +67,7 @@ fn load_acmg(path: String) -> Result<HashMap<String, acmg_sf::Record>, anyhow::E
 ///
 /// A map from ENSEMBL gene ID to gnomAD constraints record.
 fn load_gnomad_constraints(
-    path: String,
+    path: &str,
 ) -> Result<HashMap<String, gnomad_constraints::Record>, anyhow::Error> {
     info!("  loading gnomAD constraints from {}", path);
     let mut result = HashMap::new();
@@ -73,7 +86,7 @@ fn load_gnomad_constraints(
 /// # Result
 ///
 /// A map from HGNC gene symbol to dbNSFP gene information.
-fn load_dbnsfp(path: String) -> Result<HashMap<String, dbnsfp_gene::Record>, anyhow::Error> {
+fn load_dbnsfp(path: &str) -> Result<HashMap<String, dbnsfp_gene::Record>, anyhow::Error> {
     info!("  loading dbNSFP gene information from {}", path);
     let mut result = HashMap::new();
 
@@ -101,7 +114,7 @@ fn load_dbnsfp(path: String) -> Result<HashMap<String, dbnsfp_gene::Record>, any
 /// # Result
 ///
 /// A map from HGNC ID to HGNC record.
-fn load_hgnc(path: String) -> Result<HashMap<String, hgnc::Record>, anyhow::Error> {
+fn load_hgnc(path: &str) -> Result<HashMap<String, hgnc::Record>, anyhow::Error> {
     info!("  loading HGNC information from {}", path);
     let mut result = HashMap::new();
 
@@ -120,7 +133,7 @@ fn load_hgnc(path: String) -> Result<HashMap<String, hgnc::Record>, anyhow::Erro
 /// # Result
 ///
 /// A map from NCBI gene ID to NCBI record.
-fn load_ncbi(path: String) -> Result<HashMap<String, ncbi::Record>, anyhow::Error> {
+fn load_ncbi(path: &str) -> Result<HashMap<String, ncbi::Record>, anyhow::Error> {
     info!("  loading NCBI information from {}", path);
     let mut result = HashMap::new();
 
@@ -650,21 +663,11 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     let before_loading = Instant::now();
     info!("Loading genes data files...");
-    let acmg_by_hgnc_id = load_acmg(format!("{}/genes/acmg/acmg.tsv", args.path_in_download))?;
-    let constraints_by_ensembl_id = load_gnomad_constraints(format!(
-        "{}/genes/gnomad_constraints/gnomad_constraints.tsv",
-        args.path_in_download
-    ))?;
-    let dbnsfp_by_symbol =
-        load_dbnsfp(format!("{}/genes/dbnsfp/genes.tsv", args.path_in_download))?;
-    let hgnc = load_hgnc(format!(
-        "{}/genes/hgnc/hgnc_info.jsonl",
-        args.path_in_download
-    ))?;
-    let ncbi_by_ncbi_id = load_ncbi(format!(
-        "{}/genes/ncbi/gene_info.jsonl",
-        args.path_in_download
-    ))?;
+    let acmg_by_hgnc_id = load_acmg(&args.path_in_acmg)?;
+    let constraints_by_ensembl_id = load_gnomad_constraints(&args.path_in_gnomad_constraints)?;
+    let dbnsfp_by_symbol = load_dbnsfp(&args.path_in_dbnsfp)?;
+    let hgnc = load_hgnc(&args.path_in_hgnc)?;
+    let ncbi_by_ncbi_id = load_ncbi(&args.path_in_ncbi)?;
     info!(
         "... done loadin genes data files in {:?}",
         before_loading.elapsed()
@@ -703,7 +706,13 @@ pub mod test {
             verbose: Verbosity::new(1, 0),
         };
         let args = Args {
-            path_in_download: String::from("tests/db"),
+            path_in_acmg: String::from("tests/db/genes/acmg/acmg.tsv"),
+            path_in_gnomad_constraints: String::from(
+                "tests/db/genes/gnomad_constraints/gnomad_constraints.tsv",
+            ),
+            path_in_dbnsfp: String::from("tests/db/genes/dbnsfp/genes.tsv"),
+            path_in_hgnc: String::from("tests/db/genes/hgnc/hgnc_info.jsonl"),
+            path_in_ncbi: String::from("tests/db/genes/ncbi/gene_info.jsonl"),
             path_out_rocksdb: tmp_dir
                 .to_path_buf()
                 .into_os_string()
