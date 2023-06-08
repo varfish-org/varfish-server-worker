@@ -79,6 +79,8 @@ fn run_simulation(
         .par_iter()
         .progress_with(annonars::common::cli::progress_bar(genes.len()))
         .for_each(|gene| {
+            let mut file = std::fs::File::create(&format!("foo/{}/{}.txt", num_terms, gene.symbol()))?;
+
             // Obtain sorted list of similarity scores from simulations.
             let mut scores = (0..num_simulations)
                 .map(|_| {
@@ -99,7 +101,7 @@ fn run_simulation(
                     }
 
                     // Compute similarity.
-                    phenomizer::score(
+                    let s = phenomizer::score(
                         &ts,
                         &HpoGroup::from_iter(
                             gene.to_hpo_set(ontology)
@@ -108,7 +110,13 @@ fn run_simulation(
                                 .into_iter(),
                         ),
                         ontology,
-                    )
+                    );
+
+                    use std::io::Write;
+
+                    writeln!(file, "{}\t{}\t{}", s, gene.symbol(), ts.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(", "))?;
+
+                    s
                 })
                 .collect::<prost::alloc::vec::Vec<_>>();
             scores.sort_by(|a, b| a.partial_cmp(b).expect("NaN value"));
