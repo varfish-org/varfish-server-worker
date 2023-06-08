@@ -125,7 +125,7 @@ fn run_simulation(
                             .map(|t| t.to_string())
                             .collect::<Vec<_>>()
                             .join(", ")
-                    )?;
+                    ).expect("could not write");
 
                     s
                 })
