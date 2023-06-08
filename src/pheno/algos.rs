@@ -11,7 +11,9 @@ pub mod phenomizer {
     /// Compute symmetric similarity score.
     pub fn score(q: &HpoGroup, d: &HpoGroup, o: &Ontology) -> f32 {
         let s = Builtins::Resnik(InformationContentKind::Gene);
-        0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s)
+        let res = 0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s);
+        eprintln!("score: {}", res);
+        res
     }
 
     /// "Directed" score part of phenomizer score.
@@ -33,6 +35,8 @@ pub mod phenomizer {
                 );
             }
         }
+
+        eprintln!("tmp: {:?}", &tmp);
 
         tmp.iter().sum::<f32>() / (qs.len() as f32)
     }

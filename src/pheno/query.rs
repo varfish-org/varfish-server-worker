@@ -153,12 +153,20 @@ pub fn run_query(
             hpo,
         );
 
+        tracing::debug!("gene = {:?}", gene);
+        tracing::debug!("score = {:?}", score);
+
         let lower_bound = res.scores[..].partition_point(|x| *x < score);
         let upper_bound = res.scores[..].partition_point(|x| *x <= score);
+        tracing::debug!("scores = {:?}", res.scores);
         let idx = (lower_bound + upper_bound) / 2;
         let idx = std::cmp::min(idx, res.scores.len() - 1);
         let p = 1.0 - (idx as f64) / (res.scores.len() as f64);
         let log_p = -10.0 * p.log10();
+
+        tracing::debug!("gene = {:?}", gene);
+        tracing::debug!("score = {:?}", score);
+        tracing::debug!("p = {:?}", p);
 
         // For each term in the gene, provide query term with the highest similarity.
         let mut terms = HpoGroup::from_iter(
@@ -254,11 +262,15 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let before_load_genes = Instant::now();
     let genes_json = std::fs::read_to_string(&args.path_genes_json)?;
     let genes: Vec<Gene> = serde_json::from_str(&genes_json)?;
+    let mut missing_genes = Vec::new();
     let genes = genes
         .iter()
-        .map(|g| {
-            hpo.gene_by_name(&g.gene_symbol)
-                .unwrap_or_else(|| panic!("gene {} not found", &g.gene_symbol))
+        .filter_map(|g| {
+            let mapped = hpo.gene_by_name(&g.gene_symbol);
+            if mapped.is_none() {
+                missing_genes.push(g.clone());
+            }
+            mapped
         })
         .collect::<Vec<_>>();
     info!("... done loadin genes in {:?}", before_load_genes.elapsed());
