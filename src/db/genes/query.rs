@@ -50,20 +50,6 @@ fn open_rocksdb(
 }
 
 /// Print values to `out_writer`.
-fn print_values(
-    out_writer: &mut Box<dyn std::io::Write>,
-    output_format: common::cli::OutputFormat,
-    record: &super::pbs::Record,
-) -> Result<(), anyhow::Error> {
-    match output_format {
-        common::cli::OutputFormat::Jsonl => {
-            writeln!(out_writer, "{}", serde_json::to_string(&record)?)?;
-        }
-    }
-
-    Ok(())
-}
-
 fn print_record(
     out_writer: &mut Box<dyn std::io::Write>,
     output_format: common::cli::OutputFormat,
