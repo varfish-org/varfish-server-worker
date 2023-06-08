@@ -1,6 +1,7 @@
 // The custom build script, needed as we use protocolbuffers.
 
 fn main() {
+    println!("cargo:rerun-if-changed=varfish/v1/clinvar.proto");
     println!("cargo:rerun-if-changed=varfish/v1/gene.proto");
     println!("cargo:rerun-if-changed=varfish/v1/pheno.proto");
     println!("cargo:rerun-if-changed=varfish/v1/sv.proto");
@@ -13,6 +14,7 @@ fn main() {
         // Define the protobuf files to compile.
         .compile_protos(
             &[
+                "varfish/v1/clinvar.proto",
                 "varfish/v1/gene.proto",
                 "varfish/v1/pheno.proto",
                 "varfish/v1/sv.proto",

@@ -645,6 +645,7 @@ fn write_rocksdb(
                 .map(|entrez_id| ncbi_by_ncbi_id.get(entrez_id).cloned())
                 .unwrap_or_default(),
         });
+        tracing::debug!("writing {:?} -> {:?}", &hgnc, &record);
         db.put_cf(&cf_genes, hgnc_id, &record.encode_to_vec())?;
     }
 
@@ -655,7 +656,7 @@ fn write_rocksdb(
     Ok(())
 }
 
-/// Main entry point for the `sv bg-db-to-bin` command.
+/// Main entry point for the `db gene build` command.
 pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     info!("Starting `db gene build`");
     info!("  common_args = {:?}", &common_args);
