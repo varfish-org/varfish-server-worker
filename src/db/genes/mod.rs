@@ -3,3 +3,4 @@
 pub mod build;
 pub mod data;
 pub mod pbs;
+pub mod query;

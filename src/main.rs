@@ -73,6 +73,7 @@ struct Genes {
 #[derive(Debug, Subcommand)]
 enum GenesCommands {
     Build(db::genes::build::Args),
+    Query(db::genes::query::Args),
 }
 
 /// Parsing of "pheno *" sub commands.
@@ -161,6 +162,9 @@ fn main() -> Result<(), anyhow::Error> {
                 DbCommands::Genes(args) => match &args.command {
                     GenesCommands::Build(args) => {
                         db::genes::build::run(&cli.common, args)?;
+                    }
+                    GenesCommands::Query(args) => {
+                        db::genes::query::run(&cli.common, args)?;
                     }
                 },
                 DbCommands::Copy(args) => {
