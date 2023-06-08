@@ -75,7 +75,6 @@ fn run_simulation(
     let genes = ontology.genes().collect::<Vec<_>>();
 
     // Run simulations for each gene in parallel.
-    let style = indicatif_style();
     genes
         .par_iter()
         .progress_with(annonars::common::cli::progress_bar(genes.len()))
@@ -100,7 +99,16 @@ fn run_simulation(
                     }
 
                     // Compute similarity.
-                    phenomizer::score(&ts, gene.hpo_terms(), ontology)
+                    phenomizer::score(
+                        &ts,
+                        &HpoGroup::from_iter(
+                            gene.to_hpo_set(ontology)
+                                .child_nodes()
+                                .without_modifier()
+                                .into_iter(),
+                        ),
+                        ontology,
+                    )
                 })
                 .collect::<prost::alloc::vec::Vec<_>>();
             scores.sort_by(|a, b| a.partial_cmp(b).expect("NaN value"));
