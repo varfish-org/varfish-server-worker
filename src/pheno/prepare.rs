@@ -75,6 +75,7 @@ fn run_simulation(
     let genes = ontology.genes().collect::<Vec<_>>();
 
     // Run simulations for each gene in parallel.
+    let style = indicatif_style();
     genes
         .par_iter()
         .progress_with(annonars::common::cli::progress_bar(genes.len()))

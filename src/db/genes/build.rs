@@ -11,7 +11,10 @@ use indicatif::ProgressIterator;
 use prost::Message;
 use tracing::info;
 
-use crate::{db::genes::data, pheno::prepare::VERSION};
+use crate::{
+    db::genes::data,
+    pheno::prepare::{indicatif_style, VERSION},
+};
 
 use super::data::{acmg_sf, dbnsfp_gene, gnomad_constraints, hgnc, ncbi};
 

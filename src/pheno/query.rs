@@ -17,9 +17,9 @@ use crate::pheno::prepare::VERSION;
 use crate::pheno::query::query_result::TermDetails;
 use crate::server::pheno::actix_server::hpo_sim::term_gene::SimilarityMethod;
 
-/// Command line arguments for `pheno query` sub command.
+/// Command line arguments for `server prepare-pheno` sub command.
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Perform HPO term to phenotype query", long_about = None)]
+#[command(author, version, about = "Prepare values for `server pheno`", long_about = None)]
 pub struct Args {
     /// Path to the directory with the HPO files.
     #[arg(long, required = true)]
@@ -241,15 +241,11 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let before_load_genes = Instant::now();
     let genes_json = std::fs::read_to_string(&args.path_genes_json)?;
     let genes: Vec<Gene> = serde_json::from_str(&genes_json)?;
-    let mut missing_genes = Vec::new();
     let genes = genes
         .iter()
-        .filter_map(|g| {
-            let mapped = hpo.gene_by_name(&g.gene_symbol);
-            if mapped.is_none() {
-                missing_genes.push(g.clone());
-            }
-            mapped
+        .map(|g| {
+            hpo.gene_by_name(&g.gene_symbol)
+                .unwrap_or_else(|| panic!("gene {} not found", &g.gene_symbol))
         })
         .collect::<Vec<_>>();
     info!("... done loadin genes in {:?}", before_load_genes.elapsed());

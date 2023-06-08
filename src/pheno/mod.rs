@@ -3,5 +3,4 @@
 pub mod algos;
 pub mod pbs;
 pub mod prepare;
-pub mod prune;
 pub mod query;

@@ -89,7 +89,6 @@ struct Pheno {
 #[derive(Debug, Subcommand)]
 enum PhenoCommands {
     Prepare(pheno::prepare::Args),
-    Prune(pheno::prune::Args),
     Query(pheno::query::Args),
 }
 
@@ -174,7 +173,6 @@ fn main() -> Result<(), anyhow::Error> {
             },
             Commands::Pheno(pheno) => match &pheno.command {
                 PhenoCommands::Prepare(args) => pheno::prepare::run(&cli.common, args)?,
-                PhenoCommands::Prune(args) => pheno::prune::run(&cli.common, args)?,
                 PhenoCommands::Query(args) => pheno::query::run(&cli.common, args)?,
             },
             Commands::Sv(sv) => match &sv.command {
