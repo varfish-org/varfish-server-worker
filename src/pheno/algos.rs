@@ -12,7 +12,6 @@ pub mod phenomizer {
     pub fn score(q: &HpoGroup, d: &HpoGroup, o: &Ontology) -> f32 {
         let s = Builtins::Resnik(InformationContentKind::Gene);
         let res = 0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s);
-        eprintln!("score: {}", res);
         res
     }
 
@@ -35,8 +34,6 @@ pub mod phenomizer {
                 );
             }
         }
-
-        eprintln!("tmp: {:?}", &tmp);
 
         tmp.iter().sum::<f32>() / (qs.len() as f32)
     }
