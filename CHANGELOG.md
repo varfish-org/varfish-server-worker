@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.6.1...v0.7.0) (2023-06-09)
+
+
+### Features
+
+* add "db genes query" command ([#109](https://www.github.com/bihealth/varfish-server-worker/issues/109)) ([27e995c](https://www.github.com/bihealth/varfish-server-worker/commit/27e995c9a1127f2e2fc41a5481b2ae07a3518ea7))
+* adding "pheno prune" command against all-parents annotation ([#100](https://www.github.com/bihealth/varfish-server-worker/issues/100)) ([#114](https://www.github.com/bihealth/varfish-server-worker/issues/114)) ([c77b2d4](https://www.github.com/bihealth/varfish-server-worker/commit/c77b2d4dbd2a3708368fccc1371b2f6364042440))
+* adding genes database ([#85](https://www.github.com/bihealth/varfish-server-worker/issues/85)) ([#90](https://www.github.com/bihealth/varfish-server-worker/issues/90)) ([634e281](https://www.github.com/bihealth/varfish-server-worker/commit/634e281c2528f3a6b072e36618509faa74c796e7))
+* adding sequence variant databases ([#94](https://www.github.com/bihealth/varfish-server-worker/issues/94)) ([74f985a](https://www.github.com/bihealth/varfish-server-worker/commit/74f985ae6ba945d2cda1c4d5ceab277d309ba675))
+* individual paths for "db genes build" ([#106](https://www.github.com/bihealth/varfish-server-worker/issues/106)) ([0a10a4e](https://www.github.com/bihealth/varfish-server-worker/commit/0a10a4e0f93129fe01cb9df77b80272a9652dc23))
+* move from flatbuffers to protocol buffers ([#89](https://www.github.com/bihealth/varfish-server-worker/issues/89)) ([#99](https://www.github.com/bihealth/varfish-server-worker/issues/99)) ([cff7ace](https://www.github.com/bihealth/varfish-server-worker/commit/cff7ace317d705fe46fa106ea3a56a1fe9b34457))
+* support for dbNSFP gene information ([#97](https://www.github.com/bihealth/varfish-server-worker/issues/97)) ([#102](https://www.github.com/bihealth/varfish-server-worker/issues/102)) ([0448bcb](https://www.github.com/bihealth/varfish-server-worker/commit/0448bcba3e39eca1d69c3553d711feba9e275b46))
+* use protobuf/prost for gene information storage ([#96](https://www.github.com/bihealth/varfish-server-worker/issues/96)) ([#101](https://www.github.com/bihealth/varfish-server-worker/issues/101)) ([6a97fb6](https://www.github.com/bihealth/varfish-server-worker/commit/6a97fb6c58c9800c519969c99b0373b915420e72))
+
 ### [0.6.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.6.0...v0.6.1) (2023-05-03)
 
 
