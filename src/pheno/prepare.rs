@@ -39,6 +39,13 @@ pub struct Args {
     #[arg(long, default_value_t = 10)]
     pub max_terms: usize,
 
+    /// Optional gene ID or symbol to limit to.
+    #[arg(long)]
+    pub only_gene: Option<String>,
+    /// Optional path to folder with per-gene logs.
+    #[arg(long)]
+    pub path_gene_logs: Option<String>,
+
     /// Number of threads to use for simulation (default is 1 thread per core).
     #[arg(long)]
     pub num_threads: Option<usize>,
@@ -71,17 +78,34 @@ fn run_simulation(
         .filter(|t| t.child_of(&hpo_abnormality))
         .map(|t| t.id())
         .collect::<Vec<_>>();
+
     // Get all genes into a vector so we can use parallel iteration.
-    let genes = ontology.genes().collect::<Vec<_>>();
+    let genes = {
+        let mut genes = ontology.genes().collect::<Vec<_>>();
+        if let Some(only_gene) = args.only_gene.as_ref() {
+            genes.retain(|g| {
+                g.id().to_string().as_str().eq(only_gene.as_str())
+                    || g.symbol().eq(only_gene.as_str())
+            });
+        }
+        genes
+    };
 
     // Run simulations for each gene in parallel.
     genes
         .par_iter()
         .progress_with(annonars::common::cli::progress_bar(genes.len()))
         .for_each(|gene| {
-            let mut file =
-                std::fs::File::create(&format!("foo/{}/{}.txt", num_terms, gene.symbol()))
-                    .expect("could not open file");
+            let mut log_file = if let Some(path_gene_logs) = args.path_gene_logs.as_ref() {
+                let path = std::path::Path::new(path_gene_logs).join(num_terms.to_string());
+                std::fs::create_dir_all(&path).expect("cannot create logs directory");
+                Some(
+                    std::fs::File::create(&format!("{}/{}.txt", path.display(), gene.symbol()))
+                        .expect("could not open file"),
+                )
+            } else {
+                None
+            };
 
             // Obtain sorted list of similarity scores from simulations.
             let mut scores = (0..num_simulations)
@@ -116,16 +140,23 @@ fn run_simulation(
 
                     use std::io::Write;
 
-                    writeln!(
-                        file,
-                        "{}\t{}\t{}",
-                        s,
-                        gene.symbol(),
-                        ts.iter()
-                            .map(|t| t.to_string())
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    ).expect("could not write");
+                    if let Some(log_file) = log_file.as_mut() {
+                        writeln!(
+                            log_file,
+                            "{}\t{}\t{}",
+                            s,
+                            gene.symbol(),
+                            ts.iter()
+                                .map(|t| format!(
+                                    "{} ({})",
+                                    t.to_string(),
+                                    ontology.hpo(t).unwrap().name()
+                                ))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                        .expect("could not write");
+                    }
 
                     s
                 })

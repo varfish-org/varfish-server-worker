@@ -142,6 +142,7 @@ pub fn run_query(
             .get_cf(&cf_resnik, key.as_bytes())?
             .expect("key not found");
         let res = SimulationResults::decode(&data[..])?;
+        tracing::debug!("gene = {:?}", gene);
         let score = phenomizer::score(
             patient,
             &HpoGroup::from_iter(
@@ -153,18 +154,13 @@ pub fn run_query(
             hpo,
         );
 
-        tracing::debug!("gene = {:?}", gene);
-        tracing::debug!("score = {:?}", score);
-
         let lower_bound = res.scores[..].partition_point(|x| *x < score);
         let upper_bound = res.scores[..].partition_point(|x| *x <= score);
-        tracing::debug!("scores = {:?}", res.scores);
         let idx = (lower_bound + upper_bound) / 2;
         let idx = std::cmp::min(idx, res.scores.len() - 1);
         let p = 1.0 - (idx as f64) / (res.scores.len() as f64);
         let log_p = -10.0 * p.log10();
 
-        tracing::debug!("gene = {:?}", gene);
         tracing::debug!("score = {:?}", score);
         tracing::debug!("p = {:?}", p);
 
