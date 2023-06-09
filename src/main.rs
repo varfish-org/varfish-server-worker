@@ -54,7 +54,6 @@ struct Db {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 enum DbCommands {
-    Copy(annonars::db_utils::cli::copy::Args),
     Compile(db::compile::Args),
     MkInhouse(db::mk_inhouse::Args),
     Genes(Genes),
@@ -167,9 +166,6 @@ fn main() -> Result<(), anyhow::Error> {
                         db::genes::query::run(&cli.common, args)?;
                     }
                 },
-                DbCommands::Copy(args) => {
-                    annonars::db_utils::cli::copy::run(&annonars_common, args)?
-                }
             },
             Commands::Pheno(pheno) => match &pheno.command {
                 PhenoCommands::Prepare(args) => pheno::prepare::run(&cli.common, args)?,
