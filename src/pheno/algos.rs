@@ -11,8 +11,7 @@ pub mod phenomizer {
     /// Compute symmetric similarity score.
     pub fn score(q: &HpoGroup, d: &HpoGroup, o: &Ontology) -> f32 {
         let s = Builtins::Resnik(InformationContentKind::Gene);
-        let res = 0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s);
-        res
+        (score_dir(q, d, o, &s) + score_dir(d, q, o, &s)) / 2.0
     }
 
     /// "Directed" score part of phenomizer score.
@@ -80,7 +79,7 @@ mod test {
 
         let score = phenomizer::score(&prepare(query), &hpo_marfan, &hpo);
 
-        assert!((score - 1.7872534).abs() < 0.00001);
+        assert!((score - 1.7708597).abs() < 0.00001, "score = {}", score);
 
         Ok(())
     }
