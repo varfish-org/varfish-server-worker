@@ -142,7 +142,17 @@ pub fn run_query(
             .get_cf(&cf_resnik, key.as_bytes())?
             .expect("key not found");
         let res = SimulationResults::decode(&data[..])?;
-        let score = phenomizer::score(patient, gene.hpo_terms(), hpo);
+        tracing::debug!("gene = {:?}", gene);
+        let score = phenomizer::score(
+            patient,
+            &HpoGroup::from_iter(
+                gene.to_hpo_set(hpo)
+                    .child_nodes()
+                    .without_modifier()
+                    .into_iter(),
+            ),
+            hpo,
+        );
 
         let lower_bound = res.scores[..].partition_point(|x| *x < score);
         let upper_bound = res.scores[..].partition_point(|x| *x <= score);
@@ -151,44 +161,51 @@ pub fn run_query(
         let p = 1.0 - (idx as f64) / (res.scores.len() as f64);
         let log_p = -10.0 * p.log10();
 
+        tracing::debug!("score = {:?}", score);
+        tracing::debug!("p = {:?}", p);
+
         // For each term in the gene, provide query term with the highest similarity.
-        let mut terms = gene
-            .hpo_terms()
-            .iter()
-            .map(|gene_term_id| {
-                let gene_term = hpo.hpo(gene_term_id).expect("gene HPO term not found");
-                let (best_term, best_score) = patient
-                    .iter()
-                    .map(|query_term_id| {
-                        let query_term = hpo.hpo(query_term_id).expect("query HPO term not found");
-                        let score = gene_term.similarity_score(
-                            &query_term,
-                            &Builtins::Resnik(hpo::term::InformationContentKind::Gene),
-                        );
-                        (query_term, score)
-                    })
-                    .max_by(|(_, score1), (_, score2)| score1.partial_cmp(score2).unwrap())
-                    .expect("could not determine best query term");
+        let mut terms = HpoGroup::from_iter(
+            gene.to_hpo_set(hpo)
+                .child_nodes()
+                .without_modifier()
+                .into_iter(),
+        )
+        .iter()
+        .map(|gene_term_id| {
+            let gene_term = hpo.hpo(gene_term_id).expect("gene HPO term not found");
+            let (best_term, best_score) = patient
+                .iter()
+                .map(|query_term_id| {
+                    let query_term = hpo.hpo(query_term_id).expect("query HPO term not found");
+                    let score = gene_term.similarity_score(
+                        &query_term,
+                        &Builtins::Resnik(hpo::term::InformationContentKind::Gene),
+                    );
+                    (query_term, score)
+                })
+                .max_by(|(_, score1), (_, score2)| score1.partial_cmp(score2).unwrap())
+                .expect("could not determine best query term");
 
-                let term_query = if best_score > 0.0 {
-                    Some(HpoTerm {
-                        term_id: best_term.id().to_string(),
-                        term_name: Some(best_term.name().to_string()),
-                    })
-                } else {
-                    None
-                };
+            let term_query = if best_score > 0.0 {
+                Some(HpoTerm {
+                    term_id: best_term.id().to_string(),
+                    term_name: Some(best_term.name().to_string()),
+                })
+            } else {
+                None
+            };
 
-                TermDetails {
-                    term_query,
-                    term_gene: HpoTerm {
-                        term_id: gene_term.id().to_string(),
-                        term_name: Some(gene_term.name().to_string()),
-                    },
-                    score: best_score,
-                }
-            })
-            .collect::<Vec<_>>();
+            TermDetails {
+                term_query,
+                term_gene: HpoTerm {
+                    term_id: gene_term.id().to_string(),
+                    term_name: Some(gene_term.name().to_string()),
+                },
+                score: best_score,
+            }
+        })
+        .collect::<Vec<_>>();
         terms.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 
         result.result.push(query_result::Record {
@@ -241,11 +258,15 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let before_load_genes = Instant::now();
     let genes_json = std::fs::read_to_string(&args.path_genes_json)?;
     let genes: Vec<Gene> = serde_json::from_str(&genes_json)?;
+    let mut missing_genes = Vec::new();
     let genes = genes
         .iter()
-        .map(|g| {
-            hpo.gene_by_name(&g.gene_symbol)
-                .unwrap_or_else(|| panic!("gene {} not found", &g.gene_symbol))
+        .filter_map(|g| {
+            let mapped = hpo.gene_by_name(&g.gene_symbol);
+            if mapped.is_none() {
+                missing_genes.push(g.clone());
+            }
+            mapped
         })
         .collect::<Vec<_>>();
     info!("... done loadin genes in {:?}", before_load_genes.elapsed());

@@ -11,7 +11,7 @@ pub mod phenomizer {
     /// Compute symmetric similarity score.
     pub fn score(q: &HpoGroup, d: &HpoGroup, o: &Ontology) -> f32 {
         let s = Builtins::Resnik(InformationContentKind::Gene);
-        0.5 * score_dir(q, d, o, &s) + 0.5 * score_dir(d, q, o, &s)
+        (score_dir(q, d, o, &s) + score_dir(d, q, o, &s)) / 2.0
     }
 
     /// "Directed" score part of phenomizer score.
@@ -69,11 +69,17 @@ mod test {
         let omim_marfan = hpo
             .omim_disease(&OmimDiseaseId::from(154700))
             .expect("marfan symdrome must be in HPO");
-        let hpo_marfan = omim_marfan.hpo_terms();
+        let hpo_marfan = HpoGroup::from_iter(
+            omim_marfan
+                .to_hpo_set(&hpo)
+                .child_nodes()
+                .without_modifier()
+                .into_iter(),
+        );
 
-        let score = phenomizer::score(&prepare(query), hpo_marfan, &hpo);
+        let score = phenomizer::score(&prepare(query), &hpo_marfan, &hpo);
 
-        assert!((score - 1.7872534).abs() < 0.00001);
+        assert!((score - 1.7708597).abs() < 0.00001, "score = {}", score);
 
         Ok(())
     }
