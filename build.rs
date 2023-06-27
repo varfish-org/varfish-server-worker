@@ -2,8 +2,6 @@
 
 fn main() {
     println!("cargo:rerun-if-changed=varfish/v1/clinvar.proto");
-    println!("cargo:rerun-if-changed=varfish/v1/gene.proto");
-    println!("cargo:rerun-if-changed=varfish/v1/pheno.proto");
     println!("cargo:rerun-if-changed=varfish/v1/sv.proto");
     prost_build::Config::new()
         .protoc_arg("-Isrc/proto")
@@ -13,12 +11,7 @@ fn main() {
         .type_attribute(".", "#[serde_with::skip_serializing_none]")
         // Define the protobuf files to compile.
         .compile_protos(
-            &[
-                "varfish/v1/clinvar.proto",
-                "varfish/v1/gene.proto",
-                "varfish/v1/pheno.proto",
-                "varfish/v1/sv.proto",
-            ],
+            &["varfish/v1/clinvar.proto", "varfish/v1/sv.proto"],
             &["src/"],
         )
         .unwrap();

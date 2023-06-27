@@ -14,10 +14,8 @@ rust-version = "1.64.0"
 [dependencies]
 actix-files = "0.6"
 actix-web = "4.3"
-annonars = "0.8"
 anyhow = { version = "1.0", features = ["backtrace"] }
 base16ct = "0.2"
-bgzip = "0.3"
 bio = "1.1"
 byte-unit = "4.0"
 chrono = { version = "0.4", features = ["serde"] }
@@ -31,33 +29,23 @@ env_logger = "0.10"
 fastrand = "1.9"
 flate2 = "1.0"
 hgvs = "0.8"
-hpo = "0.8"
 indexmap = { version = "1.9", features = ["serde"] }
-indicatif = { version = "0.17", features = ["rayon"] }
 itertools = "0.10"
 lazy_static = "1.4"
-linked-hash-map = { version = "0.5", features = ["serde", "serde_impl"] }
 log = "0.4"
 md-5 = "0.10"
 multimap = "0.9"
-noodles-bgzf = "0.22"
-noodles-core = "0.11"
-noodles-csi = "0.19"
-noodles-tabix = "0.22"
-noodles-vcf = "0.31"
 procfs = "0.15"
 prost = "0.11"
-rayon = "1.7"
 regex = "1.7"
 result = "1.0"
-rocksdb = { version = "0.21", features = ["multi-threaded-cf"] }
 serde_json = "1.0"
 serde-jsonlines = "0.4"
 serde = { version = "1.0", features = ["serde_derive"] }
 serde_with = "3.0"
 sha2 = "0.10"
 shellexpand = "3.0"
-strum = "0.24"
+strum = { version = "0.24", features = ["derive"] }
 strum_macros = "0.24"
 tempdir = "0.3"
 thiserror = "1.0"
