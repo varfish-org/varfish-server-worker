@@ -2,7 +2,6 @@
 
 pub mod common;
 pub mod db;
-pub mod pheno;
 pub mod server;
 pub mod sv;
 
@@ -34,8 +33,6 @@ enum Commands {
     /// Database-related commands.
     Db(Db),
     /// Phenotype-related commands.
-    Pheno(Pheno),
-    /// SV related commands.
     Sv(Sv),
     /// Server related commands.
     Server(Server),
@@ -56,39 +53,6 @@ struct Db {
 enum DbCommands {
     Compile(db::compile::Args),
     MkInhouse(db::mk_inhouse::Args),
-    Genes(Genes),
-}
-
-/// Parsing of "db genes *" sub commands.
-#[derive(Debug, Args)]
-#[command(args_conflicts_with_subcommands = true)]
-struct Genes {
-    /// The sub command to run
-    #[command(subcommand)]
-    command: GenesCommands,
-}
-
-/// Enum supporting the parsing of "db genes *" sub commands.
-#[derive(Debug, Subcommand)]
-enum GenesCommands {
-    Build(db::genes::build::Args),
-    Query(db::genes::query::Args),
-}
-
-/// Parsing of "pheno *" sub commands.
-#[derive(Debug, Args)]
-#[command(args_conflicts_with_subcommands = true)]
-struct Pheno {
-    /// The sub command to run
-    #[command(subcommand)]
-    command: PhenoCommands,
-}
-
-/// Enum supporting the parsing of "db *" sub commands.
-#[derive(Debug, Subcommand)]
-enum PhenoCommands {
-    Prepare(pheno::prepare::Args),
-    Query(pheno::query::Args),
 }
 
 /// Parsing of "sv *" sub commands.
@@ -109,10 +73,7 @@ enum SvCommands {
 /// Enum supporting the parsing of "server *" sub commands.
 #[derive(Debug, Subcommand)]
 enum ServerCommands {
-    Annos(server::annos::Args),
-    Genes(server::genes::Args),
     Rest(server::rest::Args),
-    Pheno(server::pheno::Args),
 }
 /// Parsing of "sv *" sub commands.
 #[derive(Debug, Args)]
@@ -142,11 +103,6 @@ fn main() -> Result<(), anyhow::Error> {
         .compact()
         .finish();
 
-    // Common variables for CLI commands from annonars.
-    let annonars_common = annonars::common::cli::Args {
-        verbose: cli.common.verbose.clone(),
-    };
-
     // Install collector and go into sub commands.
     let term = Term::stderr();
     tracing::subscriber::with_default(collector, || {
@@ -158,18 +114,6 @@ fn main() -> Result<(), anyhow::Error> {
                 DbCommands::MkInhouse(args) => {
                     db::mk_inhouse::run(&cli.common, args)?;
                 }
-                DbCommands::Genes(args) => match &args.command {
-                    GenesCommands::Build(args) => {
-                        db::genes::build::run(&cli.common, args)?;
-                    }
-                    GenesCommands::Query(args) => {
-                        db::genes::query::run(&cli.common, args)?;
-                    }
-                },
-            },
-            Commands::Pheno(pheno) => match &pheno.command {
-                PhenoCommands::Prepare(args) => pheno::prepare::run(&cli.common, args)?,
-                PhenoCommands::Query(args) => pheno::query::run(&cli.common, args)?,
             },
             Commands::Sv(sv) => match &sv.command {
                 SvCommands::Query(args) => {
@@ -177,10 +121,7 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             },
             Commands::Server(server) => match &server.command {
-                ServerCommands::Annos(args) => server::annos::run(&cli.common, args)?,
-                ServerCommands::Genes(args) => server::genes::run(&cli.common, args)?,
                 ServerCommands::Rest(args) => server::rest::run(&cli.common, args)?,
-                ServerCommands::Pheno(args) => server::pheno::run(&cli.common, args)?,
             },
         }
 
