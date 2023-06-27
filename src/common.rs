@@ -345,6 +345,3 @@ mod tests {
         Ok(())
     }
 }
-
-/// The version of `varfish-server-worker` package.
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
