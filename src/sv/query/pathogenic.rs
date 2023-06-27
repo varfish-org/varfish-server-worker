@@ -4,7 +4,7 @@ use std::{collections::HashMap, path::Path};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use serde::Serialize;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 use crate::{
     common::{build_chrom_map, open_read_maybe_gz, CHROMS},
@@ -125,7 +125,7 @@ mod input {
 
 #[tracing::instrument]
 fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
-    debug!("loading pathogenic SV records from {:?}...", path);
+    tracing::debug!("loading pathogenic SV records from {:?}...", path);
     let chrom_map = build_chrom_map();
 
     let mut result = PathoDb::default();
@@ -158,7 +158,7 @@ fn load_patho_db_records(path: &Path) -> Result<PathoDb, anyhow::Error> {
         total_count += 1;
     }
     result.trees.iter_mut().for_each(|tree| tree.index());
-    debug!(
+    tracing::debug!(
         "... done loading {} records and building trees",
         total_count
     );

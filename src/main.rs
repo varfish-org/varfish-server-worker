@@ -32,9 +32,9 @@ struct Cli {
 enum Commands {
     /// Database-related commands.
     Db(Db),
-    /// Phenotype-related commands.
+    /// SV filtration related commands.
     Sv(Sv),
-    /// Server related commands.
+    /// Server-related commands.
     Server(Server),
 }
 
@@ -51,8 +51,8 @@ struct Db {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 enum DbCommands {
-    Compile(db::compile::Args),
-    MkInhouse(db::mk_inhouse::Args),
+    ToBin(db::to_bin::cli::Args),
+    MkInhouse(db::mk_inhouse::cli::Args),
 }
 
 /// Parsing of "sv *" sub commands.
@@ -108,11 +108,11 @@ fn main() -> Result<(), anyhow::Error> {
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
             Commands::Db(db) => match &db.command {
-                DbCommands::Compile(args) => {
-                    db::compile::run(&cli.common, args)?;
-                }
                 DbCommands::MkInhouse(args) => {
-                    db::mk_inhouse::run(&cli.common, args)?;
+                    db::mk_inhouse::cli::run(&cli.common, args)?;
+                }
+                DbCommands::ToBin(args) => {
+                    db::to_bin::cli::run(&cli.common, args)?;
                 }
             },
             Commands::Sv(sv) => match &sv.command {

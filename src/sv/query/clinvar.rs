@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use prost::Message;
 use thousands::Separable;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 use crate::{
     common::{reciprocal_overlap, CHROMS},
@@ -123,7 +123,7 @@ pub fn load_clinvar_sv(path_db: &str, conf: &StrucVarDbs) -> Result<ClinvarSv, a
         result.records[chrom_no].push(record);
         total_count += 1;
     }
-    debug!(
+    tracing::debug!(
         "done loading {} clinvar SV records from {:?} in {:?}",
         &total_count.separate_with_commas(),
         &path,
@@ -132,7 +132,7 @@ pub fn load_clinvar_sv(path_db: &str, conf: &StrucVarDbs) -> Result<ClinvarSv, a
 
     let before_building = std::time::Instant::now();
     result.trees.iter_mut().for_each(|tree| tree.index());
-    debug!("done building itrees in {:?}", before_building.elapsed());
+    tracing::debug!("done building itrees in {:?}", before_building.elapsed());
 
     Ok(result)
 }

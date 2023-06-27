@@ -28,10 +28,7 @@ use uuid::Uuid;
 
 use crate::{
     common::{build_chrom_map, numeric_gene_id, open_read_maybe_gz, trace_rss_now},
-    db::{
-        compile::ArgGenomeRelease,
-        conf::{Database, GenomeRelease, TadSet as TadSetChoice, Top},
-    },
+    db::conf::{Database, GenomeRelease, TadSet as TadSetChoice, Top},
     sv::query::{
         bgdbs::load_bg_dbs, clinvar::load_clinvar_sv, genes::load_gene_db,
         interpreter::QueryInterpreter, masked::load_masked_dbs, pathogenic::load_patho_dbs,
@@ -55,8 +52,8 @@ use self::{
 #[command(author, version, about = "Run query for SVs", long_about = None)]
 pub struct Args {
     /// Genome release to assume.
-    #[arg(long, value_enum, default_value_t = ArgGenomeRelease::Grch37)]
-    pub genome_release: ArgGenomeRelease,
+    #[arg(long, value_enum, default_value_t = GenomeRelease::Grch37)]
+    pub genome_release: GenomeRelease,
     /// Path to database to use for querying.
     #[arg(long, required = true)]
     pub path_db: String,
@@ -213,10 +210,7 @@ fn run_query(
     db_conf: &Top,
     dbs: &Databases,
 ) -> Result<QueryStats, anyhow::Error> {
-    let gr = match args.genome_release {
-        ArgGenomeRelease::Grch37 => GenomeRelease::Grch37,
-        ArgGenomeRelease::Grch38 => GenomeRelease::Grch38,
-    };
+    let gr = args.genome_release;
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
 
@@ -494,10 +488,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     info!("Loading databases...");
     let before_loading = Instant::now();
     let db_conf = load_db_conf(args)?;
-    let gr = match args.genome_release {
-        ArgGenomeRelease::Grch37 => GenomeRelease::Grch37,
-        ArgGenomeRelease::Grch38 => GenomeRelease::Grch38,
-    };
+    let gr = args.genome_release;
     let dbs = Databases {
         bg_dbs: load_bg_dbs(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
         patho_dbs: load_patho_dbs(&args.path_db, &db_conf.vardbs[gr].strucvar)?,
