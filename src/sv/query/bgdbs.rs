@@ -10,7 +10,7 @@ use tracing::info;
 
 use crate::{
     common::{trace_rss_now, CHROMS},
-    db::{conf::StrucVarDbs, pbs},
+    db::{conf::GenomeRelease, pbs},
 };
 
 use super::{
@@ -148,6 +148,7 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
     let bg_db = pbs::BackgroundDatabase::decode(std::io::Cursor::new(fcontents))
         .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
+    let record_count = bg_db.records.len();
 
     for record in bg_db.records.into_iter() {
         let chrom_no = record.chrom_no as usize;
@@ -177,7 +178,8 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         });
     }
     tracing::debug!(
-        "done loading background dbs from {:?} in {:?}",
+        "done loading background db with {} records from {:?} in {:?}",
+        record_count,
         path,
         before_loading.elapsed()
     );
@@ -334,88 +336,49 @@ impl BgDbBundle {
 
 // Load all background databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_bg_dbs(path_db: &str, conf: &StrucVarDbs) -> Result<BgDbBundle, anyhow::Error> {
-    use result::prelude::*;
-
+pub fn load_bg_dbs(
+    path_db: &str,
+    genome_release: GenomeRelease,
+) -> Result<BgDbBundle, anyhow::Error> {
     info!("Loading background dbs");
+
+    let path_exac = Path::new(path_db).join(format!("{}/strucvars/bgdbs/exac.bin", genome_release));
+    let path_g1k = Path::new(path_db).join(format!("{}/strucvars/bgdbs/g1k.bin", genome_release));
+    let path_inhouse = Path::new(path_db).join(format!("{}/strucvars/inhouse.bin", genome_release));
+
     let result = BgDbBundle {
         gnomad: load_bg_db_records(
             Path::new(path_db)
-                .join(
-                    conf.gnomad_sv
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for gnomAD-SV"),
-                )
+                .join(format!("{}/strucvars/bgdbs/gnomad.bin", genome_release))
                 .as_path(),
         )?,
         dbvar: load_bg_db_records(
             Path::new(path_db)
-                .join(
-                    conf.dbvar
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for dbVar"),
-                )
+                .join(format!("{}/strucvars/bgdbs/dbvar.bin", genome_release))
                 .as_path(),
         )?,
         dgv: load_bg_db_records(
             Path::new(path_db)
-                .join(conf.dgv.bin_path.as_ref().expect("no binary path for DGV"))
+                .join(format!("{}/strucvars/bgdbs/dgv.bin", genome_release))
                 .as_path(),
         )?,
         dgv_gs: load_bg_db_records(
             Path::new(path_db)
-                .join(
-                    conf.dgv_gs
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for DGV GS"),
-                )
+                .join(format!("{}/strucvars/bgdbs/dgv-gs.bin", genome_release))
                 .as_path(),
         )?,
-        exac: conf
-            .exac
-            .as_ref()
-            .map(|exac| {
-                load_bg_db_records(
-                    Path::new(path_db)
-                        .join(exac.bin_path.as_ref().expect("no binary path for ExAC CNV"))
-                        .as_path(),
-                )
-            })
-            .invert()?,
-        g1k: conf
-            .g1k
-            .as_ref()
-            .map(|g1k| {
-                load_bg_db_records(
-                    Path::new(path_db)
-                        .join(
-                            g1k.bin_path
-                                .as_ref()
-                                .expect("no binary path for Thousand Genomes SV"),
-                        )
-                        .as_path(),
-                )
-            })
-            .invert()?,
-        inhouse: conf
-            .inhouse
-            .as_ref()
-            .map(|inhouse| {
-                load_bg_db_records(
-                    Path::new(path_db)
-                        .join(
-                            inhouse
-                                .bin_path
-                                .as_ref()
-                                .expect("no binary path for in-house SV DB?"),
-                        )
-                        .as_path(),
-                )
-            })
-            .invert()?,
+        exac: path_exac
+            .exists()
+            .then(|| load_bg_db_records(path_exac.as_path()))
+            .transpose()?,
+        g1k: path_g1k
+            .exists()
+            .then(|| load_bg_db_records(path_g1k.as_path()))
+            .transpose()?,
+        inhouse: path_inhouse
+            .exists()
+            .then(|| load_bg_db_records(path_inhouse.as_path()))
+            .transpose()?,
     };
 
     Ok(result)

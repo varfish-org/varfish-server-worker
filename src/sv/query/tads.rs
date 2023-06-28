@@ -7,7 +7,7 @@ use tracing::info;
 
 use crate::{
     common::{build_chrom_map, open_read_maybe_gz, CHROMS},
-    db::conf::{FeatureDbs, TadSet as TadSetChoice},
+    db::conf::{GenomeRelease, TadSet as TadSetChoice},
 };
 
 use super::{
@@ -308,14 +308,18 @@ fn load_tad_sets(path: &Path, boundary_max_dist: i32) -> Result<TadSet, anyhow::
 
 // Load all pathogenic SV databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_tads(path_db: &str, conf: &FeatureDbs) -> Result<TadSetBundle, anyhow::Error> {
+pub fn load_tads(
+    path_db: &str,
+    genome_release: GenomeRelease,
+    max_tad_distance: i32,
+) -> Result<TadSetBundle, anyhow::Error> {
     info!("Loading TAD sets dbs");
     let result = TadSetBundle {
         hesc: load_tad_sets(
             Path::new(path_db)
-                .join(&conf.tads[TadSetChoice::Hesc].path)
+                .join(format!("{}/tads/hesc.bed", genome_release))
                 .as_path(),
-            conf.max_dist,
+            max_tad_distance,
         )?,
     };
 
