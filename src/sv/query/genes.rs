@@ -5,7 +5,7 @@ use std::{collections::HashSet, ops::Range, path::Path, time::Instant};
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use prost::Message;
 use serde::Deserialize;
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::{
     common::{open_read_maybe_gz, CHROMS},
@@ -51,7 +51,7 @@ impl GeneRegionDb {
 
 #[tracing::instrument]
 fn load_gene_regions_db(path: &Path) -> Result<GeneRegionDb, anyhow::Error> {
-    debug!("loading binary gene region records from {:?}...", path);
+    tracing::debug!("loading binary gene region records from {:?}...", path);
 
     let before_loading = Instant::now();
     let mut result = GeneRegionDb::default();
@@ -79,7 +79,7 @@ fn load_gene_regions_db(path: &Path) -> Result<GeneRegionDb, anyhow::Error> {
         total_count += 1;
     }
     result.trees.iter_mut().for_each(|tree| tree.index());
-    debug!(
+    tracing::debug!(
         "... done loading {} records and building trees in {:?}",
         total_count,
         before_loading.elapsed(),
@@ -146,7 +146,7 @@ impl XlinkDb {
 
 #[tracing::instrument]
 fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
-    debug!("loading binary xlink records from {:?}...", path);
+    tracing::debug!("loading binary xlink records from {:?}...", path);
 
     let before_loading = Instant::now();
     let mut result = XlinkDb::default();
@@ -171,7 +171,7 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
         });
         total_count += 1;
     }
-    debug!(
+    tracing::debug!(
         "... done loading {} records and building maps in {:?}",
         total_count,
         before_loading.elapsed(),
@@ -188,6 +188,7 @@ pub struct AcmgRecord {
     /// ENSEMBL gene ID.
     pub ensembl_gene_id: String,
     /// Entrez / NCBI gene ID.
+    #[serde(alias = "ncbi_gene_id")]
     pub entrez_id: u32,
 }
 
@@ -199,7 +200,7 @@ pub struct AcmgDb {
 
 #[tracing::instrument]
 fn load_acmg_db(path: &Path) -> Result<AcmgDb, anyhow::Error> {
-    debug!("loading ACMG TSV records from {:?}...", path);
+    tracing::debug!("loading ACMG TSV records from {:?}...", path);
 
     let before_loading = Instant::now();
     let mut result = AcmgDb::default();
@@ -216,7 +217,7 @@ fn load_acmg_db(path: &Path) -> Result<AcmgDb, anyhow::Error> {
         result.entrez_ids.insert(record.entrez_id);
         total_count += 1;
     }
-    debug!(
+    tracing::debug!(
         "... done loading {} records in {:?}",
         total_count,
         before_loading.elapsed(),
@@ -254,7 +255,7 @@ impl OmimDb {
 
 #[tracing::instrument]
 fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
-    debug!("loading OMIM TSV records from {:?}...", path);
+    tracing::debug!("loading OMIM TSV records from {:?}...", path);
 
     let before_loading = Instant::now();
     let mut result = OmimDb::default();
@@ -269,7 +270,7 @@ fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
         result.entrez_ids.insert(record.entrez_id);
         total_count += 1;
     }
-    debug!(
+    tracing::debug!(
         "... done loading {} records in {:?}",
         total_count,
         before_loading.elapsed(),

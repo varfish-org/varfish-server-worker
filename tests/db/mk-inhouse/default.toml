@@ -29,9 +29,6 @@ path = ""
 [features.grch37.tads.hesc]
 path = ""
 
-[features.grch37.tads.imr90]
-path = ""
-
 [features.grch37.masked.repeat]
 path = ""
 
@@ -48,9 +45,6 @@ path = ""
 path = ""
 
 [features.grch38.tads.hesc]
-path = ""
-
-[features.grch38.tads.imr90]
 path = ""
 
 [features.grch38.masked.repeat]

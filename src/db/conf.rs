@@ -1,11 +1,14 @@
 //! Code for supporting the database configuration (description) file.
 
+use clap::ValueEnum;
 use enum_map::{Enum, EnumMap};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
 
 /// Enum for the supported genome releases.
-#[derive(Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default, EnumString)]
+#[derive(
+    Serialize, Deserialize, Enum, PartialEq, Eq, Clone, Copy, Debug, Default, EnumString, ValueEnum,
+)]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum GenomeRelease {
@@ -36,8 +39,6 @@ pub enum TadSet {
     /// hESC
     #[default]
     Hesc,
-    /// IMR90
-    Imr90,
 }
 
 /// Enum for the supported gene ID cross-link tables.

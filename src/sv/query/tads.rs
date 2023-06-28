@@ -3,7 +3,7 @@
 use std::{collections::HashMap, path::Path};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::{
     common::{build_chrom_map, open_read_maybe_gz, CHROMS},
@@ -183,7 +183,6 @@ impl TadSet {
 #[derive(Default, Debug)]
 pub struct TadSetBundle {
     pub hesc: TadSet,
-    pub imr90: TadSet,
 }
 
 impl TadSetBundle {
@@ -195,7 +194,6 @@ impl TadSetBundle {
     ) -> Vec<Record> {
         match tad_set {
             TadSetChoice::Hesc => self.hesc.fetch_tads(chrom_range, chrom_map),
-            TadSetChoice::Imr90 => self.imr90.fetch_tads(chrom_range, chrom_map),
         }
     }
 
@@ -207,7 +205,6 @@ impl TadSetBundle {
     ) -> Vec<Record> {
         match tad_set {
             TadSetChoice::Hesc => self.hesc.overlapping_tads(sv, chrom_map),
-            TadSetChoice::Imr90 => self.imr90.overlapping_tads(sv, chrom_map),
         }
     }
 
@@ -219,7 +216,6 @@ impl TadSetBundle {
     ) -> Option<u32> {
         match tad_set {
             TadSetChoice::Hesc => self.hesc.boundary_dist(sv, chrom_map),
-            TadSetChoice::Imr90 => self.imr90.boundary_dist(sv, chrom_map),
         }
     }
 }
@@ -241,7 +237,7 @@ mod input {
 
 #[tracing::instrument]
 fn load_tad_sets(path: &Path, boundary_max_dist: i32) -> Result<TadSet, anyhow::Error> {
-    debug!("loading TAD set records from {:?}...", path);
+    tracing::debug!("loading TAD set records from {:?}...", path);
     let chrom_map = build_chrom_map();
 
     let mut result = TadSet {
@@ -302,7 +298,7 @@ fn load_tad_sets(path: &Path, boundary_max_dist: i32) -> Result<TadSet, anyhow::
         .boundaries_trees
         .iter_mut()
         .for_each(|tree| tree.index());
-    debug!(
+    tracing::debug!(
         "... done loading {} records and building trees",
         total_count
     );
@@ -318,12 +314,6 @@ pub fn load_tads(path_db: &str, conf: &FeatureDbs) -> Result<TadSetBundle, anyho
         hesc: load_tad_sets(
             Path::new(path_db)
                 .join(&conf.tads[TadSetChoice::Hesc].path)
-                .as_path(),
-            conf.max_dist,
-        )?,
-        imr90: load_tad_sets(
-            Path::new(path_db)
-                .join(&conf.tads[TadSetChoice::Imr90].path)
                 .as_path(),
             conf.max_dist,
         )?,

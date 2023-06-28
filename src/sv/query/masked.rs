@@ -5,7 +5,7 @@ use std::{collections::HashMap, path::Path, time::Instant};
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use prost::Message;
 use serde::Serialize;
-use tracing::{debug, info};
+use tracing::info;
 
 use crate::{
     common::{trace_rss_now, CHROMS},
@@ -111,7 +111,7 @@ impl BeginEnd for MaskedDbRecord {
 /// Load background database from a `.bin` file as created by `sv convert-bgdb`.
 #[tracing::instrument]
 pub fn load_masked_db_records(path: &Path) -> Result<MaskedDb, anyhow::Error> {
-    debug!("loading binary masked db records from {:?}", path);
+    tracing::debug!("loading binary masked db records from {:?}", path);
 
     let before_loading = Instant::now();
     let mut result = MaskedDb::default();
@@ -134,7 +134,7 @@ pub fn load_masked_db_records(path: &Path) -> Result<MaskedDb, anyhow::Error> {
             end: record.stop,
         });
     }
-    debug!(
+    tracing::debug!(
         "done loading masked dbs from {:?} in {:?}",
         path,
         before_loading.elapsed()
@@ -142,7 +142,7 @@ pub fn load_masked_db_records(path: &Path) -> Result<MaskedDb, anyhow::Error> {
 
     let before_building = Instant::now();
     result.trees.iter_mut().for_each(|tree| tree.index());
-    debug!("done building itrees in {:?}", before_building.elapsed());
+    tracing::debug!("done building itrees in {:?}", before_building.elapsed());
 
     trace_rss_now();
 

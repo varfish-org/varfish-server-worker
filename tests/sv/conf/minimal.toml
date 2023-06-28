@@ -30,9 +30,6 @@ path = 'pathogenic/mms_wetzel_danbro.bed'
 [tads.hesc]
 path = 'tads/hesc.bed'
 
-[tads.imr90]
-path = 'tads/imr90.bed'
-
 [regulatory.ensembl]
 path = 'regulatory/ensembl.bin'
 

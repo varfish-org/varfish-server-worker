@@ -14,9 +14,6 @@ use clap_verbosity_flag::{InfoLevel, Verbosity};
 use clap::Parser;
 use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
 use hgvs::static_data::Assembly;
-use md5::{Digest, Md5};
-use sha2::Sha256;
-use tracing::{debug, trace};
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
@@ -30,21 +27,10 @@ pub struct Args {
 pub fn trace_rss_now() {
     let me = procfs::process::Process::myself().unwrap();
     let page_size = procfs::page_size();
-    debug!(
+    tracing::debug!(
         "RSS now: {}",
         Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
     );
-}
-
-/// Helper to print the current memory resident set size to a `Term`.
-pub fn print_rss_now(term: &console::Term) -> Result<(), anyhow::Error> {
-    let me = procfs::process::Process::myself().unwrap();
-    let page_size = procfs::page_size();
-    term.write_line(&format!(
-        "RSS now: {}",
-        Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
-    ))?;
-    Ok(())
 }
 
 /// Definition of canonical chromosome names.
@@ -79,13 +65,13 @@ where
     P: AsRef<Path>,
 {
     if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
-        trace!("Opening {:?} as gzip for reading", path.as_ref());
+        tracing::trace!("Opening {:?} as gzip for reading", path.as_ref());
         let file = File::open(path)?;
         let bufreader = BufReader::new(file);
         let decoder = MultiGzDecoder::new(bufreader);
         Ok(Box::new(decoder))
     } else {
-        trace!("Opening {:?} as plain text for reading", path.as_ref());
+        tracing::trace!("Opening {:?} as plain text for reading", path.as_ref());
         let file = File::open(path)?;
         Ok(Box::new(file))
     }
@@ -97,14 +83,14 @@ where
     P: AsRef<Path>,
 {
     if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
-        trace!("Opening {:?} as gzip for writing", path.as_ref());
+        tracing::trace!("Opening {:?} as gzip for writing", path.as_ref());
         let file = File::create(path)?;
         let bufwriter = BufWriter::new(file);
         let encoder = GzEncoder::new(bufwriter, Compression::default());
         Ok(Box::new(encoder))
     } else {
-        trace!("Opening {:?} as plain text for writing", path.as_ref());
-        let file = File::open(path)?;
+        tracing::trace!("Opening {:?} as plain text for writing", path.as_ref());
+        let file = File::create(path)?;
         Ok(Box::new(file))
     }
 }
@@ -125,65 +111,6 @@ pub fn reciprocal_overlap(lhs: Range<i32>, rhs: Range<i32>) -> f32 {
         let x2 = ovl_len / (rhs_e - rhs_b) as f32;
         x1.min(x2)
     }
-}
-
-/// Compute SHA256 sum for file at `path`.
-pub fn sha256sum<P>(path: P) -> Result<String, anyhow::Error>
-where
-    P: AsRef<Path> + std::fmt::Debug,
-{
-    debug!("Computing SHA256 checksum for {:?}", &path);
-
-    let mut file = std::fs::File::open(path)?;
-    let mut hasher = Sha256::new();
-    let _n = std::io::copy(&mut file, &mut hasher)?;
-    let hash = hasher.finalize();
-    let mut buf = [0u8; 64];
-    let checksum = base16ct::lower::encode_str(&hash, &mut buf).unwrap();
-    debug!(" SHA256 = {}", &checksum);
-    Ok(checksum.to_owned())
-}
-
-/// Compute MD5 sum for file at `path`.
-pub fn md5sum<P>(path: P) -> Result<String, anyhow::Error>
-where
-    P: AsRef<Path> + std::fmt::Debug,
-{
-    debug!("Computing MD5 checksum for {:?}", &path);
-    let mut file = std::fs::File::open(path)?;
-    let mut hasher = Md5::new();
-    const BUF_LEN: usize = 65_536;
-    let mut _bytes_read = 0;
-    let mut buffer = [0; BUF_LEN];
-
-    loop {
-        let n = file.read(&mut buffer)?;
-        hasher.update(&buffer[..n]);
-        _bytes_read += n;
-        if n != BUF_LEN {
-            break;
-        }
-    }
-    let hash = hasher.finalize();
-    let mut buf = [0u8; 64];
-    let checksum = base16ct::lower::encode_str(&hash, &mut buf).unwrap();
-
-    debug!(" MD5 = {}", &checksum);
-    Ok(checksum.to_owned())
-}
-
-/// Read .md5 file and return String representation of result.
-pub fn read_md5_file<P>(path: P) -> Result<String, anyhow::Error>
-where
-    P: AsRef<Path> + std::fmt::Debug,
-{
-    let fcontents = std::fs::read_to_string(&path)
-        .map_err(|e| anyhow::anyhow!("Could not open .md5 file {:?}: {}", &path, e))?;
-    let md5_str = fcontents
-        .split_whitespace()
-        .next()
-        .ok_or(anyhow::anyhow!("Could not get MD5 sum from {:?}", path))?;
-    Ok(md5_str.to_owned())
 }
 
 /// Helper to convert ENSEMBL and RefSeq gene ID to u32.
@@ -214,22 +141,6 @@ where
 {
     let file = File::open(filename)?;
     Ok(std::io::BufReader::new(file).lines())
-}
-
-/// Canonical chromosome names.
-///
-/// Note that the mitochondrial genome runs under two names.
-pub const CANONICAL: &[&str] = &[
-    "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17",
-    "18", "19", "20", "21", "22", "X", "Y", "M", "MT",
-];
-
-/// Return whether the given chromosome name is a canonical one.
-///
-/// The prefix `"chr"` is stripped from the name before checking.
-pub fn is_canonical(chrom: &str) -> bool {
-    let chrom = chrom.strip_prefix("chr").unwrap_or(chrom);
-    CANONICAL.contains(&chrom)
 }
 
 /// Select the genome release to use.
@@ -302,39 +213,8 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{md5sum, sha256sum};
-
     use super::*;
     use pretty_assertions::assert_eq;
-
-    #[test]
-    fn load_test_md5() -> Result<(), anyhow::Error> {
-        let expected = "d41d8cd98f00b204e9800998ecf8427e";
-        let actual = read_md5_file("tests/common/test.md5")?;
-
-        assert_eq!(expected, actual);
-
-        Ok(())
-    }
-    #[test]
-    fn sha256sum_on_payload_txt() -> Result<(), anyhow::Error> {
-        let expected = "da8868ebc063390856b50f147c8ed8f55e9115df1b21ce97973deec5646eb217";
-        let actual = sha256sum("tests/common/payload.txt")?;
-
-        assert_eq!(expected, actual);
-
-        Ok(())
-    }
-
-    #[test]
-    fn md5sum_on_payload_txt() -> Result<(), anyhow::Error> {
-        let expected = "310b5a47c12b03c6e71684d170b287a6";
-        let actual = md5sum("tests/common/payload.txt")?;
-
-        assert_eq!(expected, actual);
-
-        Ok(())
-    }
 
     #[test]
     fn numeric_gene_id_simple() -> Result<(), anyhow::Error> {
