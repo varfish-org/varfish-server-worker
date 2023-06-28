@@ -10,7 +10,7 @@ use tracing::info;
 use crate::{
     common::{open_read_maybe_gz, CHROMS},
     db::{
-        conf::{Database, FeatureDbs, GeneDbs, GeneXlink},
+        conf::{Database, GenomeRelease},
         pbs,
     },
 };
@@ -306,46 +306,23 @@ impl GeneDb {
 
 // Load all gene information, such as region, id mapping and symbols.
 #[tracing::instrument]
-pub fn load_gene_db(
-    path_db: &str,
-    gene_conf: &GeneDbs,
-    feature_conf: &FeatureDbs,
-) -> Result<GeneDb, anyhow::Error> {
+pub fn load_gene_db(path_db: &str, genome_release: GenomeRelease) -> Result<GeneDb, anyhow::Error> {
     info!("Loading gene dbs");
 
     let result = GeneDb {
         refseq: load_gene_regions_db(
             Path::new(path_db)
-                .join(
-                    feature_conf.gene_regions[Database::RefSeq]
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for RefSeq regions?"),
-                )
+                .join(format!("{}/genes/refseq_regions.bin", genome_release))
                 .as_path(),
         )?,
         ensembl: load_gene_regions_db(
             Path::new(path_db)
-                .join(
-                    feature_conf.gene_regions[Database::Ensembl]
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for ENSEMBL regions?"),
-                )
+                .join(format!("{}/genes/ensembl_regions.bin", genome_release))
                 .as_path(),
         )?,
-        xlink: load_xlink_db(
-            Path::new(path_db)
-                .join(
-                    gene_conf.xlink[GeneXlink::Hgnc]
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for HGNC xlink?"),
-                )
-                .as_path(),
-        )?,
-        acmg: load_acmg_db(Path::new(path_db).join(&gene_conf.acmg.path).as_path())?,
-        omim: load_omim_db(Path::new(path_db).join(&gene_conf.mim2gene.path).as_path())?,
+        xlink: load_xlink_db(Path::new(path_db).join("noref/genes/xlink.bin").as_path())?,
+        acmg: load_acmg_db(Path::new(path_db).join("noref/genes/acmg.tsv").as_path())?,
+        omim: load_omim_db(Path::new(path_db).join("noref/genes/omim.tsv").as_path())?,
     };
 
     Ok(result)

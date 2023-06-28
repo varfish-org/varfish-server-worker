@@ -9,7 +9,7 @@ use tracing::info;
 
 use crate::{
     common::{trace_rss_now, CHROMS},
-    db::{conf::FeatureDbs, pbs},
+    db::{conf::GenomeRelease, pbs},
 };
 
 use super::{
@@ -196,29 +196,20 @@ impl MaskedDbBundle {
 
 // Load all masked region databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_masked_dbs(path_db: &str, conf: &FeatureDbs) -> Result<MaskedDbBundle, anyhow::Error> {
+pub fn load_masked_dbs(
+    path_db: &str,
+    genome_release: GenomeRelease,
+) -> Result<MaskedDbBundle, anyhow::Error> {
     info!("Loading masked region dbs");
     let result = MaskedDbBundle {
         repeat: load_masked_db_records(
             Path::new(path_db)
-                .join(
-                    conf.masked
-                        .repeat
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for repeat masked"),
-                )
+                .join(format!("{}/features/masked_repeat.bin", genome_release))
                 .as_path(),
         )?,
         segdup: load_masked_db_records(
             Path::new(path_db)
-                .join(
-                    conf.masked
-                        .segdup
-                        .bin_path
-                        .as_ref()
-                        .expect("no binary path for segmental duplications"),
-                )
+                .join(format!("{}/features/masked_seqdup.bin", genome_release))
                 .as_path(),
         )?,
     };

@@ -137,7 +137,7 @@ mod test {
         let args = Args {
             input_type: InputType::ClinvarSv,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/clinvar.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/clinvar.bed.gz",
             ),
             path_output_bin: tmp_dir.join("clinvar.bin"),
         };
@@ -156,7 +156,7 @@ mod test {
         let args = Args {
             input_type: InputType::StrucvarInhouse,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/inhouse.tsv",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/inhouse.tsv",
             ),
             path_output_bin: tmp_dir.join("strucvar_inhouse.bin"),
         };
@@ -175,7 +175,7 @@ mod test {
         let args = Args {
             input_type: InputType::StrucvarDbVar,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/dbvar.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dbvar.bed.gz",
             ),
             path_output_bin: tmp_dir.join("strucvar_dbvar.bin"),
         };
@@ -194,7 +194,7 @@ mod test {
         let args = Args {
             input_type: InputType::StrucvarDgv,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/dgv.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv.bed.gz",
             ),
             path_output_bin: tmp_dir.join("strucvar_dgv.bin"),
         };
@@ -213,7 +213,7 @@ mod test {
         let args = Args {
             input_type: InputType::StrucvarDgvGs,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/dgv_gs.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv_gs.bed.gz",
             ),
             path_output_bin: tmp_dir.join("strucvar_dgv_gs.bin"),
         };
@@ -232,7 +232,7 @@ mod test {
         let args = Args {
             input_type: InputType::StrucvarExacCnv,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/exac.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/exac.bed.gz",
             ),
             path_output_bin: tmp_dir.join("exac.bin"),
         };
@@ -251,7 +251,7 @@ mod test {
         let args = Args {
             input_type: InputType::StrucvarG1k,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/g1k.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/g1k.bed.gz",
             ),
             path_output_bin: tmp_dir.join("g1k.bin"),
         };
@@ -270,7 +270,7 @@ mod test {
         let args = Args {
             input_type: InputType::StrucvarGnomadSv,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz",
             ),
             path_output_bin: tmp_dir.join("gnomad.bin"),
         };
@@ -289,7 +289,7 @@ mod test {
         let args = Args {
             input_type: InputType::GeneRegion,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/features/grch37/gene_regions/refseq.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/features/grch37/gene_regions/refseq.bed.gz",
             ),
             path_output_bin: tmp_dir.join("refseq.bin"),
         };
@@ -308,7 +308,7 @@ mod test {
         let args = Args {
             input_type: InputType::MaskedRegion,
             path_input: String::from(
-                "tests/db/compile/varfish-db-downloader/features/grch37/masked/repeat.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/features/grch37/masked/repeat.bed.gz",
             ),
             path_output_bin: tmp_dir.join("masked.bin"),
         };
@@ -326,7 +326,7 @@ mod test {
         };
         let args = Args {
             input_type: InputType::Xlink,
-            path_input: String::from("tests/db/compile/varfish-db-downloader/genes/xlink/hgnc.tsv"),
+            path_input: String::from("tests/db/to-bin/varfish-db-downloader/genes/xlink/hgnc.tsv"),
             path_output_bin: tmp_dir.join("xlink.bin"),
         };
 

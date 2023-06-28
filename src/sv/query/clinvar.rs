@@ -9,7 +9,7 @@ use tracing::{info, warn};
 
 use crate::{
     common::{reciprocal_overlap, CHROMS},
-    db::conf::StrucVarDbs,
+    db::conf::GenomeRelease,
 };
 
 use super::{
@@ -94,7 +94,10 @@ impl ClinvarSv {
 
 // Load the Clinvar SV databases from database given the configuration.
 #[tracing::instrument]
-pub fn load_clinvar_sv(path_db: &str, conf: &StrucVarDbs) -> Result<ClinvarSv, anyhow::Error> {
+pub fn load_clinvar_sv(
+    path_db: &str,
+    genome_release: GenomeRelease,
+) -> Result<ClinvarSv, anyhow::Error> {
     info!("loading binary ClinVar SV dbs");
 
     let before_loading = std::time::Instant::now();
@@ -104,12 +107,8 @@ pub fn load_clinvar_sv(path_db: &str, conf: &StrucVarDbs) -> Result<ClinvarSv, a
         result.trees.push(IntervalTree::new());
     }
 
-    let path = std::path::Path::new(path_db).join(
-        conf.clinvar
-            .bin_path
-            .as_ref()
-            .expect("no binary clinvar path?"),
-    );
+    let path =
+        std::path::Path::new(path_db).join(&format!("{}/strucvars/clinvar.bin", genome_release));
     let fcontents =
         std::fs::read(&path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
     let bg_db = pbs::SvDatabase::decode(std::io::Cursor::new(fcontents))
