@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.7.0...v0.8.0) (2023-06-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove REST server related code (#122) (#123)
+* replace db-compile with per-output commands (#112) (#121)
+
+### Code Refactoring
+
+* remove code that was moved to viguno/annonars ([#116](https://www.github.com/bihealth/varfish-server-worker/issues/116)) ([#117](https://www.github.com/bihealth/varfish-server-worker/issues/117)) ([50099dd](https://www.github.com/bihealth/varfish-server-worker/commit/50099dd01552f2b270728537ed34c01172de0e31))
+* remove REST server related code ([#122](https://www.github.com/bihealth/varfish-server-worker/issues/122)) ([#123](https://www.github.com/bihealth/varfish-server-worker/issues/123)) ([0b68809](https://www.github.com/bihealth/varfish-server-worker/commit/0b68809275294dd295b72fc73faa8fc26c095723))
+* replace db-compile with per-output commands ([#112](https://www.github.com/bihealth/varfish-server-worker/issues/112)) ([#121](https://www.github.com/bihealth/varfish-server-worker/issues/121)) ([5da2799](https://www.github.com/bihealth/varfish-server-worker/commit/5da27991765cdc294a4114aa57dbb2464e112d6e))
+
 ## [0.7.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.6.1...v0.7.0) (2023-06-09)
 
 
