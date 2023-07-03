@@ -431,6 +431,10 @@ pub struct GenotypeCriteria {
     pub min_pr_var: Option<u32>,
     /// Maximal number of variant paired-end reads covering the SV
     pub max_pr_var: Option<u32>,
+    /// Minimal allelic balaance of paired-end reads covering the SV
+    pub min_pr_ab: Option<f32>,
+    /// Maximal allelic balance of paired-end reads covering the SV
+    pub max_pr_ab: Option<f32>,
     /// Minimal number of total split reads covering the SV
     pub min_sr_cov: Option<u32>,
     /// Maximal number of total split reads covering the SV
@@ -443,6 +447,10 @@ pub struct GenotypeCriteria {
     pub min_sr_var: Option<u32>,
     /// Maximal number of variant split reads covering the SV
     pub max_sr_var: Option<u32>,
+    /// Minimal allelic balance of split reads covering the SV
+    pub min_sr_ab: Option<f32>,
+    /// Maximal allelic balance of split reads covering the SV
+    pub max_sr_ab: Option<f32>,
     /// Minimal sum of total paired-end/split read coverage
     pub min_srpr_cov: Option<u32>,
     /// Maximal sum of total paired-end/split read coverage
@@ -455,6 +463,10 @@ pub struct GenotypeCriteria {
     pub min_srpr_var: Option<u32>,
     /// Maximal sum of variant paired-end/split read coverage
     pub max_srpr_var: Option<u32>,
+    /// Minimal allelic balance of paired-end/split read coverage
+    pub min_srpr_ab: Option<f32>,
+    /// Maximal allelic balance of paired-end/split read coverage
+    pub max_srpr_ab: Option<f32>,
     /// Minimal coverage deviation
     pub min_rd_dev: Option<f32>,
     /// Maximal coverage deviation
@@ -510,18 +522,24 @@ impl GenotypeCriteria {
             max_pr_ref: None,
             min_pr_var: None,
             max_pr_var: None,
+            min_pr_ab: None,
+            max_pr_ab: None,
             min_sr_cov: None,
             max_sr_cov: None,
             min_sr_ref: None,
             max_sr_ref: None,
             min_sr_var: None,
             max_sr_var: None,
+            min_sr_ab: None,
+            max_sr_ab: None,
             min_srpr_cov: None,
             max_srpr_cov: None,
             min_srpr_ref: None,
             max_srpr_ref: None,
             min_srpr_var: None,
             max_srpr_var: None,
+            min_srpr_ab: None,
+            max_srpr_ab: None,
             min_rd_dev: None,
             max_rd_dev: None,
             min_amq: None,
@@ -644,6 +662,33 @@ impl GenotypeCriteria {
                 })
         });
 
+        let pass_min_pr_ab = self.min_pr_ab.map_or(true, |min_pr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_pr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_pr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 >= min_pr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= min_pr_ab as f64)
+                        })
+                })
+        });
+        let pass_max_pr_ab = self.max_pr_ab.map_or(true, |max_pr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_pr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_pr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 <= max_pr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= max_pr_ab as f64)
+                        })
+                })
+        });
+
         // sr -- split reads
 
         let pass_min_sr_cov = self.min_sr_cov.map_or(true, |min_sr_cov| {
@@ -696,6 +741,33 @@ impl GenotypeCriteria {
                 .split_read_var
                 .map_or(self.missing_sr_ok, |split_read_var| {
                     split_read_var <= max_sr_var
+                })
+        });
+
+        let pass_min_sr_ab = self.min_sr_ab.map_or(true, |min_sr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_sr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 >= min_sr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= min_sr_ab as f64)
+                        })
+                })
+        });
+        let pass_max_sr_ab = self.max_sr_ab.map_or(true, |max_sr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_sr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 <= max_sr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= max_sr_ab as f64)
+                        })
                 })
         });
 
@@ -794,6 +866,65 @@ impl GenotypeCriteria {
                 })
         });
 
+        let pass_min_srpr_ab = self.min_srpr_ab.map_or(true, |min_srpr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_srpr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_srpr_ok, |split_read_var| {
+                            call_info.paired_end_cov.map_or(
+                                self.missing_srpr_ok,
+                                |paired_end_cov| {
+                                    call_info.paired_end_var.map_or(
+                                        self.missing_srpr_ok,
+                                        |paired_end_var| {
+                                            ((split_read_var as f64 + paired_end_var as f64)
+                                                / (split_read_cov as f64 + paired_end_cov as f64)
+                                                >= min_srpr_ab as f64)
+                                                || (1.0
+                                                    - (split_read_var as f64
+                                                        + paired_end_var as f64)
+                                                        / (split_read_cov as f64
+                                                            + paired_end_cov as f64)
+                                                    >= min_srpr_ab as f64)
+                                        },
+                                    )
+                                },
+                            )
+                        })
+                })
+        });
+        let pass_max_srpr_ab = self.max_srpr_ab.map_or(true, |max_srpr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_srpr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_srpr_ok, |split_read_var| {
+                            call_info.paired_end_cov.map_or(
+                                self.missing_srpr_ok,
+                                |paired_end_cov| {
+                                    call_info.paired_end_var.map_or(
+                                        self.missing_srpr_ok,
+                                        |paired_end_var| {
+                                            ((split_read_var as f64 + paired_end_var as f64)
+                                                / (split_read_cov as f64 + paired_end_cov as f64)
+                                                <= max_srpr_ab as f64)
+                                                || (1.0
+                                                    - (split_read_var as f64
+                                                        + paired_end_var as f64)
+                                                        / (split_read_cov as f64
+                                                            + paired_end_cov as f64)
+                                                    <= max_srpr_ab as f64)
+                                        },
+                                    )
+                                },
+                            )
+                        })
+                })
+        });
+
         // rd_dev -- read depth deviation
 
         let pass_min_rd_dev = self.min_rd_dev.map_or(true, |min_rd_dev| {
@@ -837,18 +968,24 @@ impl GenotypeCriteria {
             && pass_max_pr_ref
             && pass_min_pr_var
             && pass_max_pr_var
+            && pass_min_pr_ab
+            && pass_max_pr_ab
             && pass_min_sr_cov
             && pass_max_sr_cov
             && pass_min_sr_ref
             && pass_max_sr_ref
             && pass_min_sr_var
             && pass_max_sr_var
+            && pass_min_sr_ab
+            && pass_max_sr_ab
             && pass_min_srpr_cov
             && pass_max_srpr_cov
             && pass_min_srpr_ref
             && pass_max_srpr_ref
             && pass_min_srpr_var
             && pass_max_srpr_var
+            && pass_min_srpr_ab
+            && pass_max_srpr_ab
             && pass_min_rd_dev
             && pass_max_rd_dev
             && pass_min_amq
@@ -1463,98 +1600,7 @@ mod tests {
     #[test]
     fn test_genotype_criteria_serde_smoke() {
         let crit = GenotypeCriteria::new(GenotypeChoice::Het);
-        assert_tokens(
-            &crit,
-            &[
-                Token::Struct {
-                    name: "GenotypeCriteria",
-                    len: 39,
-                },
-                Token::Str("genotype"),
-                Token::UnitVariant {
-                    name: "GenotypeChoice",
-                    variant: "het",
-                },
-                Token::Str("select_sv_sub_type"),
-                Token::Seq { len: Some(0) },
-                Token::SeqEnd,
-                Token::Str("select_sv_min_size"),
-                Token::None,
-                Token::Str("select_sv_max_size"),
-                Token::None,
-                Token::Str("max_brk_segdup"),
-                Token::None,
-                Token::Str("max_brk_repeat"),
-                Token::None,
-                Token::Str("max_brk_segduprepeat"),
-                Token::None,
-                Token::Str("gt_one_of"),
-                Token::None,
-                Token::Str("min_gq"),
-                Token::None,
-                Token::Str("min_pr_cov"),
-                Token::None,
-                Token::Str("max_pr_cov"),
-                Token::None,
-                Token::Str("min_pr_ref"),
-                Token::None,
-                Token::Str("max_pr_ref"),
-                Token::None,
-                Token::Str("min_pr_var"),
-                Token::None,
-                Token::Str("max_pr_var"),
-                Token::None,
-                Token::Str("min_sr_cov"),
-                Token::None,
-                Token::Str("max_sr_cov"),
-                Token::None,
-                Token::Str("min_sr_ref"),
-                Token::None,
-                Token::Str("max_sr_ref"),
-                Token::None,
-                Token::Str("min_sr_var"),
-                Token::None,
-                Token::Str("max_sr_var"),
-                Token::None,
-                Token::Str("min_srpr_cov"),
-                Token::None,
-                Token::Str("max_srpr_cov"),
-                Token::None,
-                Token::Str("min_srpr_ref"),
-                Token::None,
-                Token::Str("max_srpr_ref"),
-                Token::None,
-                Token::Str("min_srpr_var"),
-                Token::None,
-                Token::Str("max_srpr_var"),
-                Token::None,
-                Token::Str("min_rd_dev"),
-                Token::None,
-                Token::Str("max_rd_dev"),
-                Token::None,
-                Token::Str("min_amq"),
-                Token::None,
-                Token::Str("max_amq"),
-                Token::None,
-                Token::Str("missing_gt_ok"),
-                Token::Bool(true),
-                Token::Str("missing_gq_ok"),
-                Token::Bool(true),
-                Token::Str("missing_pr_ok"),
-                Token::Bool(true),
-                Token::Str("missing_sr_ok"),
-                Token::Bool(true),
-                Token::Str("missing_srpr_ok"),
-                Token::Bool(true),
-                Token::Str("missing_rd_dev_ok"),
-                Token::Bool(true),
-                Token::Str("missing_amq_ok"),
-                Token::Bool(true),
-                Token::Str("comment"),
-                Token::None,
-                Token::StructEnd,
-            ],
-        );
+        insta::assert_snapshot!(serde_json::to_string_pretty(&crit).unwrap())
     }
 
     #[test]
@@ -1689,103 +1735,8 @@ mod tests {
 
     #[test]
     fn test_case_query_serde_smoke() {
-        let query = CaseQuery::new(Database::RefSeq);
-        assert_tokens(
-            &query,
-            &[
-                Token::Struct {
-                    name: "CaseQuery",
-                    len: 39,
-                },
-                Token::Str("database"),
-                Token::UnitVariant {
-                    name: "Database",
-                    variant: "refseq",
-                },
-                Token::Str("svdb_dgv_enabled"),
-                Token::Bool(false),
-                Token::Str("svdb_dgv_min_overlap"),
-                Token::None,
-                Token::Str("svdb_dgv_max_count"),
-                Token::None,
-                Token::Str("svdb_dgv_gs_enabled"),
-                Token::Bool(false),
-                Token::Str("svdb_dgv_gs_min_overlap"),
-                Token::None,
-                Token::Str("svdb_dgv_gs_max_count"),
-                Token::None,
-                Token::Str("svdb_gnomad_enabled"),
-                Token::Bool(false),
-                Token::Str("svdb_gnomad_min_overlap"),
-                Token::None,
-                Token::Str("svdb_gnomad_max_count"),
-                Token::None,
-                Token::Str("svdb_exac_enabled"),
-                Token::Bool(false),
-                Token::Str("svdb_exac_min_overlap"),
-                Token::None,
-                Token::Str("svdb_exac_max_count"),
-                Token::None,
-                Token::Str("svdb_dbvar_enabled"),
-                Token::Bool(false),
-                Token::Str("svdb_dbvar_min_overlap"),
-                Token::None,
-                Token::Str("svdb_dbvar_max_count"),
-                Token::None,
-                Token::Str("svdb_g1k_enabled"),
-                Token::Bool(false),
-                Token::Str("svdb_g1k_min_overlap"),
-                Token::None,
-                Token::Str("svdb_g1k_max_count"),
-                Token::None,
-                Token::Str("svdb_inhouse_enabled"),
-                Token::Bool(false),
-                Token::Str("svdb_inhouse_min_overlap"),
-                Token::None,
-                Token::Str("svdb_inhouse_max_count"),
-                Token::None,
-                Token::Str("clinvar_sv_min_overlap"),
-                Token::None,
-                Token::Str("clinvar_sv_min_pathogenicity"),
-                Token::None,
-                Token::Str("sv_size_min"),
-                Token::None,
-                Token::Str("sv_size_max"),
-                Token::None,
-                Token::Str("sv_types"),
-                Token::Seq { len: Some(0) },
-                Token::SeqEnd,
-                Token::Str("sv_sub_types"),
-                Token::Seq { len: Some(0) },
-                Token::SeqEnd,
-                Token::Str("gene_allowlist"),
-                Token::None,
-                Token::Str("genomic_region"),
-                Token::None,
-                Token::Str("regulatory_overlap"),
-                Token::I32(100),
-                Token::Str("regulatory_ensembl_features"),
-                Token::None,
-                Token::Str("regulatory_vista_validation"),
-                Token::None,
-                Token::Str("regulatory_custom_configs"),
-                Token::Seq { len: Some(0) },
-                Token::SeqEnd,
-                Token::Str("tad_set"),
-                Token::None,
-                Token::Str("genotype"),
-                Token::Map { len: Some(0) },
-                Token::MapEnd,
-                Token::Str("genotype_criteria"),
-                Token::Seq { len: Some(0) },
-                Token::SeqEnd,
-                Token::Str("recessive_mode"),
-                Token::None,
-                Token::Str("recessive_index"),
-                Token::None,
-                Token::StructEnd,
-            ],
-        );
+        let query: CaseQuery = CaseQuery::new(Database::RefSeq);
+        insta::assert_snapshot!(serde_json::to_string_pretty(&query).unwrap());
     }
 
     #[test]
@@ -1814,50 +1765,7 @@ mod tests {
             average_mapping_quality: Some(60.0),
             ..Default::default()
         };
-        assert_tokens(
-            &info,
-            &[
-                Token::Struct {
-                    name: "CallInfo",
-                    len: 12,
-                },
-                Token::Str("genotype"),
-                Token::Some,
-                Token::Str("0/1"),
-                Token::Str("effective_genotype"),
-                Token::None,
-                Token::Str("matched_gt_criteria"),
-                Token::None,
-                Token::Str("quality"),
-                Token::Some,
-                Token::F32(10.0),
-                Token::Str("paired_end_cov"),
-                Token::Some,
-                Token::U32(10),
-                Token::Str("paired_end_var"),
-                Token::Some,
-                Token::U32(10),
-                Token::Str("split_read_cov"),
-                Token::Some,
-                Token::U32(10),
-                Token::Str("split_read_var"),
-                Token::Some,
-                Token::U32(10),
-                Token::Str("copy_number"),
-                Token::Some,
-                Token::U32(1),
-                Token::Str("average_normalized_cov"),
-                Token::Some,
-                Token::F32(0.491),
-                Token::Str("point_count"),
-                Token::Some,
-                Token::U32(5),
-                Token::Str("average_mapping_quality"),
-                Token::Some,
-                Token::F32(60.0),
-                Token::StructEnd,
-            ],
-        );
+        insta::assert_snapshot!(serde_json::to_string_pretty(&info).unwrap());
     }
 
     #[test]
@@ -1917,43 +1825,7 @@ mod tests {
             strand_orientation: Some(StrandOrientation::ThreeToFive),
             call_info: IndexMap::new(),
         };
-        assert_tokens(
-            &sv,
-            &[
-                Token::Struct {
-                    name: "StructuralVariant",
-                    len: 8,
-                },
-                Token::Str("chrom"),
-                Token::Str("chr1"),
-                Token::Str("pos"),
-                Token::I32(123),
-                Token::Str("sv_type"),
-                Token::UnitVariant {
-                    name: "SvType",
-                    variant: "DEL",
-                },
-                Token::Str("sv_sub_type"),
-                Token::UnitVariant {
-                    name: "SvSubType",
-                    variant: "DEL:ME:L1",
-                },
-                Token::Str("chrom2"),
-                Token::None,
-                Token::Str("end"),
-                Token::I32(245),
-                Token::Str("strand_orientation"),
-                Token::Some,
-                Token::UnitVariant {
-                    name: "StrandOrientation",
-                    variant: "3to5",
-                },
-                Token::Str("call_info"),
-                Token::Map { len: Some(0) },
-                Token::MapEnd,
-                Token::StructEnd,
-            ],
-        );
+        insta::assert_snapshot!(serde_json::to_string_pretty(&sv).unwrap());
     }
 
     #[test]
