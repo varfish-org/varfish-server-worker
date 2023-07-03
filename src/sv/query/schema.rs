@@ -973,8 +973,7 @@ where
     D: Deserializer<'de>,
 {
     let re = Regex::new(
-        r"^(?P<chrom>(chr)?(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y|M|MT))\
-        (:(?P<start>\d+(,\d+)*)-(?P<stop>\d+(,\d+)*))?$",
+        r"^(?P<chrom>(chr)?(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y|M|MT))(:(?P<start>\d+(,\d+)*)-(?P<stop>\d+(,\d+)*))?$",
     )
     .unwrap();
 
@@ -995,15 +994,14 @@ where
                     let range = if let (Some(start), Some(stop)) =
                         (caps.name("start"), caps.name("stop"))
                     {
-                        let start: i32 = start.as_str().replace(',', "").parse().expect(&format!(
-                            "could not parse start position: {}",
-                            start.as_str()
-                        ));
-                        let end: i32 = stop
-                            .as_str()
-                            .replace(',', "")
-                            .parse()
-                            .expect(&format!("could not parse stop position: {}", stop.as_str()));
+                        let start: i32 =
+                            start.as_str().replace(',', "").parse().unwrap_or_else(|_| {
+                                panic!("could not parse start position: {}", start.as_str())
+                            });
+                        let end: i32 =
+                            stop.as_str().replace(',', "").parse().unwrap_or_else(|_| {
+                                panic!("could not parse stop position: {}", stop.as_str())
+                            });
                         Some(Range { start, end })
                     } else {
                         None
