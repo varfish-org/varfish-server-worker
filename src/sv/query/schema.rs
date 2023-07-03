@@ -431,6 +431,10 @@ pub struct GenotypeCriteria {
     pub min_pr_var: Option<u32>,
     /// Maximal number of variant paired-end reads covering the SV
     pub max_pr_var: Option<u32>,
+    /// Minimal allelic balaance of paired-end reads covering the SV
+    pub min_pr_ab: Option<f32>,
+    /// Maximal allelic balance of paired-end reads covering the SV
+    pub max_pr_ab: Option<f32>,
     /// Minimal number of total split reads covering the SV
     pub min_sr_cov: Option<u32>,
     /// Maximal number of total split reads covering the SV
@@ -443,6 +447,10 @@ pub struct GenotypeCriteria {
     pub min_sr_var: Option<u32>,
     /// Maximal number of variant split reads covering the SV
     pub max_sr_var: Option<u32>,
+    /// Minimal allelic balance of split reads covering the SV
+    pub min_sr_ab: Option<f32>,
+    /// Maximal allelic balance of split reads covering the SV
+    pub max_sr_ab: Option<f32>,
     /// Minimal sum of total paired-end/split read coverage
     pub min_srpr_cov: Option<u32>,
     /// Maximal sum of total paired-end/split read coverage
@@ -455,6 +463,10 @@ pub struct GenotypeCriteria {
     pub min_srpr_var: Option<u32>,
     /// Maximal sum of variant paired-end/split read coverage
     pub max_srpr_var: Option<u32>,
+    /// Minimal allelic balance of paired-end/split read coverage
+    pub min_srpr_ab: Option<f32>,
+    /// Maximal allelic balance of paired-end/split read coverage
+    pub max_srpr_ab: Option<f32>,
     /// Minimal coverage deviation
     pub min_rd_dev: Option<f32>,
     /// Maximal coverage deviation
@@ -510,18 +522,24 @@ impl GenotypeCriteria {
             max_pr_ref: None,
             min_pr_var: None,
             max_pr_var: None,
+            min_pr_ab: None,
+            max_pr_ab: None,
             min_sr_cov: None,
             max_sr_cov: None,
             min_sr_ref: None,
             max_sr_ref: None,
             min_sr_var: None,
             max_sr_var: None,
+            min_sr_ab: None,
+            max_sr_ab: None,
             min_srpr_cov: None,
             max_srpr_cov: None,
             min_srpr_ref: None,
             max_srpr_ref: None,
             min_srpr_var: None,
             max_srpr_var: None,
+            min_srpr_ab: None,
+            max_srpr_ab: None,
             min_rd_dev: None,
             max_rd_dev: None,
             min_amq: None,
@@ -644,6 +662,33 @@ impl GenotypeCriteria {
                 })
         });
 
+        let pass_min_pr_ab = self.min_pr_ab.map_or(true, |min_pr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_pr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_pr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 >= min_pr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= min_pr_ab as f64)
+                        })
+                })
+        });
+        let pass_max_pr_ab = self.max_pr_ab.map_or(true, |max_pr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_pr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_pr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 <= max_pr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= max_pr_ab as f64)
+                        })
+                })
+        });
+
         // sr -- split reads
 
         let pass_min_sr_cov = self.min_sr_cov.map_or(true, |min_sr_cov| {
@@ -696,6 +741,33 @@ impl GenotypeCriteria {
                 .split_read_var
                 .map_or(self.missing_sr_ok, |split_read_var| {
                     split_read_var <= max_sr_var
+                })
+        });
+
+        let pass_min_sr_ab = self.min_sr_ab.map_or(true, |min_sr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_sr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 >= min_sr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= min_sr_ab as f64)
+                        })
+                })
+        });
+        let pass_max_sr_ab = self.max_sr_ab.map_or(true, |max_sr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_sr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_sr_ok, |split_read_var| {
+                            (split_read_var as f64 / split_read_cov as f64 <= max_sr_ab as f64)
+                                || (1.0 - (split_read_var as f64 / split_read_cov as f64)
+                                    >= max_sr_ab as f64)
+                        })
                 })
         });
 
@@ -794,6 +866,65 @@ impl GenotypeCriteria {
                 })
         });
 
+        let pass_min_srpr_ab = self.min_srpr_ab.map_or(true, |min_srpr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_srpr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_srpr_ok, |split_read_var| {
+                            call_info.paired_end_cov.map_or(
+                                self.missing_srpr_ok,
+                                |paired_end_cov| {
+                                    call_info.paired_end_var.map_or(
+                                        self.missing_srpr_ok,
+                                        |paired_end_var| {
+                                            ((split_read_var as f64 + paired_end_var as f64)
+                                                / (split_read_cov as f64 + paired_end_cov as f64)
+                                                >= min_srpr_ab as f64)
+                                                || (1.0
+                                                    - (split_read_var as f64
+                                                        + paired_end_var as f64)
+                                                        / (split_read_cov as f64
+                                                            + paired_end_cov as f64)
+                                                    >= min_srpr_ab as f64)
+                                        },
+                                    )
+                                },
+                            )
+                        })
+                })
+        });
+        let pass_max_srpr_ab = self.max_srpr_ab.map_or(true, |max_srpr_ab| {
+            call_info
+                .split_read_cov
+                .map_or(self.missing_srpr_ok, |split_read_cov| {
+                    call_info
+                        .split_read_var
+                        .map_or(self.missing_srpr_ok, |split_read_var| {
+                            call_info.paired_end_cov.map_or(
+                                self.missing_srpr_ok,
+                                |paired_end_cov| {
+                                    call_info.paired_end_var.map_or(
+                                        self.missing_srpr_ok,
+                                        |paired_end_var| {
+                                            ((split_read_var as f64 + paired_end_var as f64)
+                                                / (split_read_cov as f64 + paired_end_cov as f64)
+                                                <= max_srpr_ab as f64)
+                                                || (1.0
+                                                    - (split_read_var as f64
+                                                        + paired_end_var as f64)
+                                                        / (split_read_cov as f64
+                                                            + paired_end_cov as f64)
+                                                    <= max_srpr_ab as f64)
+                                        },
+                                    )
+                                },
+                            )
+                        })
+                })
+        });
+
         // rd_dev -- read depth deviation
 
         let pass_min_rd_dev = self.min_rd_dev.map_or(true, |min_rd_dev| {
@@ -837,18 +968,24 @@ impl GenotypeCriteria {
             && pass_max_pr_ref
             && pass_min_pr_var
             && pass_max_pr_var
+            && pass_min_pr_ab
+            && pass_max_pr_ab
             && pass_min_sr_cov
             && pass_max_sr_cov
             && pass_min_sr_ref
             && pass_max_sr_ref
             && pass_min_sr_var
             && pass_max_sr_var
+            && pass_min_sr_ab
+            && pass_max_sr_ab
             && pass_min_srpr_cov
             && pass_max_srpr_cov
             && pass_min_srpr_ref
             && pass_max_srpr_ref
             && pass_min_srpr_var
             && pass_max_srpr_var
+            && pass_min_srpr_ab
+            && pass_max_srpr_ab
             && pass_min_rd_dev
             && pass_max_rd_dev
             && pass_min_amq
@@ -1519,6 +1656,18 @@ mod tests {
                 Token::Str("min_srpr_var"),
                 Token::None,
                 Token::Str("max_srpr_var"),
+                Token::None,
+                Token::Str("min_sr_ab"),
+                Token::None,
+                Token::Str("max_sr_ab"),
+                Token::None,
+                Token::Str("min_pr_ab"),
+                Token::None,
+                Token::Str("max_pr_ab"),
+                Token::None,
+                Token::Str("min_srpr_ab"),
+                Token::None,
+                Token::Str("max_srpr_ab"),
                 Token::None,
                 Token::Str("min_rd_dev"),
                 Token::None,
