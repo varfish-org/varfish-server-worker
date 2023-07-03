@@ -973,7 +973,7 @@ where
     D: Deserializer<'de>,
 {
     let re = Regex::new(
-        r"^(?P<chrom>(chr)?(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y|M|MT)(:(?P<start>\d+(,\d+)*)-(?P<stop>\d+(,\d+)*))?)$"
+        r"^(?P<chrom>(chr)?(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y|M|MT))(:(?P<start>\d+(,\d+)*)-(?P<stop>\d+(,\d+)*))?$"
     ).unwrap();
 
     let tokens: Option<Vec<String>> = Deserialize::deserialize(deserializer)?;
@@ -984,6 +984,7 @@ where
             .filter_map(|token| {
                 if let Some(caps) = re.captures(token) {
                     let chrom = caps.name("chrom").unwrap().as_str().to_string();
+                    eprintln!("chrom: {}", &chrom);
                     let chrom = if let Some(chrom) = chrom.strip_prefix("chr") {
                         chrom.to_string()
                     } else {
@@ -992,8 +993,15 @@ where
                     let range = if let (Some(start), Some(stop)) =
                         (caps.name("start"), caps.name("stop"))
                     {
-                        let start: i32 = start.as_str().parse().unwrap();
-                        let end: i32 = stop.as_str().parse().unwrap();
+                        let start: i32 = start.as_str().replace(',', "").parse().expect(&format!(
+                            "could not parse start position: {}",
+                            start.as_str()
+                        ));
+                        let end: i32 = stop
+                            .as_str()
+                            .replace(',', "")
+                            .parse()
+                            .expect(&format!("could not parse stop position: {}", stop.as_str()));
                         Some(Range { start, end })
                     } else {
                         None
