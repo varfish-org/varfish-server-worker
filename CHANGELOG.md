@@ -1,5 +1,13 @@
 # Changelog
 
+### [0.8.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.8.0...v0.8.1) (2023-07-03)
+
+
+### Bug Fixes
+
+* removing unused dependencies ([#124](https://www.github.com/bihealth/varfish-server-worker/issues/124)) ([2cee74b](https://www.github.com/bihealth/varfish-server-worker/commit/2cee74be09f97400ae3e59bc9a2bb435ff3956b2))
+* specification of genomic range in query ([#126](https://www.github.com/bihealth/varfish-server-worker/issues/126)) ([6eddaef](https://www.github.com/bihealth/varfish-server-worker/commit/6eddaefc0b401d19755bd053ea79d09e31f4302a))
+
 ## [0.8.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.7.0...v0.8.0) (2023-06-28)
 
 
