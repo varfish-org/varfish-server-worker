@@ -94,7 +94,7 @@ $ export GITHUB_TOKEN=ghp_<thetoken>
 
 $ cd utils/terraform
 $ terraform init
-$ terraform import github_repository.reev reev
+$ terraform import github_repository.varfish-sever-worker varfish-sever-worker
 $ terraform validate
 $ terraform fmt
 $ terraform plan
