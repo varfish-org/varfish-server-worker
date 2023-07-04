@@ -1,8 +1,9 @@
 //! Background database overlapping.
 
-use std::{collections::HashMap, ops::Range, path::Path, time::Instant};
+use std::{ops::Range, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
+use indexmap::IndexMap;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
@@ -58,7 +59,7 @@ impl BgDb {
     pub fn fetch_records(
         &self,
         genomic_region: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<BgDbRecord> {
         let chrom_idx = *chrom_map
             .get(&genomic_region.chromosome)
@@ -75,7 +76,7 @@ impl BgDb {
 
     pub fn count_overlaps(
         &self,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
         enabled: bool,
         min_overlap: Option<f32>,
         slack_ins: i32,
@@ -234,7 +235,7 @@ impl BgDbBundle {
     pub fn fetch_records(
         &self,
         genome_range: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
         db_type: BgDbType,
     ) -> Vec<BgDbRecord> {
         match db_type {
@@ -263,7 +264,7 @@ impl BgDbBundle {
         &self,
         sv: &StructuralVariant,
         query: &CaseQuery,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
         slack_ins: i32,
         slack_bnd: i32,
     ) -> BgDbOverlaps {

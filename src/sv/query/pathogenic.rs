@@ -1,8 +1,9 @@
 //! Code for working with lists of known pathogenic variants.
 
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
+use indexmap::IndexMap;
 use serde::Serialize;
 use tracing::{info, warn};
 
@@ -45,7 +46,7 @@ impl PathoDb {
     pub fn fetch_records(
         &self,
         chrom_range: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         let chrom_idx = *chrom_map
             .get(&chrom_range.chromosome)
@@ -63,7 +64,7 @@ impl PathoDb {
     pub fn overlapping_records(
         &self,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         if sv.sv_type == SvType::Ins || sv.sv_type == SvType::Bnd {
             return Vec::new();
@@ -91,7 +92,7 @@ impl PathoDbBundle {
     pub fn fetch_records(
         &self,
         chrom_range: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         self.mms.fetch_records(chrom_range, chrom_map)
     }
@@ -99,7 +100,7 @@ impl PathoDbBundle {
     pub fn overlapping_records(
         &self,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         self.mms.overlapping_records(sv, chrom_map)
     }
