@@ -5,7 +5,6 @@ use std::{path::Path, time::Instant};
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use indexmap::IndexMap;
 use prost::Message;
-use serde::Serialize;
 use tracing::info;
 
 use crate::{
@@ -23,7 +22,7 @@ use super::{
 type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
 
 /// Code for masked regions overlappers.
-#[derive(Default, Debug)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MaskedDb {
     /// Records, stored by chromosome.
     pub records: Vec<Vec<MaskedDbRecord>>,
@@ -32,6 +31,7 @@ pub struct MaskedDb {
 }
 
 /// Result for `MaskedDb::fetch_records`.
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct FetchRecordsResult {
     /// Overlaps with left end.
     pub left: Vec<MaskedDbRecord>,
@@ -40,6 +40,16 @@ pub struct FetchRecordsResult {
 }
 
 impl MaskedDb {
+    /// Fetch records that overlap with `genomic_region`.
+    ///
+    /// # Arguments
+    ///
+    /// * `genomic_region`: Genomic region to fetch records for.
+    /// * `chrom_map`: Mapping from chromosome name to index.
+    ///
+    /// # Returns
+    ///
+    /// Records that overlap with `genomic_region`.
     pub fn fetch_records(
         &self,
         genomic_region: &ChromRange,
@@ -67,10 +77,18 @@ impl MaskedDb {
         }
     }
 
-    /// Counts how many of `sv`'s breakpoints (0, 1, 2) overlap with a masked
-    /// region.
+    /// Counts how many of `sv`'s breakpoints (0, 1, 2) overlap with a masked region.
     ///
     /// For insertions and breake-ends, the one primary breakpoint counts as 2.
+    ///
+    /// # Arguments
+    ///
+    /// * `chrom_map`: Mapping from chromosome name to index.
+    /// * `sv`: Structural variant to count masked breakpoints for.
+    ///
+    /// # Returns
+    ///
+    /// Number of masked breakpoints.
     pub fn masked_breakpoint_count(
         &self,
         chrom_map: &IndexMap<String, usize>,
@@ -91,7 +109,7 @@ impl MaskedDb {
 }
 
 /// Information to store for background database.
-#[derive(Serialize, Default, Debug, Clone)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MaskedDbRecord {
     /// 0-based begin position.
     pub begin: i32,
@@ -164,7 +182,7 @@ pub struct MaskedDbBundle {
 }
 
 /// Store masked region database counts for a structural variant.
-#[derive(Serialize, Clone, Debug, PartialEq, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct MaskedBreakpointCount {
     pub repeat: u32,
     pub segdup: u32,
@@ -216,4 +234,103 @@ pub fn load_masked_dbs(
     };
 
     Ok(result)
+}
+
+#[cfg(test)]
+mod test {
+    use prost::Message;
+
+    #[rstest::fixture]
+    fn masked_db() -> super::MaskedDb {
+        super::MaskedDb {
+            records: vec![vec![
+                super::MaskedDbRecord { begin: 0, end: 10 },
+                super::MaskedDbRecord { begin: 5, end: 15 },
+                super::MaskedDbRecord {
+                    begin: 100,
+                    end: 110,
+                },
+            ]],
+            trees: vec![super::IntervalTree::from_iter(
+                vec![(0..10, 0), (5..15, 1), (100..110, 2)].into_iter(),
+            )],
+        }
+    }
+
+    #[rstest::fixture]
+    fn chrom_map() -> indexmap::IndexMap<String, usize> {
+        indexmap::indexmap! {
+            String::from("1") => 0,
+        }
+    }
+
+    #[rstest::rstest]
+    fn masked_db_fetch_records(
+        masked_db: super::MaskedDb,
+        chrom_map: indexmap::IndexMap<String, usize>,
+    ) {
+        let result = masked_db.fetch_records(
+            &super::ChromRange {
+                chromosome: String::from("1"),
+                begin: 6,
+                end: 105,
+            },
+            &chrom_map,
+        );
+
+        insta::assert_yaml_snapshot!(result);
+    }
+
+    #[rstest::rstest]
+    #[case(6, 105, 2)]
+    #[case(6, 1000, 1)]
+    #[case(90, 105, 1)]
+    #[case(90, 200, 0)]
+    fn masked_breakpoint_count(
+        #[case] sv_pos: i32,
+        #[case] sv_end: i32,
+        #[case] expected: u32,
+        masked_db: super::MaskedDb,
+        chrom_map: indexmap::IndexMap<String, usize>,
+    ) {
+        let sv = crate::sv::query::schema::StructuralVariant {
+            chrom: String::from("1"),
+            pos: sv_pos,
+            end: sv_end,
+            chrom2: None,
+            sv_type: crate::sv::query::schema::SvType::Del,
+            sv_sub_type: crate::sv::query::schema::SvSubType::Del,
+            strand_orientation: Some(crate::sv::query::schema::StrandOrientation::FiveToThree),
+            call_info: Default::default(),
+        };
+
+        let result = masked_db.masked_breakpoint_count(&chrom_map, &sv);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn load_masked_db_records() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+        let path_bin = tmpdir.join("masked_db.bin");
+
+        let data = super::pbs::MaskedDatabase {
+            records: vec![super::pbs::MaskedDbRecord {
+                chrom_no: 0,
+                start: 1,
+                stop: 2,
+            }],
+        };
+
+        let mut buf = Vec::new();
+        buf.reserve(data.encoded_len());
+        data.encode(&mut buf)?;
+        std::fs::write(&path_bin, buf)?;
+
+        let result = super::load_masked_db_records(&path_bin)?;
+
+        insta::assert_yaml_snapshot!(result);
+
+        Ok(())
+    }
 }
