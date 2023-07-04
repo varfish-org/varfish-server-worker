@@ -244,12 +244,8 @@ mod test {
     #[rstest::rstest]
     #[case(true)]
     #[case(false)]
-    fn open_write_maybe_gz(#[case]is_gzip: bool) -> Result<(), anyhow::Error> {
-        let filename = if is_gzip {
-            "test.txt"
-        } else {
-            "test.txt.gz"
-        };
+    fn open_write_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
+        let filename = if is_gzip { "test.txt" } else { "test.txt.gz" };
         let tmp_dir = temp_testdir::TempDir::default();
 
         {
@@ -257,8 +253,7 @@ mod test {
             f.flush()?;
         }
 
-        let mut f =
-            std::fs::File::open(tmp_dir.join(filename)).map(|f| std::io::BufReader::new(f))?;
+        let mut f = std::fs::File::open(tmp_dir.join(filename)).map(std::io::BufReader::new)?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
 
@@ -266,25 +261,6 @@ mod test {
 
         Ok(())
     }
-
-    // #[test]
-    // fn open_write_maybe_gz_gz() -> Result<(), anyhow::Error> {
-    //     let tmp_dir = temp_testdir::TempDir::default();
-
-    //     {
-    //         let mut f = super::open_write_maybe_gz(tmp_dir.join("test.txt.gz"))?;
-    //         f.flush()?;
-    //     }
-
-    //     let mut f =
-    //         std::fs::File::open(tmp_dir.join("test.txt.gz")).map(|f| std::io::BufReader::new(f))?;
-    //     let mut buf = Vec::new();
-    //     f.read_to_end(&mut buf)?;
-
-    //     insta::assert_snapshot!(format!("{:x?}", &buf));
-
-    //     Ok(())
-    // }
 
     #[rstest::rstest]
     #[case(true)]
@@ -300,6 +276,104 @@ mod test {
         f.read_to_string(&mut buf)?;
 
         insta::assert_snapshot!(&buf);
+
+        Ok(())
+    }
+
+    #[rstest::rstest]
+    #[case(0..10, 0..10, 1.0)]
+    #[case(0..10, 5..15, 0.5)]
+    #[case(5..15, 0..10, 0.5)]
+    #[case(0..10, 10..20, 0.0)]
+    #[case(0..2, 0..10, 0.2)]
+    #[case(0..10, 0..2, 0.2)]
+    fn reciprocal_overlap(
+        #[case] lhs: std::ops::Range<i32>,
+        #[case] rhs: std::ops::Range<i32>,
+        #[case] expected: f32,
+    ) {
+        let actual = super::reciprocal_overlap(lhs, rhs);
+        assert!(float_cmp::approx_eq!(f32, expected, actual, ulps = 2))
+    }
+
+    #[rstest::rstest]
+    #[case("ENSG0000000142", 142)]
+    #[case("42", 42)]
+    fn numeric_gene_id(#[case] raw_id: &str, #[case] expected: u32) {
+        let actual = super::numeric_gene_id(raw_id).unwrap();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn read_lines() -> Result<(), anyhow::Error> {
+        let lines = super::read_lines("tests/common/lines.txt")?.collect::<Result<Vec<_>, _>>()?;
+
+        insta::assert_yaml_snapshot!(lines);
+
+        Ok(())
+    }
+
+    #[rstest::rstest]
+    #[case(crate::common::GenomeRelease::Grch37, "GRCh37")]
+    #[case(crate::common::GenomeRelease::Grch38, "GRCh38")]
+    fn genome_release_name(#[case] release: super::GenomeRelease, #[case] expected: &str) {
+        assert_eq!(expected, release.name());
+    }
+
+    #[rstest::rstest]
+    #[case(
+        crate::common::GenomeRelease::Grch37,
+        hgvs::static_data::Assembly::Grch37p10
+    )]
+    #[case(
+        crate::common::GenomeRelease::Grch38,
+        hgvs::static_data::Assembly::Grch38
+    )]
+    fn assembly_from_genome_release(
+        #[case] release: super::GenomeRelease,
+        #[case] assembly: hgvs::static_data::Assembly,
+    ) -> Result<(), anyhow::Error> {
+        let res: hgvs::static_data::Assembly = release.into();
+
+        assert_eq!(res, assembly);
+
+        Ok(())
+    }
+
+    #[rstest::rstest]
+    #[case(
+        crate::common::GenomeRelease::Grch37,
+        hgvs::static_data::Assembly::Grch37
+    )]
+    #[case(
+        crate::common::GenomeRelease::Grch37,
+        hgvs::static_data::Assembly::Grch37p10
+    )]
+    #[case(
+        crate::common::GenomeRelease::Grch38,
+        hgvs::static_data::Assembly::Grch38
+    )]
+    fn genome_release_from_assembly(
+        #[case] release: super::GenomeRelease,
+        #[case] assembly: hgvs::static_data::Assembly,
+    ) -> Result<(), anyhow::Error> {
+        let res: super::GenomeRelease = assembly.into();
+
+        assert_eq!(res, release);
+
+        Ok(())
+    }
+
+    #[rstest::rstest]
+    #[case(crate::common::GenomeRelease::Grch37, "grch37")]
+    #[case(crate::common::GenomeRelease::Grch38, "grch38")]
+    fn genome_relese_from_str(
+        #[case] release: super::GenomeRelease,
+        #[case] s: &str,
+    ) -> Result<(), anyhow::Error> {
+        let res: super::GenomeRelease = s.parse()?;
+
+        assert_eq!(res, release);
 
         Ok(())
     }
