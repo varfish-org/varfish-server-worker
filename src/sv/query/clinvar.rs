@@ -1,8 +1,7 @@
 //! Code for working with Clinvar SV.
 
-use std::collections::HashMap;
-
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
+use indexmap::IndexMap;
 use prost::Message;
 use thousands::Separable;
 use tracing::{info, warn};
@@ -41,7 +40,7 @@ impl ClinvarSv {
     pub fn fetch_records(
         &self,
         chrom_range: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
         min_patho: Option<Pathogenicity>,
     ) -> Vec<pbs::SvRecord> {
         let chrom_idx = *chrom_map
@@ -63,7 +62,7 @@ impl ClinvarSv {
     pub fn overlapping_vcvs(
         &self,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
         min_patho: Option<Pathogenicity>,
         min_overlap: Option<f32>,
     ) -> Vec<u32> {

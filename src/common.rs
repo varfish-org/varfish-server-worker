@@ -1,7 +1,6 @@
 //! Common functionality.
 
 use std::{
-    collections::HashMap,
     fs::File,
     io::{BufRead, BufReader, BufWriter, Read, Write},
     ops::Range,
@@ -14,6 +13,7 @@ use clap_verbosity_flag::{InfoLevel, Verbosity};
 use clap::Parser;
 use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
 use hgvs::static_data::Assembly;
+use indexmap::IndexMap;
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
@@ -40,8 +40,8 @@ pub const CHROMS: &[&str] = &[
 ];
 
 /// Build mapping of chromosome names to chromosome counts.
-pub fn build_chrom_map() -> HashMap<String, usize> {
-    let mut result = HashMap::new();
+pub fn build_chrom_map() -> IndexMap<String, usize> {
+    let mut result = IndexMap::new();
     for (i, &chrom_name) in CHROMS.iter().enumerate() {
         result.insert(chrom_name.to_owned(), i);
         result.insert(format!("chr{chrom_name}").to_owned(), i);
@@ -221,6 +221,85 @@ mod tests {
         assert_eq!(1, numeric_gene_id("ENSG0000000001")?);
         assert_eq!(1, numeric_gene_id("ENSG1")?);
         assert_eq!(1, numeric_gene_id("1")?);
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::io::Read;
+
+    #[test]
+    fn trace_rss_now_smoke() {
+        super::trace_rss_now();
+    }
+
+    #[test]
+    fn build_chrom_map_snapshot() {
+        let map = super::build_chrom_map();
+        insta::assert_yaml_snapshot!(map);
+    }
+
+    #[rstest::rstest]
+    #[case(true)]
+    #[case(false)]
+    fn open_write_maybe_gz(#[case]is_gzip: bool) -> Result<(), anyhow::Error> {
+        let filename = if is_gzip {
+            "test.txt"
+        } else {
+            "test.txt.gz"
+        };
+        let tmp_dir = temp_testdir::TempDir::default();
+
+        {
+            let mut f = super::open_write_maybe_gz(tmp_dir.join(filename))?;
+            f.flush()?;
+        }
+
+        let mut f =
+            std::fs::File::open(tmp_dir.join(filename)).map(|f| std::io::BufReader::new(f))?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf)?;
+
+        insta::assert_snapshot!(format!("{:x?}", &buf));
+
+        Ok(())
+    }
+
+    // #[test]
+    // fn open_write_maybe_gz_gz() -> Result<(), anyhow::Error> {
+    //     let tmp_dir = temp_testdir::TempDir::default();
+
+    //     {
+    //         let mut f = super::open_write_maybe_gz(tmp_dir.join("test.txt.gz"))?;
+    //         f.flush()?;
+    //     }
+
+    //     let mut f =
+    //         std::fs::File::open(tmp_dir.join("test.txt.gz")).map(|f| std::io::BufReader::new(f))?;
+    //     let mut buf = Vec::new();
+    //     f.read_to_end(&mut buf)?;
+
+    //     insta::assert_snapshot!(format!("{:x?}", &buf));
+
+    //     Ok(())
+    // }
+
+    #[rstest::rstest]
+    #[case(true)]
+    #[case(false)]
+    fn open_read_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
+        let mut f = super::open_read_maybe_gz(if is_gzip {
+            "tests/common/test.txt.gz"
+        } else {
+            "tests/common/test.txt"
+        })?;
+
+        let mut buf = String::new();
+        f.read_to_string(&mut buf)?;
+
+        insta::assert_snapshot!(&buf);
 
         Ok(())
     }

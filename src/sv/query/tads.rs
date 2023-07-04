@@ -1,8 +1,9 @@
 //! Code for annotating with TADs and genes in the same TAD.
 
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
+use indexmap::IndexMap;
 use tracing::info;
 
 use crate::{
@@ -50,7 +51,7 @@ impl TadSet {
     pub fn fetch_tads(
         &self,
         chrom_range: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         let mut result = Vec::new();
 
@@ -76,7 +77,7 @@ impl TadSet {
     pub fn overlapping_tads(
         &self,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         let mut result = Vec::new();
 
@@ -121,7 +122,7 @@ impl TadSet {
     pub fn boundary_dist(
         &self,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Option<u32> {
         let delta = self.boundary_max_dist;
 
@@ -190,7 +191,7 @@ impl TadSetBundle {
         &self,
         tad_set: TadSetChoice,
         chrom_range: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         match tad_set {
             TadSetChoice::Hesc => self.hesc.fetch_tads(chrom_range, chrom_map),
@@ -201,7 +202,7 @@ impl TadSetBundle {
         &self,
         tad_set: TadSetChoice,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Vec<Record> {
         match tad_set {
             TadSetChoice::Hesc => self.hesc.overlapping_tads(sv, chrom_map),
@@ -212,7 +213,7 @@ impl TadSetBundle {
         &self,
         tad_set: TadSetChoice,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> Option<u32> {
         match tad_set {
             TadSetChoice::Hesc => self.hesc.boundary_dist(sv, chrom_map),

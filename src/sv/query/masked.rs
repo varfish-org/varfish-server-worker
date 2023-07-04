@@ -1,8 +1,9 @@
 //! Overlap with masked regions (e.g., repeats, segmental duplications)
 
-use std::{collections::HashMap, path::Path, time::Instant};
+use std::{path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
+use indexmap::IndexMap;
 use prost::Message;
 use serde::Serialize;
 use tracing::info;
@@ -42,7 +43,7 @@ impl MaskedDb {
     pub fn fetch_records(
         &self,
         genomic_region: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> FetchRecordsResult {
         let chrom_idx = *chrom_map
             .get(&genomic_region.chromosome)
@@ -72,7 +73,7 @@ impl MaskedDb {
     /// For insertions and breake-ends, the one primary breakpoint counts as 2.
     pub fn masked_breakpoint_count(
         &self,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
         sv: &StructuralVariant,
     ) -> u32 {
         let chrom_idx = *chrom_map.get(&sv.chrom).expect("invalid chromosome");
@@ -173,7 +174,7 @@ impl MaskedDbBundle {
     pub fn fetch_records(
         &self,
         genome_range: &ChromRange,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
         db_type: MaskedRegionType,
     ) -> FetchRecordsResult {
         match db_type {
@@ -185,7 +186,7 @@ impl MaskedDbBundle {
     pub fn masked_breakpoint_count(
         &self,
         sv: &StructuralVariant,
-        chrom_map: &HashMap<String, usize>,
+        chrom_map: &IndexMap<String, usize>,
     ) -> MaskedBreakpointCount {
         MaskedBreakpointCount {
             repeat: self.repeat.masked_breakpoint_count(chrom_map, sv),
