@@ -55,8 +55,7 @@ expression: "serde_json::to_string_pretty(&query).unwrap()"
     "CNV"
   ],
   "tx_effects": [
-    "transcript_ablation",
-    "transcript_translocation",
+    "transcript_variant",
     "exon_variant",
     "splice_region_variant",
     "intron_variant",
