@@ -21,7 +21,7 @@ pub static BND_SLACK: i32 = 50;
 pub static INS_SLACK: i32 = 50;
 
 /// Returns whether the intervals `[s1, e1)` and `[s2, e2)` overlap.
-fn overlaps(s1: i32, e1: i32, s2: i32, e2: i32) -> bool {
+pub fn overlaps(s1: i32, e1: i32, s2: i32, e2: i32) -> bool {
     s1 < e2 && e1 > s2
 }
 
