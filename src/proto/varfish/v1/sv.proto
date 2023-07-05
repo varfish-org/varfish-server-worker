@@ -76,12 +76,14 @@ message GeneRegionDatabase {
 
 // Record for the gene cross-link database.
 message XlinkRecord {
-    // Entrez gene ID.
-    uint32 entrez_id = 1;
-    // Ensembl gene ID.
-    uint32 ensembl_id = 2;
+    // HGNC ID (e.g., "HGNC:123")
+    string hgnc_id = 1;
     // Gene symbol.
-    string symbol = 3;
+    string symbol = 2;
+    // Entrez gene ID.
+    uint32 entrez_id = 3;
+    // Ensembl gene ID.
+    uint32 ensembl_id = 4;
 }
 
 // Gene cross-link database.

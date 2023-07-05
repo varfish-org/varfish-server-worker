@@ -77,7 +77,7 @@ pub enum SvType {
 }
 
 impl SvType {
-    pub fn all() -> Vec<SvType> {
+    pub fn vec_all() -> Vec<SvType> {
         use SvType::*;
         vec![Del, Dup, Inv, Ins, Bnd, Cnv]
     }
@@ -200,6 +200,41 @@ impl SvSubType {
                 | SvSubType::DelMeL1
                 | SvSubType::DelMeAlu
         )
+    }
+}
+
+/// Enumeration for effect on transcript.
+#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+pub enum TranscriptEffect {
+    /// Affects the full transcript.
+    TranscriptVariant,
+    /// An exon is affected by the SV.
+    ExonVariant,
+    /// The splice region is affected by the SV.
+    SpliceRegionVariant,
+    /// The intron is affected by the SV.
+    IntronVariant,
+    /// The upstream region of the transcript is affected.
+    UpstreamVariant,
+    /// The downstream region of the transcript is affected.
+    DownstreamVariant,
+    /// Only intergenic regions is affected,
+    IntergenicVariant,
+}
+
+impl TranscriptEffect {
+    /// Return vector with all transcript effects.
+    pub fn vec_all() -> Vec<TranscriptEffect> {
+        vec![
+            TranscriptEffect::TranscriptVariant,
+            TranscriptEffect::ExonVariant,
+            TranscriptEffect::SpliceRegionVariant,
+            TranscriptEffect::IntronVariant,
+            TranscriptEffect::UpstreamVariant,
+            TranscriptEffect::DownstreamVariant,
+            TranscriptEffect::IntergenicVariant,
+        ]
     }
 }
 
@@ -1072,6 +1107,8 @@ pub struct CaseQuery {
     pub sv_types: Vec<SvType>,
     /// The SV subtypes to consider.
     pub sv_sub_types: Vec<SvSubType>,
+    /// The transcript effects to consider.
+    pub tx_effects: Vec<TranscriptEffect>,
 
     /// List of genes to require.
     pub gene_allowlist: Option<Vec<String>>,
@@ -1179,8 +1216,8 @@ impl CaseQuery {
             svdb_inhouse_max_count: None,
             sv_size_min: None,
             sv_size_max: None,
-            sv_types: vec![],
-            sv_sub_types: vec![],
+            sv_types: SvType::vec_all(),
+            sv_sub_types: SvSubType::vec_all(),
             clinvar_sv_min_overlap: None,
             clinvar_sv_min_pathogenicity: None,
             gene_allowlist: None,
@@ -1194,6 +1231,7 @@ impl CaseQuery {
             genotype_criteria: vec![],
             recessive_mode: None,
             recessive_index: None,
+            tx_effects: TranscriptEffect::vec_all(),
         }
     }
 }

@@ -94,6 +94,7 @@ pub struct XlinkDbRecord {
     pub entrez_id: u32,
     pub ensembl_gene_id: u32,
     pub symbol: String,
+    pub hgnc_id: String,
 }
 
 /// The interlink DB.
@@ -105,6 +106,8 @@ pub struct XlinkDb {
     pub from_entrez: multimap::MultiMap<u32, u32>,
     /// Link from ensembl ID to indices in records.
     pub from_ensembl: multimap::MultiMap<u32, u32>,
+    /// Link from HGNC ID to indices in records.
+    pub from_hgnc: multimap::MultiMap<String, u32>,
 }
 
 impl XlinkDb {
@@ -164,10 +167,14 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
         result
             .from_ensembl
             .insert(record.ensembl_id, result.records.len() as u32);
+        result
+            .from_hgnc
+            .insert(record.hgnc_id.clone(), result.records.len() as u32);
         result.records.push(XlinkDbRecord {
             entrez_id: record.entrez_id,
             ensembl_gene_id: record.ensembl_id,
             symbol: record.symbol,
+            hgnc_id: record.hgnc_id,
         });
         total_count += 1;
     }

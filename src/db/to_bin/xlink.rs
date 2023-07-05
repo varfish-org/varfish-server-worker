@@ -16,9 +16,10 @@ pub mod input {
 
     #[derive(Debug, Deserialize)]
     pub struct Record {
+        pub hgnc_id: Option<String>,
+        pub gene_symbol: Option<String>,
         pub ensembl_gene_id: Option<String>,
         pub entrez_id: Option<u32>,
-        pub gene_symbol: Option<String>,
     }
 }
 
@@ -39,11 +40,15 @@ where
         .from_reader(open_read_maybe_gz(path_input_tsv)?);
     for record in reader.deserialize() {
         let record: input::Record = record?;
-        if let (Some(entrez_id), Some(ensembl_gene_id), Some(gene_symbol)) =
-            (record.entrez_id, record.ensembl_gene_id, record.gene_symbol)
-        {
+        if let (Some(entrez_id), Some(ensembl_gene_id), Some(gene_symbol), Some(hgnc_id)) = (
+            record.entrez_id,
+            record.ensembl_gene_id,
+            record.gene_symbol,
+            record.hgnc_id,
+        ) {
             records.push(XlinkRecord {
                 entrez_id,
+                hgnc_id,
                 ensembl_id: numeric_gene_id(&ensembl_gene_id)?,
                 symbol: gene_symbol,
             });

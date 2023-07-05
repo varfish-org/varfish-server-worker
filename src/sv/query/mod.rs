@@ -18,8 +18,13 @@ use std::{
 
 use clap::{command, Parser};
 use csv::QuoteStyle;
+use hgvs::static_data::ASSEMBLY_INFOS;
 use indexmap::IndexMap;
 use log::warn;
+use mehari::{
+    annotate::seqvars::provider::TxIntervalTrees,
+    db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
+};
 use serde::Serialize;
 use thousands::Separable;
 use uuid::Uuid;
@@ -40,9 +45,12 @@ use self::{
     genes::{load_gene_db, GeneDb},
     masked::{load_masked_dbs, MaskedBreakpointCount, MaskedDbBundle},
     pathogenic::{load_patho_dbs, PathoDbBundle},
-    schema::{CallInfo, StrandOrientation, SvSubType, SvType},
+    schema::{CallInfo, StrandOrientation, SvSubType, SvType, TranscriptEffect},
     tads::{load_tads, TadSetBundle},
 };
+
+/// Length of the upstream/downstream region.
+static X_STREAM: i32 = 5000;
 
 /// Command line arguments for `sv query` sub command.
 #[derive(Parser, Debug)]
@@ -51,7 +59,7 @@ pub struct Args {
     /// Genome release to assume.
     #[arg(long, value_enum, default_value_t = GenomeRelease::Grch37)]
     pub genome_release: GenomeRelease,
-    /// Path to database to use for querying.
+    /// Path to worker database to use for querying.
     #[arg(long, required = true)]
     pub path_db: String,
     /// Path to query JSON file.
@@ -100,6 +108,15 @@ struct Gene {
     is_disease_gene: bool,
 }
 
+/// Explanation of transcript effect per individual gene.
+#[derive(Debug, Default, Serialize)]
+struct GeneTranscriptEffects {
+    /// Identifying gene.
+    gene: Gene,
+    /// Transcript effects for the gene.
+    transcript_effects: Vec<TranscriptEffect>,
+}
+
 /// The structured result information of the result record.
 #[derive(Debug, Default, Serialize)]
 struct ResultPayload {
@@ -128,6 +145,8 @@ struct ResultPayload {
     masked_breakpoints: MaskedBreakpointCount,
     /// Distance to next TAD boundary.
     tad_boundary_distance: Option<u32>,
+    /// Effects on the transcripts per gene.
+    tx_effects: Vec<GeneTranscriptEffects>,
 }
 
 /// A result record from the query.
@@ -202,6 +221,9 @@ fn run_query(
     interpreter: &QueryInterpreter,
     args: &Args,
     dbs: &Databases,
+    mehari_tx_db: &TxSeqDatabase,
+    mehari_tx_idx: &TxIntervalTrees,
+    chrom_to_acc: &HashMap<String, String>,
 ) -> Result<QueryStats, anyhow::Error> {
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
@@ -264,6 +286,17 @@ fn run_query(
                 );
                 ovl_gene_ids.sort();
                 ovl_gene_ids.clone()
+            },
+            &mut |sv: &SchemaSv| {
+                result_payload.tx_effects =
+                    compute_tx_effects(sv, mehari_tx_db, mehari_tx_idx, &dbs.genes, chrom_to_acc);
+                let mut res = Vec::new();
+                for tx_effect in &result_payload.tx_effects {
+                    res.extend(tx_effect.transcript_effects.iter())
+                }
+                res.sort();
+                res.dedup();
+                res
             },
         )?;
 
@@ -387,6 +420,346 @@ fn run_query(
     Ok(stats)
 }
 
+/// Generate `Gene` record for a given Entrez gene ID.
+fn construct_gene(entrez_id: u32, gene_db: &GeneDb) -> Gene {
+    let idx = gene_db
+        .xlink
+        .from_entrez
+        .get(&entrez_id)
+        .expect("gene must exist at this point");
+    let record = &gene_db.xlink.records[*idx as usize];
+    Gene {
+        entrez_id: Some(entrez_id),
+        symbol: Some(record.symbol.clone()),
+        ensembl_id: Some(format!("ENSG{:011}", record.ensembl_gene_id)),
+        is_acmg: gene_db.acmg.contains(record.entrez_id),
+        is_disease_gene: gene_db.omim.contains(record.entrez_id),
+    }
+}
+
+/// Ad-hoc data structure for `tx_regions`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct TxRegion {
+    // 0-based begin position
+    begin: i32,
+    // 0-based end position
+    end: i32,
+    // "arbitrary" number
+    no: usize,
+    // effect of the transcript (encodes region type)
+    effect: TranscriptEffect,
+}
+
+/// Return list of half-open intervals for a given transcript.
+fn tx_regions(tx: &Transcript) -> Vec<TxRegion> {
+    assert_eq!(
+        tx.genome_alignments.len(),
+        1,
+        "only one alignment supported"
+    );
+    if tx.genome_alignments[0].exons.is_empty() {
+        // no exons? skip!
+        return Vec::new();
+    }
+
+    let mut result = Vec::new();
+    let mut tx_start = None;
+    let mut tx_end = None;
+    let genome_alignment = &tx.genome_alignments[0];
+
+    // Loop over all exons to determine leftmost and rightmost genome position.
+    for exon_alignment in &genome_alignment.exons {
+        if let Some(value) = tx_start {
+            if exon_alignment.alt_start_i < value {
+                tx_start = Some(exon_alignment.alt_start_i);
+            }
+        } else {
+            tx_start = Some(exon_alignment.alt_start_i);
+        }
+        if let Some(value) = tx_end {
+            if exon_alignment.alt_end_i > value {
+                tx_end = Some(exon_alignment.alt_end_i);
+            }
+        } else {
+            tx_end = Some(exon_alignment.alt_end_i);
+        }
+    }
+
+    let tx_start = tx_start.expect("must have been set");
+    let tx_end = tx_end.expect("must have been set");
+
+    // Perform the actual region extraction.
+    let mut prev_alt_end_i = 0;
+    for (no, exon_alignment) in genome_alignment.exons.iter().enumerate() {
+        if exon_alignment.alt_start_i == tx_start {
+            // is first, register upstream/downstream
+            result.push(TxRegion {
+                begin: exon_alignment.alt_start_i - X_STREAM,
+                end: exon_alignment.alt_start_i - 1,
+                no,
+                effect: if genome_alignment.strand == Strand::Plus as i32 {
+                    TranscriptEffect::UpstreamVariant
+                } else {
+                    TranscriptEffect::DownstreamVariant
+                },
+            });
+        } else {
+            // is not first, register splice region on the left boundary
+            result.push(TxRegion {
+                begin: (exon_alignment.alt_start_i - 1) - 8,
+                end: (exon_alignment.alt_start_i - 1) + 3,
+                no,
+                effect: TranscriptEffect::SpliceRegionVariant,
+            })
+        }
+
+        if exon_alignment.alt_end_i == tx_end {
+            // is last, register upstream/downstream
+            result.push(TxRegion {
+                begin: exon_alignment.alt_end_i,
+                end: exon_alignment.alt_end_i + X_STREAM,
+                no,
+                effect: if genome_alignment.strand == Strand::Plus as i32 {
+                    TranscriptEffect::DownstreamVariant
+                } else {
+                    TranscriptEffect::UpstreamVariant
+                },
+            });
+        } else {
+            // is not last, register splice region on the right boundary
+            result.push(TxRegion {
+                begin: exon_alignment.alt_end_i - 3,
+                end: exon_alignment.alt_end_i + 8,
+                no,
+                effect: TranscriptEffect::SpliceRegionVariant,
+            })
+        }
+
+        // register the exon
+        result.push(TxRegion {
+            begin: exon_alignment.alt_start_i - 1,
+            end: exon_alignment.alt_end_i,
+            no,
+            effect: TranscriptEffect::ExonVariant,
+        });
+
+        if exon_alignment.alt_start_i != tx_start {
+            // is not first exon, register intron "right" of it
+            result.push(TxRegion {
+                begin: prev_alt_end_i,
+                end: exon_alignment.alt_start_i - 1,
+                no,
+                effect: TranscriptEffect::IntronVariant,
+            });
+        }
+
+        // store end of prev exon for next intron's start
+        prev_alt_end_i = exon_alignment.alt_end_i;
+    }
+
+    result
+}
+
+/// Return the transcript region / effect for the given breakpoint.
+fn gene_tx_effects_for_bp(tx: &Transcript, pos: i32) -> Vec<TranscriptEffect> {
+    // Obtain list of regions for transcript.
+    let regions = tx_regions(tx);
+
+    // Determine how this relates to the breakpoint.
+    let pos = pos - 1; // 1-based to 0-based
+    let mut result = regions
+        .iter()
+        .filter(|r| r.begin <= pos && pos < r.end)
+        .map(|r| r.effect)
+        .collect::<Vec<_>>();
+    if result.is_empty() {
+        result.push(TranscriptEffect::IntergenicVariant);
+    } else {
+        result.sort();
+        result.dedup();
+    }
+    result
+}
+
+/// Return the transcript region / effect for the given range.
+fn gene_tx_effect_for_range(tx: &Transcript, pos: i32, end: i32) -> Vec<TranscriptEffect> {
+    // Obtain list of regions for transcript.
+    let regions = tx_regions(tx);
+
+    // Determine how this relates to the left and right breakpoints.
+    let pos = pos - 1; // 1-based to 0-based
+    let mut result = regions
+        .iter()
+        .filter(|region| pos < region.end && region.begin < end)
+        .map(|region| region.effect)
+        .collect::<Vec<_>>();
+
+    // Remove any duplicates.
+    result.sort();
+    result.dedup();
+
+    // If we have both upstream and downstream then the full transcript is affected.
+    if result.contains(&TranscriptEffect::UpstreamVariant)
+        && result.contains(&TranscriptEffect::DownstreamVariant)
+    {
+        result.push(TranscriptEffect::TranscriptVariant);
+    }
+
+    result
+}
+
+/// Helper that computes effects on transcripts for a single breakend, e.g., one side of BND or INS.
+fn compute_tx_effects_for_breakpoint(
+    sv: &SchemaSv,
+    mehari_tx_db: &TxSeqDatabase,
+    mehari_tx_idx: &TxIntervalTrees,
+    gene_db: &GeneDb,
+    chrom_to_acc: &HashMap<String, String>,
+) -> Vec<GeneTranscriptEffects> {
+    // Shortcut to the `TranscriptDb`.
+    let tx_db = mehari_tx_db
+        .tx_db
+        .as_ref()
+        .expect("transcripts must be present");
+    // Compute canonical chromosome name and map to accession.
+    let chrom = chrom_to_acc.get(&annonars::common::cli::canonicalize(&sv.chrom));
+    if chrom.is_none() {
+        return Default::default();
+    }
+    let chrom = chrom.expect("chromosome must be known at this point");
+    // Create range to query the interval trees for.
+    let query = (sv.pos - X_STREAM)..(sv.pos + X_STREAM);
+
+    if let Some(idx) = mehari_tx_idx.contig_to_idx.get(chrom) {
+        let mut effects_by_gene: HashMap<_, Vec<_>> = HashMap::new();
+
+        // Collect all transcripts that overlap the INS and compute the effect of the INS on
+        // the transcript.
+        let tree = &mehari_tx_idx.trees[*idx];
+        for it in tree.find(query) {
+            let tx = &tx_db.transcripts[*it.data() as usize];
+            if let Some(&idx) = gene_db
+                .xlink
+                .from_hgnc
+                .get(&format!("HGNC:{}", &tx.gene_id))
+            {
+                let entrez_id = gene_db.xlink.records[idx as usize].entrez_id;
+                effects_by_gene
+                    .entry(entrez_id)
+                    .or_default()
+                    .extend(gene_tx_effects_for_bp(tx, sv.pos));
+            } else {
+                tracing::warn!("could not resolve HGNC gene ID {:?}", tx.gene_id)
+            }
+        }
+
+        // Deduplicate results.
+        effects_by_gene.iter_mut().for_each(|(_, v)| {
+            v.sort();
+            v.dedup()
+        });
+
+        // Convert the results into the final format.
+        effects_by_gene
+            .into_iter()
+            .map(|(entrez_id, transcript_effects)| GeneTranscriptEffects {
+                gene: construct_gene(entrez_id, gene_db),
+                transcript_effects,
+            })
+            .collect()
+    } else {
+        // We do not have any transcripts for this chromosome.
+        Default::default()
+    }
+}
+
+/// Compute effect for linear SVs.
+fn compute_tx_effects_for_linear(
+    sv: &SchemaSv,
+    mehari_tx_db: &TxSeqDatabase,
+    mehari_tx_idx: &TxIntervalTrees,
+    gene_db: &GeneDb,
+    chrom_to_acc: &HashMap<String, String>,
+) -> Vec<GeneTranscriptEffects> {
+    // Shortcut to the `TranscriptDb`.
+    let tx_db = mehari_tx_db
+        .tx_db
+        .as_ref()
+        .expect("transcripts must be present");
+    // Compute canonical chromosome name and map to accession.
+    let chrom = chrom_to_acc.get(&annonars::common::cli::canonicalize(&sv.chrom));
+    if chrom.is_none() {
+        return Default::default();
+    }
+    let chrom = chrom.expect("chromosome must be known at this point");
+    // Create range to query the interval trees for.
+    let query = (sv.pos - X_STREAM)..(sv.end + X_STREAM);
+
+    if let Some(idx) = mehari_tx_idx.contig_to_idx.get(chrom) {
+        let mut effects_by_gene: HashMap<_, Vec<_>> = HashMap::new();
+
+        // Collect all transcripts that overlap the SV and compute the effect of the SV on
+        // the transcript.
+        let tree = &mehari_tx_idx.trees[*idx];
+        for it in tree.find(query) {
+            let tx = &tx_db.transcripts[*it.data() as usize];
+            if let Some(&idx) = gene_db
+                .xlink
+                .from_hgnc
+                .get(&format!("HGNC:{}", &tx.gene_id))
+            {
+                let entrez_id = gene_db.xlink.records[idx as usize].entrez_id;
+                effects_by_gene
+                    .entry(entrez_id)
+                    .or_default()
+                    .extend(gene_tx_effect_for_range(tx, sv.pos, sv.end));
+            } else {
+                tracing::warn!("could not resolve HGNC gene ID {:?}", tx.gene_id)
+            }
+        }
+
+        // Deduplicate results.
+        effects_by_gene.iter_mut().for_each(|(_, v)| {
+            v.sort();
+            v.dedup()
+        });
+
+        // Convert the results into the final format.
+        effects_by_gene
+            .into_iter()
+            .map(|(entrez_id, transcript_effects)| GeneTranscriptEffects {
+                gene: construct_gene(entrez_id, gene_db),
+                transcript_effects,
+            })
+            .collect()
+    } else {
+        // We do not have any transcripts for this chromosome.
+        Default::default()
+    }
+}
+
+/// Compute effect(s) of `sv` on transcript of genes.
+fn compute_tx_effects(
+    sv: &SchemaSv,
+    mehari_tx_db: &TxSeqDatabase,
+    mehari_tx_idx: &TxIntervalTrees,
+    gene_db: &GeneDb,
+    chrom_to_acc: &HashMap<String, String>,
+) -> Vec<GeneTranscriptEffects> {
+    match sv.sv_type {
+        SvType::Ins | SvType::Bnd => compute_tx_effects_for_breakpoint(
+            sv,
+            mehari_tx_db,
+            mehari_tx_idx,
+            gene_db,
+            chrom_to_acc,
+        ),
+        SvType::Del | SvType::Dup | SvType::Inv | SvType::Cnv => {
+            compute_tx_effects_for_linear(sv, mehari_tx_db, mehari_tx_idx, gene_db, chrom_to_acc)
+        }
+    }
+}
+
 /// Bundle the used database to reduce argument count.
 #[derive(Default, Debug)]
 pub struct Databases {
@@ -473,17 +846,17 @@ fn translate_gene_allowlist(
 
 /// Load database from the given path with the given genome release.
 fn load_databases(
-    path_db: &str,
+    path_worker_db: &str,
     genome_release: GenomeRelease,
     max_tad_distance: i32,
 ) -> Result<Databases, anyhow::Error> {
     Ok(Databases {
-        bg_dbs: load_bg_dbs(path_db, genome_release)?,
-        patho_dbs: load_patho_dbs(path_db, genome_release)?,
-        tad_sets: load_tads(path_db, genome_release, max_tad_distance)?,
-        masked: load_masked_dbs(path_db, genome_release)?,
-        genes: load_gene_db(path_db, genome_release)?,
-        clinvar_sv: load_clinvar_sv(path_db, genome_release)?,
+        bg_dbs: load_bg_dbs(path_worker_db, genome_release)?,
+        patho_dbs: load_patho_dbs(path_worker_db, genome_release)?,
+        tad_sets: load_tads(path_worker_db, genome_release, max_tad_distance)?,
+        masked: load_masked_dbs(path_worker_db, genome_release)?,
+        genes: load_gene_db(path_worker_db, genome_release)?,
+        clinvar_sv: load_clinvar_sv(path_worker_db, genome_release)?,
     })
 }
 
@@ -493,9 +866,17 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("args_common = {:?}", &args_common);
     tracing::info!("args = {:?}", &args);
 
-    tracing::info!("Loading databases...");
+    tracing::info!("Loading query...");
+    let query: CaseQuery = serde_json::from_reader(File::open(&args.path_query_json)?)?;
+    tracing::info!(
+        "... done loading query = {}",
+        &serde_json::to_string(&query)?
+    );
+
+    tracing::info!("Loading worker databases...");
     let before_loading = Instant::now();
-    let dbs = load_databases(&args.path_db, args.genome_release, args.max_tad_distance)?;
+    let path_worker_db = format!("{}/worker", &args.path_db);
+    let dbs = load_databases(&path_worker_db, args.genome_release, args.max_tad_distance)?;
     tracing::info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()
@@ -503,12 +884,37 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     trace_rss_now();
 
-    tracing::info!("Loading query...");
-    let query: CaseQuery = serde_json::from_reader(File::open(&args.path_query_json)?)?;
-    tracing::info!(
-        "... done loading query = {}",
-        &serde_json::to_string(&query)?
+    tracing::info!("Loading mehari tx database...");
+    let before_loading = Instant::now();
+    let path_mehari_tx_db = format!(
+        "{}/mehari/{}/txs.bin.zst",
+        &args.path_db,
+        &args.genome_release.to_string()
     );
+    let mehari_tx_db = mehari::annotate::seqvars::load_tx_db(&path_mehari_tx_db)?;
+    tracing::info!(
+        "...done loading mehari tx database in {:?}",
+        before_loading.elapsed()
+    );
+    tracing::info!("Building mehari index data structures...");
+    let before_building = Instant::now();
+    let mehari_tx_idx = TxIntervalTrees::new(&mehari_tx_db, args.genome_release.into());
+    let chrom_to_acc = ASSEMBLY_INFOS[args.genome_release.into()]
+        .sequences
+        .iter()
+        .map(|record| {
+            (
+                annonars::common::cli::canonicalize(&record.name),
+                record.refseq_ac.clone(),
+            )
+        })
+        .collect::<HashMap<_, _>>();
+    tracing::info!(
+        "...done building mehari index data structures in {:?}",
+        before_building.elapsed()
+    );
+
+    trace_rss_now();
 
     tracing::info!("Translating gene allow list...");
     let gene_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
@@ -523,7 +929,14 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     tracing::info!("Running queries...");
     let before_query = Instant::now();
-    let query_stats = run_query(&QueryInterpreter::new(query, gene_allowlist), args, &dbs)?;
+    let query_stats = run_query(
+        &QueryInterpreter::new(query, gene_allowlist),
+        args,
+        &dbs,
+        &mehari_tx_db,
+        &mehari_tx_idx,
+        &chrom_to_acc,
+    )?;
     tracing::info!("... done running query in {:?}", before_query.elapsed());
     tracing::info!(
         "summary: {} records passed out of {}",
