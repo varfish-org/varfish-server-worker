@@ -623,7 +623,7 @@ fn compute_tx_effects_for_breakpoint(
         .expect("transcripts must be present");
     // Compute canonical chromosome name and map to accession.
     let chrom = chrom_to_acc.get(&annonars::common::cli::canonicalize(&sv.chrom));
-    if !chrom.is_some() {
+    if chrom.is_none() {
         return Default::default();
     }
     let chrom = chrom.expect("chromosome must be known at this point");
@@ -688,7 +688,7 @@ fn compute_tx_effects_for_linear(
         .expect("transcripts must be present");
     // Compute canonical chromosome name and map to accession.
     let chrom = chrom_to_acc.get(&annonars::common::cli::canonicalize(&sv.chrom));
-    if !chrom.is_some() {
+    if chrom.is_none() {
         return Default::default();
     }
     let chrom = chrom.expect("chromosome must be known at this point");
