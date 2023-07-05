@@ -51,7 +51,7 @@ pub struct Args {
     /// Genome release to assume.
     #[arg(long, value_enum, default_value_t = GenomeRelease::Grch37)]
     pub genome_release: GenomeRelease,
-    /// Path to database to use for querying.
+    /// Path to worker database to use for querying.
     #[arg(long, required = true)]
     pub path_db: String,
     /// Path to query JSON file.
@@ -473,17 +473,17 @@ fn translate_gene_allowlist(
 
 /// Load database from the given path with the given genome release.
 fn load_databases(
-    path_db: &str,
+    path_worker_db: &str,
     genome_release: GenomeRelease,
     max_tad_distance: i32,
 ) -> Result<Databases, anyhow::Error> {
     Ok(Databases {
-        bg_dbs: load_bg_dbs(path_db, genome_release)?,
-        patho_dbs: load_patho_dbs(path_db, genome_release)?,
-        tad_sets: load_tads(path_db, genome_release, max_tad_distance)?,
-        masked: load_masked_dbs(path_db, genome_release)?,
-        genes: load_gene_db(path_db, genome_release)?,
-        clinvar_sv: load_clinvar_sv(path_db, genome_release)?,
+        bg_dbs: load_bg_dbs(path_worker_db, genome_release)?,
+        patho_dbs: load_patho_dbs(path_worker_db, genome_release)?,
+        tad_sets: load_tads(path_worker_db, genome_release, max_tad_distance)?,
+        masked: load_masked_dbs(path_worker_db, genome_release)?,
+        genes: load_gene_db(path_worker_db, genome_release)?,
+        clinvar_sv: load_clinvar_sv(path_worker_db, genome_release)?,
     })
 }
 
@@ -493,11 +493,27 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("args_common = {:?}", &args_common);
     tracing::info!("args = {:?}", &args);
 
-    tracing::info!("Loading databases...");
+    tracing::info!("Loading worker databases...");
     let before_loading = Instant::now();
-    let dbs = load_databases(&args.path_db, args.genome_release, args.max_tad_distance)?;
+    let path_worker_db = format!("{}/worker", &args.path_db);
+    let dbs = load_databases(&path_worker_db, args.genome_release, args.max_tad_distance)?;
     tracing::info!(
         "...done loading databases in {:?}",
+        before_loading.elapsed()
+    );
+
+    trace_rss_now();
+
+    tracing::info!("Loading mehari tx database...");
+    let before_loading = Instant::now();
+    let path_mehari_tx_db = format!(
+        "{}/mehari/{}/txs.bin.zst",
+        &args.path_db,
+        &args.genome_release.to_string()
+    );
+    let mehari_tx_db = mehari::annotate::seqvars::load_tx_db(&path_mehari_tx_db)?;
+    tracing::info!(
+        "...done loading mehari tx database in {:?}",
         before_loading.elapsed()
     );
 
