@@ -8,7 +8,10 @@ use tracing::{trace, warn};
 use super::{
     bgdbs::BgDbOverlaps,
     masked::MaskedBreakpointCount,
-    schema::{CaseQuery, Genotype, GenotypeChoice, Range, StructuralVariant, SvSubType, SvType},
+    schema::{
+        CaseQuery, Genotype, GenotypeChoice, Range, StructuralVariant, SvSubType, SvType,
+        TranscriptEffect,
+    },
 };
 
 /// Slack around break-end positions
@@ -277,14 +280,17 @@ impl QueryInterpreter {
         let passes_inhouse = !self.query.svdb_inhouse_enabled
             || counts.inhouse <= self.query.svdb_inhouse_max_count.unwrap_or(counts.inhouse);
 
-        trace!("does SV pass counts? passes_dgv={}, passes_dgv_gs={}, passes_gnomad={}, passes_exac={}, passes_dbvar={}, passes_g1k={}, passes_inhouse={}",
-        passes_dgv
-        ,passes_dgv_gs
-        ,passes_gnomad
-        ,passes_exac
-        ,passes_dbvar
-        ,passes_g1k
-        ,passes_inhouse);
+        trace!(
+            "does SV pass counts? passes_dgv={}, passes_dgv_gs={}, passes_gnomad={}, \
+            passes_exac={}, passes_dbvar={}, passes_g1k={}, passes_inhouse={}",
+            passes_dgv,
+            passes_dgv_gs,
+            passes_gnomad,
+            passes_exac,
+            passes_dbvar,
+            passes_g1k,
+            passes_inhouse
+        );
 
         passes_dgv
             && passes_dgv_gs
@@ -295,7 +301,7 @@ impl QueryInterpreter {
             && passes_inhouse
     }
 
-    /// Determin whether the `sv` passes the gene allow list filter.
+    /// Determine whether the `sv` passes the gene allow list filter.
     pub fn passes_genes(&self, ovl_gene_ids: &[u32]) -> bool {
         if let Some(gene_allowlist) = self.gene_allowlist.as_ref() {
             if gene_allowlist.is_empty() {
@@ -309,18 +315,33 @@ impl QueryInterpreter {
         }
     }
 
+    /// Determine whether `sv` passes the transcript effect filter.
+    fn passes_effects(&self, tx_effects: &[TranscriptEffect]) -> bool {
+        self.query.tx_effects.is_empty()
+            || (tx_effects.is_empty()
+                && self
+                    .query
+                    .tx_effects
+                    .contains(&TranscriptEffect::IntergenicVariant))
+            || tx_effects
+                .iter()
+                .any(|effect| self.query.tx_effects.contains(effect))
+    }
+
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<CountBg, CountMasked, OvlGeneIds>(
+    pub fn passes<CountBg, CountMasked, OvlGeneIds, TxEffects>(
         &self,
         sv: &StructuralVariant,
         count_bg: &mut CountBg,
         count_masked: &mut CountMasked,
         ovl_gene_ids: &mut OvlGeneIds,
+        tx_effects: &mut TxEffects,
     ) -> Result<PassesResult, anyhow::Error>
     where
         CountBg: FnMut(&StructuralVariant) -> BgDbOverlaps,
         CountMasked: FnMut(&StructuralVariant) -> MaskedBreakpointCount,
         OvlGeneIds: FnMut(&StructuralVariant) -> Vec<u32>,
+        TxEffects: FnMut(&StructuralVariant) -> Vec<TranscriptEffect>,
     {
         // We first check for matching genotype.  If this succeeds then we execute the
         // overlapper for known pathogenic and then for frequency in background.
@@ -337,7 +358,10 @@ impl QueryInterpreter {
             trace!("... SV does not gene allow list filter");
             Ok(Default::default())
         } else if !self.passes_counts(&count_bg(sv)) {
-            trace!("... SV does not pass counts filter");
+            trace!("... SV does not pass bg counts filter");
+            Ok(Default::default())
+        } else if !self.passes_effects(&tx_effects(sv)) {
+            trace!("... SV does not pass tx effect filter");
             Ok(Default::default())
         } else {
             trace!("... SV passes filter");
@@ -1185,6 +1209,7 @@ mod tests {
                 .passes(
                     &sv_pass,
                     &mut |_sv| counts_pass.clone(),
+                    &mut |_sv| { Default::default() },
                     &mut |_sv| { Default::default() },
                     &mut |_sv| { Default::default() }
                 )?

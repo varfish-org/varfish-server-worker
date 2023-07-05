@@ -2,6 +2,7 @@
 
 use clap::ValueEnum;
 use enum_map::Enum;
+use hgvs::static_data::Assembly;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumString;
 
@@ -28,6 +29,15 @@ pub enum GenomeRelease {
     Grch37,
     /// GRCh38
     Grch38,
+}
+
+impl From<GenomeRelease> for Assembly {
+    fn from(val: GenomeRelease) -> Self {
+        match val {
+            GenomeRelease::Grch37 => Assembly::Grch37p10,
+            GenomeRelease::Grch38 => Assembly::Grch38,
+        }
+    }
 }
 
 /// Enum for the supported gene/transcript databases.

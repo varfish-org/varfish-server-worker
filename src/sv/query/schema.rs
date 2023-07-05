@@ -207,10 +207,8 @@ impl SvSubType {
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum TranscriptEffect {
-    /// Deletion of the full transcript.
-    TranscriptAblation,
-    /// The transcript is affected by a relocation.
-    TranscriptTranslocation,
+    /// Affects the full transcript.
+    TranscriptVariant,
     /// An exon is affected by the SV.
     ExonVariant,
     /// The splice region is affected by the SV.
@@ -229,8 +227,7 @@ impl TranscriptEffect {
     /// Return vector with all transcript effects.
     pub fn vec_all() -> Vec<TranscriptEffect> {
         vec![
-            TranscriptEffect::TranscriptAblation,
-            TranscriptEffect::TranscriptTranslocation,
+            TranscriptEffect::TranscriptVariant,
             TranscriptEffect::ExonVariant,
             TranscriptEffect::SpliceRegionVariant,
             TranscriptEffect::IntronVariant,
