@@ -103,7 +103,7 @@ struct Gene {
     /// Entrez gene ID
     entrez_id: Option<u32>,
     /// HGNC gene ID.
-    hgnc_id : Option<String>,
+    hgnc_id: Option<String>,
     /// Whether the gene is in the ACMG list for incidental findings.
     is_acmg: bool,
     /// Whether the gene is linked to an OMIM disease.
