@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.9.0...v0.10.0) (2023-07-25)
+
+
+### Features
+
+* write out HGNC ids for sv query results ([#150](https://www.github.com/bihealth/varfish-server-worker/issues/150)) ([#151](https://www.github.com/bihealth/varfish-server-worker/issues/151)) ([9e1074b](https://www.github.com/bihealth/varfish-server-worker/commit/9e1074b53572cf73344b3ac40e412d3d12f9f882))
+
 ## [0.9.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.8.0...v0.9.0) (2023-07-05)
 
 
