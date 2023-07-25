@@ -102,6 +102,8 @@ struct Gene {
     ensembl_id: Option<String>,
     /// Entrez gene ID
     entrez_id: Option<u32>,
+    /// HGNC gene ID.
+    hgnc_id: Option<String>,
     /// Whether the gene is in the ACMG list for incidental findings.
     is_acmg: bool,
     /// Whether the gene is linked to an OMIM disease.
@@ -183,6 +185,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
                     symbol: Some(record.symbol.clone()),
                     ensembl_id: Some(format!("ENSG{:011}", record.ensembl_gene_id)),
                     entrez_id: Some(record.entrez_id),
+                    hgnc_id: Some(record.hgnc_id.clone()),
                     is_acmg: gene_db.acmg.contains(record.entrez_id),
                     is_disease_gene: gene_db.omim.contains(record.entrez_id),
                 }
@@ -194,6 +197,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
                 entrez_id: Some(gene_id),
                 symbol: None,
                 ensembl_id: None,
+                hgnc_id: None,
                 is_acmg: gene_db.acmg.contains(gene_id),
                 is_disease_gene: gene_db.omim.contains(gene_id),
             }],
@@ -201,6 +205,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
                 ensembl_id: Some(format!("ENSG{gene_id:011}")),
                 symbol: None,
                 entrez_id: None,
+                hgnc_id: None,
                 is_acmg: false,
                 is_disease_gene: false,
             }],
@@ -432,6 +437,7 @@ fn construct_gene(entrez_id: u32, gene_db: &GeneDb) -> Gene {
         entrez_id: Some(entrez_id),
         symbol: Some(record.symbol.clone()),
         ensembl_id: Some(format!("ENSG{:011}", record.ensembl_gene_id)),
+        hgnc_id: Some(record.hgnc_id.clone()),
         is_acmg: gene_db.acmg.contains(record.entrez_id),
         is_disease_gene: gene_db.omim.contains(record.entrez_id),
     }
