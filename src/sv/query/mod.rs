@@ -786,7 +786,10 @@ fn translate_gene_allowlist(
     let mut result = HashSet::new();
 
     let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
-    let re_ensembl = regex::Regex::new(r"ENSG\d+").expect("invalid regex in source code");
+    let re_ensembl: regex::Regex =
+        regex::Regex::new(r"ENSG\d+").expect("invalid regex in source code");
+    let re_hgnc: regex::Regex =
+        regex::Regex::new(r"HGNC:\d+").expect("invalid regex in source code");
 
     let symbol_to_id: HashMap<_, _> =
         HashMap::from_iter(dbs.genes.xlink.records.iter().map(|record| {
@@ -838,6 +841,27 @@ fn translate_gene_allowlist(
                 }
             } else {
                 warn!("Cannot map candidate ENSEMBL gene identifier {}", &gene);
+                continue;
+            }
+        } else if re_hgnc.is_match(gene) {
+            if dbs.genes.xlink.from_hgnc.contains_key(gene) {
+                if let Some(record_ids) = dbs.genes.xlink.from_hgnc.get_vec(gene) {
+                    for record_id in record_ids {
+                        match query.database {
+                            Database::RefSeq => {
+                                result
+                                    .insert(dbs.genes.xlink.records[*record_id as usize].entrez_id);
+                            }
+                            Database::Ensembl => {
+                                result.insert(
+                                    dbs.genes.xlink.records[*record_id as usize].ensembl_gene_id,
+                                );
+                            }
+                        }
+                    }
+                }
+            } else {
+                warn!("Cannot map candidate HGNC gene identifier {}", &gene);
                 continue;
             }
         } else if let Some(gene_id) = symbol_to_id.get(gene) {
