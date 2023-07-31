@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.10.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.10.0...v0.10.1) (2023-07-31)
+
+
+### Bug Fixes
+
+* allow HGNC IDs in gene allow list ([#153](https://www.github.com/bihealth/varfish-server-worker/issues/153)) ([416bf28](https://www.github.com/bihealth/varfish-server-worker/commit/416bf2823af6147fddf73a43532491a3da396947))
+
 ## [0.10.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.9.0...v0.10.0) (2023-07-25)
 
 
