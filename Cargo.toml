@@ -22,7 +22,7 @@ clap-verbosity-flag = "2.0"
 clap = { version = "4.3", features = ["derive", "help"] }
 console = "0.15"
 csv = "1.1"
-enum-map = { version = "2.4", features = ["serde"] }
+enum-map = { version = "2.6", features = ["serde"] }
 fastrand = "2.0"
 flate2 = "1.0"
 hgvs = "0.10"
