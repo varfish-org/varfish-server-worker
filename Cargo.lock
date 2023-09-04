@@ -310,9 +310,9 @@ dependencies = [
 
 [[package]]
 name = "annonars"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bd16a609b325b10463ff889d3808fad719929c2279298e41eef7de6184fc2bb"
+checksum = "14a57bad32811df7d2bf4d13aebf4337bf8b4b7a5b9264f9ae96b380c6278cb8"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -334,8 +334,8 @@ dependencies = [
  "noodles-bgzf 0.23.0",
  "noodles-core",
  "noodles-csi 0.23.0",
- "noodles-tabix 0.27.0",
- "noodles-vcf 0.36.0",
+ "noodles-tabix 0.28.0",
+ "noodles-vcf 0.37.0",
  "prost",
  "prost-build",
  "rayon",
@@ -2122,9 +2122,9 @@ dependencies = [
 
 [[package]]
 name = "noodles-tabix"
-version = "0.27.0"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37ceacb4f8795a3eb9574c328ce312aff90ab9681e4fd748a0494b578f920ff5"
+checksum = "1c6fb395708bfd2e488034147a4a10709f8a3d293bcbe95379260d8d14fbea93"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2151,16 +2151,16 @@ dependencies = [
 
 [[package]]
 name = "noodles-vcf"
-version = "0.36.0"
+version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ca29f2f26dfacd55aecd79851381237d7bcc3376f8b7b0676bfcb895d941beb"
+checksum = "c79321476c037a054bcf91bc5d231567b3247c9f05c8a7d3d3d4d7383c50959d"
 dependencies = [
  "indexmap 2.0.0",
  "memchr",
  "noodles-bgzf 0.23.0",
  "noodles-core",
  "noodles-csi 0.23.0",
- "noodles-tabix 0.27.0",
+ "noodles-tabix 0.28.0",
  "percent-encoding",
 ]
 
@@ -3608,7 +3608,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 name = "varfish-server-worker"
 version = "0.10.1"
 dependencies = [
- "annonars 0.16.0",
+ "annonars 0.17.0",
  "anyhow",
  "base16ct",
  "bio",
