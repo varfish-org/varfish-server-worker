@@ -295,7 +295,7 @@ dependencies = [
  "noodles-tabix 0.24.0",
  "noodles-vcf 0.33.0",
  "prost 0.11.9",
- "prost-build",
+ "prost-build 0.11.9",
  "rayon",
  "rocksdb",
  "rocksdb-utils-lookup",
@@ -337,7 +337,7 @@ dependencies = [
  "noodles-tabix 0.28.0",
  "noodles-vcf 0.37.0",
  "prost 0.11.9",
- "prost-build",
+ "prost-build 0.11.9",
  "rayon",
  "rocksdb",
  "rocksdb-utils-lookup",
@@ -1884,7 +1884,7 @@ dependencies = [
  "parse-display",
  "procfs",
  "prost 0.11.9",
- "prost-build",
+ "prost-build 0.11.9",
  "quick_cache",
  "rand 0.8.5",
  "rand_core 0.6.4",
@@ -2548,9 +2548,31 @@ dependencies = [
  "petgraph",
  "prettyplease 0.1.25",
  "prost 0.11.9",
- "prost-types",
+ "prost-types 0.11.9",
  "regex",
  "syn 1.0.109",
+ "tempfile",
+ "which",
+]
+
+[[package]]
+name = "prost-build"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30d3e647e9eb04ddfef78dfee2d5b3fefdf94821c84b710a3d8ebc89ede8b164"
+dependencies = [
+ "bytes",
+ "heck",
+ "itertools 0.11.0",
+ "log",
+ "multimap 0.8.3",
+ "once_cell",
+ "petgraph",
+ "prettyplease 0.2.10",
+ "prost 0.12.0",
+ "prost-types 0.12.0",
+ "regex",
+ "syn 2.0.23",
  "tempfile",
  "which",
 ]
@@ -2588,6 +2610,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213622a1460818959ac1181aaeb2dc9c7f63df720db7d788b3e24eacd1983e13"
 dependencies = [
  "prost 0.11.9",
+]
+
+[[package]]
+name = "prost-types"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cebe0a918c97f86c217b0f76fd754e966f8b9f41595095cf7d74cb4e59d730f6"
+dependencies = [
+ "prost 0.12.0",
 ]
 
 [[package]]
@@ -3657,7 +3688,7 @@ dependencies = [
  "pretty_assertions",
  "procfs",
  "prost 0.12.0",
- "prost-build",
+ "prost-build 0.12.0",
  "regex",
  "rstest",
  "serde",
