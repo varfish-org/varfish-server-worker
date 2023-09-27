@@ -153,11 +153,11 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
 
     for record in bg_db.records.into_iter() {
         let chrom_no = record.chrom_no as usize;
-        let begin = match pbs::SvType::from_i32(record.sv_type).expect("invalid sv_type") {
+        let begin = match pbs::SvType::try_from(record.sv_type).expect("invalid sv_type") {
             pbs::SvType::Bnd | pbs::SvType::Ins => record.start - 2,
             _ => record.start - 1,
         };
-        let end = match pbs::SvType::from_i32(record.sv_type).expect("invalid sv_type") {
+        let end = match pbs::SvType::try_from(record.sv_type).expect("invalid sv_type") {
             pbs::SvType::Bnd | pbs::SvType::Ins => record.start - 1,
             _ => record.stop,
         };
@@ -167,7 +167,7 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         result.records[chrom_no].push(BgDbRecord {
             begin: record.start - 1,
             end: record.stop,
-            sv_type: match pbs::SvType::from_i32(record.sv_type).expect("invalid sv_type") {
+            sv_type: match pbs::SvType::try_from(record.sv_type).expect("invalid sv_type") {
                 pbs::SvType::Del => SvType::Del,
                 pbs::SvType::Dup => SvType::Dup,
                 pbs::SvType::Inv => SvType::Inv,
