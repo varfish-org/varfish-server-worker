@@ -280,7 +280,49 @@ dependencies = [
  "noodles-core",
  "noodles-csi",
  "noodles-tabix",
- "noodles-vcf",
+ "noodles-vcf 0.39.0",
+ "prost",
+ "prost-build",
+ "rayon",
+ "rocksdb",
+ "rocksdb-utils-lookup",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "strum",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "annonars"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe254418f47df5e2ca6dadf365aa55865d8e9740388422faf3e81b64729ba337"
+dependencies = [
+ "actix-web",
+ "anyhow",
+ "bgzip",
+ "boolvec",
+ "byteorder",
+ "chrono",
+ "clap",
+ "clap-verbosity-flag",
+ "csv",
+ "enum-map 2.6.3",
+ "env_logger",
+ "flate2",
+ "hgvs",
+ "indexmap 2.0.2",
+ "indicatif",
+ "log",
+ "noodles-bed",
+ "noodles-bgzf",
+ "noodles-core",
+ "noodles-csi",
+ "noodles-tabix",
+ "noodles-vcf 0.40.0",
  "prost",
  "prost-build",
  "rayon",
@@ -1794,7 +1836,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a26fc67865c0e7536b74f167bc78ed179d21eb28f0c7f0f8dbe9ad20b3dc0a0"
 dependencies = [
  "actix-web",
- "annonars",
+ "annonars 0.20.0",
  "anyhow",
  "bgzip",
  "bio",
@@ -1819,7 +1861,7 @@ dependencies = [
  "noodles-csi",
  "noodles-fasta",
  "noodles-tabix",
- "noodles-vcf",
+ "noodles-vcf 0.39.0",
  "parse-display",
  "procfs",
  "prost",
@@ -2039,6 +2081,21 @@ name = "noodles-vcf"
 version = "0.39.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a056c06c7b33d5ba10bb59c09cca9500b02c3e0ead964dd4cf8f0068159783a"
+dependencies = [
+ "indexmap 2.0.2",
+ "memchr",
+ "noodles-bgzf",
+ "noodles-core",
+ "noodles-csi",
+ "noodles-tabix",
+ "percent-encoding",
+]
+
+[[package]]
+name = "noodles-vcf"
+version = "0.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcd62cddca514dd04a13d3f4bf4ff83b5c7bca63c8e6b9ae0de2186ea6517a48"
 dependencies = [
  "indexmap 2.0.2",
  "memchr",
@@ -3420,7 +3477,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 name = "varfish-server-worker"
 version = "0.10.1"
 dependencies = [
- "annonars",
+ "annonars 0.21.0",
  "anyhow",
  "base16ct",
  "bio",
