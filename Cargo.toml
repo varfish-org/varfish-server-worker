@@ -12,7 +12,7 @@ rust-version = "1.64.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-annonars = "0.17"
+annonars = "0.21"
 anyhow = { version = "1.0", features = ["backtrace"] }
 base16ct = "0.2"
 bio = "1.4"
@@ -25,12 +25,12 @@ csv = "1.1"
 enum-map = { version = "2.6", features = ["serde"] }
 fastrand = "2.0"
 flate2 = "1.0"
-hgvs = "0.10"
+hgvs = "0.11"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
 lazy_static = "1.4"
 log = "0.4"
-mehari = "0.6"
+mehari = "0.7"
 multimap = "0.9"
 procfs = "0.15"
 prost = "0.12"
@@ -38,7 +38,7 @@ regex = "1.9"
 serde_json = "1.0"
 serde-jsonlines = "0.4"
 serde = { version = "1.0", features = ["serde_derive"] }
-serde_with = "3.3"
+serde_with = { version = "3.3", features = ["indexmap_2"] }
 shellexpand = "3.0"
 strum_macros = "0.25"
 strum = { version = "0.25", features = ["derive"] }
