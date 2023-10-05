@@ -2,6 +2,7 @@
 
 pub mod common;
 pub mod db;
+pub mod seqvars;
 pub mod sv;
 
 use clap::{Args, Parser, Subcommand};
@@ -33,6 +34,8 @@ enum Commands {
     Db(Db),
     /// SV filtration related commands.
     Sv(Sv),
+    /// Sequence variant related commands.
+    Seqvars(Seqvars),
 }
 
 /// Parsing of "db *" sub commands.
@@ -67,6 +70,21 @@ enum SvCommands {
     Query(sv::query::Args),
 }
 
+/// Parsing of "seqvars *" sub commands.
+#[derive(Debug, Args)]
+#[command(args_conflicts_with_subcommands = true)]
+struct Seqvars {
+    /// The sub command to run
+    #[command(subcommand)]
+    command: SeqvarsCommands,
+}
+
+/// Enum supporting the parsing of "sv *" sub commands.
+#[derive(Debug, Subcommand)]
+enum SeqvarsCommands {
+    Ingest(seqvars::ingest::Args),
+}
+
 fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
@@ -96,6 +114,11 @@ fn main() -> Result<(), anyhow::Error> {
                 }
                 DbCommands::ToBin(args) => {
                     db::to_bin::cli::run(&cli.common, args)?;
+                }
+            },
+            Commands::Seqvars(seqvars) => match &seqvars.command {
+                SeqvarsCommands::Ingest(args) => {
+                    seqvars::ingest::run(&cli.common, args)?;
                 }
             },
             Commands::Sv(sv) => match &sv.command {

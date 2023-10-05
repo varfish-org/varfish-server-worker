@@ -1,0 +1,7 @@
+---
+source: src/seqvars/ingest/header.rs
+expression: "VariantCaller::guess(&vcf_header)"
+---
+GatkHaplotypeCaller:
+  version: 4.4.0.0
+

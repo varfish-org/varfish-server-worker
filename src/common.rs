@@ -23,6 +23,14 @@ pub struct Args {
     pub verbose: Verbosity<InfoLevel>,
 }
 
+impl Default for Args {
+    fn default() -> Self {
+        Self {
+            verbose: Verbosity::new(0, 0),
+        }
+    }
+}
+
 /// Helper to print the current memory resident set size via `tracing`.
 pub fn trace_rss_now() {
     let me = procfs::process::Process::myself().unwrap();

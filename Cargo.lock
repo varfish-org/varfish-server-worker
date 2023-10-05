@@ -3442,6 +3442,7 @@ dependencies = [
  "log",
  "mehari",
  "multimap 0.9.0",
+ "noodles-vcf",
  "pretty_assertions",
  "procfs",
  "prost",
