@@ -109,16 +109,29 @@ fn process_variants(
     let predictor = mehari::annotate::seqvars::csq::ConsequencePredictor::new(provider, assembly);
     tracing::info!("... done building transcript interval trees");
 
+    // Read through input file, construct output records, and annotate these.
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
     let mut total_written = 0usize;
     let mut records = input_reader.records(&input_header);
     loop {
-        if let Some(record) = records.next() {
-            let mut vcf_record = record?;
+        if let Some(input_record) = records.next() {
+            let mut input_record = input_record?;
+
+            for alt_allele in input_record.alternate_bases().iter() {
+                vcf::Record::builder()
+                .set_chromosome(input_record.chromosome().clone())
+                .set_position(input_record.position())
+                .set_reference_bases(input_record.reference_bases().clone())
+                .set_alternate_bases(vcf::record::AlternateBases::from(vec![alt_allele.clone()]))
+                .build()?;
+            // FORMAT info missing
+            todo!();
+            }
+
 
             // TODO: ignores all but the first alternative allele!
-            let vcf_var = annonars::common::keys::Var::from_vcf_allele(&vcf_record, 0);
+            let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
 
             // Skip records with a deletion as alternative allele.
             if vcf_var.alternative == "*" {
@@ -141,21 +154,21 @@ fn process_variants(
                         &db_freq,
                         &cf_autosomal,
                         &key,
-                        &mut vcf_record,
+                        &mut input_record,
                     )?;
                 } else if mehari::annotate::seqvars::CHROM_XY.contains(vcf_var.chrom.as_str()) {
                     mehari::annotate::seqvars::annotate_record_xy(
                         &db_freq,
                         &cf_gonosomal,
                         &key,
-                        &mut vcf_record,
+                        &mut input_record,
                     )?;
                 } else if mehari::annotate::seqvars::CHROM_MT.contains(vcf_var.chrom.as_str()) {
                     mehari::annotate::seqvars::annotate_record_mt(
                         &db_freq,
                         &cf_mtdna,
                         &key,
-                        &mut vcf_record,
+                        &mut input_record,
                     )?;
                 } else {
                     tracing::trace!(
@@ -169,7 +182,7 @@ fn process_variants(
                     &db_clinvar,
                     &cf_clinvar,
                     &key,
-                    &mut vcf_record,
+                    &mut input_record,
                 )?;
             }
 
@@ -190,7 +203,7 @@ fn process_variants(
                 })?
             {
                 if !ann_fields.is_empty() {
-                    vcf_record.info_mut().insert(
+                    input_record.info_mut().insert(
                         "ANN".parse()?,
                         Some(vcf::record::info::field::Value::Array(
                             vcf::record::info::field::value::Array::String(
@@ -202,7 +215,7 @@ fn process_variants(
             }
 
             // Write out the record.
-            output_writer.write_record(&output_header, &vcf_record)?;
+            output_writer.write_record(&output_header, &input_record)?;
         } else {
             break; // all done
         }
@@ -311,7 +324,9 @@ mod test {
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
-    fn smoke_test_run(#[case] path: &str) -> Result<(), anyhow::Error> {
+    #[case("tests/seqvars/ingest/NA12878_dragen.vcf")]
+    #[case("tests/seqvars/ingest/Case_1.vcf")]
+    fn result_snapshot_test(#[case] path: &str) -> Result<(), anyhow::Error> {
         set_snapshot_suffix!("{:?}", path.split('/').last().unwrap().replace('.', "_"));
 
         let tmpdir = temp_testdir::TempDir::default();
@@ -329,6 +344,10 @@ mod test {
                 .expect("invalid path")
                 .into(),
         };
-        super::run(&args_common, &args)
+        super::run(&args_common, &args)?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+
+        Ok(())
     }
 }
