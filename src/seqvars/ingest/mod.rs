@@ -50,7 +50,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         let file = std::fs::File::open(&args.path_in)
             .map_err(|e| anyhow::anyhow!("could not open input file {}: {}", &args.path_in, e))
             .map(std::io::BufReader::new)?;
-        vcf::reader::Builder::default()
+        vcf::reader::Builder
             .build_from_reader(file)
             .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?
     };
@@ -64,7 +64,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &Some(pedigree),
         args.genomebuild,
         worker_version(),
-    )?;
+    )
+    .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
     let mut output_writer = {
         let writer = std::fs::File::create(&args.path_out).map_err(|e| {
@@ -77,7 +78,9 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         let writer = std::io::BufWriter::new(writer);
         vcf::writer::Writer::new(writer)
     };
-    output_writer.write_header(&output_header)?;
+    output_writer
+        .write_header(&output_header)
+        .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
 
     tracing::info!(
         "All of `seqvars ingest` completed in {:?}",
@@ -105,14 +108,14 @@ mod test {
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
-    fn smoke_test_run(#[case] path: &str) {
-        set_snapshot_suffix!("{:?}", path.split('/').last().unwrap().replace(".", "_"));
+    fn smoke_test_run(#[case] path: &str) -> Result<(), anyhow::Error> {
+        set_snapshot_suffix!("{:?}", path.split('/').last().unwrap().replace('.', "_"));
 
         let tmpdir = temp_testdir::TempDir::default();
 
         let args_common = Default::default();
         let args = super::Args {
-            path_ped: "tests/seqvars/ingest/example_gatk_hc.3.7-0.ped".into(),
+            path_ped: path.replace(".vcf", ".ped"),
             genomebuild: GenomeRelease::Grch37,
             path_in: path.into(),
             path_out: tmpdir
@@ -121,6 +124,6 @@ mod test {
                 .expect("invalid path")
                 .into(),
         };
-        super::run(&args_common, &args).unwrap();
+        super::run(&args_common, &args)
     }
 }

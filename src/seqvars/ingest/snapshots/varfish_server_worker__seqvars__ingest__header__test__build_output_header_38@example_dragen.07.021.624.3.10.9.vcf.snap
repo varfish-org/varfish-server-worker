@@ -21,31 +21,33 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Conditional genotype quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
-##contig=<ID=chr1,length=248956422,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr2,length=242193529,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr3,length=198295559,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr4,length=190214555,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr5,length=181538259,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr6,length=170805979,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr7,length=159345973,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr8,length=145138636,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr9,length=138394717,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr10,length=133797422,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr11,length=135086622,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr12,length=133275309,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr13,length=114364328,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr14,length=107043718,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr15,length=101991189,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr16,length=90338345,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr17,length=83257441,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr18,length=80373285,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr19,length=58617616,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr20,length=64444167,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr21,length=46709983,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chr22,length=50818468,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chrX,length=156040895,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chrY,length=57227415,assembly="GRCh37",species="Homo sapiens">
-##contig=<ID=chrM,length=16569,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=chr1,length=248956422,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr2,length=242193529,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr3,length=198295559,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr4,length=190214555,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr5,length=181538259,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr6,length=170805979,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr7,length=159345973,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr8,length=145138636,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr9,length=138394717,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr10,length=133797422,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr11,length=135086622,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr12,length=133275309,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr13,length=114364328,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr14,length=107043718,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr15,length=101991189,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr16,length=90338345,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr17,length=83257441,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr18,length=80373285,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr19,length=58617616,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr20,length=64444167,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr21,length=46709983,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chr22,length=50818468,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chrX,length=156040895,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chrY,length=57227415,assembly="GRCh38",species="Homo sapiens">
+##contig=<ID=chrM,length=16569,assembly="GRCh38",species="Homo sapiens">
+##SAMPLE=<ID=CASE,Sex="Male",Disease="Affected">
+##PEDIGREE=<ID=CASE>
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="Dragen",Version="SW: 07.021.624.3.10.9, HW: 07.021.624">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	CASE

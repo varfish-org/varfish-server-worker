@@ -86,18 +86,30 @@ fn add_contigs_37(builder: vcf::header::Builder) -> Result<vcf::header::Builder,
         ("20", 63025520),
         ("21", 48129895),
         ("22", 51304566),
-        ("X ", 155270560),
-        ("Y ", 59373566),
+        ("X", 155270560),
+        ("Y", 59373566),
         ("MT", 16569),
     ];
 
     for (contig, length) in specs {
         builder = builder.add_contig(
-            contig.parse()?,
+            contig
+                .parse()
+                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
             Map::<Contig>::builder()
                 .set_length(*length)
-                .insert("assembly".parse()?, "GRCh37")
-                .insert("species".parse()?, "Homo sapiens")
+                .insert(
+                    "assembly"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: assembly"))?,
+                    "GRCh37",
+                )
+                .insert(
+                    "species"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: species"))?,
+                    "Homo sapiens",
+                )
                 .build()?,
         );
     }
@@ -142,11 +154,23 @@ fn add_contigs_38(builder: vcf::header::Builder) -> Result<vcf::header::Builder,
 
     for (contig, length) in specs {
         builder = builder.add_contig(
-            contig.parse()?,
+            contig
+                .parse()
+                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
             Map::<Contig>::builder()
                 .set_length(*length)
-                .insert("assembly".parse()?, "GRCh37")
-                .insert("species".parse()?, "Homo sapiens")
+                .insert(
+                    "assembly"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: assembly"))?,
+                    "GRCh38",
+                )
+                .insert(
+                    "species"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: species"))?,
+                    "Homo sapiens",
+                )
                 .build()?,
         );
     }
@@ -310,7 +334,8 @@ pub fn build_output_header(
     let mut builder = match genomebuild {
         GenomeRelease::Grch37 => add_contigs_37(builder),
         GenomeRelease::Grch38 => add_contigs_38(builder),
-    }?;
+    }
+    .map_err(|e| anyhow::anyhow!("problem adding contigs: {}", e))?;
 
     if let Some(pedigree) = pedigree {
         let ped_idv = pedigree
@@ -321,7 +346,7 @@ pub fn build_output_header(
         let input_idv = input_header
             .sample_names()
             .iter()
-            .map(|n| n.clone())
+            .cloned()
             .collect::<HashSet<_>>();
         if !ped_idv.eq(&input_idv) {
             anyhow::bail!(
@@ -436,7 +461,7 @@ mod test {
     fn variant_caller_guess(#[case] path: &str) -> Result<(), anyhow::Error> {
         set_snapshot_suffix!("{}", path.split('/').last().unwrap());
 
-        let vcf_header = noodles_vcf::reader::Builder::default()
+        let vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
             .read_header()?;
 
@@ -454,12 +479,14 @@ mod test {
         set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
-        let input_vcf_header = noodles_vcf::reader::Builder::default()
+        let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
+
+        let input_vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
             &input_vcf_header,
-            &None,
+            &Some(pedigree),
             crate::common::GenomeRelease::Grch37,
             "x.y.z",
         )?;
@@ -485,36 +512,10 @@ mod test {
         set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
-        let input_vcf_header = noodles_vcf::reader::Builder::default()
+        let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
+
+        let input_vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
-            .read_header()?;
-        let output_vcf_header = super::build_output_header(
-            &input_vcf_header,
-            &None,
-            crate::common::GenomeRelease::Grch38,
-            "x.y.z",
-        )?;
-
-        let out_path = tmpdir.join("out.vcf");
-        let out_path_str = out_path.to_str().expect("invalid path");
-        {
-            noodles_vcf::writer::Writer::new(std::fs::File::create(out_path_str)?)
-                .write_header(&output_vcf_header)?;
-        }
-
-        insta::assert_snapshot!(std::fs::read_to_string(out_path_str)?);
-
-        Ok(())
-    }
-
-    #[test]
-    fn build_output_header_ped() -> Result<(), anyhow::Error> {
-        let tmpdir = temp_testdir::TempDir::default();
-
-        let pedigree = PedigreeByName::from_path("tests/seqvars/ingest/example_gatk_hc.3.7-0.ped")?;
-
-        let input_vcf_header = noodles_vcf::reader::Builder::default()
-            .build_from_path("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
             &input_vcf_header,
