@@ -2,7 +2,7 @@
 
 use std::{
     fs::File,
-    io::{BufRead, BufReader, BufWriter, Read, Write},
+    io::{BufRead, BufReader, BufWriter, Write},
     ops::Range,
     path::Path,
 };
@@ -60,7 +60,7 @@ pub fn build_chrom_map() -> IndexMap<String, usize> {
 }
 
 /// Transparently open a file with gzip decoder.
-pub fn open_read_maybe_gz<P>(path: P) -> Result<Box<dyn Read>, anyhow::Error>
+pub fn open_read_maybe_gz<P>(path: P) -> Result<Box<dyn BufRead>, anyhow::Error>
 where
     P: AsRef<Path>,
 {
@@ -69,11 +69,11 @@ where
         let file = File::open(path)?;
         let bufreader = BufReader::new(file);
         let decoder = MultiGzDecoder::new(bufreader);
-        Ok(Box::new(decoder))
+        Ok(Box::new(BufReader::new(decoder)))
     } else {
         tracing::trace!("Opening {:?} as plain text for reading", path.as_ref());
-        let file = File::open(path)?;
-        Ok(Box::new(file))
+        let file = File::open(path).map(BufReader::new)?;
+        Ok(Box::new(BufReader::new(file)))
     }
 }
 

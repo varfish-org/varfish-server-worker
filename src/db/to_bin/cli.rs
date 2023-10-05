@@ -13,6 +13,36 @@ use crate::{
     },
 };
 
+/// Select the assembly
+#[derive(
+    clap::ValueEnum,
+    Clone,
+    Copy,
+    Debug,
+    strum::Display,
+    PartialEq,
+    Eq,
+    enum_map::Enum,
+    PartialOrd,
+    Ord,
+    Hash,
+)]
+pub enum Assembly {
+    /// GRCh37
+    Grch37,
+    /// GRCh38
+    Grch38,
+}
+
+impl From<Assembly> for crate::db::to_bin::clinvar::input::Assembly {
+    fn from(val: Assembly) -> Self {
+        match val {
+            Assembly::Grch37 => crate::db::to_bin::clinvar::input::Assembly::Grch37,
+            Assembly::Grch38 => crate::db::to_bin::clinvar::input::Assembly::Grch38,
+        }
+    }
+}
+
 /// Select input/conversion type.
 #[derive(
     clap::ValueEnum,
@@ -56,6 +86,9 @@ pub enum InputType {
 #[derive(Parser, Debug)]
 #[command(about = "Convert to binary protobuf files", long_about = None)]
 pub struct Args {
+    /// Optionally the assembly (required for ClinvarSv)
+    #[arg(long, value_enum)]
+    pub assembly: Option<Assembly>,
     /// Input type to convert to binary.
     #[arg(long, value_enum)]
     pub input_type: InputType,
@@ -77,7 +110,13 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     tracing::info!("Starting conversion...");
     match args.input_type {
-        InputType::ClinvarSv => clinvar::convert_to_bin(&args.path_input, &args.path_output_bin)?,
+        InputType::ClinvarSv => {
+            let assembly = args
+                .assembly
+                .expect("assembly required for ClinvarSv conversion");
+            let assembly: crate::db::to_bin::clinvar::input::Assembly = assembly.into();
+            clinvar::convert_to_bin(&args.path_input, &args.path_output_bin, assembly)?
+        }
         InputType::StrucvarInhouse => vardbs::convert_to_bin(
             &args.path_input,
             &args.path_output_bin,
@@ -128,16 +167,21 @@ mod test {
 
     use super::{Args, InputType};
 
-    #[test]
-    fn run_clinvar_sv_smoke() -> Result<(), anyhow::Error> {
+    #[rstest::rstest]
+    #[case(crate::db::to_bin::cli::Assembly::Grch37)]
+    #[case(crate::db::to_bin::cli::Assembly::Grch38)]
+    fn run_clinvar_sv_smoke(
+        #[case] assembly: crate::db::to_bin::cli::Assembly,
+    ) -> Result<(), anyhow::Error> {
         let tmp_dir = temp_testdir::TempDir::default();
         let common_args = common::Args {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: Some(assembly),
             input_type: InputType::ClinvarSv,
             path_input: String::from(
-                "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/clinvar.bed.gz",
+                "tests/db/to-bin/varfish-db-downloader/vardbs/clinvar/clinvar-svs.jsonl.gz",
             ),
             path_output_bin: tmp_dir.join("clinvar.bin"),
         };
@@ -154,6 +198,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::StrucvarInhouse,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/inhouse.tsv",
@@ -173,6 +218,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::StrucvarDbVar,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dbvar.bed.gz",
@@ -192,6 +238,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::StrucvarDgv,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv.bed.gz",
@@ -211,6 +258,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::StrucvarDgvGs,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv_gs.bed.gz",
@@ -230,6 +278,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::StrucvarExacCnv,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/exac.bed.gz",
@@ -249,6 +298,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::StrucvarG1k,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/g1k.bed.gz",
@@ -268,6 +318,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::StrucvarGnomadSv,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz",
@@ -287,6 +338,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::GeneRegion,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/features/grch37/gene_regions/refseq.bed.gz",
@@ -306,6 +358,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::MaskedRegion,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/features/grch37/masked/repeat.bed.gz",
@@ -325,6 +378,7 @@ mod test {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
+            assembly: None,
             input_type: InputType::Xlink,
             path_input: String::from("tests/db/to-bin/varfish-db-downloader/genes/xlink/hgnc.tsv"),
             path_output_bin: tmp_dir.join("xlink.bin"),

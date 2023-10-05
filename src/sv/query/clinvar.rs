@@ -58,8 +58,8 @@ impl ClinvarSv {
             .collect()
     }
 
-    /// Returns the overlapping VCVs
-    pub fn overlapping_vcvs(
+    /// Returns the overlapping RCVs
+    pub fn overlapping_rcvs(
         &self,
         sv: &StructuralVariant,
         chrom_map: &IndexMap<String, usize>,
@@ -86,7 +86,7 @@ impl ClinvarSv {
             .filter(|record| {
                 record.pathogenicity >= min_patho.unwrap_or(Pathogenicity::Benign) as i32
             })
-            .map(|record| record.vcv)
+            .map(|record| record.rcv)
             .collect()
     }
 }

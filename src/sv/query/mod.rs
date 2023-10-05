@@ -124,8 +124,8 @@ struct GeneTranscriptEffects {
 struct ResultPayload {
     /// The name of the calling tool.
     callers: Vec<String>,
-    /// The overlapping VCVs
-    clinvar_ovl_vcvs: Vec<String>,
+    /// The overlapping RCVs
+    clinvar_ovl_rcvs: Vec<String>,
     /// The directly overlapping genes.
     ovl_genes: Vec<Gene>,
     /// Genes that are not directly overlapping but contained in overlapping
@@ -327,16 +327,16 @@ fn run_query(
             // Get overlaps with known pathogenic SVs and ClinVar SVs
             result_payload.known_pathogenic =
                 dbs.patho_dbs.overlapping_records(&schema_sv, &chrom_map);
-            result_payload.clinvar_ovl_vcvs = dbs
+            result_payload.clinvar_ovl_rcvs = dbs
                 .clinvar_sv
-                .overlapping_vcvs(
+                .overlapping_rcvs(
                     &schema_sv,
                     &chrom_map,
                     interpreter.query.clinvar_sv_min_pathogenicity,
                     interpreter.query.clinvar_sv_min_overlap,
                 )
                 .into_iter()
-                .map(|vcv| format!("VCV{vcv:09}"))
+                .map(|rcv| format!("RCV{rcv:09}"))
                 .collect();
 
             // Get genes in overlapping TADs
