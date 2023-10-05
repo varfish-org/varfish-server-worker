@@ -48,8 +48,8 @@ message SvRecord {
     VariationType variation_type = 4;
     // The pathogenicity.
     Pathogenicity pathogenicity = 5;
-    // The variation ID.
-    uint32 vcv = 6;
+    // The RCV ID.
+    uint32 rcv = 6;
 }
 
 // ClinVar structural variant database.

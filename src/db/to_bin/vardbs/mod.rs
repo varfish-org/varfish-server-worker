@@ -32,7 +32,7 @@ pub enum InputFileType {
 }
 /// Deserialize from CSV reader to an `Option<records::InputRecord>`
 fn deserialize_loop<Rec>(
-    reader: &mut csv::Reader<Box<dyn std::io::Read>>,
+    reader: &mut csv::Reader<Box<dyn std::io::BufRead>>,
 ) -> Result<Vec<BgDbRecord>, anyhow::Error>
 where
     Rec: TryInto<Option<InputRecord>> + for<'de> serde::Deserialize<'de>,
