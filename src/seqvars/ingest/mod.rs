@@ -12,6 +12,9 @@ pub struct Args {
     /// The assumed genome build.
     #[clap(long)]
     pub genomebuild: GenomeRelease,
+    /// Path to the pedigree file.
+    #[clap(long)]
+    pub path_ped: String,
     /// Path to input file.
     #[clap(long)]
     pub path_in: String,
@@ -37,6 +40,11 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     common::trace_rss_now();
 
+    tracing::info!("loading pedigree...");
+    let pedigree = mehari::ped::PedigreeByName::from_path(&args.path_ped)
+        .map_err(|e| anyhow::anyhow!("problem parsing PED file: {}", e))?;
+    tracing::info!("pedigre = {:#?}", &pedigree);
+
     tracing::info!("opening input file...");
     let mut input_reader = {
         let file = std::fs::File::open(&args.path_in)
@@ -51,8 +59,12 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let input_header = input_reader
         .read_header()
         .map_err(|e| anyhow::anyhow!("problem reading VCF header: {}", e))?;
-    let output_header =
-        header::build_output_header(&input_header, args.genomebuild, worker_version())?;
+    let output_header = header::build_output_header(
+        &input_header,
+        &Some(pedigree),
+        args.genomebuild,
+        worker_version(),
+    )?;
 
     let mut output_writer = {
         let writer = std::fs::File::create(&args.path_out).map_err(|e| {
@@ -100,6 +112,7 @@ mod test {
 
         let args_common = Default::default();
         let args = super::Args {
+            path_ped: "tests/seqvars/ingest/example_gatk_hc.3.7-0.ped".into(),
             genomebuild: GenomeRelease::Grch37,
             path_in: path.into(),
             path_out: tmpdir

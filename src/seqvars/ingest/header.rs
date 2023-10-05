@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+
+use mehari::ped::{Disease, Sex};
 use noodles_vcf as vcf;
 
 use crate::common::GenomeRelease;
@@ -151,9 +154,28 @@ fn add_contigs_38(builder: vcf::header::Builder) -> Result<vcf::header::Builder,
     Ok(builder)
 }
 
+/// Helper that returns header string value for `sex`.
+fn sex_str(sex: Sex) -> String {
+    match sex {
+        Sex::Male => String::from("Male"),
+        Sex::Female => String::from("Female"),
+        Sex::Unknown => String::from("Unknown"),
+    }
+}
+
+// Helper that returns header string value for `disease`.
+fn disease_str(disease: Disease) -> String {
+    match disease {
+        Disease::Affected => String::from("Affected"),
+        Disease::Unaffected => String::from("Unaffected"),
+        Disease::Unknown => String::from("Unknown"),
+    }
+}
+
 /// Generate the output header from the input header.
 pub fn build_output_header(
     input_header: &vcf::Header,
+    pedigree: &Option<mehari::ped::PedigreeByName>,
     genomebuild: GenomeRelease,
     worker_version: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
@@ -285,10 +307,69 @@ pub fn build_output_header(
                 .build()?,
         );
 
-    let builder = match genomebuild {
+    let mut builder = match genomebuild {
         GenomeRelease::Grch37 => add_contigs_37(builder),
         GenomeRelease::Grch38 => add_contigs_38(builder),
     }?;
+
+    if let Some(pedigree) = pedigree {
+        let ped_idv = pedigree
+            .individuals
+            .iter()
+            .map(|(name, _)| name.clone())
+            .collect::<HashSet<_>>();
+        let input_idv = input_header
+            .sample_names()
+            .iter()
+            .map(|n| n.clone())
+            .collect::<HashSet<_>>();
+        if !ped_idv.eq(&input_idv) {
+            anyhow::bail!(
+                "pedigree individuals = {:?} != input individuals: {:?}",
+                &ped_idv,
+                &input_idv
+            )
+        }
+
+        for name in input_header.sample_names() {
+            let i = pedigree
+                .individuals
+                .get(name)
+                .expect("checked equality above");
+            if input_header.sample_names().contains(&i.name) {
+                builder = builder.add_sample_name(i.name.clone());
+            }
+
+            // Add SAMPLE entry.
+            builder = builder.insert(
+                "SAMPLE".parse()?,
+                noodles_vcf::header::record::Value::Map(
+                    i.name.clone(),
+                    Map::<Other>::builder()
+                        .insert("Sex".parse()?, sex_str(i.sex))
+                        .insert("Disease".parse()?, disease_str(i.disease))
+                        .build()?,
+                ),
+            )?;
+
+            // Add PEDIGREE entry.
+            let mut map_builder = Map::<Other>::builder();
+            if let Some(father) = i.father.as_ref() {
+                map_builder = map_builder.insert("Father".parse()?, father.clone());
+            }
+            if let Some(mother) = i.mother.as_ref() {
+                map_builder = map_builder.insert("Mother".parse()?, mother.clone());
+            }
+            builder = builder.insert(
+                "PEDIGREE".parse()?,
+                noodles_vcf::header::record::Value::Map(i.name.clone(), map_builder.build()?),
+            )?;
+        }
+    } else {
+        for name in input_header.sample_names() {
+            builder = builder.add_sample_name(name.clone());
+        }
+    }
 
     use vcf::header::record::value::map::Other;
 
@@ -329,13 +410,12 @@ pub fn build_output_header(
         )?,
     };
 
-    // TODO: embed pedigree information
-
     Ok(builder.build())
 }
 
 #[cfg(test)]
 mod test {
+    use mehari::ped::PedigreeByName;
     use rstest::rstest;
 
     use super::VariantCaller;
@@ -371,7 +451,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{:?}", path.split('/').last().unwrap());
+        set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let input_vcf_header = noodles_vcf::reader::Builder::default()
@@ -379,6 +459,7 @@ mod test {
             .read_header()?;
         let output_vcf_header = super::build_output_header(
             &input_vcf_header,
+            &None,
             crate::common::GenomeRelease::Grch37,
             "x.y.z",
         )?;
@@ -401,7 +482,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{:?}", path.split('/').last().unwrap());
+        set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let input_vcf_header = noodles_vcf::reader::Builder::default()
@@ -409,6 +490,35 @@ mod test {
             .read_header()?;
         let output_vcf_header = super::build_output_header(
             &input_vcf_header,
+            &None,
+            crate::common::GenomeRelease::Grch38,
+            "x.y.z",
+        )?;
+
+        let out_path = tmpdir.join("out.vcf");
+        let out_path_str = out_path.to_str().expect("invalid path");
+        {
+            noodles_vcf::writer::Writer::new(std::fs::File::create(out_path_str)?)
+                .write_header(&output_vcf_header)?;
+        }
+
+        insta::assert_snapshot!(std::fs::read_to_string(out_path_str)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn build_output_header_ped() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let pedigree = PedigreeByName::from_path("tests/seqvars/ingest/example_gatk_hc.3.7-0.ped")?;
+
+        let input_vcf_header = noodles_vcf::reader::Builder::default()
+            .build_from_path("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")?
+            .read_header()?;
+        let output_vcf_header = super::build_output_header(
+            &input_vcf_header,
+            &Some(pedigree),
             crate::common::GenomeRelease::Grch38,
             "x.y.z",
         )?;
