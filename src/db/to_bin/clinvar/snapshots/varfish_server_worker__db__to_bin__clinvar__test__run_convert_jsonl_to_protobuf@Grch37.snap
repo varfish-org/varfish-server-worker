@@ -1,6 +1,5 @@
 ---
 source: src/db/to_bin/clinvar/mod.rs
-assertion_line: 206
 expression: records
 ---
 - chrom_no: 6
