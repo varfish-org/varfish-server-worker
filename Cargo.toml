@@ -29,7 +29,8 @@ hgvs = "0.11"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
 log = "0.4"
-mehari = "0.8"
+# mehari = "0.8"
+mehari = { path = "/home/holtgrem_c/Development/mehari" }
 multimap = "0.9"
 procfs = "0.15"
 prost = "0.12"
@@ -48,6 +49,7 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 uuid = { version = "1.4", features = ["v4", "fast-rng", "serde"] }
 noodles-vcf = "0.40.0"
+rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
 
 
 [build-dependencies]

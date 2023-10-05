@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use mehari::ped::{Disease, Sex};
 use noodles_vcf as vcf;
 
 use crate::common::GenomeRelease;
@@ -178,24 +177,6 @@ fn add_contigs_38(builder: vcf::header::Builder) -> Result<vcf::header::Builder,
     Ok(builder)
 }
 
-/// Helper that returns header string value for `sex`.
-fn sex_str(sex: Sex) -> String {
-    match sex {
-        Sex::Male => String::from("Male"),
-        Sex::Female => String::from("Female"),
-        Sex::Unknown => String::from("Unknown"),
-    }
-}
-
-// Helper that returns header string value for `disease`.
-fn disease_str(disease: Disease) -> String {
-    match disease {
-        Disease::Affected => String::from("Affected"),
-        Disease::Unaffected => String::from("Unaffected"),
-        Disease::Unknown => String::from("Unknown"),
-    }
-}
-
 /// Generate the output header from the input header.
 pub fn build_output_header(
     input_header: &vcf::Header,
@@ -371,8 +352,14 @@ pub fn build_output_header(
                 noodles_vcf::header::record::Value::Map(
                     i.name.clone(),
                     Map::<Other>::builder()
-                        .insert("Sex".parse()?, sex_str(i.sex))
-                        .insert("Disease".parse()?, disease_str(i.disease))
+                        .insert(
+                            "Sex".parse()?,
+                            mehari::annotate::strucvars::vcf_header::sex_str(i.sex),
+                        )
+                        .insert(
+                            "Disease".parse()?,
+                            mehari::annotate::strucvars::vcf_header::disease_str(i.disease),
+                        )
                         .build()?,
                 ),
             )?;
