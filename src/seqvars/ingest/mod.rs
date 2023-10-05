@@ -20,6 +20,15 @@ pub struct Args {
     pub path_out: String,
 }
 
+/// Return the version of the `varfish-server-worker` crate and `x.y.z` in tests.
+fn worker_version() -> &'static str {
+    if cfg!(test) {
+        "x.y.z"
+    } else {
+        env!("CARGO_PKG_VERSION")
+    }
+}
+
 /// Main entry point for `seqvars ingest` sub command.
 pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = std::time::Instant::now();
@@ -42,7 +51,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let input_header = input_reader
         .read_header()
         .map_err(|e| anyhow::anyhow!("problem reading VCF header: {}", e))?;
-    let output_header = header::build_output_header(&input_header, args.genomebuild)?;
+    let output_header =
+        header::build_output_header(&input_header, args.genomebuild, worker_version())?;
 
     let mut output_writer = {
         let writer = std::fs::File::create(&args.path_out).map_err(|e| {

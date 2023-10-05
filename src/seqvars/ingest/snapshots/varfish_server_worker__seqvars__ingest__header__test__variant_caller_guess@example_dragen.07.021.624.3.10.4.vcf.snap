@@ -1,8 +1,7 @@
 ---
 source: src/seqvars/ingest/header.rs
-assertion_line: 82
 expression: "VariantCaller::guess(&vcf_header)"
 ---
-GatkHaplotypeCaller:
-  version: 3.7-0-gcfedb67
+Dragen:
+  version: "SW: 07.021.624.3.10.4, HW: 07.021.624"
 
