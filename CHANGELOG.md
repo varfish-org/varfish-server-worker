@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.10.2](https://www.github.com/bihealth/varfish-server-worker/compare/v0.10.1...v0.10.2) (2023-10-04)
+
+
+### Bug Fixes
+
+* resolve prost from_i32 deprecation ([#193](https://www.github.com/bihealth/varfish-server-worker/issues/193)) ([fc4cd3e](https://www.github.com/bihealth/varfish-server-worker/commit/fc4cd3ef8591b43978340b9b6c37c488fdddc9be))
+
 ### [0.10.1](https://www.github.com/bihealth/varfish-server-worker/compare/v0.10.0...v0.10.1) (2023-07-31)
 
 
