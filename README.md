@@ -1,79 +1,79 @@
 [![Crates.io](https://img.shields.io/crates/d/varfish-server-worker.svg)](https://crates.io/crates/varfish-server-worker)
-[![Crates.io](https://img.shields.io/crates/v/varfish-server-worker.svg)](https://crates.io/crates/varfish-server-worker)
-[![Crates.io](https://img.shields.io/crates/l/varfish-server-worker.svg)](https://crates.io/crates/varfish-server-worker)
 [![CI](https://github.com/bihealth/varfish-server-worker/actions/workflows/rust.yml/badge.svg)](https://github.com/bihealth/varfish-server-worker/actions/workflows/rust.yml)
 [![codecov](https://codecov.io/gh/bihealth/varfish-server-worker/branch/main/graph/badge.svg?token=t5oheMdukf)](https://codecov.io/gh/bihealth/varfish-server-worker)
 [![DOI](https://zenodo.org/badge/590461457.svg)](https://zenodo.org/badge/latestdoi/590461457)
 
 # VarFish Server Worker
 
+> [!NOTE]
+> This repository contains code that runs inside a VarFish Server.
+> If you are looking to run your own VarFish Server, look [here at bihealth/varfish-server](https://github.com/bihealth/varfish-server).
+
 This repository contains the worker used by VarFish Server to execute certain background task.
 They are written in the Rust programming language to speed up the execution of certain tasks.
 At the moment, the following sub commands exist:
 
-- `db compile` -- compile files from `varfish-db-downloader` to be useable by the query sub commands
-- `db mk-inhouse` -- compile per-case structural variant into an in-house database previously created by `db compile`
-- `sv query` -- perform SV (overlap) annoation and filtration
+- `db` -- subcommands to build binary (protobuf) database files
+    - `db to-bin` -- convert text files downloaded by [varfish-db-downloader](https://github.com/bihealth/varfish-db-downloader/) to binary for fast use in query sub commands
+    - `db mk-inhouse` -- compile per-case structural variant into an in-house database previously created by `db compile`
+- `seqvars` -- subcommands for processing sequence (aka small/SNV/indel) variants
+    - `seqvars ingest` -- convert single VCF file into internal format for use with `seqvars query`
+    - `seqvars query` -- perform sequence variant filtration and on-the-fly annotation
+- `strucvars` -- subcommands for processing structural (aka large variants, CNVs, etc.) variants
+    - `strucvars ingest` -- convert one or more structural variant files for use with `strucvars query`
+    - `strucvars query` -- perform structural variant filtration and on-the-fly annotation
 
 ## Overall Design
 
 For running queries, the worker tool is installed into the VarFish Server image and are run as executables.
-The VarFish Server Celery task writes out file(s) with the input for the worker.
-The worker then reads in this file, may use some static database files but also the VarFish server postgres database, and can write out out a result file or store the results in the postgres database.
-The celery worker will then process any worker output further.
-The book keeping is done by the Celery worker that runs from the code of VarFish server.
+Internally, VarFish server works on VCF files stored in an S3 storage.
+
+For import, the user gives the server access to the VCF files to import.
+The server will then use the worker executable to ingest the data into the internal format using `{seqvars,strucvars} ingest`.
+These files are then stored in the internal S3 storage.
+
+For queries, the server will create a query JSON file and then pass this query JSON file together with the internal file to the worker executable.
+The worker will create a result file that can be directly imported by the server to be displayed to the user.
 
 Future versions may provide persistently running HTTP/REST servers that provide functionality without startup cost.
 
-## The `db compile` Command
+## The `db to-bin` Command
 
-Convert output of `varfish-db-downloader` to a directory with databases to be used by query commands such as `sv query`.
+Convert output of [varfish-db-downloader](https://github.com/bihealth/varfish-db-downloader/) to a directory with databases to be used by query commands such as `strucvars query`.
 
 ```
-$ varfish-server-worker db compile \
-    --path-db-downloader SRC/varfish-db-downloader \
-    --path-worker-db DST/varfish-server-worker-db
+$ varfish-server-worker db to-bin \
+    --input-type {ClinvarSv,StrucvarInhouse,...} \
+    --path-input IN.txt \
+    --path-output-bin DST.bin
 ```
 
 ## The `db mk-inhouse` Command
 
-Import multiple files created by `varfish-annotator annotate_svs` into a database previously created by `db compile`.
+Import multiple files created by `strucvars ingest` into a database previously created by `db compile`.
 You can specify the files individually.
 Paths starting with an at (`@`) character are interpreted as files with lists of paths.
 You can mix paths with `@` and without.
 
 ```
 $ varfish-server-worker db mk-inhouse \
-    --path-worker-db WORK/varfish-server-worker-db \
-    IN/file1.gts.tsv.gz [IN/file1.gts.tsv.gz] \
+    --genome-release {Grch37,Grch38} \
+    --path-output-tsv OUT.tsv \
+    --path-input-tsvs IN/file1.gts.tsv.gz \
+    [--path-input-tsv IN/file1.gts.tsv.gz] \
 
 # OR:
 
 $ varfish-server-worker db mk-inhouse \
-    --path-worker-db WORK/varfish-server-worker-db \
-    @IN/path-list.txt [@IN/path-list2.txt]
+    --genome-release {Grch37,Grch38} \
+    --path-output-tsv OUT.tsv \
+    --path-input-tsvs @IN/path-list.txt \
+    [--path-input-tsvs @IN/path-list2.txt]
 ```
 
-## The `sv query` Command
+# Developer Information
 
-This is for actually running the queries.
-
-```
-$ varfish-server-worker sv query \
-    --path-db PATH_DB \
-    --path-query-json QUERY.json \
-    --path-input-svs VARFISH_ANNOTATED.gts.tsv.gz
-```
-
-## The `server rest` Command
-
-This runs the REST API.
-
-
-```
-$ varfish-server-worker server rest \
-    --path-db PATH_DB
-```
+This section is only relevant for developers of `varfish-server-worker`.
 
 ## Development Setup
 
