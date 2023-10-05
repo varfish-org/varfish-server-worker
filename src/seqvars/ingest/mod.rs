@@ -61,7 +61,7 @@ fn process_variants(
     // Open the frequency RocksDB database in read only mode.
     tracing::info!("Opening frequency database");
     let rocksdb_path = format!(
-        "{}/{}/seqvars/freqs",
+        "{}/{}/seqvars/freqs/rocksdb",
         &args.path_mehari_db,
         path_component(args.genomebuild)
     );
@@ -224,7 +224,7 @@ fn process_variants(
         start.elapsed()
     );
 
-    todo!()
+    Ok(())
 }
 
 /// Main entry point for `seqvars ingest` sub command.
