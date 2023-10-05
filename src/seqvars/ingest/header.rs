@@ -73,7 +73,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn variant_caller_guess(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{:?}", path.split('/').last().unwrap());
+        set_snapshot_suffix!("{}", path.split('/').last().unwrap());
 
         let vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?

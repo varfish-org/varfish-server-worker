@@ -1,5 +1,6 @@
 ---
 source: src/seqvars/ingest/header.rs
+assertion_line: 82
 expression: "VariantCaller::guess(&vcf_header)"
 ---
 Dragen:
