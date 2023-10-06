@@ -1,0 +1,113 @@
+---
+source: src/strucvars/query/masked.rs
+expression: result
+---
+records:
+  - - begin: 0
+      end: 2
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+  - []
+trees:
+  - entries:
+      - data: 0
+        interval:
+          start: 0
+          end: 2
+        max: 2
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+  - entries: []
+    max_level: 0
+    indexed: true
+

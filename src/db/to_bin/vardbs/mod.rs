@@ -13,7 +13,7 @@ use crate::common::{build_chrom_map, open_read_maybe_gz, trace_rss_now};
 use crate::db;
 use crate::db::mk_inhouse::output::Record as InhouseDbRecord;
 use crate::db::pbs::{BackgroundDatabase, BgDbRecord};
-use crate::sv::query::schema::SvType;
+use crate::strucvars::query::schema::SvType;
 
 use self::input::InputRecord;
 

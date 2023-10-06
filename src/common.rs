@@ -8,12 +8,12 @@ use std::{
 };
 
 use byte_unit::Byte;
-use clap_verbosity_flag::{InfoLevel, Verbosity};
-
 use clap::Parser;
+use clap_verbosity_flag::{InfoLevel, Verbosity};
 use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
 use hgvs::static_data::Assembly;
 use indexmap::IndexMap;
+use noodles_vcf as vcf;
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
@@ -385,4 +385,139 @@ mod test {
 
         Ok(())
     }
+}
+
+/// Return the version of the `varfish-server-worker` crate and `x.y.z` in tests.
+pub fn worker_version() -> &'static str {
+    if cfg!(test) {
+        "x.y.z"
+    } else {
+        env!("CARGO_PKG_VERSION")
+    }
+}
+
+/// Add contigs for GRCh37.
+pub fn add_contigs_37(
+    builder: vcf::header::Builder,
+) -> Result<vcf::header::Builder, anyhow::Error> {
+    use vcf::header::record::value::map::Contig;
+    use vcf::header::record::value::Map;
+
+    let mut builder = builder;
+
+    let specs: &[(&str, usize); 25] = &[
+        ("1", 249250621),
+        ("2", 243199373),
+        ("3", 198022430),
+        ("4", 191154276),
+        ("5", 180915260),
+        ("6", 171115067),
+        ("7", 159138663),
+        ("8", 146364022),
+        ("9", 141213431),
+        ("10", 135534747),
+        ("11", 135006516),
+        ("12", 133851895),
+        ("13", 115169878),
+        ("14", 107349540),
+        ("15", 102531392),
+        ("16", 90354753),
+        ("17", 81195210),
+        ("18", 78077248),
+        ("19", 59128983),
+        ("20", 63025520),
+        ("21", 48129895),
+        ("22", 51304566),
+        ("X", 155270560),
+        ("Y", 59373566),
+        ("MT", 16569),
+    ];
+
+    for (contig, length) in specs {
+        builder = builder.add_contig(
+            contig
+                .parse()
+                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            Map::<Contig>::builder()
+                .set_length(*length)
+                .insert(
+                    "assembly"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: assembly"))?,
+                    "GRCh37",
+                )
+                .insert(
+                    "species"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: species"))?,
+                    "Homo sapiens",
+                )
+                .build()?,
+        );
+    }
+
+    Ok(builder)
+}
+
+/// Add contigs for GRCh38.
+pub fn add_contigs_38(
+    builder: vcf::header::Builder,
+) -> Result<vcf::header::Builder, anyhow::Error> {
+    use vcf::header::record::value::map::Contig;
+    use vcf::header::record::value::Map;
+
+    let mut builder = builder;
+
+    let specs: &[(&str, usize); 25] = &[
+        ("chr1", 248956422),
+        ("chr2", 242193529),
+        ("chr3", 198295559),
+        ("chr4", 190214555),
+        ("chr5", 181538259),
+        ("chr6", 170805979),
+        ("chr7", 159345973),
+        ("chr8", 145138636),
+        ("chr9", 138394717),
+        ("chr10", 133797422),
+        ("chr11", 135086622),
+        ("chr12", 133275309),
+        ("chr13", 114364328),
+        ("chr14", 107043718),
+        ("chr15", 101991189),
+        ("chr16", 90338345),
+        ("chr17", 83257441),
+        ("chr18", 80373285),
+        ("chr19", 58617616),
+        ("chr20", 64444167),
+        ("chr21", 46709983),
+        ("chr22", 50818468),
+        ("chrX", 156040895),
+        ("chrY", 57227415),
+        ("chrM", 16569),
+    ];
+
+    for (contig, length) in specs {
+        builder = builder.add_contig(
+            contig
+                .parse()
+                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            Map::<Contig>::builder()
+                .set_length(*length)
+                .insert(
+                    "assembly"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: assembly"))?,
+                    "GRCh38",
+                )
+                .insert(
+                    "species"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: species"))?,
+                    "Homo sapiens",
+                )
+                .build()?,
+        );
+    }
+
+    Ok(builder)
 }

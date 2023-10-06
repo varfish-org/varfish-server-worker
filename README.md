@@ -193,28 +193,33 @@ The following `FORMAT` fields are written:
 Overall, the command will emit the following header rows in addition to the `##contig=<ID=.,length=.>` lines.
 
 ```
-##fileformat=VCFv4.2
-##FILTER=<ID=PASS,Description="All filters passed">
+##fileformat=VCFv4.4
 ##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
-##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the longest variant described in this record">
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
-##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abunda
-##INFO=<ID=annsv,Number=.,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
+##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively">
+##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
+##INFO=<ID=annsv,Number=1,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Conditional genotype quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=pec,Number=1,Type=Integer,Description="Total coverage with paired-end reads">
-##FORMAT=<ID=pev,Number=1,Type=Integer,Description="Variant paired-end read support">
+##FORMAT=<ID=pev,Number=1,Type=Integer,Description="Paired-end reads supporting the variant">
 ##FORMAT=<ID=src,Number=1,Type=Integer,Description="Total coverage with split reads">
-##FORMAT=<ID=srv,Number=1,Type=Integer,Description="Variant split reads support">
-##FORMAT=<ID=amq,Number=1,Type=Integer,Description="Average mapping quality over SV">
+##FORMAT=<ID=srv,Number=1,Type=Integer,Description="Split reads supporting the variant">
+##FORMAT=<ID=amq,Number=1,Type=Float,Description="Average mapping quality over the variant">
 ##FORMAT=<ID=cn,Number=1,Type=Integer,Description="Copy number of the variant in the sample">
-##FORMAT=<ID=anc,Number=1,Type=Float,Description="Average normalized coverage of the variant in the sample">
-##FORMAT=<ID=pc,Number=1,Type=Integer,Description="Point count for CNV call (windows/targets/probes)">
-##x-varfish-version=<ID=varfish-server-worker,Version=x.y.z>
-##x-varfish-version=<ID=orig-caller,Name=DragenSV,Version=07.021.624.3.10.4>
-##x-varfish-version=<ID=orig-caller,Name=Delly2,Version=1.1.7>
+##FORMAT=<ID=anc,Number=1,Type=Float,Description="Average normalized coverage over the variant in the sample">
+##FORMAT=<ID=pc,Number=1,Type=Integer,Description="Point count (windows/targets/probes)">
+##SAMPLE=<ID=index,Sex="Male",Disease="Affected">
+##SAMPLE=<ID=father,Sex="Male",Disease="Unaffected">
+##SAMPLE=<ID=mother,Sex="Female",Disease="Unaffected">
+##PEDIGREE=<ID=index,Father="father",Mother="mother">
+##PEDIGREE=<ID=father>
+##PEDIGREE=<ID=mother>
+##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
+##x-varfish-version=<ID=Delly,Name="Delly",Version="1.1.3">
 ```
 
 # Developer Information

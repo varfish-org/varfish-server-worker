@@ -3,7 +3,7 @@
 //! Note that not the full model is implemented, only the parts that are needed for the
 //! conversion of the ClinVar structural variants.
 
-use crate::sv::query::clinvar::pbs::{Pathogenicity, VariationType};
+use crate::strucvars::query::clinvar::pbs::{Pathogenicity, VariationType};
 
 /// Accession of a ClinVar record.
 #[derive(Debug, serde::Deserialize, serde::Serialize)]

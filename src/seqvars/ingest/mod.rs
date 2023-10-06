@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::{self, open_read_maybe_gz, open_write_maybe_gz, GenomeRelease};
+use crate::common::{self, open_read_maybe_gz, open_write_maybe_gz, worker_version, GenomeRelease};
 use mehari::annotate::seqvars::provider::MehariProvider;
 use noodles_vcf as vcf;
 use thousands::Separable;
@@ -31,15 +31,6 @@ pub struct Args {
     /// Path to output file.
     #[clap(long)]
     pub path_out: String,
-}
-
-/// Return the version of the `varfish-server-worker` crate and `x.y.z` in tests.
-fn worker_version() -> &'static str {
-    if cfg!(test) {
-        "x.y.z"
-    } else {
-        env!("CARGO_PKG_VERSION")
-    }
 }
 
 /// Return path component fo rth egiven assembly.

@@ -20,7 +20,7 @@ use crate::{
         build_chrom_map, open_read_maybe_gz, open_write_maybe_gz, read_lines, trace_rss_now,
         GenomeRelease, CHROMS,
     },
-    sv::query::schema::SvType,
+    strucvars::query::schema::SvType,
 };
 
 /// Create one file with records for each chromosome and SV type.

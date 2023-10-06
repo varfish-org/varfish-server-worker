@@ -380,7 +380,7 @@ mod tests {
 
     use crate::{
         db::conf::Database,
-        sv::query::schema::{
+        strucvars::query::schema::{
             CallInfo, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
         },
     };
