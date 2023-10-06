@@ -467,7 +467,6 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
-    use std::io::Read;
 
     use rstest::rstest;
 

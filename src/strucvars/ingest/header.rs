@@ -272,10 +272,10 @@ mod test {
         let input_vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
             .read_header()?;
-        let sv_callers = vec![mehari::annotate::strucvars::guess_sv_caller(&path)?];
+        let sv_callers = vec![mehari::annotate::strucvars::guess_sv_caller(path)?];
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
         let output_vcf_header = super::build_output_header(
-            &input_vcf_header.sample_names(),
+            input_vcf_header.sample_names(),
             &sv_caller_refs,
             &Some(pedigree),
             crate::common::GenomeRelease::Grch37,
@@ -311,10 +311,10 @@ mod test {
         let input_vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
             .read_header()?;
-        let sv_callers = vec![mehari::annotate::strucvars::guess_sv_caller(&path)?];
+        let sv_callers = vec![mehari::annotate::strucvars::guess_sv_caller(path)?];
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
         let output_vcf_header = super::build_output_header(
-            &input_vcf_header.sample_names(),
+            input_vcf_header.sample_names(),
             &sv_caller_refs,
             &Some(pedigree),
             crate::common::GenomeRelease::Grch38,

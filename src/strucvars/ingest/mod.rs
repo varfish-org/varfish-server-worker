@@ -3,9 +3,8 @@
 use crate::common::{self, open_write_maybe_gz, worker_version, GenomeRelease};
 use mehari::common::open_read_maybe_gz;
 
-use mehari::annotate::{seqvars::provider::MehariProvider, strucvars::guess_sv_caller};
+use mehari::annotate::strucvars::guess_sv_caller;
 use noodles_vcf as vcf;
-use thousands::Separable;
 
 pub mod header;
 
@@ -58,7 +57,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let input_sv_callers = args
         .path_in
         .iter()
-        .map(|path_in| guess_sv_caller(path_in))
+        .map(guess_sv_caller)
         .collect::<Result<Vec<_>, _>>()?;
 
     tracing::info!("processing header...");
