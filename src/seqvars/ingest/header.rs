@@ -421,21 +421,13 @@ mod test {
 
     use super::VariantCaller;
 
-    macro_rules! set_snapshot_suffix {
-        ($($expr:expr),*) => {
-            let mut settings = insta::Settings::clone_current();
-            settings.set_snapshot_suffix(format!($($expr,)*));
-            let _guard = settings.bind_to_scope();
-        }
-    }
-
     #[rstest]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn variant_caller_guess(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
 
         let vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
@@ -452,7 +444,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
@@ -485,7 +477,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();

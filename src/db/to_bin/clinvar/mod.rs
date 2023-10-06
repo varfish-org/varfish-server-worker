@@ -185,19 +185,11 @@ mod test {
     use crate::common::open_read_maybe_gz;
     use crate::db::to_bin::clinvar::input::Assembly;
 
-    macro_rules! set_snapshot_suffix {
-        ($($expr:expr),*) => {
-            let mut settings = insta::Settings::clone_current();
-            settings.set_snapshot_suffix(format!($($expr,)*));
-            let _guard = settings.bind_to_scope();
-        }
-    }
-
     #[rstest::rstest]
     #[case(Assembly::Grch37)]
     #[case(Assembly::Grch38)]
     fn run_convert_jsonl_to_protobuf(#[case] assembly: Assembly) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{:?}", assembly);
+        crate::common::set_snapshot_suffix!("{:?}", assembly);
         let reader = open_read_maybe_gz(
             "tests/db/to-bin/varfish-db-downloader/vardbs/clinvar/clinvar-svs.jsonl",
         )?;

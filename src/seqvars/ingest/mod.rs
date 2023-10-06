@@ -472,14 +472,6 @@ mod test {
 
     use crate::common::GenomeRelease;
 
-    macro_rules! set_snapshot_suffix {
-        ($($expr:expr),*) => {
-            let mut settings = insta::Settings::clone_current();
-            settings.set_snapshot_suffix(format!($($expr,)*));
-            let _guard = settings.bind_to_scope();
-        }
-    }
-
     #[rstest]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
@@ -488,7 +480,10 @@ mod test {
     #[case("tests/seqvars/ingest/NA12878_dragen.vcf")]
     #[case("tests/seqvars/ingest/Case_1.vcf")]
     fn result_snapshot_test(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{}", path.split('/').last().unwrap().replace('.', "_"));
+        crate::common::set_snapshot_suffix!(
+            "{}",
+            path.split('/').last().unwrap().replace('.', "_")
+        );
 
         let tmpdir = temp_testdir::TempDir::default();
 
