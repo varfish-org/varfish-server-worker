@@ -255,16 +255,16 @@ mod test {
     use rstest::rstest;
 
     #[rstest]
-    #[case("tests/db/strucvars/ingest/delly2-min.vcf")]
-    #[case("tests/db/strucvars/ingest/dragen-cnv-min.vcf")]
-    #[case("tests/db/strucvars/ingest/dragen-sv-min.vcf")]
-    #[case("tests/db/strucvars/ingest/gcnv-min.vcf")]
-    #[case("tests/db/strucvars/ingest/manta-min.vcf")]
-    #[case("tests/db/strucvars/ingest/melt-min.vcf")]
-    #[case("tests/db/strucvars/ingest/popdel-min.vcf")]
+    #[case("tests/strucvars/ingest/delly2-min.vcf")]
+    #[case("tests/strucvars/ingest/dragen-cnv-min.vcf")]
+    #[case("tests/strucvars/ingest/dragen-sv-min.vcf")]
+    #[case("tests/strucvars/ingest/gcnv-min.vcf")]
+    #[case("tests/strucvars/ingest/manta-min.vcf")]
+    #[case("tests/strucvars/ingest/melt-min.vcf")]
+    #[case("tests/strucvars/ingest/popdel-min.vcf")]
 
     fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
@@ -295,15 +295,15 @@ mod test {
     }
 
     #[rstest]
-    #[case("tests/db/strucvars/ingest/delly2-min.vcf")]
-    #[case("tests/db/strucvars/ingest/dragen-cnv-min.vcf")]
-    #[case("tests/db/strucvars/ingest/dragen-sv-min.vcf")]
-    #[case("tests/db/strucvars/ingest/gcnv-min.vcf")]
-    #[case("tests/db/strucvars/ingest/manta-min.vcf")]
-    #[case("tests/db/strucvars/ingest/melt-min.vcf")]
-    #[case("tests/db/strucvars/ingest/popdel-min.vcf")]
+    #[case("tests/strucvars/ingest/delly2-min.vcf")]
+    #[case("tests/strucvars/ingest/dragen-cnv-min.vcf")]
+    #[case("tests/strucvars/ingest/dragen-sv-min.vcf")]
+    #[case("tests/strucvars/ingest/gcnv-min.vcf")]
+    #[case("tests/strucvars/ingest/manta-min.vcf")]
+    #[case("tests/strucvars/ingest/melt-min.vcf")]
+    #[case("tests/strucvars/ingest/popdel-min.vcf")]
     fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();

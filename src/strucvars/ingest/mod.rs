@@ -1,8 +1,9 @@
 //! Implementation of `strucvars ingest` subcommand.
 
-use crate::common::{self, open_read_maybe_gz, open_write_maybe_gz, worker_version, GenomeRelease};
+use crate::common::{self, open_write_maybe_gz, worker_version, GenomeRelease};
+use mehari::common::open_read_maybe_gz;
 
-use mehari::annotate::seqvars::provider::MehariProvider;
+use mehari::annotate::{seqvars::provider::MehariProvider, strucvars::guess_sv_caller};
 use noodles_vcf as vcf;
 use thousands::Separable;
 
@@ -15,18 +16,15 @@ pub struct Args {
     /// Maximal number of variants to write out; optional.
     #[clap(long)]
     pub max_var_count: Option<usize>,
-    /// The path to the mehari database.
-    #[clap(long)]
-    pub path_mehari_db: String,
     /// The assumed genome build.
     #[clap(long)]
     pub genomebuild: GenomeRelease,
     /// Path to the pedigree file.
     #[clap(long)]
     pub path_ped: String,
-    /// Path to input file.
-    #[clap(long)]
-    pub path_in: String,
+    /// Path to input files.
+    #[clap(long, required = true)]
+    pub path_in: Vec<String>,
     /// Path to output file.
     #[clap(long)]
     pub path_out: String,
@@ -46,19 +44,48 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("pedigre = {:#?}", &pedigree);
 
     tracing::info!("opening input file...");
-    let mut input_reader = {
-        vcf::reader::Builder
-            .build_from_reader(open_read_maybe_gz(&args.path_in)?)
-            .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?
-    };
+    let mut input_readers = args
+        .path_in
+        .iter()
+        .map(|path_in| {
+            vcf::reader::Builder
+                .build_from_reader(open_read_maybe_gz(path_in)?)
+                .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    tracing::info!("guessing SV callers...");
+    let input_sv_callers = args
+        .path_in
+        .iter()
+        .map(|path_in| guess_sv_caller(path_in))
+        .collect::<Result<Vec<_>, _>>()?;
 
     tracing::info!("processing header...");
-    let input_header = input_reader
-        .read_header()
-        .map_err(|e| anyhow::anyhow!("problem reading VCF header: {}", e))?;
+    let input_headers = input_readers
+        .iter_mut()
+        .map(|input_reader| {
+            input_reader
+                .read_header()
+                .map_err(|e| anyhow::anyhow!("problem reading VCF header: {}", e))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let sample_names = input_headers
+        .first()
+        .expect("must have at least one input file")
+        .sample_names();
+    for (indexno, other_input_header) in input_headers.iter().enumerate().skip(1) {
+        if other_input_header.sample_names() != sample_names {
+            return Err(anyhow::anyhow!(
+                "input file #{} has different sample names than first one: {}",
+                indexno,
+                &args.path_in[indexno]
+            ));
+        }
+    }
     let output_header = header::build_output_header(
-        input_header.sample_names(),
-        &vec![],
+        sample_names,
+        &input_sv_callers.iter().collect::<Vec<_>>(),
         &Some(pedigree),
         args.genomebuild,
         worker_version(),
@@ -72,7 +99,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     // process_variants(
     //     &mut output_writer,
-    //     &mut input_reader,
+    //     &mut input_readers,
     //     &output_header,
     //     &input_header,
     //     args,
@@ -86,4 +113,114 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+    use crate::common::GenomeRelease;
+
+    #[test]
+    fn smoke_test_trio() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let args_common = Default::default();
+        let args = super::Args {
+            max_var_count: None,
+            path_in: vec![
+                String::from("tests/strucvars/ingest/delly2-min.vcf"),
+                String::from("tests/strucvars/ingest/popdel-min.vcf"),
+            ],
+            path_ped: "tests/strucvars/ingest/delly2-min.ped".into(),
+            genomebuild: GenomeRelease::Grch37,
+            path_out: tmpdir
+                .join("out.vcf")
+                .to_str()
+                .expect("invalid path")
+                .into(),
+        };
+        super::run(&args_common, &args)?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+
+        Ok(())
+    }
+    #[test]
+    fn smoke_test_singleton() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let args_common = Default::default();
+        let args = super::Args {
+            max_var_count: None,
+            path_in: vec![
+                String::from("tests/strucvars/ingest/dragen-cnv-min.vcf"),
+                String::from("tests/strucvars/ingest/dragen-sv-min.vcf"),
+                String::from("tests/strucvars/ingest/gcnv-min.vcf"),
+                String::from("tests/strucvars/ingest/manta-min.vcf"),
+                String::from("tests/strucvars/ingest/melt-min.vcf"),
+            ],
+            path_ped: "tests/strucvars/ingest/dragen-cnv-min.ped".into(),
+            genomebuild: GenomeRelease::Grch37,
+            path_out: tmpdir
+                .join("out.vcf")
+                .to_str()
+                .expect("invalid path")
+                .into(),
+        };
+        super::run(&args_common, &args)?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn smoke_test_trio_gz() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let args_common = Default::default();
+        let args = super::Args {
+            max_var_count: None,
+            path_in: vec![
+                String::from("tests/strucvars/ingest/delly2-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/popdel-min.vcf.gz"),
+            ],
+            path_ped: "tests/strucvars/ingest/delly2-min.ped".into(),
+            genomebuild: GenomeRelease::Grch37,
+            path_out: tmpdir
+                .join("out.vcf.gz")
+                .to_str()
+                .expect("invalid path")
+                .into(),
+        };
+        super::run(&args_common, &args)?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+
+        Ok(())
+    }
+    #[test]
+    fn smoke_test_singleton_gz() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let args_common = Default::default();
+        let args = super::Args {
+            max_var_count: None,
+            path_in: vec![
+                String::from("tests/strucvars/ingest/dragen-cnv-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/dragen-sv-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/gcnv-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/manta-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/melt-min.vcf.gz"),
+            ],
+            path_ped: "tests/strucvars/ingest/dragen-cnv-min.ped".into(),
+            genomebuild: GenomeRelease::Grch37,
+            path_out: tmpdir
+                .join("out.vcf.gz")
+                .to_str()
+                .expect("invalid path")
+                .into(),
+        };
+        super::run(&args_common, &args)?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+
+        Ok(())
+    }
+}

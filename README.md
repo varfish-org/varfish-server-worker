@@ -222,6 +222,10 @@ Overall, the command will emit the following header rows in addition to the `##c
 ##x-varfish-version=<ID=Delly,Name="Delly",Version="1.1.3">
 ```
 
+> [!NOTE]
+> The `strucvars ingest` step does not perform any annotation.
+> It only merges the input VCF files from multiple callers (all files must have the same samples) and converts them into the internal format.
+
 # Developer Information
 
 This section is only relevant for developers of `varfish-server-worker`.

@@ -6,10 +6,11 @@ use std::path::Path;
 use std::time::Instant;
 
 use anyhow::anyhow;
+use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use thousands::Separable;
 
-use crate::common::{build_chrom_map, open_read_maybe_gz, trace_rss_now};
+use crate::common::{build_chrom_map, trace_rss_now};
 use crate::db;
 use crate::db::mk_inhouse::output::Record as InhouseDbRecord;
 use crate::db::pbs::{BackgroundDatabase, BgDbRecord};

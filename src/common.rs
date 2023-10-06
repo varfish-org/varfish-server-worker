@@ -2,7 +2,7 @@
 
 use std::{
     fs::File,
-    io::{BufRead, BufReader, BufWriter, Write},
+    io::{BufRead, BufWriter, Write},
     ops::Range,
     path::Path,
 };
@@ -10,7 +10,7 @@ use std::{
 use byte_unit::Byte;
 use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
-use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
+use flate2::{write::GzEncoder, Compression};
 use hgvs::static_data::Assembly;
 use indexmap::IndexMap;
 use noodles_vcf as vcf;
@@ -65,24 +65,6 @@ pub fn build_chrom_map() -> IndexMap<String, usize> {
     result.insert("MT".to_owned(), 24);
     result.insert("chrMT".to_owned(), 24);
     result
-}
-
-/// Transparently open a file with gzip decoder.
-pub fn open_read_maybe_gz<P>(path: P) -> Result<Box<dyn BufRead>, anyhow::Error>
-where
-    P: AsRef<Path>,
-{
-    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
-        tracing::trace!("Opening {:?} as gzip for reading", path.as_ref());
-        let file = File::open(path)?;
-        let bufreader = BufReader::new(file);
-        let decoder = MultiGzDecoder::new(bufreader);
-        Ok(Box::new(BufReader::new(decoder)))
-    } else {
-        tracing::trace!("Opening {:?} as plain text for reading", path.as_ref());
-        let file = File::open(path).map(BufReader::new)?;
-        Ok(Box::new(BufReader::new(file)))
-    }
 }
 
 /// Transparently opena  file with gzip encoder.
@@ -370,16 +352,18 @@ pub fn add_contigs_38(
 }
 
 #[cfg(test)]
-macro_rules! set_snapshot_suffix {
-    ($($expr:expr),*) => {
-        let mut settings = insta::Settings::clone_current();
-        settings.set_snapshot_suffix(format!($($expr,)*));
-        let _guard = settings.bind_to_scope();
-    }
-}
+pub(crate) fn read_to_bytes<P>(path: P) -> Result<Vec<u8>, anyhow::Error>
+where
+    P: AsRef<std::path::Path>,
+{
+    use std::io::Read;
 
-#[cfg(test)]
-pub(crate) use set_snapshot_suffix;
+    let mut f = std::fs::File::open(&path).expect("no file found");
+    let metadata = std::fs::metadata(&path).expect("unable to read metadata");
+    let mut buffer = vec![0; metadata.len() as usize];
+    f.read_exact(&mut buffer).expect("buffer overflow");
+    Ok(buffer)
+}
 
 #[cfg(test)]
 mod test {
@@ -400,7 +384,7 @@ mod test {
     #[case(true)]
     #[case(false)]
     fn open_write_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!("{:?}", is_gzip);
+        mehari::common::set_snapshot_suffix!("{:?}", is_gzip);
 
         let filename = if is_gzip { "test.txt" } else { "test.txt.gz" };
         let tmp_dir = temp_testdir::TempDir::default();
@@ -415,26 +399,6 @@ mod test {
         f.read_to_end(&mut buf)?;
 
         insta::assert_snapshot!(format!("{:x?}", &buf));
-
-        Ok(())
-    }
-
-    #[rstest::rstest]
-    #[case(true)]
-    #[case(false)]
-    fn open_read_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!("{:?}", is_gzip);
-
-        let mut f = super::open_read_maybe_gz(if is_gzip {
-            "tests/common/test.txt.gz"
-        } else {
-            "tests/common/test.txt"
-        })?;
-
-        let mut buf = String::new();
-        f.read_to_string(&mut buf)?;
-
-        insta::assert_snapshot!(&buf);
 
         Ok(())
     }

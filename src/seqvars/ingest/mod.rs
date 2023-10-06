@@ -2,8 +2,9 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::{self, open_read_maybe_gz, open_write_maybe_gz, worker_version, GenomeRelease};
+use crate::common::{self, open_write_maybe_gz, worker_version, GenomeRelease};
 use mehari::annotate::seqvars::provider::MehariProvider;
+use mehari::common::open_read_maybe_gz;
 use noodles_vcf as vcf;
 use thousands::Separable;
 
@@ -480,7 +481,7 @@ mod test {
     #[case("tests/seqvars/ingest/NA12878_dragen.vcf")]
     #[case("tests/seqvars/ingest/Case_1.vcf")]
     fn result_snapshot_test(#[case] path: &str) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!(
+        mehari::common::set_snapshot_suffix!(
             "{}",
             path.split('/').last().unwrap().replace('.', "_")
         );
@@ -507,17 +508,6 @@ mod test {
         Ok(())
     }
 
-    fn read_to_bytes<P>(path: P) -> Result<Vec<u8>, anyhow::Error>
-    where
-        P: AsRef<std::path::Path>,
-    {
-        let mut f = std::fs::File::open(&path).expect("no file found");
-        let metadata = std::fs::metadata(&path).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        f.read_exact(&mut buffer).expect("buffer overflow");
-        Ok(buffer)
-    }
-
     #[test]
     fn result_snapshot_test_gz() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
@@ -541,7 +531,7 @@ mod test {
         super::run(&args_common, &args)?;
 
         let mut buffer = Vec::new();
-        hxdmp::hexdump(&read_to_bytes(&args.path_out)?, &mut buffer)?;
+        hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
         insta::assert_snapshot!(String::from_utf8_lossy(&buffer));
 
         Ok(())

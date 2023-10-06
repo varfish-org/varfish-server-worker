@@ -3,12 +3,13 @@
 use std::{collections::HashSet, ops::Range, path::Path, time::Instant};
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
+use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use serde::Deserialize;
 use tracing::info;
 
 use crate::{
-    common::{open_read_maybe_gz, CHROMS},
+    common::CHROMS,
     db::{
         conf::{Database, GenomeRelease},
         pbs,

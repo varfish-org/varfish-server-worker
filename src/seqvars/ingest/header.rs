@@ -427,7 +427,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn variant_caller_guess(#[case] path: &str) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
 
         let vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
@@ -444,7 +444,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
@@ -477,7 +477,7 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
-        crate::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
+        mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
