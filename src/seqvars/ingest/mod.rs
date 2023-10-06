@@ -184,7 +184,7 @@ fn copy_format(
                     if let Some(value) = transform_format_value(&input_value, key, allele_no) {
                         value
                     } else if known_format_keys.output_keys.contains(key) {
-                        input_value.map(|s| s.clone())
+                        input_value.cloned()
                     } else {
                         unreachable!("don't know how to handle key: {:?}", key)
                     }
@@ -283,7 +283,7 @@ where
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
     let mut total_written = 0usize;
-    let mut records = input_reader.records(&input_header);
+    let mut records = input_reader.records(input_header);
     let known_format_keys = KNOWN_FORMAT_KEYS.get_or_init(Default::default);
     loop {
         if let Some(input_record) = records.next() {
@@ -395,7 +395,7 @@ where
                 }
 
                 // Write out the record.
-                output_writer.write_record(&output_header, &output_record)?;
+                output_writer.write_record(output_header, &output_record)?;
                 total_written += 1;
             }
         } else {
@@ -528,7 +528,7 @@ mod test {
         let mut f = std::fs::File::open(&path).expect("no file found");
         let metadata = std::fs::metadata(&path).expect("unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];
-        f.read(&mut buffer).expect("buffer overflow");
+        f.read_exact(&mut buffer).expect("buffer overflow");
         Ok(buffer)
     }
 
