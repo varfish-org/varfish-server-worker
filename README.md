@@ -76,12 +76,12 @@ $ varfish-server-worker db mk-inhouse \
 This command takes as the input a single VCF file from a (supported) variant caller and converts it into a file for further querying.
 The command interprets the following fields which are written out by the commonly used variant callers such as GATK UnifiedGenotyper, GATK HaplotypeCaller, and Illumina Dragen.
 
-- `FORMAT/AD` -- allelic depth, one value per allele (including reference0)
-- `FORMAT/DP` -- total read coverage
-- `FORMAT/GQ` -- genotype quality
 - `FORMAT/GT` -- genotype
+- `FORMAT/GQ` -- genotype quality
+- `FORMAT/DP` -- total read coverage
+- `FORMAT/AD` -- allelic depth, one value per allele (including reference0)
 - `FORMAT/PID` -- physical phasing information as written out by GATK HaplotypeCaller in GVCF workflow
-- `FORMAT/PIS` -- physical phasing information as written out by Dragen variant caller
+- `FORMAT/PS` -- physical phasing information as written out by Dragen variant caller
     - this field fill be written as `FORMAT/PID`
 - `FORMAT/SQ` -- "somatic quality" for each alternate allele, as written out by Illumina Dragen variant caller
     - this field will be written as `FORMAT/GQ`
