@@ -1159,7 +1159,6 @@ where
             .filter_map(|token| {
                 if let Some(caps) = re.captures(token) {
                     let chrom = caps.name("chrom").unwrap().as_str().to_string();
-                    eprintln!("chrom: {}", &chrom);
                     let chrom = if let Some(chrom) = chrom.strip_prefix("chr") {
                         chrom.to_string()
                     } else {

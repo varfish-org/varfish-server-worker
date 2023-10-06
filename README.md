@@ -71,6 +71,62 @@ $ varfish-server-worker db mk-inhouse \
     [--path-input-tsvs @IN/path-list2.txt]
 ```
 
+## The `seqvars ingest` Command
+
+This command takes as the input a single VCF file from a (supported) variant caller and converts it into a file for further querying.
+The command interprets the following fields which are written out by the commonly used variant callers such as GATK UnifiedGenotyper, GATK HaplotypeCaller, and Illumina Dragen.
+
+- `FORMAT/GT` -- genotype
+- `FORMAT/GQ` -- genotype quality
+- `FORMAT/DP` -- total read coverage
+- `FORMAT/AD` -- allelic depth, one value per allele (including reference0)
+- `FORMAT/PS` -- physical phasing information as written out by GATK HaplotypeCaller in GVCF workflow and Dragen variant caller
+- `FORMAT/SQ` -- "somatic quality" for each alternate allele, as written out by Illumina Dragen variant caller
+    - this field will be written as `FORMAT/GQ`
+
+The `seqvars ingest` command will annotate the variants with the following information:
+
+- gnomAD genomes and exomes allele frequencies
+- gnomAD-mtDNA and HelixMtDb allele frequencies
+- functional annotation following the [VCF ANN field standard](https://pcingola.github.io/SnpEff/adds/VCFannotationformat_v1.0.pdf)
+
+The command will emit one output line for each variant allele from the input and each affected gene.
+That is, if two variant alleles affect two genes, four records will be written to the output file.
+The annotation will be written out for one highest impact.
+
+Overall, the command will emit the following header rows in addition to the `##contig=<ID=.,length=.>` lines.
+
+```
+##fileformat=VCFv4.2
+##FILTER=<ID=PASS,Description="All filters passed">
+##INFO=<ID=gnomad_exomes_an,Number=1,Type=Integer,Description="Number of samples in gnomAD exomes">
+##INFO=<ID=gnomad_exomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD exomes">
+##INFO=<ID=gnomad_exomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD exomes">
+##INFO=<ID=gnomad_exomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD exomes">
+##INFO=<ID=gnomad_genomes_an,Number=1,Type=Integer,Description="Number of samples in gnomAD genomes">
+##INFO=<ID=gnomad_genomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD genomes">
+##INFO=<ID=gnomad_genomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD genomes">
+##INFO=<ID=gnomad_genomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD genomes">
+##INFO=<ID=helix_an,Number=1,Type=Integer,Description="Number of samples in HelixMtDb">
+##INFO=<ID=helix_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in HelixMtDb">
+##INFO=<ID=helix_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in HelixMtDb">
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth (reads with MQ=255 or with bad mates are filtered)">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
+##x-varfish-version=<ID=varfish-server-worker,Version=x.y.z>
+##x-varfish-version=<ID=orig-caller,Name=Dragen,Version=SW: 07.021.624.3.10.9, HW: 07.021.624>
+##x-varfish-version=<ID=orig-caller,Name=GatkHaplotypeCaller,Version=4.4.0.0>
+```
+
+> [!NOTE]
+> The gnomad-mtDNA information is written to the `INFO/gnomdad_genome_*` fields.
+
+> [!NOTE]
+> Future versions of the worker will annotate the worst effect on a MANE select or MANE Clinical transcript.
+
 # Developer Information
 
 This section is only relevant for developers of `varfish-server-worker`.

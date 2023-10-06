@@ -1457,6 +1457,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
+name = "hxdmp"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a17b27f28a7466846baca75f0a5244e546e44178eb7f1c07a3820f413e91c6b0"
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1789,9 +1795,9 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.8.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "876048178b1469372ec642af0d6c616aeac0f7dc18c405518a5779d41077ea5d"
+checksum = "a95119609578b3515e0b3720c1a21a7a38cd2303a7557f5c0771372fc3d1fe4c"
 dependencies = [
  "actix-web",
  "annonars",
@@ -3436,17 +3442,21 @@ dependencies = [
  "flate2",
  "float-cmp",
  "hgvs",
+ "hxdmp",
  "indexmap 2.0.2",
  "insta",
  "itertools",
  "log",
  "mehari",
  "multimap 0.9.0",
+ "noodles-bgzf",
+ "noodles-vcf",
  "pretty_assertions",
  "procfs",
  "prost",
  "prost-build",
  "regex",
+ "rocksdb",
  "rstest",
  "serde",
  "serde-jsonlines",

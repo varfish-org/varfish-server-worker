@@ -1,0 +1,60 @@
+---
+source: src/seqvars/ingest/mod.rs
+expression: "std::fs::read_to_string(&args.path_out)?"
+---
+##fileformat=VCFv4.4
+##INFO=<ID=gnomad_exomes_an,Number=1,Type=Integer,Description="Number of samples in gnomAD exomes">
+##INFO=<ID=gnomad_exomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD exomes">
+##INFO=<ID=gnomad_exomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD exomes">
+##INFO=<ID=gnomad_exomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD exomes">
+##INFO=<ID=gnomad_genomes_an,Number=1,Type=Integer,Description="Number of samples in gnomAD genomes">
+##INFO=<ID=gnomad_genomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD genomes">
+##INFO=<ID=gnomad_genomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD genomes">
+##INFO=<ID=gnomad_genomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD genomes">
+##INFO=<ID=helix_an,Number=1,Type=Integer,Description="Number of samples in HelixMtDb">
+##INFO=<ID=helix_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in HelixMtDb">
+##INFO=<ID=helix_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in HelixMtDb">
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth for each allele">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Conditional genotype quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
+##contig=<ID=1,length=249250621,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=2,length=243199373,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=3,length=198022430,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=4,length=191154276,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=5,length=180915260,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=6,length=171115067,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=7,length=159138663,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=8,length=146364022,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=9,length=141213431,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=10,length=135534747,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=11,length=135006516,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=12,length=133851895,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=13,length=115169878,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=14,length=107349540,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=15,length=102531392,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=16,length=90354753,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=17,length=81195210,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=18,length=78077248,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=19,length=59128983,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=20,length=63025520,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=21,length=48129895,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=22,length=51304566,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=X,length=155270560,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=Y,length=59373566,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=MT,length=16569,assembly="GRCh37",species="Homo sapiens">
+##SAMPLE=<ID=Case_1_father-N1-DNA1-WGS1,Sex="Male",Disease="Unaffected">
+##SAMPLE=<ID=Case_1_index-N1-DNA1-WGS1,Sex="Female",Disease="Affected">
+##SAMPLE=<ID=Case_1_mother-N1-DNA1-WGS1,Sex="Male",Disease="Unaffected">
+##PEDIGREE=<ID=Case_1_father-N1-DNA1-WGS1>
+##PEDIGREE=<ID=Case_1_index-N1-DNA1-WGS1,Father="Case_1_father-N1-DNA1-WGS1",Mother="Case_1_mother-N1-DNA1-WGS1">
+##PEDIGREE=<ID=Case_1_mother-N1-DNA1-WGS1>
+##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
+##x-varfish-version=<ID=orig-caller,Name="GatkHaplotypeCaller",Version="3.7-0-gcfedb67">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Case_1_father-N1-DNA1-WGS1	Case_1_index-N1-DNA1-WGS1	Case_1_mother-N1-DNA1-WGS1
+17	41210126	.	C	CTAGCACTT	.	.	gnomad_exomes_an=31272;gnomad_exomes_hom=0;gnomad_exomes_het=85;gnomad_genomes_an=0;gnomad_genomes_hom=0;gnomad_genomes_het=0;ANN=CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007294.4|Coding|18/22|c.5194-975_5194-974insAAGTGCTA|p.?|5307/7088|5194/5592||-974|,CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007297.4|Coding|17/21|c.5053-975_5053-974insAAGTGCTA|p.?|5247/7028|5053/5451||-974|,CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007299.4|Coding|18/21|c.1882-975_1882-974insAAGTGCTA|p.?|1989/3696|1882/2100||-974|,CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007300.4|Coding|19/23|c.5257-975_5257-974insAAGTGCTA|p.?|5370/7151|5257/5655||-974|	GT:AD:DP:GQ	0/0:29:29:87	0/1:23:36:99	0/1:15:32:99
+MT	750	.	A	G	.	.	.	GT:AD:DP:GQ	1/1:0:2757:99	1/1:0:2392:99	1/1:0:1621:99
+
