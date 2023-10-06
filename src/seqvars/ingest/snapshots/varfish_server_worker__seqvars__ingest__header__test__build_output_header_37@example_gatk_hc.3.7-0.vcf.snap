@@ -20,7 +20,7 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Conditional genotype quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
+##FORMAT=<ID=PS,Number=1,Type=Integer,Description="Phase set">
 ##contig=<ID=1,length=249250621,assembly="GRCh37",species="Homo sapiens">
 ##contig=<ID=2,length=243199373,assembly="GRCh37",species="Homo sapiens">
 ##contig=<ID=3,length=198022430,assembly="GRCh37",species="Homo sapiens">

@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::{self, GenomeRelease};
+use crate::common::{self, open_read_maybe_gz, open_write_maybe_gz, GenomeRelease};
 use mehari::annotate::seqvars::provider::MehariProvider;
 use noodles_vcf as vcf;
 use thousands::Separable;
@@ -73,27 +73,20 @@ impl Default for KnownFormatKeys {
                 vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY, // GQ
                 vcf::record::genotypes::keys::key::READ_DEPTH, // DP
                 vcf::record::genotypes::keys::key::READ_DEPTHS, // AD
-                "PID".parse().expect("invalid key: PID"),
+                vcf::record::genotypes::keys::key::PHASE_SET, // PS
             ],
             known_keys: vec![
                 vcf::record::genotypes::keys::key::GENOTYPE,
                 vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY,
                 vcf::record::genotypes::keys::key::READ_DEPTH,
                 vcf::record::genotypes::keys::key::READ_DEPTHS,
-                "PID".parse().expect("invalid key: PID"),
-                "PS".parse().expect("invalid key: PS"), // written as PID
-                "SQ".parse().expect("invalid key: SQ"), // written as AD
+                vcf::record::genotypes::keys::key::PHASE_SET, // PS
+                "SQ".parse().expect("invalid key: SQ"),       // written as AD
             ],
-            known_to_output_map: vec![
-                (
-                    "PS".parse().expect("invalid key: PS"),
-                    "PID".parse().expect("invalid key: PID"),
-                ),
-                (
-                    "SQ".parse().expect("invalid key: SQ"),
-                    vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY,
-                ),
-            ]
+            known_to_output_map: vec![(
+                "SQ".parse().expect("invalid key: SQ"),
+                vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY,
+            )]
             .into_iter()
             .collect(),
         }
@@ -130,15 +123,6 @@ fn transform_format_value(
                         ad_values[allele_no].expect("SQ should be integer value"),
                     ),
                     _ => return None, // unreachable!("FORMAT/AD must be array of integer"),
-                }
-            }
-            "PS" => {
-                // PS is written as PID.
-                match *value {
-                    vcf::record::genotypes::sample::Value::Integer(ps_value) => {
-                        vcf::record::genotypes::sample::Value::String(format!("{}", ps_value))
-                    }
-                    _ => return None, // unreachable!("FORMAT/PS must be integer"),
                 }
             }
             "SQ" => {
@@ -218,13 +202,17 @@ fn copy_format(
 }
 
 /// Process the variants from `input_reader` to `output_writer`.
-fn process_variants(
-    output_writer: &mut vcf::Writer<std::io::BufWriter<std::fs::File>>,
-    input_reader: &mut vcf::Reader<std::io::BufReader<std::fs::File>>,
+fn process_variants<R, W>(
+    output_writer: &mut vcf::Writer<W>,
+    input_reader: &mut vcf::Reader<R>,
     output_header: &vcf::Header,
     input_header: &vcf::Header,
     args: &Args,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), anyhow::Error>
+where
+    R: std::io::BufRead,
+    W: std::io::Write,
+{
     // Open the frequency RocksDB database in read only mode.
     tracing::info!("Opening frequency database");
     let rocksdb_path = format!(
@@ -323,8 +311,7 @@ fn process_variants(
                 let mut output_record = builder.build()?;
 
                 // Obtain annonars variant key from current allele for RocksDB lookup.
-                let vcf_var =
-                    annonars::common::keys::Var::from_vcf_allele(&output_record, allele_no);
+                let vcf_var = annonars::common::keys::Var::from_vcf_allele(&output_record, 0);
 
                 // Skip records with a deletion as alternative allele.
                 if vcf_var.alternative == "*" {
@@ -449,11 +436,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     tracing::info!("opening input file...");
     let mut input_reader = {
-        let file = std::fs::File::open(&args.path_in)
-            .map_err(|e| anyhow::anyhow!("could not open input file {}: {}", &args.path_in, e))
-            .map(std::io::BufReader::new)?;
         vcf::reader::Builder
-            .build_from_reader(file)
+            .build_from_reader(open_read_maybe_gz(&args.path_in)?)
             .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?
     };
 
@@ -469,17 +453,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
-    let mut output_writer = {
-        let writer = std::fs::File::create(&args.path_out).map_err(|e| {
-            anyhow::anyhow!(
-                "could not output file for writing {}: {}",
-                &args.path_out,
-                e
-            )
-        })?;
-        let writer = std::io::BufWriter::new(writer);
-        vcf::writer::Writer::new(writer)
-    };
+    let mut output_writer = { vcf::writer::Writer::new(open_write_maybe_gz(&args.path_out)?) };
     output_writer
         .write_header(&output_header)
         .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
@@ -501,6 +475,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
+    use std::io::Read;
+
     use rstest::rstest;
 
     use crate::common::GenomeRelease;
@@ -541,6 +517,46 @@ mod test {
         super::run(&args_common, &args)?;
 
         insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+
+        Ok(())
+    }
+
+    fn read_to_bytes<P>(path: P) -> Result<Vec<u8>, anyhow::Error>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let mut f = std::fs::File::open(&path).expect("no file found");
+        let metadata = std::fs::metadata(&path).expect("unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        f.read(&mut buffer).expect("buffer overflow");
+        Ok(buffer)
+    }
+
+    #[test]
+    fn result_snapshot_test_gz() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let path_in: String = "tests/seqvars/ingest/NA12878_dragen.vcf.gz".into();
+        let path_ped = path_in.replace(".vcf.gz", ".ped");
+        let path_out = tmpdir
+            .join("out.vcf.gz")
+            .to_str()
+            .expect("invalid path")
+            .into();
+        let args_common = Default::default();
+        let args = super::Args {
+            max_var_count: None,
+            path_mehari_db: "tests/seqvars/ingest/db".into(),
+            path_ped,
+            genomebuild: GenomeRelease::Grch37,
+            path_in,
+            path_out,
+        };
+        super::run(&args_common, &args)?;
+
+        let mut buffer = Vec::new();
+        hxdmp::hexdump(&read_to_bytes(&args.path_out)?, &mut buffer)?;
+        insta::assert_snapshot!(String::from_utf8_lossy(&buffer));
 
         Ok(())
     }

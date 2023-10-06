@@ -80,9 +80,7 @@ The command interprets the following fields which are written out by the commonl
 - `FORMAT/GQ` -- genotype quality
 - `FORMAT/DP` -- total read coverage
 - `FORMAT/AD` -- allelic depth, one value per allele (including reference0)
-- `FORMAT/PID` -- physical phasing information as written out by GATK HaplotypeCaller in GVCF workflow
-- `FORMAT/PS` -- physical phasing information as written out by Dragen variant caller
-    - this field fill be written as `FORMAT/PID`
+- `FORMAT/PS` -- physical phasing information as written out by GATK HaplotypeCaller in GVCF workflow and Dragen variant caller
 - `FORMAT/SQ` -- "somatic quality" for each alternate allele, as written out by Illumina Dragen variant caller
     - this field will be written as `FORMAT/GQ`
 

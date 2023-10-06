@@ -184,7 +184,6 @@ pub fn build_output_header(
     genomebuild: GenomeRelease,
     worker_version: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
-    use vcf::header::record::value::map::format::Type as FormatType;
     use vcf::header::record::value::{
         map::{info::Type, Filter, Format, Info},
         Map,
@@ -300,17 +299,7 @@ pub fn build_output_header(
             Map::<Format>::from(&key::CONDITIONAL_GENOTYPE_QUALITY),
         )
         .add_format(key::GENOTYPE, Map::<Format>::from(&key::GENOTYPE))
-        .add_format(
-            "PID".parse()?,
-            Map::<Format>::builder()
-                .set_number(Number::Count(1))
-                .set_type(FormatType::String)
-                .set_description(
-                    "Physical phasing ID information, where each unique ID within a given sample \
-                    (but not across samples) connects records within a phasing group",
-                )
-                .build()?,
-        );
+        .add_format(key::PHASE_SET, Map::<Format>::from(&key::PHASE_SET));
 
     let mut builder = match genomebuild {
         GenomeRelease::Grch37 => add_contigs_37(builder),
