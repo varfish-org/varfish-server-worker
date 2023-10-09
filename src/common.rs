@@ -285,6 +285,11 @@ pub fn add_contigs_37(
         );
     }
 
+    builder = builder.insert(
+        "x-genome-build".parse()?,
+        vcf::header::record::Value::from("GRCh37"),
+    )?;
+
     Ok(builder)
 }
 
@@ -347,6 +352,11 @@ pub fn add_contigs_38(
                 .build()?,
         );
     }
+
+    builder = builder.insert(
+        "x-genome-build".parse()?,
+        vcf::header::record::Value::from("GRCh38"),
+    )?;
 
     Ok(builder)
 }

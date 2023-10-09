@@ -1796,8 +1796,6 @@ dependencies = [
 [[package]]
 name = "mehari"
 version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2cb639d81b95108663ee1ab919440b85d8e6b3aa06d3c4b1276ac52e74d6bbc"
 dependencies = [
  "actix-web",
  "annonars",
@@ -3455,6 +3453,8 @@ dependencies = [
  "procfs",
  "prost",
  "prost-build",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
  "regex",
  "rocksdb",
  "rstest",

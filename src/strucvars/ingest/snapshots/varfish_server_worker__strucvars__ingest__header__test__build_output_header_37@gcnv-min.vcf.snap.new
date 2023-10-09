@@ -1,0 +1,57 @@
+---
+source: src/strucvars/ingest/header.rs
+assertion_line: 298
+expression: "std::fs::read_to_string(out_path_str)?"
+---
+##fileformat=VCFv4.4
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the longest variant described in this record">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively">
+##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
+##INFO=<ID=annsv,Number=1,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Conditional genotype quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=pec,Number=1,Type=Integer,Description="Total coverage with paired-end reads">
+##FORMAT=<ID=pev,Number=1,Type=Integer,Description="Paired-end reads supporting the variant">
+##FORMAT=<ID=src,Number=1,Type=Integer,Description="Total coverage with split reads">
+##FORMAT=<ID=srv,Number=1,Type=Integer,Description="Split reads supporting the variant">
+##FORMAT=<ID=amq,Number=1,Type=Float,Description="Average mapping quality over the variant">
+##FORMAT=<ID=cn,Number=1,Type=Integer,Description="Copy number of the variant in the sample">
+##FORMAT=<ID=anc,Number=1,Type=Float,Description="Average normalized coverage over the variant in the sample">
+##FORMAT=<ID=pc,Number=1,Type=Integer,Description="Point count (windows/targets/probes)">
+##contig=<ID=1,length=249250621,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=2,length=243199373,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=3,length=198022430,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=4,length=191154276,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=5,length=180915260,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=6,length=171115067,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=7,length=159138663,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=8,length=146364022,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=9,length=141213431,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=10,length=135534747,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=11,length=135006516,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=12,length=133851895,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=13,length=115169878,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=14,length=107349540,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=15,length=102531392,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=16,length=90354753,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=17,length=81195210,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=18,length=78077248,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=19,length=59128983,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=20,length=63025520,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=21,length=48129895,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=22,length=51304566,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=X,length=155270560,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=Y,length=59373566,assembly="GRCh37",species="Homo sapiens">
+##contig=<ID=MT,length=16569,assembly="GRCh37",species="Homo sapiens">
+##fileDate=20230421
+##x-genome-build=GRCh37
+##SAMPLE=<ID=SAMPLE,Sex="Male",Disease="Affected">
+##PEDIGREE=<ID=SAMPLE>
+##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
+##x-varfish-version=<ID=Gcnv,Name="Gcnv",Version="4.3.0.0">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE
+

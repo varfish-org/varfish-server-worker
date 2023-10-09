@@ -1,7 +1,10 @@
 //! Implementation of `strucvars ingest` subcommand.
 
+use std::io::{BufRead, Write};
+
 use crate::common::{self, open_write_maybe_gz, worker_version, GenomeRelease};
 use mehari::common::open_read_maybe_gz;
+use rand_core::SeedableRng;
 
 use mehari::annotate::strucvars::guess_sv_caller;
 use noodles_vcf as vcf;
@@ -24,9 +27,93 @@ pub struct Args {
     /// Path to input files.
     #[clap(long, required = true)]
     pub path_in: Vec<String>,
+    /// Path to coverage VCF files from maelstrom; optional.
+    #[clap(long)]
+    pub path_cov_vcf: Vec<String>,
     /// Path to output file.
     #[clap(long)]
     pub path_out: String,
+
+    /// Minimal reciprocal overlap to require.
+    #[arg(long, default_value_t = 0.8)]
+    pub min_overlap: f32,
+    /// Slack to use around break-ends.
+    #[arg(long, default_value_t = 50)]
+    pub slack_bnd: i32,
+    /// Slack to use around insertions.
+    #[arg(long, default_value_t = 50)]
+    pub slack_ins: i32,
+
+    /// Seed for random number generator (UUIDs), if any.
+    #[arg(long)]
+    pub rng_seed: Option<u64>,
+    /// Value to write to `##fileDate`.
+    #[arg(long)]
+    pub file_date: String,
+}
+
+/// Write out variants from input files.
+fn process_variants(
+    pedigree: &mehari::ped::PedigreeByName,
+    output_writer: &mut vcf::Writer<Box<dyn Write>>,
+    input_readers: &mut [vcf::Reader<Box<dyn BufRead>>],
+    output_header: &vcf::Header,
+    input_header: &[vcf::Header],
+    input_sv_callers: &[mehari::annotate::strucvars::SvCaller],
+    args: &Args,
+) -> Result<(), anyhow::Error> {
+    // Initialize the random number generator from command line seed if given or local entropy
+    // source.
+    let mut rng = if let Some(rng_seed) = args.rng_seed {
+        rand::rngs::StdRng::seed_from_u64(rng_seed)
+    } else {
+        rand::rngs::StdRng::from_entropy()
+    };
+
+    // Create temporary directory.  We will create one temporary file (containing `jsonl`
+    // seriealized `VarFishStrucvarTsvRecord`s) for each SV type and contig.
+    let tmp_dir = tempdir::TempDir::new("mehari")?;
+
+    // Read through input VCF files and write out to temporary files.
+    tracing::info!("converting input VCF files to temporary files...");
+    for (mut reader, sv_caller, header) in itertools::izip!(
+        input_readers.iter_mut(),
+        input_sv_callers.iter(),
+        input_header.iter()
+    ) {
+        mehari::annotate::strucvars::run_vcf_to_jsonl(
+            pedigree,
+            &mut reader,
+            &header,
+            &sv_caller,
+            &tmp_dir,
+            &mut std::collections::HashMap::new(),
+            &mut rng,
+        )?;
+    }
+    tracing::info!("... done converting input files");
+
+    tracing::info!("clustering SVs to output...");
+    // Read through temporary files by contig, cluster by overlap as configured, and write to `writer`.
+    for contig_no in 1..=25 {
+        tracing::info!(
+            "  contig: {}",
+            annonars::common::cli::CANONICAL[contig_no - 1]
+        );
+        let clusters = mehari::annotate::strucvars::read_and_cluster_for_contig(
+            &tmp_dir,
+            contig_no,
+            args.slack_ins,
+            args.slack_bnd,
+            args.min_overlap,
+        )?;
+        for record in clusters {
+            output_writer.write_record(&output_header, &record.try_into()?)?;
+        }
+    }
+    tracing::info!("... done clustering SVs to output");
+
+    Ok(())
 }
 
 /// Main entry point for `strucvars ingest` sub command.
@@ -57,7 +144,10 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let input_sv_callers = args
         .path_in
         .iter()
-        .map(guess_sv_caller)
+        .map(|path| {
+            let reader = open_read_maybe_gz(path)?;
+            guess_sv_caller(reader)
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     tracing::info!("processing header...");
@@ -85,8 +175,9 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let output_header = header::build_output_header(
         sample_names,
         &input_sv_callers.iter().collect::<Vec<_>>(),
-        &Some(pedigree),
+        Some(&pedigree),
         args.genomebuild,
+        &args.file_date,
         worker_version(),
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
@@ -96,13 +187,15 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         .write_header(&output_header)
         .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
 
-    // process_variants(
-    //     &mut output_writer,
-    //     &mut input_readers,
-    //     &output_header,
-    //     &input_header,
-    //     args,
-    // )?;
+    process_variants(
+        &pedigree,
+        &mut output_writer,
+        &mut input_readers,
+        &output_header,
+        &input_headers,
+        &input_sv_callers,
+        args,
+    )?;
 
     tracing::info!(
         "All of `strucvars ingest` completed in {:?}",
@@ -126,6 +219,7 @@ mod test {
                 String::from("tests/strucvars/ingest/delly2-min.vcf"),
                 String::from("tests/strucvars/ingest/popdel-min.vcf"),
             ],
+            path_cov_vcf: vec![],
             path_ped: "tests/strucvars/ingest/delly2-min.ped".into(),
             genomebuild: GenomeRelease::Grch37,
             path_out: tmpdir
@@ -133,6 +227,11 @@ mod test {
                 .to_str()
                 .expect("invalid path")
                 .into(),
+            min_overlap: 0.8,
+            slack_bnd: 50,
+            slack_ins: 50,
+            rng_seed: Some(42),
+            file_date: String::from("20230421"),
         };
         super::run(&args_common, &args)?;
 
@@ -154,6 +253,7 @@ mod test {
                 String::from("tests/strucvars/ingest/manta-min.vcf"),
                 String::from("tests/strucvars/ingest/melt-min.vcf"),
             ],
+            path_cov_vcf: vec![],
             path_ped: "tests/strucvars/ingest/dragen-cnv-min.ped".into(),
             genomebuild: GenomeRelease::Grch37,
             path_out: tmpdir
@@ -161,6 +261,11 @@ mod test {
                 .to_str()
                 .expect("invalid path")
                 .into(),
+            min_overlap: 0.8,
+            slack_bnd: 50,
+            slack_ins: 50,
+            rng_seed: Some(42),
+            file_date: String::from("20230421"),
         };
         super::run(&args_common, &args)?;
 
@@ -180,6 +285,7 @@ mod test {
                 String::from("tests/strucvars/ingest/delly2-min.vcf.gz"),
                 String::from("tests/strucvars/ingest/popdel-min.vcf.gz"),
             ],
+            path_cov_vcf: vec![],
             path_ped: "tests/strucvars/ingest/delly2-min.ped".into(),
             genomebuild: GenomeRelease::Grch37,
             path_out: tmpdir
@@ -187,6 +293,11 @@ mod test {
                 .to_str()
                 .expect("invalid path")
                 .into(),
+            min_overlap: 0.8,
+            slack_bnd: 50,
+            slack_ins: 50,
+            rng_seed: Some(42),
+            file_date: String::from("20230421"),
         };
         super::run(&args_common, &args)?;
 
@@ -208,6 +319,7 @@ mod test {
                 String::from("tests/strucvars/ingest/manta-min.vcf.gz"),
                 String::from("tests/strucvars/ingest/melt-min.vcf.gz"),
             ],
+            path_cov_vcf: vec![],
             path_ped: "tests/strucvars/ingest/dragen-cnv-min.ped".into(),
             genomebuild: GenomeRelease::Grch37,
             path_out: tmpdir
@@ -215,6 +327,11 @@ mod test {
                 .to_str()
                 .expect("invalid path")
                 .into(),
+            min_overlap: 0.8,
+            slack_bnd: 50,
+            slack_ins: 50,
+            rng_seed: Some(42),
+            file_date: String::from("20230421"),
         };
         super::run(&args_common, &args)?;
 

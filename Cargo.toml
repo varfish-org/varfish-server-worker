@@ -29,7 +29,8 @@ hgvs = "0.11"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
 log = "0.4"
-mehari = "0.11"
+# mehari = "0.11"
+mehari = { path = "../mehari" }
 multimap = "0.9"
 procfs = "0.15"
 prost = "0.12"
@@ -50,7 +51,8 @@ uuid = { version = "1.4", features = ["v4", "fast-rng", "serde"] }
 noodles-vcf = "0.40.0"
 rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
 noodles-bgzf = "0.24.0"
-
+rand = "0.8"
+rand_core = "0.6"
 
 [build-dependencies]
 prost-build = "0.12"

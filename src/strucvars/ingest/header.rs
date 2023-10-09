@@ -35,8 +35,9 @@ fn caller_version(sv_caller: &mehari::annotate::strucvars::SvCaller) -> String {
 pub fn build_output_header(
     input_sample_names: &SampleNames,
     input_sv_callers: &[&mehari::annotate::strucvars::SvCaller],
-    pedigree: &Option<mehari::ped::PedigreeByName>,
+    pedigree: Option<&mehari::ped::PedigreeByName>,
     genomebuild: GenomeRelease,
+    file_date: &str,
     worker_version: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
     use vcf::header::record::value::{
@@ -47,6 +48,10 @@ pub fn build_output_header(
     use vcf::record::genotypes::keys::key;
 
     let builder = vcf::Header::builder()
+        .insert(
+            "fileDate".parse()?,
+            vcf::header::record::Value::from(file_date),
+        )?
         .add_filter("PASS", Map::<Filter>::new("All filters passed"))
         .add_info(
             vcf::record::info::field::key::IS_IMPRECISE,
@@ -272,13 +277,17 @@ mod test {
         let input_vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
             .read_header()?;
-        let sv_callers = vec![mehari::annotate::strucvars::guess_sv_caller(path)?];
+        let sv_callers = {
+            let reader = mehari::common::open_read_maybe_gz(path)?;
+            vec![mehari::annotate::strucvars::guess_sv_caller(reader)?]
+        };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
         let output_vcf_header = super::build_output_header(
             input_vcf_header.sample_names(),
             &sv_caller_refs,
-            &Some(pedigree),
+            Some(&pedigree),
             crate::common::GenomeRelease::Grch37,
+            "20230421",
             "x.y.z",
         )?;
 
@@ -311,13 +320,17 @@ mod test {
         let input_vcf_header = noodles_vcf::reader::Builder
             .build_from_path(path)?
             .read_header()?;
-        let sv_callers = vec![mehari::annotate::strucvars::guess_sv_caller(path)?];
+        let sv_callers = {
+            let reader = mehari::common::open_read_maybe_gz(path)?;
+            vec![mehari::annotate::strucvars::guess_sv_caller(reader)?]
+        };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
         let output_vcf_header = super::build_output_header(
             input_vcf_header.sample_names(),
             &sv_caller_refs,
-            &Some(pedigree),
+            Some(&pedigree),
             crate::common::GenomeRelease::Grch38,
+            "20230421",
             "x.y.z",
         )?;
 
