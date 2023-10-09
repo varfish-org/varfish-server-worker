@@ -1,0 +1,14 @@
+---
+source: src/strucvars/query/schema.rs
+expression: "serde_json::to_string_pretty(&sv).unwrap()"
+---
+{
+  "chrom": "chr1",
+  "pos": 123,
+  "sv_type": "DEL",
+  "sv_sub_type": "DEL:ME:L1",
+  "chrom2": null,
+  "end": 245,
+  "strand_orientation": "3to5",
+  "call_info": {}
+}

@@ -89,6 +89,8 @@ The `seqvars ingest` command will annotate the variants with the following infor
 - gnomAD genomes and exomes allele frequencies
 - gnomAD-mtDNA and HelixMtDb allele frequencies
 - functional annotation following the [VCF ANN field standard](https://pcingola.github.io/SnpEff/adds/VCFannotationformat_v1.0.pdf)
+    - `Gene_Name` is writen as HGNC symbol
+    - `Gene_ID` is written as HGNC ID
 
 The command will emit one output line for each variant allele from the input and each affected gene.
 That is, if two variant alleles affect two genes, four records will be written to the output file.
@@ -126,6 +128,114 @@ Overall, the command will emit the following header rows in addition to the `##c
 
 > [!NOTE]
 > Future versions of the worker will annotate the worst effect on a MANE select or MANE Clinical transcript.
+
+## The `strucvars ingest` Command
+
+This command takes as the input one or more VCF files from structural variant callers and converts it into a file for further querying.
+The command supports the following variant callers and can guess the caller from the VCF header and first record.
+
+- Delly2
+- Dragen-SV (equivalent to Manta)
+- Dragen-CNV
+- GATK gCNV
+- Manta
+- MELT
+- PopDel
+
+One record will be written out for each variant, each with a single alternate allele.
+
+The following symbolic `ALT` alleles are used:
+
+- `<DEL>`
+- `<DUP>`
+- `<INS>`
+- `<INV>`
+- VCF break-end syntax, e.g., `T[chr1:5[`
+
+The following `INFO` fields are written:
+
+- `IMPRECISE` -- flag that specifies that this is an imprecise variant
+- `END` -- end position of the variants
+- `SVTYPE` -- type of the variant, one of `<DEL>`, `<DUP>`, `<INS>`, `<INV>`, `BND`
+- `SVLEN` -- absolute length of the SV for linear variants, `.` for non-linear variants
+- `SVCLAIM` -- specificaton of `D` (change in abundance), `J` (novel junction), or `DJ` (both change in abundance and novel junction)
+- `callers` -- (non-standard field), list of callers that called the variant
+- `chr2` -- (non-standard field), second chromosome for BND variants
+- `annsv` -- (non-standard field), annotation of the variant effect on each affected gene
+
+The `annsv` field is a pipe-character (`|`) separated list of the following fields:
+
+1. symbolic alternate alele, e.g., `<DEL>`
+2. effects on the gene's transcript, separated by `&`
+    - `transcript_variant` -- variant affects the whole transcript
+    - `exon_variant` -- variant affects exon
+    - `splice_region_variant` -- variant affects splice region
+    - `intron_variant` -- variant affects only intron
+    - `upstream_variant` -- variant upsream of gene
+    - `downstream_variant` -- variant downstream of gene
+    - `intergenic_variant` -- default for "no gene affected", but never written
+3. HGNC gene symbol, e.g., `BRCA1`
+4. HGNC gene ID, e.g., `HGNC:1100`
+
+The following `FORMAT` fields are written:
+
+- `GT` -- (standard field) genotype, if applicable
+- `GQ` -- (standard field) genotype quality, if applicable
+- `pec` -- total coverage with paired-end reads
+- `pev` -- paired-end reads supporting the variant
+- `src` -- total coverage with split reads
+- `srv` -- split reads supporting the variant
+- `amq` -- average mapping quality over the variant
+- `cn` -- copy number of the variant in the sample
+- `anc` -- average normalized coverage over the variant in the sample
+- `pc` -- point count (windows/targets/probes)
+
+
+Overall, the command will emit the following header rows in addition to the `##contig=<ID=.,length=.>` lines.
+
+```
+##fileformat=VCFv4.4
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the longest variant described in this record">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
+##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively">
+##INFO=<ID=callers,Number=.,Type=String,Description="Callers that called the variant">
+##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
+##INFO=<ID=annsv,Number=1,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Conditional genotype quality">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=pec,Number=1,Type=Integer,Description="Total coverage with paired-end reads">
+##FORMAT=<ID=pev,Number=1,Type=Integer,Description="Paired-end reads supporting the variant">
+##FORMAT=<ID=src,Number=1,Type=Integer,Description="Total coverage with split reads">
+##FORMAT=<ID=srv,Number=1,Type=Integer,Description="Split reads supporting the variant">
+##FORMAT=<ID=amq,Number=1,Type=Float,Description="Average mapping quality over the variant">
+##FORMAT=<ID=cn,Number=1,Type=Integer,Description="Copy number of the variant in the sample">
+##FORMAT=<ID=anc,Number=1,Type=Float,Description="Average normalized coverage over the variant in the sample">
+##FORMAT=<ID=pc,Number=1,Type=Integer,Description="Point count (windows/targets/probes)">
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=CNV,Description="Copy Number Variation">
+##ALT=<ID=INV,Description="Inversion">
+##fileDate=20230421
+##x-varfish-genome-build=GRCh37
+##SAMPLE=<ID=index,Sex="Male",Disease="Affected">
+##SAMPLE=<ID=father,Sex="Male",Disease="Unaffected">
+##SAMPLE=<ID=mother,Sex="Female",Disease="Unaffected">
+##PEDIGREE=<ID=index,Father="father",Mother="mother">
+##PEDIGREE=<ID=father>
+##PEDIGREE=<ID=mother>
+##x-varfish-case-uuid=d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c
+##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
+##x-varfish-version=<ID=Delly,Name="Delly",Version="1.1.3">
+```
+
+> [!NOTE]
+> The `strucvars ingest` step does not perform any annotation.
+> It only merges the input VCF files from multiple callers (all files must have the same samples) and converts them into the internal format.
+> The `INFO/annsv` field is filled by `strucvars query`.
 
 # Developer Information
 

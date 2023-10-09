@@ -2,8 +2,9 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::{self, open_read_maybe_gz, open_write_maybe_gz, GenomeRelease};
+use crate::common::{self, open_write_maybe_gz, worker_version, GenomeRelease};
 use mehari::annotate::seqvars::provider::MehariProvider;
+use mehari::common::open_read_maybe_gz;
 use noodles_vcf as vcf;
 use thousands::Separable;
 
@@ -31,15 +32,6 @@ pub struct Args {
     /// Path to output file.
     #[clap(long)]
     pub path_out: String,
-}
-
-/// Return the version of the `varfish-server-worker` crate and `x.y.z` in tests.
-fn worker_version() -> &'static str {
-    if cfg!(test) {
-        "x.y.z"
-    } else {
-        env!("CARGO_PKG_VERSION")
-    }
 }
 
 /// Return path component fo rth egiven assembly.
@@ -475,19 +467,10 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
-    use std::io::Read;
 
     use rstest::rstest;
 
     use crate::common::GenomeRelease;
-
-    macro_rules! set_snapshot_suffix {
-        ($($expr:expr),*) => {
-            let mut settings = insta::Settings::clone_current();
-            settings.set_snapshot_suffix(format!($($expr,)*));
-            let _guard = settings.bind_to_scope();
-        }
-    }
 
     #[rstest]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
@@ -497,7 +480,10 @@ mod test {
     #[case("tests/seqvars/ingest/NA12878_dragen.vcf")]
     #[case("tests/seqvars/ingest/Case_1.vcf")]
     fn result_snapshot_test(#[case] path: &str) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{}", path.split('/').last().unwrap().replace('.', "_"));
+        mehari::common::set_snapshot_suffix!(
+            "{}",
+            path.split('/').last().unwrap().replace('.', "_")
+        );
 
         let tmpdir = temp_testdir::TempDir::default();
 
@@ -519,17 +505,6 @@ mod test {
         insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
 
         Ok(())
-    }
-
-    fn read_to_bytes<P>(path: P) -> Result<Vec<u8>, anyhow::Error>
-    where
-        P: AsRef<std::path::Path>,
-    {
-        let mut f = std::fs::File::open(&path).expect("no file found");
-        let metadata = std::fs::metadata(&path).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        f.read_exact(&mut buffer).expect("buffer overflow");
-        Ok(buffer)
     }
 
     #[test]
@@ -554,8 +529,8 @@ mod test {
         };
         super::run(&args_common, &args)?;
 
-        let mut buffer = Vec::new();
-        hxdmp::hexdump(&read_to_bytes(&args.path_out)?, &mut buffer)?;
+        let mut buffer: Vec<u8> = Vec::new();
+        hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
         insta::assert_snapshot!(String::from_utf8_lossy(&buffer));
 
         Ok(())

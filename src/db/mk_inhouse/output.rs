@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::sv::query::schema::{StrandOrientation, SvType};
+use crate::strucvars::query::schema::{StrandOrientation, SvType};
 
 use super::input::Record as InputRecord;
 

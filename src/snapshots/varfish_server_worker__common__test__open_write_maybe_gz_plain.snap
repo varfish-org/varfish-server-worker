@@ -1,5 +1,0 @@
----
-source: src/common.rs
-expression: "format!(\"{:x?}\", & buf)"
----
-[]

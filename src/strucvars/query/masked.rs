@@ -293,14 +293,16 @@ mod test {
         masked_db: super::MaskedDb,
         chrom_map: indexmap::IndexMap<String, usize>,
     ) {
-        let sv = crate::sv::query::schema::StructuralVariant {
+        let sv = crate::strucvars::query::schema::StructuralVariant {
             chrom: String::from("1"),
             pos: sv_pos,
             end: sv_end,
             chrom2: None,
-            sv_type: crate::sv::query::schema::SvType::Del,
-            sv_sub_type: crate::sv::query::schema::SvSubType::Del,
-            strand_orientation: Some(crate::sv::query::schema::StrandOrientation::FiveToThree),
+            sv_type: crate::strucvars::query::schema::SvType::Del,
+            sv_sub_type: crate::strucvars::query::schema::SvSubType::Del,
+            strand_orientation: Some(
+                crate::strucvars::query::schema::StrandOrientation::FiveToThree,
+            ),
             call_info: Default::default(),
         };
 

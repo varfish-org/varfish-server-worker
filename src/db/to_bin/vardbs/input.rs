@@ -5,7 +5,7 @@ use serde::Deserialize;
 use tracing::error;
 
 use crate::db::mk_inhouse::output::Record as InhouseDbRecord;
-use crate::sv::query::schema::SvType;
+use crate::strucvars::query::schema::SvType;
 
 /// dbVar database record as read from TSV file.
 #[derive(Debug, Deserialize)]

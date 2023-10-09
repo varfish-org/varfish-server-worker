@@ -2,18 +2,18 @@
 
 use std::{
     fs::File,
-    io::{BufRead, BufReader, BufWriter, Write},
+    io::{BufRead, BufWriter, Write},
     ops::Range,
     path::Path,
 };
 
 use byte_unit::Byte;
-use clap_verbosity_flag::{InfoLevel, Verbosity};
-
 use clap::Parser;
-use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
+use clap_verbosity_flag::{InfoLevel, Verbosity};
+use flate2::{write::GzEncoder, Compression};
 use hgvs::static_data::Assembly;
 use indexmap::IndexMap;
+use noodles_vcf as vcf;
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
@@ -65,24 +65,6 @@ pub fn build_chrom_map() -> IndexMap<String, usize> {
     result.insert("MT".to_owned(), 24);
     result.insert("chrMT".to_owned(), 24);
     result
-}
-
-/// Transparently open a file with gzip decoder.
-pub fn open_read_maybe_gz<P>(path: P) -> Result<Box<dyn BufRead>, anyhow::Error>
-where
-    P: AsRef<Path>,
-{
-    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
-        tracing::trace!("Opening {:?} as gzip for reading", path.as_ref());
-        let file = File::open(path)?;
-        let bufreader = BufReader::new(file);
-        let decoder = MultiGzDecoder::new(bufreader);
-        Ok(Box::new(BufReader::new(decoder)))
-    } else {
-        tracing::trace!("Opening {:?} as plain text for reading", path.as_ref());
-        let file = File::open(path).map(BufReader::new)?;
-        Ok(Box::new(BufReader::new(file)))
-    }
 }
 
 /// Transparently opena  file with gzip encoder.
@@ -234,6 +216,165 @@ mod tests {
     }
 }
 
+/// Return the version of the `varfish-server-worker` crate and `x.y.z` in tests.
+pub fn worker_version() -> &'static str {
+    if cfg!(test) {
+        "x.y.z"
+    } else {
+        env!("CARGO_PKG_VERSION")
+    }
+}
+
+/// Add contigs for GRCh37.
+pub fn add_contigs_37(
+    builder: vcf::header::Builder,
+) -> Result<vcf::header::Builder, anyhow::Error> {
+    use vcf::header::record::value::map::Contig;
+    use vcf::header::record::value::Map;
+
+    let mut builder = builder;
+
+    let specs: &[(&str, usize); 25] = &[
+        ("1", 249250621),
+        ("2", 243199373),
+        ("3", 198022430),
+        ("4", 191154276),
+        ("5", 180915260),
+        ("6", 171115067),
+        ("7", 159138663),
+        ("8", 146364022),
+        ("9", 141213431),
+        ("10", 135534747),
+        ("11", 135006516),
+        ("12", 133851895),
+        ("13", 115169878),
+        ("14", 107349540),
+        ("15", 102531392),
+        ("16", 90354753),
+        ("17", 81195210),
+        ("18", 78077248),
+        ("19", 59128983),
+        ("20", 63025520),
+        ("21", 48129895),
+        ("22", 51304566),
+        ("X", 155270560),
+        ("Y", 59373566),
+        ("MT", 16569),
+    ];
+
+    for (contig, length) in specs {
+        builder = builder.add_contig(
+            contig
+                .parse()
+                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            Map::<Contig>::builder()
+                .set_length(*length)
+                .insert(
+                    "assembly"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: assembly"))?,
+                    "GRCh37",
+                )
+                .insert(
+                    "species"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: species"))?,
+                    "Homo sapiens",
+                )
+                .build()?,
+        );
+    }
+
+    builder = builder.insert(
+        "x-varfish-genome-build".parse()?,
+        vcf::header::record::Value::from("GRCh37"),
+    )?;
+
+    Ok(builder)
+}
+
+/// Add contigs for GRCh38.
+pub fn add_contigs_38(
+    builder: vcf::header::Builder,
+) -> Result<vcf::header::Builder, anyhow::Error> {
+    use vcf::header::record::value::map::Contig;
+    use vcf::header::record::value::Map;
+
+    let mut builder = builder;
+
+    let specs: &[(&str, usize); 25] = &[
+        ("chr1", 248956422),
+        ("chr2", 242193529),
+        ("chr3", 198295559),
+        ("chr4", 190214555),
+        ("chr5", 181538259),
+        ("chr6", 170805979),
+        ("chr7", 159345973),
+        ("chr8", 145138636),
+        ("chr9", 138394717),
+        ("chr10", 133797422),
+        ("chr11", 135086622),
+        ("chr12", 133275309),
+        ("chr13", 114364328),
+        ("chr14", 107043718),
+        ("chr15", 101991189),
+        ("chr16", 90338345),
+        ("chr17", 83257441),
+        ("chr18", 80373285),
+        ("chr19", 58617616),
+        ("chr20", 64444167),
+        ("chr21", 46709983),
+        ("chr22", 50818468),
+        ("chrX", 156040895),
+        ("chrY", 57227415),
+        ("chrM", 16569),
+    ];
+
+    for (contig, length) in specs {
+        builder = builder.add_contig(
+            contig
+                .parse()
+                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            Map::<Contig>::builder()
+                .set_length(*length)
+                .insert(
+                    "assembly"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: assembly"))?,
+                    "GRCh38",
+                )
+                .insert(
+                    "species"
+                        .parse()
+                        .map_err(|_| anyhow::anyhow!("invalid key: species"))?,
+                    "Homo sapiens",
+                )
+                .build()?,
+        );
+    }
+
+    builder = builder.insert(
+        "x-varfish-genome-build".parse()?,
+        vcf::header::record::Value::from("GRCh38"),
+    )?;
+
+    Ok(builder)
+}
+
+#[cfg(test)]
+pub(crate) fn read_to_bytes<P>(path: P) -> Result<Vec<u8>, anyhow::Error>
+where
+    P: AsRef<std::path::Path>,
+{
+    use std::io::Read;
+
+    let mut f = std::fs::File::open(&path).expect("no file found");
+    let metadata = std::fs::metadata(&path).expect("unable to read metadata");
+    let mut buffer = vec![0; metadata.len() as usize];
+    f.read_exact(&mut buffer).expect("buffer overflow");
+    Ok(buffer)
+}
+
 #[cfg(test)]
 mod test {
     use std::io::Read;
@@ -253,6 +394,8 @@ mod test {
     #[case(true)]
     #[case(false)]
     fn open_write_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!("{:?}", is_gzip);
+
         let filename = if is_gzip { "test.txt" } else { "test.txt.gz" };
         let tmp_dir = temp_testdir::TempDir::default();
 
@@ -266,24 +409,6 @@ mod test {
         f.read_to_end(&mut buf)?;
 
         insta::assert_snapshot!(format!("{:x?}", &buf));
-
-        Ok(())
-    }
-
-    #[rstest::rstest]
-    #[case(true)]
-    #[case(false)]
-    fn open_read_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
-        let mut f = super::open_read_maybe_gz(if is_gzip {
-            "tests/common/test.txt.gz"
-        } else {
-            "tests/common/test.txt"
-        })?;
-
-        let mut buf = String::new();
-        f.read_to_string(&mut buf)?;
-
-        insta::assert_snapshot!(&buf);
 
         Ok(())
     }

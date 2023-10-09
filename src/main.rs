@@ -3,7 +3,7 @@
 pub mod common;
 pub mod db;
 pub mod seqvars;
-pub mod sv;
+pub mod strucvars;
 
 use clap::{Args, Parser, Subcommand};
 use console::{Emoji, Term};
@@ -32,8 +32,8 @@ struct Cli {
 enum Commands {
     /// Database building related commands.
     Db(Db),
-    /// SV filtration related commands.
-    Sv(Sv),
+    /// Structural variant related commands.
+    Strucvars(Strucvars),
     /// Sequence variant related commands.
     Seqvars(Seqvars),
 }
@@ -58,16 +58,17 @@ enum DbCommands {
 /// Parsing of "sv *" sub commands.
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
-struct Sv {
+struct Strucvars {
     /// The sub command to run
     #[command(subcommand)]
-    command: SvCommands,
+    command: StrucvarsCommands,
 }
 
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
-enum SvCommands {
-    Query(sv::query::Args),
+enum StrucvarsCommands {
+    Ingest(strucvars::ingest::Args),
+    Query(strucvars::query::Args),
 }
 
 /// Parsing of "seqvars *" sub commands.
@@ -121,9 +122,12 @@ fn main() -> Result<(), anyhow::Error> {
                     seqvars::ingest::run(&cli.common, args)?;
                 }
             },
-            Commands::Sv(sv) => match &sv.command {
-                SvCommands::Query(args) => {
-                    sv::query::run(&cli.common, args)?;
+            Commands::Strucvars(strucvars) => match &strucvars.command {
+                StrucvarsCommands::Ingest(args) => {
+                    strucvars::ingest::run(&cli.common, args)?;
+                }
+                StrucvarsCommands::Query(args) => {
+                    strucvars::query::run(&cli.common, args)?;
                 }
             },
         }

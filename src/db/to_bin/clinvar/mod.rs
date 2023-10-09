@@ -2,12 +2,13 @@
 
 use std::{fs::File, io::BufRead, io::Write, path::Path, time::Instant};
 
+use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use thousands::Separable;
 
 use crate::{
-    common::{build_chrom_map, open_read_maybe_gz, trace_rss_now},
-    sv::query::clinvar::pbs::{Pathogenicity, SvDatabase, SvRecord},
+    common::{build_chrom_map, trace_rss_now},
+    strucvars::query::clinvar::pbs::{Pathogenicity, SvDatabase, SvRecord},
 };
 
 pub mod input;
@@ -71,7 +72,7 @@ fn convert_jsonl_to_protobuf(
         for measure in &record.reference_clinvar_assertion.measures.measures {
             // convert from JSONL to protocolbuffers: variation type
             let variation_type: Result<
-                crate::sv::query::clinvar::pbs::VariationType,
+                crate::strucvars::query::clinvar::pbs::VariationType,
                 anyhow::Error,
             > = measure.r#type.try_into();
             let variation_type = if let Ok(variation_type) = variation_type {
@@ -182,22 +183,14 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::common::open_read_maybe_gz;
     use crate::db::to_bin::clinvar::input::Assembly;
-
-    macro_rules! set_snapshot_suffix {
-        ($($expr:expr),*) => {
-            let mut settings = insta::Settings::clone_current();
-            settings.set_snapshot_suffix(format!($($expr,)*));
-            let _guard = settings.bind_to_scope();
-        }
-    }
+    use mehari::common::open_read_maybe_gz;
 
     #[rstest::rstest]
     #[case(Assembly::Grch37)]
     #[case(Assembly::Grch38)]
     fn run_convert_jsonl_to_protobuf(#[case] assembly: Assembly) -> Result<(), anyhow::Error> {
-        set_snapshot_suffix!("{:?}", assembly);
+        mehari::common::set_snapshot_suffix!("{:?}", assembly);
         let reader = open_read_maybe_gz(
             "tests/db/to-bin/varfish-db-downloader/vardbs/clinvar/clinvar-svs.jsonl",
         )?;
