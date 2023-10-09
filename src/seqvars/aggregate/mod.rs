@@ -53,7 +53,7 @@ fn handle_record(
 
 /// Import one VCF file into the database.
 fn import_vcf(
-    db: &rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>,
+    db: &Arc<rocksdb::TransactionDB<rocksdb::MultiThreaded>>,
     path_input: &str,
     cf_counts: &str,
     cf_carriers: &str,
@@ -77,47 +77,81 @@ fn import_vcf(
 
             // Obtain counts from the current variant.
             let (this_counts_data, this_carrier_data) = handle_record(&input_record, &pedigree)?;
-
             // Obtain annonars variant key from current allele for RocksDB lookup.
             let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
             let key: Vec<u8> = vcf_var.clone().into();
-            // Read data for variant from database.
-            let mut db_counts_data = db.get_cf(&cf_counts, key.clone()).map_err(|e| {
-                anyhow::anyhow!(
-                    "problem acessing counts data for variant {:?}: {} (non-existing would be fine)",
-                    &vcf_var,
-                    e
-                )
-            })?.map(|buffer| ds::Counts::from_vec(&buffer)).unwrap_or_default();
-            let mut db_carrier_data = db.get_cf(&cf_carriers, key.clone()).map_err(|e| {
-                anyhow::anyhow!(
-                    "problem acessing carrier data for variant {:?}: {} (non-existing would be fine)",
-                    &vcf_var,
-                    e
-                )
-            })?.map(|buffer| ds::CarrierList::from_vec(&buffer)).unwrap_or_default();
 
-            // Aggregate the data.
-            db_counts_data.aggregate(this_counts_data);
-            db_carrier_data.aggregate(this_carrier_data);
+            let max_retries = 10;
+            let mut retries = 0;
+            while retries < max_retries {
+                let this_counts_data = this_counts_data.clone();
+                let this_carrier_data = this_carrier_data.clone();
 
-            // Write data for variant back to database.
-            db.put_cf(&cf_counts, key.clone(), &db_counts_data.to_vec())
-                .map_err(|e| {
+                let transaction = db.transaction();
+
+                // Read data for variant from database.
+                let mut db_counts_data = transaction.get_cf(&cf_counts, key.clone()).map_err(|e| {
                     anyhow::anyhow!(
-                        "problem writing counts data for variant {:?}: {}",
+                        "problem acessing counts data for variant {:?}: {} (non-existing would be fine)",
                         &vcf_var,
                         e
                     )
-                })?;
-            db.put_cf(&cf_carriers, key.clone(), &db_carrier_data.to_vec())
-                .map_err(|e| {
+                })?.map(|buffer| ds::Counts::from_vec(&buffer)).unwrap_or_default();
+                let mut db_carrier_data = transaction.get_cf(&cf_carriers, key.clone()).map_err(|e| {
                     anyhow::anyhow!(
-                        "problem writing carrier data for variant {:?}: {}",
+                        "problem acessing carrier data for variant {:?}: {} (non-existing would be fine)",
                         &vcf_var,
                         e
                     )
-                })?;
+                })?.map(|buffer| ds::CarrierList::from_vec(&buffer)).unwrap_or_default();
+
+                // Aggregate the data.
+                db_counts_data.aggregate(this_counts_data);
+                db_carrier_data.aggregate(this_carrier_data);
+
+                // Write data for variant back to database.
+                transaction
+                    .put_cf(&cf_counts, key.clone(), &db_counts_data.to_vec())
+                    .map_err(|e| {
+                        anyhow::anyhow!(
+                            "problem writing counts data for variant {:?}: {}",
+                            &vcf_var,
+                            e
+                        )
+                    })?;
+                transaction
+                    .put_cf(&cf_carriers, key.clone(), &db_carrier_data.to_vec())
+                    .map_err(|e| {
+                        anyhow::anyhow!(
+                            "problem writing carrier data for variant {:?}: {}",
+                            &vcf_var,
+                            e
+                        )
+                    })?;
+
+                let res = transaction.commit();
+                match res {
+                    Ok(_) => break,
+                    Err(e) => {
+                        retries += 1;
+                        if retries > 5 {
+                            tracing::warn!(
+                                "problem committing transaction for variant {:?}: {} (retry #{})",
+                                &vcf_var,
+                                e,
+                                retries
+                            );
+                        }
+                    }
+                }
+            }
+            if retries >= max_retries {
+                return Err(anyhow::anyhow!(
+                    "problem committing transaction for variant {:?}: {} (max retries exceeded)",
+                    &vcf_var,
+                    retries
+                ));
+            }
 
             // Write out progress indicator every 60 seconds.
             if prev.elapsed().as_secs() >= 60 {
@@ -134,7 +168,7 @@ fn import_vcf(
 
 /// Perform the parallel import of VCF files.
 fn vcf_import(
-    db: &rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>,
+    db: &Arc<rocksdb::TransactionDB<rocksdb::MultiThreaded>>,
     path_input: &[&str],
     cf_counts: &str,
     cf_carriers: &str,
@@ -189,37 +223,56 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         rocksdb::Options::default(),
         args.path_wal_dir.as_ref().map(|s| s.as_ref()),
     );
+    let tx_options = rocksdb::TransactionDBOptions::default();
     let cf_names = &["meta", &args.cf_counts, &args.cf_carriers];
-    let db = Arc::new(rocksdb::DB::open_cf_with_opts(
-        &options,
-        &args.path_out_rocksdb,
-        cf_names
-            .iter()
-            .map(|name| (name.to_string(), options.clone()))
-            .collect::<Vec<_>>(),
-    )?);
-    tracing::info!("  writing meta information");
-    let cf_meta = db.cf_handle("meta").unwrap();
-    db.put_cf(&cf_meta, "varfish-worker-version", common::worker_version())?;
-    db.put_cf(&cf_meta, "db-name", "seqvars-aggregation")?;
-    tracing::info!("... done opening RocksDB");
+    let cf_descriptors = cf_names
+        .iter()
+        .map(|name| rocksdb::ColumnFamilyDescriptor::new(*name, options.clone()))
+        .collect::<Vec<_>>();
 
-    tracing::info!("Importing VCF files ...");
-    let before_import = std::time::Instant::now();
-    let paths = path_input.iter().map(|s| s.as_ref()).collect::<Vec<_>>();
-    vcf_import(&db, &paths, &args.cf_counts, &args.cf_carriers)?;
-    tracing::info!(
-        "... done importing VCF files in {:?}",
-        before_import.elapsed()
-    );
+    // scope for the transaction database
+    {
+        let db: Arc<rocksdb::TransactionDB<rocksdb::MultiThreaded>> =
+            Arc::new(rocksdb::TransactionDB::open_cf_descriptors(
+                &options,
+                &tx_options,
+                &args.path_out_rocksdb,
+                cf_descriptors,
+            )?);
+        tracing::info!("  writing meta information");
+        let cf_meta = db.cf_handle("meta").unwrap();
+        db.put_cf(&cf_meta, "varfish-worker-version", common::worker_version())?;
+        db.put_cf(&cf_meta, "db-name", "seqvars-aggregation")?;
+        tracing::info!("... done opening RocksDB");
 
-    tracing::info!("Running RocksDB compaction ...");
-    let before_compaction = std::time::Instant::now();
-    rocksdb_utils_lookup::force_compaction_cf(&db, cf_names, Some("  "), true)?;
-    tracing::info!(
-        "... done compacting RocksDB in {:?}",
-        before_compaction.elapsed()
-    );
+        tracing::info!("Importing VCF files ...");
+        let before_import = std::time::Instant::now();
+        let paths = path_input.iter().map(|s| s.as_ref()).collect::<Vec<_>>();
+        vcf_import(&db, &paths, &args.cf_counts, &args.cf_carriers)?;
+        tracing::info!(
+            "... done importing VCF files in {:?}",
+            before_import.elapsed()
+        );
+    }
+
+    // scope for cleanup
+    {
+        let db = Arc::new(rocksdb::DB::open_cf_with_opts(
+            &options,
+            &args.path_out_rocksdb,
+            cf_names
+                .iter()
+                .map(|name| (name.to_string(), options.clone()))
+                .collect::<Vec<_>>(),
+        )?);
+        tracing::info!("Running RocksDB compaction ...");
+        let before_compaction = std::time::Instant::now();
+        rocksdb_utils_lookup::force_compaction_cf(&db, cf_names, Some("  "), true)?;
+        tracing::info!(
+            "... done compacting RocksDB in {:?}",
+            before_compaction.elapsed()
+        );
+    }
 
     tracing::info!(
         "All of `seqvars aggregate` completed in {:?}",
