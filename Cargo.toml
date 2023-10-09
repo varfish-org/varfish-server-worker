@@ -29,8 +29,7 @@ hgvs = "0.11"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
 log = "0.4"
-# mehari = "0.11"
-mehari = { path = "../mehari" }
+mehari = "0.12"
 multimap = "0.9"
 procfs = "0.15"
 prost = "0.12"
