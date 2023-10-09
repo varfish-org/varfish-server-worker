@@ -1,5 +1,10 @@
 //! Implementation of `seqvars aggregate` subcommand.
 
+pub mod ds;
+
+use mehari::common::open_read_maybe_gz;
+use noodles_vcf as vcf;
+use rayon::prelude::*;
 use std::sync::Arc;
 
 use crate::common;
@@ -24,20 +29,124 @@ pub struct Args {
     /// Column family name for the carrier UUID data.
     #[clap(long, default_value = "carriers")]
     pub cf_carriers: String,
+    /// Set the number of threads to use, defaults to number of cores.
+    #[clap(long)]
+    pub num_threads: Option<usize>,
 
     /// Optional path to RocksDB WAL directory.
     #[arg(long)]
     pub path_wal_dir: Option<String>,
 }
 
-/// Perform import of VCF files.
+/// Extract a PedigreeByName from the VCF header.
+fn extract_pedigree(header: &vcf::Header) -> Result<mehari::ped::PedigreeByName, anyhow::Error> {
+    todo!()
+}
+
+/// Extract counts and carrier data from a single VCF record.
+fn handle_record(
+    input_record: &vcf::Record,
+    pedigree: &mehari::ped::PedigreeByName,
+) -> Result<(ds::Counts, ds::CarrierList), anyhow::Error> {
+    todo!()
+}
+
+/// Import one VCF file into the database.
+fn import_vcf(
+    db: &rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>,
+    path_input: &str,
+    cf_counts: &str,
+    cf_carriers: &str,
+) -> Result<(), anyhow::Error> {
+    let mut input_reader = open_read_maybe_gz(path_input)
+        .map_err(|e| anyhow::anyhow!("could not open file {} for reading: {}", path_input, e))?;
+    let mut input_reader = vcf::Reader::new(&mut input_reader);
+    let input_header = input_reader.read_header()?;
+
+    let cf_counts = db.cf_handle(cf_counts).expect("checked earlier");
+    let cf_carriers = db.cf_handle(cf_carriers).expect("checked earlier");
+
+    let pedigree = extract_pedigree(&input_header)?;
+    let mut prev = std::time::Instant::now();
+    let mut records = input_reader.records(&input_header);
+    loop {
+        if let Some(input_record) = records.next() {
+            let input_record = input_record?;
+
+            // TODO: we need to lock the database for counts
+
+            // Obtain counts from the current variant.
+            let (this_counts_data, this_carrier_data) = handle_record(&input_record, &pedigree)?;
+
+            // Obtain annonars variant key from current allele for RocksDB lookup.
+            let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
+            let key: Vec<u8> = vcf_var.clone().into();
+            // Read data for variant from database.
+            let mut db_counts_data = db.get_cf(&cf_counts, key.clone()).map_err(|e| {
+                anyhow::anyhow!(
+                    "problem acessing counts data for variant {:?}: {} (non-existing would be fine)",
+                    &vcf_var,
+                    e
+                )
+            })?.map(|buffer| ds::Counts::from_vec(&buffer)).unwrap_or_default();
+            let mut db_carrier_data = db.get_cf(&cf_carriers, key.clone()).map_err(|e| {
+                anyhow::anyhow!(
+                    "problem acessing carrier data for variant {:?}: {} (non-existing would be fine)",
+                    &vcf_var,
+                    e
+                )
+            })?.map(|buffer| ds::CarrierList::from_vec(&buffer)).unwrap_or_default();
+
+            // Aggregate the data.
+            db_counts_data.aggregate(this_counts_data);
+            db_carrier_data.aggregate(this_carrier_data);
+
+            // Write data for variant back to database.
+            db.put_cf(&cf_counts, key.clone(), &db_counts_data.to_vec())
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "problem writing counts data for variant {:?}: {}",
+                        &vcf_var,
+                        e
+                    )
+                })?;
+            db.put_cf(&cf_carriers, key.clone(), &db_carrier_data.to_vec())
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "problem writing carrier data for variant {:?}: {}",
+                        &vcf_var,
+                        e
+                    )
+                })?;
+
+            // Write out progress indicator every 60 seconds.
+            if prev.elapsed().as_secs() >= 60 {
+                tracing::info!("at {:?}", &vcf_var);
+                prev = std::time::Instant::now();
+            }
+        } else {
+            break; // all done
+        }
+    }
+
+    todo!()
+}
+
+/// Perform the parallel import of VCF files.
 fn vcf_import(
     db: &rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>,
     path_input: &[&str],
     cf_counts: &str,
     cf_carriers: &str,
 ) -> Result<(), anyhow::Error> {
-    Ok(())
+    path_input
+        .par_iter()
+        .map(|path_input| {
+            import_vcf(db, path_input, cf_counts, cf_carriers)
+                .map_err(|e| anyhow::anyhow!("processing VCF file {} failed: {}", path_input, e))
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(|_| ())
 }
 
 /// Main entry point for `seqvars aggregate` sub command.
@@ -45,6 +154,13 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let before_anything = std::time::Instant::now();
     tracing::info!("args_common = {:#?}", &args_common);
     tracing::info!("args = {:#?}", &args);
+
+    if let Some(num_threads) = args.num_threads {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build_global()
+            .map_err(|e| anyhow::anyhow!("building global Rayon thread pool failed: {}", e))?;
+    }
 
     common::trace_rss_now();
 

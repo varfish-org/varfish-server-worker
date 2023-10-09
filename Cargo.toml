@@ -53,6 +53,8 @@ noodles-bgzf = "0.24.0"
 rand = "0.8"
 rand_core = "0.6"
 rocksdb-utils-lookup = "0.3.0"
+rayon = "1.8.0"
+byteorder = { version = "1.5.0", features = ["i128"] }
 
 [build-dependencies]
 prost-build = "0.12"

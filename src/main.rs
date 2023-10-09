@@ -83,7 +83,7 @@ struct Seqvars {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SeqvarsCommands {
-    Aggregte(seqvars::aggregate::Args),
+    Aggregate(seqvars::aggregate::Args),
     Ingest(seqvars::ingest::Args),
     Prefilter(seqvars::prefilter::Args),
 }
@@ -120,6 +120,9 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             },
             Commands::Seqvars(seqvars) => match &seqvars.command {
+                SeqvarsCommands::Aggregate(args) => {
+                    seqvars::aggregate::run(&cli.common, args)?;
+                }
                 SeqvarsCommands::Ingest(args) => {
                     seqvars::ingest::run(&cli.common, args)?;
                 }
