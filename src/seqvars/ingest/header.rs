@@ -198,7 +198,7 @@ pub fn build_output_header(
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
-                "Number of samples in gnomAD exomes",
+                "Number of alleles in gnomAD exomes",
             ),
         )
         .add_info(
@@ -230,7 +230,7 @@ pub fn build_output_header(
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
-                "Number of samples in gnomAD genomes",
+                "Number of alleles in gnomAD genomes",
             ),
         )
         .add_info(
@@ -262,7 +262,7 @@ pub fn build_output_header(
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
-                "Number of samples in HelixMtDb",
+                "Number of alleles in HelixMtDb",
             ),
         )
         .add_info(

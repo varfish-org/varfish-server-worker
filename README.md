@@ -18,6 +18,7 @@ At the moment, the following sub commands exist:
     - `db mk-inhouse` -- compile per-case structural variant into an in-house database previously created by `db compile`
 - `seqvars` -- subcommands for processing sequence (aka small/SNV/indel) variants
     - `seqvars ingest` -- convert single VCF file into internal format for use with `seqvars query`
+    - `seqvars prefilter` -- limit the result of `seqvars prefilter` by population frequency and/or distance to exon
     - `seqvars query` -- perform sequence variant filtration and on-the-fly annotation
 - `strucvars` -- subcommands for processing structural (aka large variants, CNVs, etc.) variants
     - `strucvars ingest` -- convert one or more structural variant files for use with `strucvars query`
@@ -101,15 +102,15 @@ Overall, the command will emit the following header rows in addition to the `##c
 ```
 ##fileformat=VCFv4.2
 ##FILTER=<ID=PASS,Description="All filters passed">
-##INFO=<ID=gnomad_exomes_an,Number=1,Type=Integer,Description="Number of samples in gnomAD exomes">
+##INFO=<ID=gnomad_exomes_an,Number=1,Type=Integer,Description="Number of alleles in gnomAD exomes">
 ##INFO=<ID=gnomad_exomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD exomes">
 ##INFO=<ID=gnomad_exomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD exomes">
 ##INFO=<ID=gnomad_exomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD exomes">
-##INFO=<ID=gnomad_genomes_an,Number=1,Type=Integer,Description="Number of samples in gnomAD genomes">
+##INFO=<ID=gnomad_genomes_an,Number=1,Type=Integer,Description="Number of alleles in gnomAD genomes">
 ##INFO=<ID=gnomad_genomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD genomes">
 ##INFO=<ID=gnomad_genomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD genomes">
 ##INFO=<ID=gnomad_genomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD genomes">
-##INFO=<ID=helix_an,Number=1,Type=Integer,Description="Number of samples in HelixMtDb">
+##INFO=<ID=helix_an,Number=1,Type=Integer,Description="Number of alleles in HelixMtDb">
 ##INFO=<ID=helix_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in HelixMtDb">
 ##INFO=<ID=helix_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in HelixMtDb">
 ##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'">
@@ -128,6 +129,39 @@ Overall, the command will emit the following header rows in addition to the `##c
 
 > [!NOTE]
 > Future versions of the worker will annotate the worst effect on a MANE select or MANE Clinical transcript.
+
+## The `seqvars prefilter` Command
+
+This file takes as the input a file created by `seqvars ingest` and filters the variants by population frequency and/or distance to exon.
+You can pass the prefilter criteria as JSON on the command line corresponding to the following Rust structs:
+
+```rust
+struct PrefilterParams {
+    /// Path to output file.
+    pub path_out: String,
+    /// Maximal allele population frequency.
+    pub max_freq: f64,
+    /// Maximal distance to exon.
+    pub max_dist: i32,
+}
+```
+
+You can either specify the parameters on the command line directly or pass a path to a JSONL file starting with `@`.
+You can mix both ways.
+
+```
+$ varfish-server-worker strucvars prefilter \
+    --path-input INPUT.vcf \
+    --params '{"path_out": "out.vcf", "max_freq": 0.01, "max_dist": 100}' \
+    [--params ...] \
+
+# OR
+
+$ varfish-server-worker strucvars prefilter \
+    --path-input INPUT.vcf \
+    --params @path/to/params.json \
+    [--params ...] \
+```
 
 ## The `strucvars ingest` Command
 
