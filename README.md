@@ -19,6 +19,7 @@ At the moment, the following sub commands exist:
 - `seqvars` -- subcommands for processing sequence (aka small/SNV/indel) variants
     - `seqvars ingest` -- convert single VCF file into internal format for use with `seqvars query`
     - `seqvars prefilter` -- limit the result of `seqvars prefilter` by population frequency and/or distance to exon
+    - `seqvars aggregate` -- read through multiple VCF files written by `seqvars ingest` and computes a carrier counts table.
     - `seqvars query` -- perform sequence variant filtration and on-the-fly annotation
 - `strucvars` -- subcommands for processing structural (aka large variants, CNVs, etc.) variants
     - `strucvars ingest` -- convert one or more structural variant files for use with `strucvars query`
@@ -161,6 +162,19 @@ $ varfish-server-worker strucvars prefilter \
     --path-input INPUT.vcf \
     --params @path/to/params.json \
     [--params ...] \
+
+## The `seqvars aggregate` Command
+
+This command reads through multiple files written by `seqvars ingest` and computes a in-house carrier counts table.
+You can specify the VCF files individually on the command line or pass in files that have paths to the VCF files line by line.
+The resulting table is a folder to a RocksDB database.
+
+```shell session
+varfish-server-worker seqvars aggregate \
+    --genome-build {grch37,grch38} \
+    --path-out-rocksdb rocksdb/folder \
+    --path-in-vcf path/to/vcf.gz \
+    --path-in-vcf @path/to/file/list.txt
 ```
 
 ## The `strucvars ingest` Command

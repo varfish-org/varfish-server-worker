@@ -52,6 +52,7 @@ rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
 noodles-bgzf = "0.24.0"
 rand = "0.8"
 rand_core = "0.6"
+rocksdb-utils-lookup = "0.3.0"
 
 [build-dependencies]
 prost-build = "0.12"

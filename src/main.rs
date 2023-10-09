@@ -83,6 +83,7 @@ struct Seqvars {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SeqvarsCommands {
+    Aggregte(seqvars::aggregate::Args),
     Ingest(seqvars::ingest::Args),
     Prefilter(seqvars::prefilter::Args),
 }
