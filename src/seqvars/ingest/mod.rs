@@ -529,7 +529,7 @@ mod test {
         };
         super::run(&args_common, &args)?;
 
-        let mut buffer = Vec::new();
+        let mut buffer: Vec<u8> = Vec::new();
         hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
         insta::assert_snapshot!(String::from_utf8_lossy(&buffer));
 

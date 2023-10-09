@@ -66,6 +66,7 @@ pretty_assertions = "1.4"
 rstest = "0.18.2"
 serde_test = "1.0"
 temp_testdir = "0.2"
+tracing-test = "0.2.4"
 
 [[bin]]
 name = "varfish-server-worker"

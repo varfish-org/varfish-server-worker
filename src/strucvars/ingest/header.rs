@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use noodles_vcf as vcf;
-use vcf::header::SampleNames;
+use vcf::header::{record::value::map::AlternativeAllele, SampleNames};
 
 use crate::common::{add_contigs_37, add_contigs_38, GenomeRelease};
 
@@ -157,7 +157,11 @@ pub fn build_output_header(
                 format::Type::Integer,
                 "Point count (windows/targets/probes)",
             ),
-        );
+        )
+        .add_alternative_allele("DEL".parse()?, Map::<AlternativeAllele>::new("Deletion"))
+        .add_alternative_allele("DUP".parse()?, Map::<AlternativeAllele>::new("Duplication"))
+        .add_alternative_allele("INS".parse()?, Map::<AlternativeAllele>::new("Insertion"))
+        .add_alternative_allele("INV".parse()?, Map::<AlternativeAllele>::new("Inversion"));
 
     let mut builder = match genomebuild {
         GenomeRelease::Grch37 => add_contigs_37(builder),

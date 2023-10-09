@@ -3,7 +3,7 @@
 use std::io::{BufRead, Write};
 
 use crate::common::{self, open_write_maybe_gz, worker_version, GenomeRelease};
-use mehari::common::open_read_maybe_gz;
+use mehari::{annotate::seqvars::AnnotatedVcfWriter, common::open_read_maybe_gz};
 use rand_core::SeedableRng;
 
 use mehari::annotate::strucvars::guess_sv_caller;
@@ -52,10 +52,40 @@ pub struct Args {
     pub file_date: String,
 }
 
+/// Wrapper around noodle's VCF writer that adjusts the record for the worker.
+pub struct WriterWrapper {
+    inner: vcf::Writer<Box<dyn Write>>,
+}
+
+impl WriterWrapper {
+    pub fn new(inner: vcf::Writer<Box<dyn Write>>) -> Self {
+        Self { inner }
+    }
+}
+
+impl mehari::annotate::seqvars::AnnotatedVcfWriter for WriterWrapper {
+    fn write_header(&mut self, header: &vcf::Header) -> Result<(), anyhow::Error> {
+        self.inner
+            .write_header(header)
+            .map_err(|e| anyhow::anyhow!("Error writing VCF header: {}", e))
+    }
+
+    fn write_record(
+        &mut self,
+        header: &vcf::Header,
+        record: &vcf::Record,
+    ) -> Result<(), anyhow::Error> {
+        eprintln!("foo");
+        self.inner
+            .write_record(header, record)
+            .map_err(|e| anyhow::anyhow!("Error writing VCF record: {}", e))
+    }
+}
+
 /// Write out variants from input files.
 fn process_variants(
     pedigree: &mehari::ped::PedigreeByName,
-    output_writer: &mut vcf::Writer<Box<dyn Write>>,
+    output_writer: &mut dyn mehari::annotate::seqvars::AnnotatedVcfWriter,
     input_readers: &mut [vcf::Reader<Box<dyn BufRead>>],
     output_header: &vcf::Header,
     input_header: &[vcf::Header],
@@ -182,7 +212,9 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
-    let mut output_writer = { vcf::writer::Writer::new(open_write_maybe_gz(&args.path_out)?) };
+    let mut output_writer = WriterWrapper::new(vcf::writer::Writer::new(open_write_maybe_gz(
+        &args.path_out,
+    )?));
     output_writer
         .write_header(&output_header)
         .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
@@ -208,6 +240,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 mod test {
     use crate::common::GenomeRelease;
 
+    #[tracing_test::traced_test]
     #[test]
     fn smoke_test_trio() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
@@ -239,6 +272,7 @@ mod test {
 
         Ok(())
     }
+    #[tracing_test::traced_test]
     #[test]
     fn smoke_test_singleton() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
@@ -274,6 +308,7 @@ mod test {
         Ok(())
     }
 
+    #[tracing_test::traced_test]
     #[test]
     fn smoke_test_trio_gz() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
@@ -301,10 +336,13 @@ mod test {
         };
         super::run(&args_common, &args)?;
 
-        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+        let mut buffer: Vec<u8> = Vec::new();
+        hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
 
         Ok(())
     }
+
+    #[tracing_test::traced_test]
     #[test]
     fn smoke_test_singleton_gz() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
@@ -335,7 +373,8 @@ mod test {
         };
         super::run(&args_common, &args)?;
 
-        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+        let mut buffer: Vec<u8> = Vec::new();
+        hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
 
         Ok(())
     }

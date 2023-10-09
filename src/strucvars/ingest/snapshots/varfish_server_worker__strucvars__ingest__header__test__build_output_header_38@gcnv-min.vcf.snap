@@ -21,6 +21,10 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##FORMAT=<ID=cn,Number=1,Type=Integer,Description="Copy number of the variant in the sample">
 ##FORMAT=<ID=anc,Number=1,Type=Float,Description="Average normalized coverage over the variant in the sample">
 ##FORMAT=<ID=pc,Number=1,Type=Integer,Description="Point count (windows/targets/probes)">
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=INV,Description="Inversion">
 ##contig=<ID=chr1,length=248956422,assembly="GRCh38",species="Homo sapiens">
 ##contig=<ID=chr2,length=242193529,assembly="GRCh38",species="Homo sapiens">
 ##contig=<ID=chr3,length=198295559,assembly="GRCh38",species="Homo sapiens">
@@ -46,6 +50,8 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##contig=<ID=chrX,length=156040895,assembly="GRCh38",species="Homo sapiens">
 ##contig=<ID=chrY,length=57227415,assembly="GRCh38",species="Homo sapiens">
 ##contig=<ID=chrM,length=16569,assembly="GRCh38",species="Homo sapiens">
+##fileDate=20230421
+##x-genome-build=GRCh38
 ##SAMPLE=<ID=SAMPLE,Sex="Male",Disease="Affected">
 ##PEDIGREE=<ID=SAMPLE>
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
