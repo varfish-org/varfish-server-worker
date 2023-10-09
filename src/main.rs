@@ -84,6 +84,7 @@ struct Seqvars {
 #[derive(Debug, Subcommand)]
 enum SeqvarsCommands {
     Ingest(seqvars::ingest::Args),
+    Prefilter(seqvars::prefilter::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -120,6 +121,9 @@ fn main() -> Result<(), anyhow::Error> {
             Commands::Seqvars(seqvars) => match &seqvars.command {
                 SeqvarsCommands::Ingest(args) => {
                     seqvars::ingest::run(&cli.common, args)?;
+                }
+                SeqvarsCommands::Prefilter(args) => {
+                    seqvars::prefilter::run(&cli.common, args)?;
                 }
             },
             Commands::Strucvars(strucvars) => match &strucvars.command {

@@ -18,6 +18,7 @@ At the moment, the following sub commands exist:
     - `db mk-inhouse` -- compile per-case structural variant into an in-house database previously created by `db compile`
 - `seqvars` -- subcommands for processing sequence (aka small/SNV/indel) variants
     - `seqvars ingest` -- convert single VCF file into internal format for use with `seqvars query`
+    - `seqvars prefilter` -- limit the result of `seqvars prefilter` by population frequency and/or distance to exon
     - `seqvars query` -- perform sequence variant filtration and on-the-fly annotation
 - `strucvars` -- subcommands for processing structural (aka large variants, CNVs, etc.) variants
     - `strucvars ingest` -- convert one or more structural variant files for use with `strucvars query`
@@ -128,6 +129,39 @@ Overall, the command will emit the following header rows in addition to the `##c
 
 > [!NOTE]
 > Future versions of the worker will annotate the worst effect on a MANE select or MANE Clinical transcript.
+
+## The `seqvars prefilter` Command
+
+This file takes as the input a file created by `seqvars ingest` and filters the variants by population frequency and/or distance to exon.
+You can pass the prefilter criteria as JSON on the command line corresponding to the following Rust structs:
+
+```rust
+struct PrefilterParams {
+    /// Path to output file.
+    pub path_out: String,
+    /// Maximal allele population frequency.
+    pub max_freq: f64,
+    /// Maximal distance to exon.
+    pub max_dist: i32,
+}
+```
+
+You can either specify the parameters on the command line directly or pass a path to a JSONL file starting with `@`.
+You can mix both ways.
+
+```
+$ varfish-server-worker strucvars prefilter \
+    --path-input INPUT.vcf \
+    --params '{"path_out": "out.vcf", "max_freq": 0.01, "max_dist": 100}' \
+    [--params ...] \
+
+# OR
+
+$ varfish-server-worker strucvars prefilter \
+    --path-input INPUT.vcf \
+    --params @path/to/params.json \
+    [--params ...] \
+```
 
 ## The `strucvars ingest` Command
 
