@@ -76,16 +76,16 @@ fn process_variants(
 
     // Read through input VCF files and write out to temporary files.
     tracing::info!("converting input VCF files to temporary files...");
-    for (mut reader, sv_caller, header) in itertools::izip!(
+    for (reader, sv_caller, header) in itertools::izip!(
         input_readers.iter_mut(),
         input_sv_callers.iter(),
         input_header.iter()
     ) {
         mehari::annotate::strucvars::run_vcf_to_jsonl(
             pedigree,
-            &mut reader,
-            &header,
-            &sv_caller,
+            reader,
+            header,
+            sv_caller,
             &tmp_dir,
             &mut std::collections::HashMap::new(),
             &mut rng,
@@ -108,7 +108,7 @@ fn process_variants(
             args.min_overlap,
         )?;
         for record in clusters {
-            output_writer.write_record(&output_header, &record.try_into()?)?;
+            output_writer.write_record(output_header, &record.try_into()?)?;
         }
     }
     tracing::info!("... done clustering SVs to output");
