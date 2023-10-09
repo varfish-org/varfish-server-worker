@@ -50,6 +50,9 @@ pub struct Args {
     /// Value to write to `##fileDate`.
     #[arg(long)]
     pub file_date: String,
+    /// Value to write out for `##x-varfish-case-uuid`.
+    #[arg(long)]
+    pub case_uuid: String,
 }
 
 /// Wrapper around noodle's VCF writer that adjusts the record for the worker.
@@ -209,6 +212,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         args.genomebuild,
         &args.file_date,
         worker_version(),
+        &args.case_uuid,
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
@@ -265,6 +269,7 @@ mod test {
             slack_ins: 50,
             rng_seed: Some(42),
             file_date: String::from("20230421"),
+            case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
         super::run(&args_common, &args)?;
 
@@ -300,6 +305,7 @@ mod test {
             slack_ins: 50,
             rng_seed: Some(42),
             file_date: String::from("20230421"),
+            case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
         super::run(&args_common, &args)?;
 
@@ -333,6 +339,7 @@ mod test {
             slack_ins: 50,
             rng_seed: Some(42),
             file_date: String::from("20230421"),
+            case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
         super::run(&args_common, &args)?;
 
@@ -370,6 +377,7 @@ mod test {
             slack_ins: 50,
             rng_seed: Some(42),
             file_date: String::from("20230421"),
+            case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
         super::run(&args_common, &args)?;
 

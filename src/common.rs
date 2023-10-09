@@ -286,7 +286,7 @@ pub fn add_contigs_37(
     }
 
     builder = builder.insert(
-        "x-genome-build".parse()?,
+        "x-varfish-genome-build".parse()?,
         vcf::header::record::Value::from("GRCh37"),
     )?;
 
@@ -354,7 +354,7 @@ pub fn add_contigs_38(
     }
 
     builder = builder.insert(
-        "x-genome-build".parse()?,
+        "x-varfish-genome-build".parse()?,
         vcf::header::record::Value::from("GRCh38"),
     )?;
 

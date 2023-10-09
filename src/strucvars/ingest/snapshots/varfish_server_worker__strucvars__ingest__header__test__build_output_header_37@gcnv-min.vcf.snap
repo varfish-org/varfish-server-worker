@@ -51,9 +51,10 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##contig=<ID=Y,length=59373566,assembly="GRCh37",species="Homo sapiens">
 ##contig=<ID=MT,length=16569,assembly="GRCh37",species="Homo sapiens">
 ##fileDate=20230421
-##x-genome-build=GRCh37
+##x-varfish-genome-build=GRCh37
 ##SAMPLE=<ID=SAMPLE,Sex="Male",Disease="Affected">
 ##PEDIGREE=<ID=SAMPLE>
+##x-varfish-case-uuid=d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=Gcnv,Name="Gcnv",Version="4.3.0.0">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE

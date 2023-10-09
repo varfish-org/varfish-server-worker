@@ -39,6 +39,7 @@ pub fn build_output_header(
     genomebuild: GenomeRelease,
     file_date: &str,
     worker_version: &str,
+    case_uuid: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
     use vcf::header::record::value::{
         map::{format, info, Filter, Format, Info},
@@ -232,15 +233,20 @@ pub fn build_output_header(
 
     use vcf::header::record::value::map::Other;
 
-    let mut builder = builder.insert(
-        "x-varfish-version".parse()?,
-        vcf::header::record::Value::Map(
-            String::from("varfish-server-worker"),
-            Map::<Other>::builder()
-                .insert("Version".parse()?, worker_version)
-                .build()?,
-        ),
-    )?;
+    let mut builder = builder
+        .insert(
+            "x-varfish-case-uuid".parse()?,
+            vcf::header::record::Value::from(case_uuid),
+        )?
+        .insert(
+            "x-varfish-version".parse()?,
+            vcf::header::record::Value::Map(
+                String::from("varfish-server-worker"),
+                Map::<Other>::builder()
+                    .insert("Version".parse()?, worker_version)
+                    .build()?,
+            ),
+        )?;
 
     for sv_caller in input_sv_callers.iter() {
         builder = builder.insert(
@@ -293,6 +299,7 @@ mod test {
             crate::common::GenomeRelease::Grch37,
             "20230421",
             "x.y.z",
+            "d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c",
         )?;
 
         let out_path = tmpdir.join("out.vcf");
@@ -336,6 +343,7 @@ mod test {
             crate::common::GenomeRelease::Grch38,
             "20230421",
             "x.y.z",
+            "d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c",
         )?;
 
         let out_path = tmpdir.join("out.vcf");
