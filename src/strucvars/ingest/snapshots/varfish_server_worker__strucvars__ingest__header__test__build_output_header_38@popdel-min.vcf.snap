@@ -8,6 +8,7 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
 ##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively">
+##INFO=<ID=callers,Number=.,Type=String,Description="Callers that called the variant">
 ##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
 ##INFO=<ID=annsv,Number=1,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -24,6 +25,7 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=CNV,Description="Copy Number Variation">
 ##ALT=<ID=INV,Description="Inversion">
 ##contig=<ID=chr1,length=248956422,assembly="GRCh38",species="Homo sapiens">
 ##contig=<ID=chr2,length=242193529,assembly="GRCh38",species="Homo sapiens">

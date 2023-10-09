@@ -75,6 +75,14 @@ pub fn build_output_header(
             Map::<Info>::from(&vcf::record::info::field::key::SV_CLAIM),
         )
         .add_info(
+            "callers".parse()?,
+            Map::<Info>::new(
+                Number::Unknown,
+                info::Type::String,
+                "Callers that called the variant",
+            ),
+        )
+        .add_info(
             "chr2".parse()?,
             Map::<Info>::new(
                 Number::Count(1),
@@ -162,6 +170,10 @@ pub fn build_output_header(
         .add_alternative_allele("DEL".parse()?, Map::<AlternativeAllele>::new("Deletion"))
         .add_alternative_allele("DUP".parse()?, Map::<AlternativeAllele>::new("Duplication"))
         .add_alternative_allele("INS".parse()?, Map::<AlternativeAllele>::new("Insertion"))
+        .add_alternative_allele(
+            "CNV".parse()?,
+            Map::<AlternativeAllele>::new("Copy Number Variation"),
+        )
         .add_alternative_allele("INV".parse()?, Map::<AlternativeAllele>::new("Inversion"));
 
     let mut builder = match genomebuild {

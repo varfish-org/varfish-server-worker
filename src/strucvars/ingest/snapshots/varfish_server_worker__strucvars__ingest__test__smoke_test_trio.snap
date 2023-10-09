@@ -8,6 +8,7 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
 ##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively">
+##INFO=<ID=callers,Number=.,Type=String,Description="Callers that called the variant">
 ##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
 ##INFO=<ID=annsv,Number=1,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -24,6 +25,7 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=CNV,Description="Copy Number Variation">
 ##ALT=<ID=INV,Description="Inversion">
 ##contig=<ID=1,length=249250621,assembly="GRCh37",species="Homo sapiens">
 ##contig=<ID=2,length=243199373,assembly="GRCh37",species="Homo sapiens">
@@ -63,6 +65,7 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##x-varfish-version=<ID=Delly,Name="Delly",Version="1.1.3">
 ##x-varfish-version=<ID=Popdel,Name="Popdel",Version="1.1.2">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	index	father	mother
-1	586412	.	N	<DEL>	.	.	END=586439;sv_uuid=a2242722-6377-cc86-7d51-ad3f130af08a;callers=DELLYv1.1.3;SVTYPE=DEL;CARRIERS_HET=3;CARRIERS_HOM_REF=0;CARRIERS_HOM_ALT=0;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	0/1:PASS:59:0:0:11:4:.:.:.:.	0/1:PASS:22:0:0:8:2:.:.:.:.	0/1:LowQual:10:0:0:13:2:.:.:.:.
-1	1224181	.	N	<DEL>	.	.	END=1225801;sv_uuid=d13451de-7160-efa2-b230-76fd782de967;callers=POPDELv1.1.2;SVTYPE=DEL;CARRIERS_HET=3;CARRIERS_HOM_REF=0;CARRIERS_HOM_ALT=0;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	0/1:.:4:.:.:.:.:.:.:.:.	0/1:.:7:.:.:.:.:.:.:.:.	0/1:.:7:.:.:.:.:.:.:.:.
+1	586412	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=586439;SVLEN=28;callers=Delly	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:59:0:0:11:4:.:.:.:.	0/1:22:0:0:8:2:.:.:.:.	0/1:10:0:0:13:2:.:.:.:.
+1	1224181	.	N	<DEL>	.	.	SVCLAIM=D;SVTYPE=DEL;END=1225801;SVLEN=1621;callers=Popdel	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:4:.:.:.:.:.:.:.:.	0/1:7:.:.:.:.:.:.:.:.	0/1:7:.:.:.:.:.:.:.:.
+2	321681	.	N	G]17:198982]	.	.	SVCLAIM=J;SVTYPE=BND;END=198982;chr2=17;callers=Delly	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:.:0:.:0:.:.:.:.:.	0/1:.:0:.:0:.:.:.:.:.	0/1:.:0:.:0:.:.:.:.:.
 

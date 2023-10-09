@@ -159,6 +159,7 @@ The following `INFO` fields are written:
 - `SVTYPE` -- type of the variant, one of `<DEL>`, `<DUP>`, `<INS>`, `<INV>`, `BND`
 - `SVLEN` -- absolute length of the SV for linear variants, `.` for non-linear variants
 - `SVCLAIM` -- specificaton of `D` (change in abundance), `J` (novel junction), or `DJ` (both change in abundance and novel junction)
+- `callers` -- (non-standard field), list of callers that called the variant
 - `chr2` -- (non-standard field), second chromosome for BND variants
 - `annsv` -- (non-standard field), annotation of the variant effect on each affected gene
 
@@ -199,6 +200,7 @@ Overall, the command will emit the following header rows in addition to the `##c
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
 ##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively">
+##INFO=<ID=callers,Number=.,Type=String,Description="Callers that called the variant">
 ##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
 ##INFO=<ID=annsv,Number=1,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -212,12 +214,20 @@ Overall, the command will emit the following header rows in addition to the `##c
 ##FORMAT=<ID=cn,Number=1,Type=Integer,Description="Copy number of the variant in the sample">
 ##FORMAT=<ID=anc,Number=1,Type=Float,Description="Average normalized coverage over the variant in the sample">
 ##FORMAT=<ID=pc,Number=1,Type=Integer,Description="Point count (windows/targets/probes)">
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=CNV,Description="Copy Number Variation">
+##ALT=<ID=INV,Description="Inversion">
+##fileDate=20230421
+##x-varfish-genome-build=GRCh37
 ##SAMPLE=<ID=index,Sex="Male",Disease="Affected">
 ##SAMPLE=<ID=father,Sex="Male",Disease="Unaffected">
 ##SAMPLE=<ID=mother,Sex="Female",Disease="Unaffected">
 ##PEDIGREE=<ID=index,Father="father",Mother="mother">
 ##PEDIGREE=<ID=father>
 ##PEDIGREE=<ID=mother>
+##x-varfish-case-uuid=d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=Delly,Name="Delly",Version="1.1.3">
 ```
@@ -225,6 +235,7 @@ Overall, the command will emit the following header rows in addition to the `##c
 > [!NOTE]
 > The `strucvars ingest` step does not perform any annotation.
 > It only merges the input VCF files from multiple callers (all files must have the same samples) and converts them into the internal format.
+> The `INFO/annsv` field is filled by `strucvars query`.
 
 # Developer Information
 

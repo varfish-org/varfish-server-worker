@@ -8,6 +8,7 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Length of structural variant">
 ##INFO=<ID=SVCLAIM,Number=A,Type=String,Description="Claim made by the structural variant call. Valid values are D, J, DJ for abundance, adjacency and both respectively">
+##INFO=<ID=callers,Number=.,Type=String,Description="Callers that called the variant">
 ##INFO=<ID=chr2,Number=1,Type=String,Description="Second chromosome, if not equal to CHROM">
 ##INFO=<ID=annsv,Number=1,Type=String,Description="Effect annotations: 'Allele | Annotation | Gene_Name | Gene_ID'">
 ##FILTER=<ID=PASS,Description="All filters passed">
@@ -24,6 +25,7 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INS,Description="Insertion">
+##ALT=<ID=CNV,Description="Copy Number Variation">
 ##ALT=<ID=INV,Description="Inversion">
 ##contig=<ID=1,length=249250621,assembly="GRCh37",species="Homo sapiens">
 ##contig=<ID=2,length=243199373,assembly="GRCh37",species="Homo sapiens">
@@ -62,10 +64,10 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##x-varfish-version=<ID=Manta,Name="Manta",Version="1.6.0">
 ##x-varfish-version=<ID=Melt,Name="Melt",Version="2.2.2">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE
-1	1000	.	N	<INS:ME:ALU>	.	.	END=1000;sv_uuid=5e831ca1-477e-9b21-1e3a-ba7a1f21d500;callers=MELTv2.2.2;SVTYPE=INS:ME:ALU;CARRIERS_HET=0;CARRIERS_HOM_REF=0;CARRIERS_HOM_ALT=1;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	1/1:.:2:1:1:2:2:.:.:.:.
-1	2000	.	N	<INS:ME:SVA>	.	.	END=2000;sv_uuid=37ae6bd2-3910-a1ee-09ac-4e992e019381;callers=MELTv2.2.2;SVTYPE=INS:ME:SVA;CARRIERS_HET=0;CARRIERS_HOM_REF=1;CARRIERS_HOM_ALT=0;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	0/0:.:4:4:0:4:1:.:.:.:.
-1	3000	.	N	<INS:ME:L1>	.	.	END=3000;sv_uuid=52f6d2dd-4397-0164-da3f-c7b517b61024;callers=MELTv2.2.2;SVTYPE=INS:ME:L1;CARRIERS_HET=0;CARRIERS_HOM_REF=1;CARRIERS_HOM_ALT=0;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	0/0:.:28:23:0:24:1:.:.:.:.
-1	1283844	.	N	<CNV>	.	.	END=1284844;sv_uuid=a2242722-6377-cc86-7d51-ad3f130af08a;callers=DRAGEN_CNVv07.021.624.3.10.4;SVTYPE=CNV;CARRIERS_HET=1;CARRIERS_HOM_REF=0;CARRIERS_HOM_ALT=0;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	0/1:.:.:.:.:.:.:.:1:.:1
-1	1598413	.	N	<DEL>	.	.	END=1598580;sv_uuid=d13451de-7160-efa2-b230-76fd782de967;callers=DRAGEN_SVv07.021.624.3.10.4,MANTAv1.6.0;SVTYPE=DEL;CARRIERS_HET=0;CARRIERS_HOM_REF=0;CARRIERS_HOM_ALT=1;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	1/1:PASS:53:2:2:20:20:.:.:.:.
-1	4124001	.	N	<DEL>	.	.	END=4125000;sv_uuid=ea9f11f8-dfb0-ca08-a881-0f9ea39c3a6a;callers=GATK_GCNVv4.3.0.0;SVTYPE=DEL;CARRIERS_HET=0;CARRIERS_HOM_REF=0;CARRIERS_HOM_ALT=1;CARRIERS_HEMI_REF=0;CARRIERS_HEMI_ALT=0	GT:FT:GQ:pec:pev:src:srv:amq:CN:anc:pc	1:.:.:.:.:.:.:.:1:.:1
+1	1000	.	N	<INS>	.	.	SVCLAIM=J;SVTYPE=INS;END=1000;SVLEN=1;callers=Melt	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1/1:2:1:1:2:2:.:.:.:.
+1	2000	.	N	<INS>	.	.	SVCLAIM=J;SVTYPE=INS;END=2000;SVLEN=1;callers=Melt	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/0:4:4:0:4:1:.:.:.:.
+1	3000	.	N	<INS>	.	.	SVCLAIM=J;SVTYPE=INS;END=3000;SVLEN=1;callers=Melt	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/0:28:23:0:24:1:.:.:.:.
+1	1283844	.	N	<CNV>	.	.	SVCLAIM=D;SVTYPE=CNV;END=1284844;SVLEN=1001;callers=DragenCnv	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:.:.:.:.:.:.:1:.:1
+1	1598413	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=1598580;SVLEN=168;callers=DragenSv	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1/1:53:2:2:20:20:.:.:.:.
+1	4124001	.	N	<DEL>	.	.	SVCLAIM=D;SVTYPE=DEL;END=4125000;SVLEN=1000;callers=Gcnv	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1:.:.:.:.:.:.:1:.:1
 
