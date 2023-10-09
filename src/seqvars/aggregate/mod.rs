@@ -40,7 +40,17 @@ pub struct Args {
 
 /// Extract a PedigreeByName from the VCF header.
 fn extract_pedigree(header: &vcf::Header) -> Result<mehari::ped::PedigreeByName, anyhow::Error> {
-    todo!()
+    let mut result = mehari::ped::PedigreeByName::default();
+
+    for (key, collection) in header.other_records() {
+        if key.as_ref() == "SAMPLE" {
+            eprintln!("SAMPLE collection = {:?}", collection);
+        } else if key.as_ref() == "PEDIGREE" {
+            eprintln!("PEDIGREE collection = {:?}", collection);
+        }
+    }
+
+    Ok(result)
 }
 
 /// Extract counts and carrier data from a single VCF record.
@@ -282,4 +292,16 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 }
 
 #[cfg(test)]
-mod test {}
+mod test {
+    use super::*;
+
+    #[test]
+    fn extract_pedigree() {
+        let path = "tests/seqvars/aggregate/ingest.vcf";
+        let mut vcf_reader = vcf::reader::Builder.build_from_path(path).unwrap();
+        let header = vcf_reader.read_header().unwrap();
+
+        let pedigree = super::extract_pedigree(&header).unwrap();
+        insta::assert_debug_snapshot!(pedigree);
+    }
+}

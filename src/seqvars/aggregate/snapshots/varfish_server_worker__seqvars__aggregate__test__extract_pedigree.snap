@@ -1,0 +1,7 @@
+---
+source: src/seqvars/aggregate/mod.rs
+expression: pedigree
+---
+PedigreeByName {
+    individuals: {},
+}
