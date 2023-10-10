@@ -511,6 +511,52 @@ where
     Ok(buffer)
 }
 
+/// Enum for the supported gene/transcript databases.
+#[derive(
+    serde::Serialize,
+    serde::Deserialize,
+    enum_map::Enum,
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    strum::EnumString,
+    strum::Display,
+)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum Database {
+    /// RefSeq
+    #[default]
+    RefSeq,
+    /// ENSEMBL
+    Ensembl,
+}
+
+/// Enum for the supported TADs.
+#[derive(
+    serde::Serialize,
+    serde::Deserialize,
+    enum_map::Enum,
+    PartialEq,
+    Eq,
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    strum::EnumString,
+    strum::Display,
+)]
+#[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
+pub enum TadSet {
+    /// hESC
+    #[default]
+    Hesc,
+}
+
 #[cfg(test)]
 mod test {
     use noodles_vcf as vcf;

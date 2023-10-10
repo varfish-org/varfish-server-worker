@@ -8,7 +8,7 @@ use thousands::Separable;
 
 use crate::{
     common::{build_chrom_map, trace_rss_now},
-    db::pbs::{MaskedDatabase, MaskedDbRecord},
+    strucvars::pbs::{MaskedDatabase, MaskedDbRecord},
 };
 
 /// Module with code supporting the parsing.

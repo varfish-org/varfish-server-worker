@@ -32,7 +32,7 @@ use uuid::Uuid;
 
 use crate::{
     common::{build_chrom_map, numeric_gene_id, trace_rss_now},
-    db::conf::{Database, GenomeRelease, TadSet as TadSetChoice},
+    common::{Database, GenomeRelease, TadSet as TadSetChoice},
     strucvars::query::{
         interpreter::QueryInterpreter, pathogenic::Record as KnownPathogenicRecord,
         records::StructuralVariant as RecordSv, schema::CaseQuery,

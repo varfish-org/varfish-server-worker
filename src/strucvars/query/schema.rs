@@ -1,6 +1,6 @@
 //! Supporting code for SV query definition.
 
-use crate::db::conf::{Database, TadSet};
+use crate::common::{Database, TadSet};
 use indexmap::IndexMap;
 use mehari::annotate::strucvars::csq::interface::StrandOrientation;
 use regex::Regex;

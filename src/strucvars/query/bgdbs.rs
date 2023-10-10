@@ -10,8 +10,8 @@ use strum_macros::{Display, EnumString};
 use tracing::info;
 
 use crate::{
-    common::{trace_rss_now, CHROMS},
-    db::{conf::GenomeRelease, pbs},
+    common::{trace_rss_now, GenomeRelease, CHROMS},
+    strucvars::pbs,
 };
 
 use super::{

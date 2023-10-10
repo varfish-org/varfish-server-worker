@@ -8,7 +8,7 @@ use thousands::Separable;
 
 use crate::{
     common::{build_chrom_map, numeric_gene_id, trace_rss_now},
-    db::pbs::{GeneRegionDatabase, GeneRegionRecord},
+    strucvars::pbs::{GeneRegionDatabase, GeneRegionRecord},
 };
 
 /// Module with code supporting the parsing.

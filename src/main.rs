@@ -1,7 +1,6 @@
 //! VarFish Server Worker main executable
 
 pub mod common;
-pub mod db;
 pub mod seqvars;
 pub mod strucvars;
 
@@ -30,28 +29,10 @@ struct Cli {
 #[allow(clippy::large_enum_variant)]
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Database building related commands.
-    Db(Db),
     /// Structural variant related commands.
     Strucvars(Strucvars),
     /// Sequence variant related commands.
     Seqvars(Seqvars),
-}
-
-/// Parsing of "db *" sub commands.
-#[derive(Debug, Args)]
-#[command(args_conflicts_with_subcommands = true)]
-struct Db {
-    /// The sub command to run
-    #[command(subcommand)]
-    command: DbCommands,
-}
-
-/// Enum supporting the parsing of "db *" sub commands.
-#[allow(clippy::large_enum_variant)]
-#[derive(Debug, Subcommand)]
-enum DbCommands {
-    ToBin(db::to_bin::cli::Args),
 }
 
 /// Parsing of "sv *" sub commands.
@@ -69,6 +50,7 @@ enum StrucvarsCommands {
     Aggregate(strucvars::aggregate::cli::Args),
     Ingest(strucvars::ingest::Args),
     Query(strucvars::query::Args),
+    TxtToBin(strucvars::txt_to_bin::cli::Args),
 }
 
 /// Parsing of "seqvars *" sub commands.
@@ -111,11 +93,6 @@ fn main() -> Result<(), anyhow::Error> {
     let term = Term::stderr();
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
-            Commands::Db(db) => match &db.command {
-                DbCommands::ToBin(args) => {
-                    db::to_bin::cli::run(&cli.common, args)?;
-                }
-            },
             Commands::Seqvars(seqvars) => match &seqvars.command {
                 SeqvarsCommands::Aggregate(args) => {
                     seqvars::aggregate::run(&cli.common, args)?;
@@ -136,6 +113,9 @@ fn main() -> Result<(), anyhow::Error> {
                 }
                 StrucvarsCommands::Query(args) => {
                     strucvars::query::run(&cli.common, args)?;
+                }
+                StrucvarsCommands::TxtToBin(args) => {
+                    strucvars::txt_to_bin::cli::run(&cli.common, args)?;
                 }
             },
         }

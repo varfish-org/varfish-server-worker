@@ -9,7 +9,7 @@ use tracing::info;
 
 use crate::{
     common::{build_chrom_map, CHROMS},
-    db::conf::{GenomeRelease, TadSet as TadSetChoice},
+    common::{GenomeRelease, TadSet as TadSetChoice},
 };
 
 use super::{

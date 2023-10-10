@@ -6,10 +6,7 @@ use prost::Message;
 use thousands::Separable;
 use tracing::{info, warn};
 
-use crate::{
-    common::{reciprocal_overlap, CHROMS},
-    db::conf::GenomeRelease,
-};
+use crate::common::{reciprocal_overlap, GenomeRelease, CHROMS};
 
 use super::{
     records::ChromRange,
