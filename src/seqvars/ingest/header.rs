@@ -182,6 +182,7 @@ pub fn build_output_header(
     input_header: &vcf::Header,
     pedigree: &Option<mehari::ped::PedigreeByName>,
     genomebuild: GenomeRelease,
+    file_date: &str,
     case_uuid: &uuid::Uuid,
     worker_version: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
@@ -193,6 +194,10 @@ pub fn build_output_header(
     use vcf::record::genotypes::keys::key;
 
     let builder = vcf::Header::builder()
+        .insert(
+            "fileDate".parse()?,
+            vcf::header::record::Value::from(file_date),
+        )?
         .add_filter("PASS", Map::<Filter>::new("All filters passed"))
         .add_info(
             "gnomad_exomes_an".parse()?,
@@ -466,6 +471,7 @@ mod test {
             &input_vcf_header,
             &Some(pedigree),
             crate::common::GenomeRelease::Grch37,
+            "20230421",
             &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             "x.y.z",
         )?;
@@ -500,6 +506,7 @@ mod test {
             &input_vcf_header,
             &Some(pedigree),
             crate::common::GenomeRelease::Grch38,
+            "20230421",
             &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             "x.y.z",
         )?;

@@ -15,12 +15,16 @@ pub mod header;
 #[derive(Debug, clap::Parser)]
 #[command(author, version, about = "ingest structural variant VCF", long_about = None)]
 pub struct Args {
-    /// Maximal number of variants to write out; optional.
-    #[clap(long)]
-    pub max_var_count: Option<usize>,
+    /// Value to write to `##fileDate`.
+    #[arg(long)]
+    pub file_date: String,
+    /// Value to write out for `##x-varfish-case-uuid`.
+    #[arg(long)]
+    pub case_uuid: String,
     /// The assumed genome build.
     #[clap(long)]
     pub genomebuild: GenomeRelease,
+
     /// Path to the pedigree file.
     #[clap(long)]
     pub path_ped: String,
@@ -47,12 +51,9 @@ pub struct Args {
     /// Seed for random number generator (UUIDs), if any.
     #[arg(long)]
     pub rng_seed: Option<u64>,
-    /// Value to write to `##fileDate`.
-    #[arg(long)]
-    pub file_date: String,
-    /// Value to write out for `##x-varfish-case-uuid`.
-    #[arg(long)]
-    pub case_uuid: String,
+    /// Maximal number of variants to write out; optional.
+    #[clap(long)]
+    pub max_var_count: Option<usize>,
 }
 
 /// Wrapper around noodle's VCF writer that adjusts the record for the worker.

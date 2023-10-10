@@ -14,15 +14,19 @@ pub mod header;
 #[derive(Debug, clap::Parser)]
 #[command(author, version, about = "ingest sequence variant VCF", long_about = None)]
 pub struct Args {
-    /// The path to the mehari database.
-    #[clap(long)]
-    pub path_mehari_db: String,
+    /// Value to write to `##fileDate`.
+    #[arg(long)]
+    pub file_date: String,
     /// The case UUID to write out.
     #[clap(long)]
     pub case_uuid: uuid::Uuid,
     /// The assumed genome build.
     #[clap(long)]
     pub genomebuild: GenomeRelease,
+
+    /// The path to the mehari database.
+    #[clap(long)]
+    pub path_mehari_db: String,
     /// Path to the pedigree file.
     #[clap(long)]
     pub path_ped: String,
@@ -445,6 +449,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &input_header,
         &Some(pedigree),
         args.genomebuild,
+        &args.file_date,
         &args.case_uuid,
         worker_version(),
     )
@@ -494,6 +499,7 @@ mod test {
 
         let args_common = Default::default();
         let args = super::Args {
+            file_date: String::from("20230421"),
             case_uuid: uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             max_var_count: None,
             path_mehari_db: "tests/seqvars/ingest/db".into(),
@@ -526,6 +532,7 @@ mod test {
             .into();
         let args_common = Default::default();
         let args = super::Args {
+            file_date: String::from("20230421"),
             case_uuid: uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             max_var_count: None,
             path_mehari_db: "tests/seqvars/ingest/db".into(),

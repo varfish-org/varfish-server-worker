@@ -46,6 +46,7 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##contig=<ID=chrX,length=156040895,assembly="GRCh38",species="Homo sapiens">
 ##contig=<ID=chrY,length=57227415,assembly="GRCh38",species="Homo sapiens">
 ##contig=<ID=chrM,length=16569,assembly="GRCh38",species="Homo sapiens">
+##fileDate=20230421
 ##SAMPLE=<ID=NA12878,Sex="Male",Disease="Affected">
 ##PEDIGREE=<ID=NA12878>
 ##x-varfish-case-uuid=00000000-0000-0000-0000-000000000000

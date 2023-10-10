@@ -46,6 +46,7 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##contig=<ID=X,length=155270560,assembly="GRCh37",species="Homo sapiens">
 ##contig=<ID=Y,length=59373566,assembly="GRCh37",species="Homo sapiens">
 ##contig=<ID=MT,length=16569,assembly="GRCh37",species="Homo sapiens">
+##fileDate=20230421
 ##SAMPLE=<ID=Case_1_father-N1-DNA1-WGS1,Sex="Male",Disease="Unaffected">
 ##SAMPLE=<ID=Case_1_index-N1-DNA1-WGS1,Sex="Female",Disease="Affected">
 ##SAMPLE=<ID=Case_1_mother-N1-DNA1-WGS1,Sex="Female",Disease="Unaffected">
