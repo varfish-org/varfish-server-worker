@@ -283,7 +283,49 @@ Convert output of [varfish-db-downloader](https://github.com/bihealth/varfish-db
 $ varfish-server-worker strucvars txt-to-bin \
     --input-type {ClinvarSv,StrucvarInhouse,...} \
     --path-input IN.txt \
-    --path-output-bin DST.bin
+    --path-output DST.bin
+```
+
+## The `strucvars query` Command
+
+Run a query on a VCF file with structural variants as created by `strucvars ingest` using a varfish worker database.
+
+```
+$ varfish-server-worker strucvars query \
+    --genome-release grch37 \
+    --path-db path/to/worker-db \
+    --path-input IN.vcf.gz \
+    --path-output OUT.jsonl
+```
+
+The worker database has the following structure:
+
+```
+$ROOT/
+    noref/
+        genes/
+            acmg.tsv              -- ACMG SF list genes
+            mim2gene.tsv          -- OMIM to NCBI mapping from clingen
+            xlink.bin             -- gene crosslinks
+    {genome_release}/             -- one per genome release
+        mehari/
+            txs.bin.zstd          -- mehari transcripts
+        features/                 -- features important for annotation
+            masked_repeat.bin     -- masked repeats
+            masked_seqdup.bin     -- masked segmental duplications
+        strucvars/                -- structural variant specific
+            bgdbs/                -- background databases
+                dbvar.bin         -- dbVar
+                dgv.bin           -- DGV
+                dgv-gs.bin        -- DGV gold standard
+                exac.bin          -- ExAC CNVs
+                g1k.bin           -- 1000 genomes CNVs
+                gnomad.bin        -- gnomAD-SVs
+            clinvar.bin           -- ClinVar SVs
+            inhouse.bin           -- inhouse SV database
+            patho-mms.bed         -- well-known pathogenic DELs/DUPs
+        tads/
+            hesc.bed              -- hESC TAD definitions
 ```
 
 # Developer Information

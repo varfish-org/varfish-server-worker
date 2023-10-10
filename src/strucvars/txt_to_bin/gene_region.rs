@@ -30,7 +30,7 @@ mod input {
 }
 
 /// Perform conversion to protocolbuffers `.bin` file.
-pub fn convert_to_bin<P, Q>(path_input_tsv: P, path_output_bin: Q) -> Result<(), anyhow::Error>
+pub fn convert_to_bin<P, Q>(path_input_tsv: P, path_output: Q) -> Result<(), anyhow::Error>
 where
     P: AsRef<Path>,
     Q: AsRef<Path>,
@@ -38,7 +38,7 @@ where
     tracing::debug!(
         "Converting gene regions from BED {:?} to binary {:?}",
         path_input_tsv.as_ref(),
-        path_output_bin.as_ref()
+        path_output.as_ref()
     );
     let chrom_map = build_chrom_map();
 
@@ -74,7 +74,7 @@ where
     trace_rss_now();
 
     let before_writing = Instant::now();
-    let mut output_file = File::create(&path_output_bin)?;
+    let mut output_file = File::create(&path_output)?;
     output_file.write_all(&gene_region_db.encode_to_vec())?;
     output_file.flush()?;
     tracing::debug!(

@@ -417,7 +417,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -439,7 +440,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -461,7 +463,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -484,7 +487,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -506,7 +510,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -528,7 +533,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -550,7 +556,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -572,7 +579,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -594,7 +602,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -616,7 +625,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -638,7 +648,8 @@ mod tests {
             sv_sub_type: SvSubType::Ins,
             chrom2: None,
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -660,7 +671,8 @@ mod tests {
             sv_sub_type: SvSubType::Ins,
             chrom2: None,
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -682,7 +694,8 @@ mod tests {
             sv_sub_type: SvSubType::Ins,
             chrom2: None,
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -704,7 +717,8 @@ mod tests {
             sv_sub_type: SvSubType::Ins,
             chrom2: None,
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -726,7 +740,8 @@ mod tests {
             sv_sub_type: SvSubType::Bnd,
             chrom2: Some("chr1".to_owned()),
             end: 1000,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -748,7 +763,8 @@ mod tests {
             sv_sub_type: SvSubType::Bnd,
             chrom2: Some("chr1".to_owned()),
             end: 1000,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -770,7 +786,8 @@ mod tests {
             sv_sub_type: SvSubType::Bnd,
             chrom2: Some("chr2".to_owned()),
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -792,7 +809,8 @@ mod tests {
             sv_sub_type: SvSubType::Bnd,
             chrom2: Some("chr2".to_owned()),
             end: 1000,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -814,7 +832,8 @@ mod tests {
             sv_sub_type: SvSubType::Bnd,
             chrom2: Some("chr1".to_owned()),
             end: 1000,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -836,7 +855,8 @@ mod tests {
             sv_sub_type: SvSubType::Bnd,
             chrom2: Some("chr1".to_owned()),
             end: 1000,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
 
@@ -957,7 +977,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 2000,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::from([("sample".to_owned(), call_info.clone())]),
         };
 
@@ -1092,7 +1113,8 @@ mod tests {
             sv_sub_type: SvSubType::Ins,
             chrom2: None,
             end: 12345,
-            strand_orientation: Some(StrandOrientation::NotApplicable),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::NotApplicable,
             call_info: IndexMap::from([(
                 "sample".to_owned(),
                 CallInfo {
@@ -1166,7 +1188,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 2000,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::from([("sample".to_owned(), call_info)]),
         };
 
@@ -1190,7 +1213,8 @@ mod tests {
             sv_sub_type: SvSubType::Del,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
             call_info: IndexMap::new(),
         };
         let counts_pass = BgDbOverlaps {

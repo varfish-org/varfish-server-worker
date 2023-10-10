@@ -6,7 +6,6 @@ pub mod genes;
 pub mod interpreter;
 pub mod masked;
 pub mod pathogenic;
-pub mod records;
 pub mod schema;
 pub mod tads;
 
@@ -22,10 +21,14 @@ use hgvs::static_data::ASSEMBLY_INFOS;
 use indexmap::IndexMap;
 use log::warn;
 use mehari::{
-    annotate::{seqvars::provider::TxIntervalTrees, strucvars::csq::interface::StrandOrientation},
+    annotate::{
+        seqvars::{provider::TxIntervalTrees, CHROM_TO_CHROM_NO},
+        strucvars::csq::interface::StrandOrientation,
+    },
     common::open_read_maybe_gz,
     db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
 };
+use noodles_vcf as vcf;
 use serde::Serialize;
 use thousands::Separable;
 use uuid::Uuid;
@@ -35,8 +38,7 @@ use crate::{
     common::{Database, GenomeRelease, TadSet as TadSetChoice},
     strucvars::query::{
         interpreter::QueryInterpreter, pathogenic::Record as KnownPathogenicRecord,
-        records::StructuralVariant as RecordSv, schema::CaseQuery,
-        schema::StructuralVariant as SchemaSv,
+        schema::CaseQuery, schema::StructuralVariant,
     },
 };
 
@@ -58,7 +60,7 @@ static X_STREAM: i32 = 5000;
 #[command(author, version, about = "Run query for SVs", long_about = None)]
 pub struct Args {
     /// Genome release to assume.
-    #[arg(long, value_enum, default_value_t = GenomeRelease::Grch37)]
+    #[arg(long, value_enum)]
     pub genome_release: GenomeRelease,
     /// Path to worker database to use for querying.
     #[arg(long, required = true)]
@@ -68,17 +70,14 @@ pub struct Args {
     pub path_query_json: String,
     /// Path to input TSV file.
     #[arg(long, required = true)]
-    pub path_input_svs: String,
+    pub path_input: String,
     /// Path to the output TSV file.
     #[arg(long, required = true)]
-    pub path_output_svs: String,
-    /// Value to write to the result set id column.
-    #[arg(long, default_value_t = 0)]
-    pub result_set_id: u64,
+    pub path_output: String,
+
     /// Optional maximal number of total records to write out.
     #[arg(long)]
     pub max_results: Option<usize>,
-
     /// Radius around BND sites used when building the database.
     #[arg(long, default_value_t = 50)]
     pub slack_bnd: i32,
@@ -156,10 +155,10 @@ struct ResultPayload {
 #[derive(Debug, Default, Serialize)]
 struct ResultRecord {
     sodar_uuid: Uuid,
-    svqueryresultset: u64,
     release: String,
     chromosome: String,
     chromosome_no: i32,
+    // TODO: remove bin
     bin: u32,
     chromosome2: String,
     chromosome_no2: i32,
@@ -231,43 +230,48 @@ fn run_query(
     mehari_tx_idx: &TxIntervalTrees,
     chrom_to_acc: &HashMap<String, String>,
 ) -> Result<QueryStats, anyhow::Error> {
+    let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
 
-    // Construct reader and writer for CSV records
-    let mut csv_reader = csv::ReaderBuilder::new()
-        .has_headers(true)
-        .delimiter(b'\t')
-        .from_reader(open_read_maybe_gz(&args.path_input_svs)?);
+    let mut input_reader = open_read_maybe_gz(&args.path_input).map_err(|e| {
+        anyhow::anyhow!("could not open file {} for reading: {}", args.path_input, e)
+    })?;
+    let mut input_reader = vcf::Reader::new(&mut input_reader);
+    let input_header = input_reader.read_header()?;
+
     let mut csv_writer = csv::WriterBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
         .quote_style(QuoteStyle::Never)
-        .from_path(&args.path_output_svs)?;
+        .from_path(&args.path_output)?;
 
     // Read through input records using the query interpreter as a filter
-    for record in csv_reader.deserialize() {
+    for input_record in input_reader.records(&input_header) {
         stats.count_total += 1;
-        let record_sv: RecordSv = record?;
-        let schema_sv: SchemaSv = record_sv.clone().into();
+        let record_sv: StructuralVariant =
+            StructuralVariant::from_vcf(&input_record?, &input_header)
+                .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
+
+        tracing::debug!("processing record {:?}", record_sv);
 
         let mut result_payload = ResultPayload {
-            call_info: schema_sv.call_info.clone(),
+            call_info: record_sv.call_info.clone(),
             callers: record_sv.callers.clone(),
             ..ResultPayload::default()
         };
 
         let mut ovl_gene_ids = Vec::new();
 
-        let sv_query = if matches!(schema_sv.sv_type, SvType::Ins | SvType::Bnd) {
-            schema_sv.pos.saturating_sub(1)..schema_sv.pos
+        let sv_query = if matches!(record_sv.sv_type, SvType::Ins | SvType::Bnd) {
+            record_sv.pos.saturating_sub(1)..record_sv.pos
         } else {
-            schema_sv.pos.saturating_sub(1)..schema_sv.end
+            record_sv.pos.saturating_sub(1)..record_sv.end
         };
 
         let passes = interpreter.passes(
-            &schema_sv,
-            &mut |sv: &SchemaSv| {
+            &record_sv,
+            &mut |sv: &StructuralVariant| {
                 result_payload.overlap_counts = dbs.bg_dbs.count_overlaps(
                     sv,
                     &interpreter.query,
@@ -277,12 +281,12 @@ fn run_query(
                 );
                 result_payload.overlap_counts.clone()
             },
-            &mut |sv: &SchemaSv| {
+            &mut |sv: &StructuralVariant| {
                 result_payload.masked_breakpoints =
                     dbs.masked.masked_breakpoint_count(sv, &chrom_map);
                 result_payload.masked_breakpoints.clone()
             },
-            &mut |sv: &SchemaSv| {
+            &mut |sv: &StructuralVariant| {
                 ovl_gene_ids = dbs.genes.overlapping_gene_ids(
                     interpreter.query.database,
                     *chrom_map
@@ -293,7 +297,7 @@ fn run_query(
                 ovl_gene_ids.sort();
                 ovl_gene_ids.clone()
             },
-            &mut |sv: &SchemaSv| {
+            &mut |sv: &StructuralVariant| {
                 result_payload.tx_effects =
                     compute_tx_effects(sv, mehari_tx_db, mehari_tx_idx, &dbs.genes, chrom_to_acc);
                 let mut res = Vec::new();
@@ -307,8 +311,8 @@ fn run_query(
         )?;
 
         if passes.pass_all {
-            if schema_sv.sv_type != SvType::Ins && schema_sv.sv_type != SvType::Bnd {
-                result_payload.sv_length = Some((schema_sv.end - schema_sv.pos + 1) as u32);
+            if record_sv.sv_type != SvType::Ins && record_sv.sv_type != SvType::Bnd {
+                result_payload.sv_length = Some((record_sv.end - record_sv.pos + 1) as u32);
             }
 
             // Copy effective and compatible genotypes to output.
@@ -323,15 +327,15 @@ fn run_query(
 
             // Count passing record in statistics
             stats.count_passed += 1;
-            *stats.by_sv_type.entry(schema_sv.sv_type).or_default() += 1;
+            *stats.by_sv_type.entry(record_sv.sv_type).or_default() += 1;
 
             // Get overlaps with known pathogenic SVs and ClinVar SVs
             result_payload.known_pathogenic =
-                dbs.patho_dbs.overlapping_records(&schema_sv, &chrom_map);
+                dbs.patho_dbs.overlapping_records(&record_sv, &chrom_map);
             result_payload.clinvar_ovl_rcvs = dbs
                 .clinvar_sv
                 .overlapping_rcvs(
-                    &schema_sv,
+                    &record_sv,
                     &chrom_map,
                     interpreter.query.clinvar_sv_min_pathogenicity,
                     interpreter.query.clinvar_sv_min_overlap,
@@ -345,7 +349,7 @@ fn run_query(
                 let gene_ids: HashSet<_> = HashSet::from_iter(ovl_gene_ids.iter());
                 let tads =
                     dbs.tad_sets
-                        .overlapping_tads(TadSetChoice::Hesc, &schema_sv, &chrom_map);
+                        .overlapping_tads(TadSetChoice::Hesc, &record_sv, &chrom_map);
                 let mut tad_gene_ids = Vec::new();
                 tads.iter()
                     .map(|tad| {
@@ -364,7 +368,7 @@ fn run_query(
             };
             result_payload.tad_boundary_distance =
                 dbs.tad_sets
-                    .boundary_dist(TadSetChoice::Hesc, &schema_sv, &chrom_map);
+                    .boundary_dist(TadSetChoice::Hesc, &record_sv, &chrom_map);
 
             // Convert the genes into more verbose records and put them into the result
             ovl_gene_ids.iter().for_each(|gene_id| {
@@ -399,23 +403,59 @@ fn run_query(
                 }
             }
 
+            let (bin, bin2) = if record_sv.sv_type == SvType::Bnd {
+                (
+                    mehari::annotate::seqvars::binning::bin_from_range(
+                        record_sv.pos as i32 - 2,
+                        record_sv.pos as i32 - 1,
+                    )? as u32,
+                    mehari::annotate::seqvars::binning::bin_from_range(
+                        record_sv.end as i32 - 1,
+                        record_sv.end as i32,
+                    )? as u32,
+                )
+            } else if record_sv.sv_type == SvType::Ins {
+                (
+                    mehari::annotate::seqvars::binning::bin_from_range(
+                        record_sv.pos as i32 - 2,
+                        record_sv.pos as i32 - 1,
+                    )? as u32,
+                    0,
+                )
+            } else {
+                (
+                    mehari::annotate::seqvars::binning::bin_from_range(
+                        record_sv.pos as i32 - 1,
+                        record_sv.end as i32,
+                    )? as u32,
+                    0,
+                )
+            };
+
             // Finally, write out the record.
             csv_writer.serialize(&ResultRecord {
                 sodar_uuid: uuid::Uuid::new_v4(),
-                svqueryresultset: args.result_set_id,
-                release: record_sv.release.clone(),
-                chromosome: record_sv.chromosome.clone(),
-                chromosome_no: record_sv.chromosome_no,
-                start: record_sv.start,
-                bin: record_sv.bin,
+                release: match args.genome_release {
+                    GenomeRelease::Grch37 => "GRCh37".into(),
+                    GenomeRelease::Grch38 => "GRCh38".into(),
+                },
+                chromosome: record_sv.chrom.clone(),
+                chromosome_no: *chrom_to_chrom_no
+                    .get(&record_sv.chrom)
+                    .expect("invalid chromosome") as i32,
+                start: record_sv.pos,
+                bin,
                 chromosome2: record_sv
-                    .chromosome2
-                    .unwrap_or(record_sv.chromosome)
+                    .chrom2
+                    .as_ref()
+                    .unwrap_or(&record_sv.chrom)
                     .clone(),
-                chromosome_no2: record_sv.chromosome_no2,
-                bin2: record_sv.bin2,
+                chromosome_no2: *chrom_to_chrom_no
+                    .get(&record_sv.chrom)
+                    .expect("invalid chromosome") as i32,
+                bin2,
                 end: record_sv.end,
-                pe_orientation: record_sv.pe_orientation,
+                pe_orientation: record_sv.strand_orientation,
                 sv_type: record_sv.sv_type,
                 sv_sub_type: record_sv.sv_sub_type,
                 payload: serde_json::to_string(&result_payload)?,
@@ -617,7 +657,7 @@ fn gene_tx_effect_for_range(tx: &Transcript, pos: i32, end: i32) -> Vec<Transcri
 
 /// Helper that computes effects on transcripts for a single breakend, e.g., one side of BND or INS.
 fn compute_tx_effects_for_breakpoint(
-    sv: &SchemaSv,
+    sv: &StructuralVariant,
     mehari_tx_db: &TxSeqDatabase,
     mehari_tx_idx: &TxIntervalTrees,
     gene_db: &GeneDb,
@@ -682,7 +722,7 @@ fn compute_tx_effects_for_breakpoint(
 
 /// Compute effect for linear SVs.
 fn compute_tx_effects_for_linear(
-    sv: &SchemaSv,
+    sv: &StructuralVariant,
     mehari_tx_db: &TxSeqDatabase,
     mehari_tx_idx: &TxIntervalTrees,
     gene_db: &GeneDb,
@@ -747,7 +787,7 @@ fn compute_tx_effects_for_linear(
 
 /// Compute effect(s) of `sv` on transcript of genes.
 fn compute_tx_effects(
-    sv: &SchemaSv,
+    sv: &StructuralVariant,
     mehari_tx_db: &TxSeqDatabase,
     mehari_tx_idx: &TxIntervalTrees,
     gene_db: &GeneDb,
@@ -986,4 +1026,33 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         before_anything.elapsed()
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    #[tracing_test::traced_test]
+    fn smoke_test() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+        let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());
+
+        let args_common = Default::default();
+        let args = super::Args {
+            genome_release: crate::common::GenomeRelease::Grch37,
+            path_db: "tests/strucvars/query/db".into(),
+            path_query_json: "tests/strucvars/query/Case_3.query.json".into(),
+            path_input: "tests/strucvars/query/Case_3.ingested.vcf".into(),
+            path_output,
+            max_results: None,
+            slack_bnd: 50,
+            slack_ins: 50,
+            min_overlap: 0.8,
+            max_tad_distance: 10_000,
+        };
+        super::run(&args_common, &args)?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(args.path_output.as_str())?);
+
+        Ok(())
+    }
 }

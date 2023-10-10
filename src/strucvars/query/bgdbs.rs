@@ -15,7 +15,7 @@ use crate::{
 };
 
 use super::{
-    records::ChromRange,
+    schema::ChromRange,
     schema::{CaseQuery, StructuralVariant, SvType},
 };
 

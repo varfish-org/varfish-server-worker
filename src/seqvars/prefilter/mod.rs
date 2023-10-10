@@ -282,7 +282,6 @@ mod test {
         );
 
         let params_file = tmpdir.to_path_buf().join("params.json");
-        eprintln!("params_json = {}", &params_json);
         std::fs::write(&params_file, &params_json)?;
 
         let args = super::Args {

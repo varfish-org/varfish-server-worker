@@ -14,7 +14,7 @@ use crate::{
 
 use super::{
     interpreter::{BND_SLACK, INS_SLACK},
-    records::ChromRange,
+    schema::ChromRange,
     schema::{StructuralVariant, SvType},
 };
 
@@ -88,7 +88,7 @@ impl TadSet {
                 SvType::Bnd => {
                     let chrom_idx2 = *chrom_map
                         .get(sv.chrom2.as_ref().expect("no chrom2?"))
-                        .expect("invalid chromosome");
+                        .unwrap_or_else(|| panic!("invalid chromosome: {:?}", &sv.chrom2));
                     vec![
                         (
                             chrom_idx,

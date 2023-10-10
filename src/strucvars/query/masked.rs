@@ -14,7 +14,7 @@ use crate::{
 
 use super::{
     bgdbs::BeginEnd,
-    records::ChromRange,
+    schema::ChromRange,
     schema::{StructuralVariant, SvType},
 };
 
@@ -300,9 +300,9 @@ mod test {
             chrom2: None,
             sv_type: crate::strucvars::query::schema::SvType::Del,
             sv_sub_type: crate::strucvars::query::schema::SvSubType::Del,
-            strand_orientation: Some(
+            callers: Vec::new(),
+            strand_orientation:
                 mehari::annotate::strucvars::csq::interface::StrandOrientation::ThreeToFive,
-            ),
             call_info: Default::default(),
         };
 

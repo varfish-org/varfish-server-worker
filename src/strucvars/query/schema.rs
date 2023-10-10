@@ -2,7 +2,10 @@
 
 use crate::common::{Database, TadSet};
 use indexmap::IndexMap;
-use mehari::annotate::strucvars::csq::interface::StrandOrientation;
+use mehari::annotate::strucvars::{
+    bnd::Breakend, csq::interface::StrandOrientation, PeOrientation,
+};
+use noodles_vcf as vcf;
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
@@ -20,6 +23,17 @@ impl Range {
     pub fn new(start: i32, end: i32) -> Self {
         Range { start, end }
     }
+}
+
+/// Chromosomal interval.
+#[derive(Serialize, Deserialize, PartialEq, Debug, Default, Clone)]
+pub struct ChromRange {
+    /// Chromosome name.
+    pub chromosome: String,
+    /// 0-based begin position.
+    pub begin: i32,
+    /// 0-based end position.
+    pub end: i32,
 }
 
 /// Genomic region
@@ -1301,9 +1315,11 @@ pub struct StructuralVariant {
     pub chrom2: Option<String>,
     /// End position (position on second chromosome for break-ends)
     pub end: i32,
-    /// The strand orientation of the structural variant, if applicable.
-    pub strand_orientation: Option<StrandOrientation>,
+    /// The strand orientation of the structural variant.
+    pub strand_orientation: StrandOrientation,
 
+    /// The callers of the variant.
+    pub callers: Vec<String>,
     /// Mapping of sample to genotype information for the SV.
     pub call_info: IndexMap<String, CallInfo>,
 }
@@ -1323,6 +1339,213 @@ impl StructuralVariant {
         } else {
             Some((self.end - self.pos + 1) as u32)
         }
+    }
+
+    /// Convert from VCF record.
+    pub fn from_vcf(record: &vcf::Record, header: &vcf::Header) -> Result<Self, anyhow::Error> {
+        let chrom = record.chromosome().to_string();
+        let pos: usize = record.position().into();
+        let pos = pos as i32;
+        let sv_type: SvType = if let Some(Some(vcf::record::info::field::Value::String(sv_type))) =
+            record.info().get(&vcf::record::info::field::key::SV_TYPE)
+        {
+            sv_type
+                .as_str()
+                .parse()
+                .map_err(|e| anyhow::anyhow!("could not parse SVTYPE {}: {}", &sv_type, e))?
+        } else {
+            anyhow::bail!("no INFO/SVTYPE in VCF record")
+        };
+        let sv_sub_type = match sv_type {
+            SvType::Del => SvSubType::Del,
+            SvType::Dup => SvSubType::Dup,
+            SvType::Inv => SvSubType::Inv,
+            SvType::Ins => SvSubType::Ins,
+            SvType::Bnd => SvSubType::Bnd,
+            SvType::Cnv => SvSubType::Cnv,
+        };
+        let end = if let Some(Some(vcf::record::info::field::Value::Integer(end))) = record
+            .info()
+            .get(&vcf::record::info::field::key::END_POSITION)
+        {
+            *end
+        } else {
+            anyhow::bail!("no INFO/END in VCF record")
+        };
+        let chrom2 = if let Some(Some(vcf::record::info::field::Value::String(chrom2))) =
+            record.info().get(
+                &"chr2"
+                    .parse::<vcf::record::info::field::Key>()
+                    .expect("chr2 invalid key?"),
+            ) {
+            Some(chrom2.clone())
+        } else {
+            None
+        };
+
+        let strand_orientation = match sv_type {
+            SvType::Del => StrandOrientation::ThreeToFive,
+            SvType::Dup => StrandOrientation::FiveToThree,
+            SvType::Inv => StrandOrientation::FiveToFive,
+            SvType::Bnd => {
+                let pe_orientation = Breakend::from_ref_alt_str(
+                    &record.reference_bases().to_string(),
+                    &record
+                        .alternate_bases()
+                        .first()
+                        .ok_or_else(|| anyhow::anyhow!("no alternate allele?"))?
+                        .to_string(),
+                )?
+                .pe_orientation;
+                match pe_orientation {
+                    PeOrientation::ThreeToThree => StrandOrientation::ThreeToThree,
+                    PeOrientation::FiveToFive => StrandOrientation::FiveToFive,
+                    PeOrientation::ThreeToFive => StrandOrientation::ThreeToFive,
+                    PeOrientation::FiveToThree => StrandOrientation::FiveToThree,
+                    PeOrientation::Other => StrandOrientation::NotApplicable,
+                }
+            }
+            SvType::Ins | SvType::Cnv => StrandOrientation::NotApplicable,
+        };
+
+        let key_callers: vcf::record::info::field::Key =
+            "callers".parse().expect("callers invalid key?");
+        let callers = if let Some(Some(vcf::record::info::field::Value::Array(
+            vcf::record::info::field::value::Array::String(callers),
+        ))) = record.info().get(&key_callers)
+        {
+            callers.iter().flatten().cloned().collect()
+        } else {
+            anyhow::bail!("no INFO/callers in VCF record")
+        };
+
+        let call_info = Self::build_call_info(record, header)?;
+
+        Ok(Self {
+            chrom,
+            pos,
+            sv_type,
+            sv_sub_type,
+            chrom2,
+            end,
+            strand_orientation,
+            callers,
+            call_info,
+        })
+    }
+
+    /// Build call information.
+    pub fn build_call_info(
+        record: &vcf::Record,
+        header: &vcf::Header,
+    ) -> Result<IndexMap<String, CallInfo>, anyhow::Error> {
+        let mut result = IndexMap::new();
+
+        for (name, sample) in header
+            .sample_names()
+            .iter()
+            .zip(record.genotypes().values())
+        {
+            let genotype = if let Some(Some(vcf::record::genotypes::sample::Value::String(gt))) =
+                sample.get(&vcf::record::genotypes::keys::key::GENOTYPE)
+            {
+                Some(gt.clone())
+            } else {
+                None
+            };
+            let quality = if let Some(Some(vcf::record::genotypes::sample::Value::Float(quality))) =
+                sample.get(&vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY)
+            {
+                Some(*quality)
+            } else {
+                None
+            };
+            let paired_end_cov =
+                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(paired_end_cov))) =
+                    sample.get(&"pec".parse::<vcf::record::genotypes::keys::Key>()?)
+                {
+                    Some(*paired_end_cov as u32)
+                } else {
+                    None
+                };
+            let paired_end_var =
+                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(paired_end_var))) =
+                    sample.get(&"pev".parse::<vcf::record::genotypes::keys::Key>()?)
+                {
+                    Some(*paired_end_var as u32)
+                } else {
+                    None
+                };
+            let split_read_cov =
+                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(split_read_cov))) =
+                    sample.get(&"src".parse::<vcf::record::genotypes::keys::Key>()?)
+                {
+                    Some(*split_read_cov as u32)
+                } else {
+                    None
+                };
+            let split_read_var =
+                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(split_read_var))) =
+                    sample.get(&"srv".parse::<vcf::record::genotypes::keys::Key>()?)
+                {
+                    Some(*split_read_var as u32)
+                } else {
+                    None
+                };
+            let copy_number =
+                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(copy_number))) =
+                    sample.get(&"cn".parse::<vcf::record::genotypes::keys::Key>()?)
+                {
+                    Some(*copy_number as u32)
+                } else {
+                    None
+                };
+            let average_normalized_cov = if let Some(Some(
+                vcf::record::genotypes::sample::Value::Float(average_normalized_cov),
+            )) =
+                sample.get(&"anc".parse::<vcf::record::genotypes::keys::Key>()?)
+            {
+                Some(*average_normalized_cov)
+            } else {
+                None
+            };
+            let point_count =
+                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(point_count))) =
+                    sample.get(&"pc".parse::<vcf::record::genotypes::keys::Key>()?)
+                {
+                    Some(*point_count as u32)
+                } else {
+                    None
+                };
+            let average_mapping_quality = if let Some(Some(
+                vcf::record::genotypes::sample::Value::Float(average_mapping_quality),
+            )) =
+                sample.get(&"amq".parse::<vcf::record::genotypes::keys::Key>()?)
+            {
+                Some(*average_mapping_quality)
+            } else {
+                None
+            };
+
+            result.insert(
+                name.clone(),
+                CallInfo {
+                    genotype,
+                    quality,
+                    paired_end_cov,
+                    paired_end_var,
+                    split_read_cov,
+                    split_read_var,
+                    copy_number,
+                    average_normalized_cov,
+                    point_count,
+                    average_mapping_quality,
+                    ..Default::default()
+                },
+            );
+        }
+
+        Ok(result)
     }
 }
 
@@ -1805,7 +2028,8 @@ mod tests {
             sv_sub_type: SvSubType::DelMeL1,
             chrom2: None,
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            callers: Vec::new(),
             call_info: IndexMap::new(),
         };
         assert_eq!(sv.size().unwrap(), 101);
@@ -1820,7 +2044,8 @@ mod tests {
             sv_sub_type: SvSubType::Ins,
             chrom2: None,
             end: 100,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            callers: Vec::new(),
             call_info: IndexMap::new(),
         };
         assert!(sv.size().is_none());
@@ -1835,7 +2060,8 @@ mod tests {
             sv_sub_type: SvSubType::Bnd,
             chrom2: Some("chr2".to_owned()),
             end: 200,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            callers: Vec::new(),
             call_info: IndexMap::new(),
         };
         assert!(sv.size().is_none());
@@ -1850,7 +2076,8 @@ mod tests {
             sv_sub_type: SvSubType::DelMeL1,
             chrom2: None,
             end: 245,
-            strand_orientation: Some(StrandOrientation::ThreeToFive),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            callers: Vec::new(),
             call_info: IndexMap::new(),
         };
         insta::assert_snapshot!(serde_json::to_string_pretty(&sv).unwrap());
