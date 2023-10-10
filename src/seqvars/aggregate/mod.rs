@@ -244,7 +244,7 @@ fn handle_record(
 
         if carrier_genotype != ds::Genotype::HomRef {
             res_carriers.carriers.push(ds::Carrier {
-                uuid: case_uuid.clone(),
+                uuid: *case_uuid,
                 index: pedigree
                     .individuals
                     .get_index_of(name.as_str())
@@ -275,37 +275,36 @@ fn import_vcf(
 
     let (pedigree, case_uuid) = extract_pedigree_and_case_uuid(&input_header)?;
     let mut prev = std::time::Instant::now();
-    let mut records = input_reader.records(&input_header);
-    loop {
-        if let Some(input_record) = records.next() {
-            let input_record = input_record?;
+    let records = input_reader.records(&input_header);
+    for input_record in records {
+        let input_record = input_record?;
 
-            // TODO: we need to lock the database for counts
+        // TODO: we need to lock the database for counts
 
-            // Obtain counts from the current variant.
-            let (this_counts_data, this_carrier_data) =
-                handle_record(&input_record, &input_header, &pedigree, &case_uuid)?;
-            // Obtain annonars variant key from current allele for RocksDB lookup.
-            let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
-            let key: Vec<u8> = vcf_var.clone().into();
+        // Obtain counts from the current variant.
+        let (this_counts_data, this_carrier_data) =
+            handle_record(&input_record, &input_header, &pedigree, &case_uuid)?;
+        // Obtain annonars variant key from current allele for RocksDB lookup.
+        let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
+        let key: Vec<u8> = vcf_var.clone().into();
 
-            let max_retries = 10;
-            let mut retries = 0;
-            while retries < max_retries {
-                let this_counts_data = this_counts_data.clone();
-                let this_carrier_data = this_carrier_data.clone();
+        let max_retries = 10;
+        let mut retries = 0;
+        while retries < max_retries {
+            let this_counts_data = this_counts_data.clone();
+            let this_carrier_data = this_carrier_data.clone();
 
-                let transaction = db.transaction();
+            let transaction = db.transaction();
 
-                // Read data for variant from database.
-                let mut db_counts_data = transaction.get_cf(&cf_counts, key.clone()).map_err(|e| {
+            // Read data for variant from database.
+            let mut db_counts_data = transaction.get_cf(&cf_counts, key.clone()).map_err(|e| {
                     anyhow::anyhow!(
                         "problem acessing counts data for variant {:?}: {} (non-existing would be fine)",
                         &vcf_var,
                         e
                     )
                 })?.map(|buffer| ds::Counts::from_vec(&buffer)).unwrap_or_default();
-                let mut db_carrier_data = transaction.get_cf(&cf_carriers, key.clone()).map_err(|e| {
+            let mut db_carrier_data = transaction.get_cf(&cf_carriers, key.clone()).map_err(|e| {
                     anyhow::anyhow!(
                         "problem acessing carrier data for variant {:?}: {} (non-existing would be fine)",
                         &vcf_var,
@@ -313,61 +312,58 @@ fn import_vcf(
                     )
                 })?.map(|buffer| ds::CarrierList::from_vec(&buffer)).unwrap_or_default();
 
-                // Aggregate the data.
-                db_counts_data.aggregate(this_counts_data);
-                db_carrier_data.aggregate(this_carrier_data);
+            // Aggregate the data.
+            db_counts_data.aggregate(this_counts_data);
+            db_carrier_data.aggregate(this_carrier_data);
 
-                // Write data for variant back to database.
-                transaction
-                    .put_cf(&cf_counts, key.clone(), &db_counts_data.to_vec())
-                    .map_err(|e| {
-                        anyhow::anyhow!(
-                            "problem writing counts data for variant {:?}: {}",
-                            &vcf_var,
-                            e
-                        )
-                    })?;
-                transaction
-                    .put_cf(&cf_carriers, key.clone(), &db_carrier_data.to_vec())
-                    .map_err(|e| {
-                        anyhow::anyhow!(
-                            "problem writing carrier data for variant {:?}: {}",
-                            &vcf_var,
-                            e
-                        )
-                    })?;
+            // Write data for variant back to database.
+            transaction
+                .put_cf(&cf_counts, key.clone(), &db_counts_data.to_vec())
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "problem writing counts data for variant {:?}: {}",
+                        &vcf_var,
+                        e
+                    )
+                })?;
+            transaction
+                .put_cf(&cf_carriers, key.clone(), &db_carrier_data.to_vec())
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "problem writing carrier data for variant {:?}: {}",
+                        &vcf_var,
+                        e
+                    )
+                })?;
 
-                let res = transaction.commit();
-                match res {
-                    Ok(_) => break,
-                    Err(e) => {
-                        retries += 1;
-                        if retries > 5 {
-                            tracing::warn!(
-                                "problem committing transaction for variant {:?}: {} (retry #{})",
-                                &vcf_var,
-                                e,
-                                retries
-                            );
-                        }
+            let res = transaction.commit();
+            match res {
+                Ok(_) => break,
+                Err(e) => {
+                    retries += 1;
+                    if retries > 5 {
+                        tracing::warn!(
+                            "problem committing transaction for variant {:?}: {} (retry #{})",
+                            &vcf_var,
+                            e,
+                            retries
+                        );
                     }
                 }
             }
-            if retries >= max_retries {
-                return Err(anyhow::anyhow!(
-                    "problem committing transaction for variant {:?}: {} (max retries exceeded)",
-                    &vcf_var,
-                    retries
-                ));
-            }
+        }
+        if retries >= max_retries {
+            return Err(anyhow::anyhow!(
+                "problem committing transaction for variant {:?}: {} (max retries exceeded)",
+                &vcf_var,
+                retries
+            ));
+        }
 
-            // Write out progress indicator every 60 seconds.
-            if prev.elapsed().as_secs() >= 60 {
-                tracing::info!("at {:?}", &vcf_var);
-                prev = std::time::Instant::now();
-            }
-        } else {
-            break; // all done
+        // Write out progress indicator every 60 seconds.
+        if prev.elapsed().as_secs() >= 60 {
+            tracing::info!("at {:?}", &vcf_var);
+            prev = std::time::Instant::now();
         }
     }
 
@@ -410,8 +406,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let path_input = args
         .path_input
         .iter()
-        .map(|path| {
-            if path.starts_with("@") {
+        .flat_map(|path| {
+            if path.starts_with('@') {
                 std::fs::read_to_string(path.trim_start_matches('@'))
                     .expect("checked above")
                     .lines()
@@ -423,7 +419,6 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
                 vec![path.clone()]
             }
         })
-        .flatten()
         .collect::<Vec<_>>();
 
     tracing::info!("Opening RocksDB...");

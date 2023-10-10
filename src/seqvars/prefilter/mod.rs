@@ -36,8 +36,8 @@ fn load_params(params: &[String]) -> Result<Vec<PrefilterParams>, anyhow::Error>
     let mut result = Vec::new();
 
     for param in params {
-        if param.starts_with("@") {
-            let path = param.trim_start_matches("@");
+        if param.starts_with('@') {
+            let path = param.trim_start_matches('@');
             let file = std::fs::File::open(path)
                 .map_err(|e| anyhow::anyhow!("failed to open prefilter params file: {}", e))?;
             let reader = std::io::BufReader::new(file);
@@ -52,7 +52,7 @@ fn load_params(params: &[String]) -> Result<Vec<PrefilterParams>, anyhow::Error>
                 result.push(params);
             }
         } else {
-            let params: PrefilterParams = serde_json::from_str(&param)
+            let params: PrefilterParams = serde_json::from_str(param)
                 .map_err(|e| anyhow::anyhow!("failed to parse prefilter params: {}", e))?;
             result.push(params);
         }
@@ -85,13 +85,13 @@ fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>
         return Ok((0.0, Some(0))); // all variants on chrMT are returned
     }
 
-    let gnomad_exomes_an = get_info_i32(&input_record, "gnomad_exomes_an")
+    let gnomad_exomes_an = get_info_i32(input_record, "gnomad_exomes_an")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_exomes_an: {}", e))?;
-    let gnomad_exomes_hom = get_info_i32(&input_record, "gnomad_exomes_hom")
+    let gnomad_exomes_hom = get_info_i32(input_record, "gnomad_exomes_hom")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_exomes_hom: {}", e))?;
-    let gnomad_exomes_het = get_info_i32(&input_record, "gnomad_exomes_het")
+    let gnomad_exomes_het = get_info_i32(input_record, "gnomad_exomes_het")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_exomes_het: {}", e))?;
-    let gnomad_exomes_hemi = get_info_i32(&input_record, "gnomad_exomes_hemi")
+    let gnomad_exomes_hemi = get_info_i32(input_record, "gnomad_exomes_hemi")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_exomes_hemi: {}", e))?;
     let gnomad_exomes_an_pos = gnomad_exomes_hom * 2 + gnomad_exomes_het + gnomad_exomes_hemi;
     let gnomad_exomes_freq = if gnomad_exomes_an > 0 {
@@ -100,13 +100,13 @@ fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>
         0f64
     };
 
-    let gnomad_genomes_an = get_info_i32(&input_record, "gnomad_genomes_an")
+    let gnomad_genomes_an = get_info_i32(input_record, "gnomad_genomes_an")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_genomes_an: {}", e))?;
-    let gnomad_genomes_hom = get_info_i32(&input_record, "gnomad_genomes_hom")
+    let gnomad_genomes_hom = get_info_i32(input_record, "gnomad_genomes_hom")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_genomes_hom: {}", e))?;
-    let gnomad_genomes_het = get_info_i32(&input_record, "gnomad_genomes_het")
+    let gnomad_genomes_het = get_info_i32(input_record, "gnomad_genomes_het")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_genomes_het: {}", e))?;
-    let gnomad_genomes_hemi = get_info_i32(&input_record, "gnomad_genomes_hemi")
+    let gnomad_genomes_hemi = get_info_i32(input_record, "gnomad_genomes_hemi")
         .map_err(|e| anyhow::anyhow!("failed to get gnomad_genomes_hemi: {}", e))?;
     let gnomad_genomes_an_pos = gnomad_genomes_hom * 2 + gnomad_genomes_het + gnomad_genomes_hemi;
     let gnomad_genomes_freq = if gnomad_genomes_an > 0 {
@@ -149,36 +149,33 @@ fn run_filtration(
 ) -> Result<(), anyhow::Error> {
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
-    let mut records = input_reader.records(input_header);
+    let records = input_reader.records(input_header);
     let mut total_written = 0usize;
-    loop {
-        if let Some(input_record) = records.next() {
-            let input_record = input_record?;
+    for input_record in records {
+        let input_record = input_record?;
 
-            let (frequency, exon_distance) = get_freq_and_distance(&input_record)?;
-            if let Some(exon_distance) = exon_distance {
-                for (writer_params, output_writer) in params.iter().zip(output_writers.iter_mut()) {
-                    if frequency <= writer_params.max_freq
-                        && exon_distance <= writer_params.max_exon_dist
-                    {
-                        output_writer
-                            .write_record(&input_header, &input_record)
-                            .map_err(|e| anyhow::anyhow!("failed to write record: {}", e))?;
-                    }
+        let (frequency, exon_distance) = get_freq_and_distance(&input_record)?;
+        if let Some(exon_distance) = exon_distance {
+            for (writer_params, output_writer) in params.iter().zip(output_writers.iter_mut()) {
+                if frequency <= writer_params.max_freq
+                    && exon_distance <= writer_params.max_exon_dist
+                {
+                    output_writer
+                        .write_record(input_header, &input_record)
+                        .map_err(|e| anyhow::anyhow!("failed to write record: {}", e))?;
                 }
             }
-
-            let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
-            if prev.elapsed().as_secs() >= 60 {
-                tracing::info!("at {:?}", &vcf_var);
-                prev = std::time::Instant::now();
-            }
-
-            total_written += 1;
-        } else {
-            break; // all done
         }
+
+        let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
+        if prev.elapsed().as_secs() >= 60 {
+            tracing::info!("at {:?}", &vcf_var);
+            prev = std::time::Instant::now();
+        }
+
+        total_written += 1;
     }
+
     tracing::info!(
         "... annotated {} records in {:?}",
         total_written.separate_with_commas(),
