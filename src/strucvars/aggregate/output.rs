@@ -1,6 +1,8 @@
 //! Code for writing the output file.
 
-use mehari::annotate::strucvars::{bnd::Breakend, csq::interface::StrandOrientation, PeOrientation};
+use mehari::annotate::strucvars::{
+    bnd::Breakend, csq::interface::StrandOrientation, PeOrientation,
+};
 use noodles_vcf as vcf;
 
 use crate::{
