@@ -11,6 +11,7 @@ use std::{
 use bio::data_structures::interval_tree::IntervalTree;
 use clap::{command, Parser};
 use mehari::common::open_read_maybe_gz;
+use noodles_vcf as vcf;
 use serde_json::to_writer;
 use serde_jsonlines::JsonLinesReader;
 use strum::IntoEnumIterator;
@@ -44,47 +45,54 @@ fn create_tmp_files(
 /// Split the input into one file in `tmp_dir` for each chromosome and SV type.
 fn split_input_by_chrom_and_sv_type(
     tmp_dir: &tempdir::TempDir,
-    input_tsv_paths: Vec<String>,
+    input_vcf_paths: Vec<String>,
     genome_release: GenomeRelease,
 ) -> Result<(), anyhow::Error> {
     tracing::info!("parse all input files and split them up");
-    let genome_release = genome_release.to_string().to_lowercase();
     let mut tmp_files = create_tmp_files(tmp_dir)?;
     let chrom_map = build_chrom_map();
     let before_parsing = Instant::now();
     let mut count_files = 0;
-    for path in &input_tsv_paths {
-        tracing::debug!("parsing {:?}", &path);
+    for path_input in &input_vcf_paths {
+        tracing::debug!("parsing {:?}", &path_input);
+        let mut input_reader = open_read_maybe_gz(path_input).map_err(|e| {
+            anyhow::anyhow!("could not open file {} for reading: {}", path_input, e)
+        })?;
+        let mut input_reader = vcf::Reader::new(&mut input_reader);
+        let input_header = input_reader.read_header()?;
 
-        let mut rdr = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .delimiter(b'\t')
-            .from_reader(open_read_maybe_gz(path)?);
+        let (pedigree, _) = crate::common::extract_pedigree_and_case_uuid(&input_header)?;
+        let mut prev = std::time::Instant::now();
+        let records = input_reader.records(&input_header);
         let before_parsing = Instant::now();
         let mut count_records = 0;
-        for result in rdr.deserialize() {
-            let record: super::input::Record = result?;
-
-            if record.release.to_lowercase() != genome_release {
-                return Err(anyhow::anyhow!(
-                    "Unexpected release {}, expected {}",
-                    record.release.to_lowercase(),
-                    &genome_release
-                ));
-            }
+        for input_record in records {
+            let input_record = super::output::Record::from_vcf(
+                &input_record?,
+                &input_header,
+                genome_release,
+                &pedigree,
+            )?;
 
             let chrom_no = *chrom_map
-                .get(&record.chromosome)
+                .get(&input_record.chromosome)
                 .expect("unknown chromosome");
-            let sv_type = record.sv_type;
+            let sv_type = input_record.sv_type;
             let mut tmp_file = tmp_files
                 .get_mut(&(chrom_no, sv_type))
                 .expect("no file for chrom/sv_type");
-            to_writer(&mut tmp_file, &record)?;
+            to_writer(&mut tmp_file, &input_record)?;
             tmp_file.write_all(&[b'\n'])?;
+
+            // Write out progress indicator every 60 seconds.
+            if prev.elapsed().as_secs() >= 60 {
+                tracing::info!("at {}:{}", &input_record.chromosome, input_record.begin + 1);
+                prev = std::time::Instant::now();
+            }
 
             count_records += 1;
         }
+
         trace_rss_now();
         tracing::debug!(
             "total time spent parsing {} records: {:?}",
@@ -123,12 +131,7 @@ fn merge_to_out(
 
     // Read in all records and perform the "merge compression"
     let mut reader = JsonLinesReader::new(reader);
-    while let Ok(Some(record)) = reader.read::<super::input::Record>() {
-        let record = {
-            let mut record = super::output::Record::from_db_record(record);
-            record.begin -= 1; // need to get 0-based coordinates for DB
-            record
-        };
+    while let Ok(Some(record)) = reader.read::<super::output::Record>() {
         let begin = match record.sv_type {
             SvType::Bnd => record.begin - 1 - args.slack_bnd,
             SvType::Ins => record.begin - 1 - args.slack_ins,
@@ -259,10 +262,10 @@ pub struct Args {
     pub genome_release: GenomeRelease,
     /// Path to output TSV file.
     #[arg(long)]
-    pub path_output_tsv: PathBuf,
+    pub path_output: PathBuf,
     /// Input files to cluster, prefix with `@` to file with line-wise paths.
     #[arg(required = true)]
-    pub path_input_tsvs: Vec<String>,
+    pub path_input: Vec<String>,
 
     /// Minimal reciprocal overlap to use (slightly more strict that the normal
     /// query value of 0.75).
@@ -278,28 +281,28 @@ pub struct Args {
 
 /// Main entry point for the `sv bg-db-to-bin` command.
 pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
-    tracing::info!("Starting `db mk-inhouse`");
+    tracing::info!("Starting `strucvars aggregate`");
     tracing::info!("  common_args = {:?}", &common_args);
     tracing::info!("  args = {:?}", &args);
 
     // Create final list of input paths (expand `@file.tsv`)
-    let mut input_tsv_paths = Vec::new();
-    for input_tsv in &args.path_input_tsvs {
-        if let Some(path) = input_tsv.strip_prefix('@') {
+    let mut input_vcf_paths = Vec::new();
+    for input_vcf in &args.path_input {
+        if let Some(path) = input_vcf.strip_prefix('@') {
             let path = shellexpand::tilde(&path);
             let lines = read_lines(path.into_owned())?;
             for line in lines {
-                input_tsv_paths.push(line?.clone());
+                input_vcf_paths.push(line?.clone());
             }
         } else {
-            let path = shellexpand::tilde(&input_tsv);
-            input_tsv_paths.push(path.into_owned())
+            let path = shellexpand::tilde(&input_vcf);
+            input_vcf_paths.push(path.into_owned())
         }
     }
     tracing::debug!(
-        "final input TSV file list is (#: {}): {:?}",
-        input_tsv_paths.len(),
-        &input_tsv_paths
+        "final input VCF file list is (#: {}): {:?}",
+        input_vcf_paths.len(),
+        &input_vcf_paths
     );
 
     trace_rss_now();
@@ -307,13 +310,13 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     // Read all input files and write all records by chromosome and SV type
     let tmp_dir = tempdir::TempDir::new("vfw")?;
     tracing::debug!("using tmpdir={:?}", &tmp_dir);
-    split_input_by_chrom_and_sv_type(&tmp_dir, input_tsv_paths, args.genome_release)?;
+    split_input_by_chrom_and_sv_type(&tmp_dir, input_vcf_paths, args.genome_release)?;
 
     // Read the output of the previous step by chromosome and SV type, perform
     // overlapping and merge such "compressed" data set to the final output
     // file.
     tracing::info!("Merging to output TSV file...");
-    merge_split_files(&tmp_dir, args, &args.path_output_tsv)?;
+    merge_split_files(&tmp_dir, args, &args.path_output)?;
     tracing::info!("... done - don't forget to convert to binary");
 
     Ok(())
@@ -334,8 +337,8 @@ mod tests {
         };
         let args = Args {
             genome_release: GenomeRelease::Grch37,
-            path_output_tsv: tmp_dir.join("out.tsv"),
-            path_input_tsvs: vec![String::from("tests/db/mk-inhouse/oneline.gts.tsv")],
+            path_output: tmp_dir.join("out.tsv"),
+            path_input: vec![String::from("tests/strucvars/aggregate/oneline.vcf")],
             min_overlap: 0.8,
             slack_bnd: 50,
             slack_ins: 50,
@@ -357,10 +360,10 @@ mod tests {
         };
         let args = Args {
             genome_release: GenomeRelease::Grch37,
-            path_output_tsv: tmp_dir.join("out.tsv"),
-            path_input_tsvs: vec![
-                String::from("tests/db/mk-inhouse/oneline.gts.tsv"),
-                String::from("tests/db/mk-inhouse/oneline.gts.tsv"),
+            path_output: tmp_dir.join("out.tsv"),
+            path_input: vec![
+                String::from("tests/strucvars/aggregate/oneline.vcf"),
+                String::from("tests/strucvars/aggregate/oneline.vcf"),
             ],
             min_overlap: 0.8,
             slack_bnd: 50,
@@ -383,8 +386,8 @@ mod tests {
         };
         let args = Args {
             genome_release: GenomeRelease::Grch37,
-            path_output_tsv: tmp_dir.join("out.tsv"),
-            path_input_tsvs: vec!["@tests/db/mk-inhouse/list.txt".to_string()],
+            path_output: tmp_dir.join("out.tsv"),
+            path_input: vec!["@tests/strucvars/aggregate/list.txt".to_string()],
             min_overlap: 0.8,
             slack_bnd: 50,
             slack_ins: 50,

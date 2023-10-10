@@ -52,7 +52,6 @@ struct Db {
 #[derive(Debug, Subcommand)]
 enum DbCommands {
     ToBin(db::to_bin::cli::Args),
-    MkInhouse(db::mk_inhouse::cli::Args),
 }
 
 /// Parsing of "sv *" sub commands.
@@ -67,6 +66,7 @@ struct Strucvars {
 /// Enum supporting the parsing of "sv *" sub commands.
 #[derive(Debug, Subcommand)]
 enum StrucvarsCommands {
+    Aggregate(strucvars::aggregate::cli::Args),
     Ingest(strucvars::ingest::Args),
     Query(strucvars::query::Args),
 }
@@ -112,9 +112,6 @@ fn main() -> Result<(), anyhow::Error> {
     tracing::subscriber::with_default(collector, || {
         match &cli.command {
             Commands::Db(db) => match &db.command {
-                DbCommands::MkInhouse(args) => {
-                    db::mk_inhouse::cli::run(&cli.common, args)?;
-                }
                 DbCommands::ToBin(args) => {
                     db::to_bin::cli::run(&cli.common, args)?;
                 }
@@ -131,6 +128,9 @@ fn main() -> Result<(), anyhow::Error> {
                 }
             },
             Commands::Strucvars(strucvars) => match &strucvars.command {
+                StrucvarsCommands::Aggregate(args) => {
+                    strucvars::aggregate::cli::run(&cli.common, args)?;
+                }
                 StrucvarsCommands::Ingest(args) => {
                     strucvars::ingest::run(&cli.common, args)?;
                 }

@@ -301,7 +301,7 @@ mod test {
             sv_type: crate::strucvars::query::schema::SvType::Del,
             sv_sub_type: crate::strucvars::query::schema::SvSubType::Del,
             strand_orientation: Some(
-                crate::strucvars::query::schema::StrandOrientation::FiveToThree,
+                mehari::annotate::strucvars::csq::interface::StrandOrientation::ThreeToFive,
             ),
             call_info: Default::default(),
         };

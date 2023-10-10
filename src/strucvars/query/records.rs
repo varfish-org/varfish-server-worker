@@ -1,14 +1,14 @@
 //! Records for I/O in `sv query`.
 
 use indexmap::IndexMap;
+use mehari::annotate::strucvars::csq::interface::StrandOrientation;
 use serde::{
     de::{self, IntoDeserializer},
     Deserialize, Deserializer, Serialize,
 };
 
 use super::schema::{
-    CallInfo as SchemaCallInfo, StrandOrientation, StructuralVariant as SchemaStructuralVariant,
-    SvSubType, SvType,
+    CallInfo as SchemaCallInfo, StructuralVariant as SchemaStructuralVariant, SvSubType, SvType,
 };
 
 /// Chromosomal interval.

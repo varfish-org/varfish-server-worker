@@ -12,8 +12,8 @@ use thousands::Separable;
 
 use crate::common::{build_chrom_map, trace_rss_now};
 use crate::db;
-use crate::db::mk_inhouse::output::Record as InhouseDbRecord;
 use crate::db::pbs::{BackgroundDatabase, BgDbRecord};
+use crate::strucvars::aggregate::output::Record as InhouseDbRecord;
 use crate::strucvars::query::schema::SvType;
 
 use self::input::InputRecord;
