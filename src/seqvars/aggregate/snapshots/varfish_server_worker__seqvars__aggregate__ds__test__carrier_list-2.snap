@@ -1,0 +1,18 @@
+---
+source: src/seqvars/aggregate/ds.rs
+expression: "&carrier_list2"
+---
+CarrierList {
+    carriers: [
+        Carrier {
+            uuid: 00000000-0000-0000-0000-000000000000,
+            index: 0,
+            genotype: HomRef,
+        },
+        Carrier {
+            uuid: 00000000-0000-0000-0000-000000000001,
+            index: 1,
+            genotype: HemiAlt,
+        },
+    ],
+}

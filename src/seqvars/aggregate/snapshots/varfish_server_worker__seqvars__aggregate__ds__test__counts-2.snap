@@ -1,0 +1,10 @@
+---
+source: src/seqvars/aggregate/ds.rs
+expression: "&counts2"
+---
+Counts {
+    count_an: 1,
+    count_het: 2,
+    count_hom: 3,
+    count_hemi: 4,
+}

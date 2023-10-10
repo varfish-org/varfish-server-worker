@@ -19,6 +19,7 @@ At the moment, the following sub commands exist:
 - `seqvars` -- subcommands for processing sequence (aka small/SNV/indel) variants
     - `seqvars ingest` -- convert single VCF file into internal format for use with `seqvars query`
     - `seqvars prefilter` -- limit the result of `seqvars prefilter` by population frequency and/or distance to exon
+    - `seqvars aggregate` -- read through multiple VCF files written by `seqvars ingest` and computes a carrier counts table.
     - `seqvars query` -- perform sequence variant filtration and on-the-fly annotation
 - `strucvars` -- subcommands for processing structural (aka large variants, CNVs, etc.) variants
     - `strucvars ingest` -- convert one or more structural variant files for use with `strucvars query`
@@ -119,6 +120,7 @@ Overall, the command will emit the following header rows in addition to the `##c
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
+##x-varfish-case-uuid=d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c
 ##x-varfish-version=<ID=varfish-server-worker,Version=x.y.z>
 ##x-varfish-version=<ID=orig-caller,Name=Dragen,Version=SW: 07.021.624.3.10.9, HW: 07.021.624>
 ##x-varfish-version=<ID=orig-caller,Name=GatkHaplotypeCaller,Version=4.4.0.0>
@@ -161,6 +163,19 @@ $ varfish-server-worker strucvars prefilter \
     --path-input INPUT.vcf \
     --params @path/to/params.json \
     [--params ...] \
+
+## The `seqvars aggregate` Command
+
+This command reads through multiple files written by `seqvars ingest` and computes a in-house carrier counts table.
+You can specify the VCF files individually on the command line or pass in files that have paths to the VCF files line by line.
+The resulting table is a folder to a RocksDB database.
+
+```shell session
+varfish-server-worker seqvars aggregate \
+    --genome-build {grch37,grch38} \
+    --path-out-rocksdb rocksdb/folder \
+    --path-in-vcf path/to/vcf.gz \
+    --path-in-vcf @path/to/file/list.txt
 ```
 
 ## The `strucvars ingest` Command

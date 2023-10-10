@@ -182,6 +182,7 @@ pub fn build_output_header(
     input_header: &vcf::Header,
     pedigree: &Option<mehari::ped::PedigreeByName>,
     genomebuild: GenomeRelease,
+    case_uuid: &uuid::Uuid,
     worker_version: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
     use vcf::header::record::value::{
@@ -326,13 +327,14 @@ pub fn build_output_header(
             )
         }
 
+        let mut sample_names = Vec::new();
         for name in input_header.sample_names() {
             let i = pedigree
                 .individuals
                 .get(name)
                 .expect("checked equality above");
             if input_header.sample_names().contains(&i.name) {
-                builder = builder.add_sample_name(i.name.clone());
+                sample_names.push(i.name.clone());
             }
 
             // Add SAMPLE entry.
@@ -366,6 +368,9 @@ pub fn build_output_header(
                 noodles_vcf::header::record::Value::Map(i.name.clone(), map_builder.build()?),
             )?;
         }
+
+        sample_names.sort();
+        builder = builder.set_sample_names(sample_names.into_iter().collect());
     } else {
         for name in input_header.sample_names() {
             builder = builder.add_sample_name(name.clone());
@@ -377,15 +382,20 @@ pub fn build_output_header(
     let orig_caller = VariantCaller::guess(input_header)
         .ok_or_else(|| anyhow::anyhow!("unable to guess original variant caller"))?;
 
-    let builder = builder.insert(
-        "x-varfish-version".parse()?,
-        vcf::header::record::Value::Map(
-            String::from("varfish-server-worker"),
-            Map::<Other>::builder()
-                .insert("Version".parse()?, worker_version)
-                .build()?,
-        ),
-    )?;
+    let builder = builder
+        .insert(
+            "x-varfish-case-uuid".parse()?,
+            vcf::header::record::Value::String(case_uuid.to_string()),
+        )?
+        .insert(
+            "x-varfish-version".parse()?,
+            vcf::header::record::Value::Map(
+                String::from("varfish-server-worker"),
+                Map::<Other>::builder()
+                    .insert("Version".parse()?, worker_version)
+                    .build()?,
+            ),
+        )?;
 
     let builder = match &orig_caller {
         VariantCaller::GatkHaplotypeCaller { version }
@@ -456,6 +466,7 @@ mod test {
             &input_vcf_header,
             &Some(pedigree),
             crate::common::GenomeRelease::Grch37,
+            &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             "x.y.z",
         )?;
 
@@ -489,6 +500,7 @@ mod test {
             &input_vcf_header,
             &Some(pedigree),
             crate::common::GenomeRelease::Grch38,
+            &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             "x.y.z",
         )?;
 
