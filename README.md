@@ -120,6 +120,7 @@ Overall, the command will emit the following header rows in addition to the `##c
 ##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 ##FORMAT=<ID=PID,Number=1,Type=String,Description="Physical phasing ID information, where each unique ID within a given sample (but not across samples) connects records within a phasing group">
+##x-varfish-case-uuid=d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c
 ##x-varfish-version=<ID=varfish-server-worker,Version=x.y.z>
 ##x-varfish-version=<ID=orig-caller,Name=Dragen,Version=SW: 07.021.624.3.10.9, HW: 07.021.624>
 ##x-varfish-version=<ID=orig-caller,Name=GatkHaplotypeCaller,Version=4.4.0.0>

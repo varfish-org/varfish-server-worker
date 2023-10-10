@@ -45,6 +45,39 @@ impl Counts {
     }
 }
 
+/// Genotype in a carrier.
+#[derive(Debug, Default, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
+pub enum Genotype {
+    #[default]
+    HomRef, // same as hemizygous reference
+    Het,
+    HomAlt,
+    HemiAlt,
+}
+
+impl Genotype {
+    /// Convert to a byte.
+    pub fn to_byte(self) -> u8 {
+        match self {
+            Genotype::HomRef => 0,
+            Genotype::Het => 1,
+            Genotype::HomAlt => 2,
+            Genotype::HemiAlt => 3,
+        }
+    }
+
+    /// Convert from a byte.
+    pub fn from_byte(byte: u8) -> Self {
+        match byte {
+            0 => Genotype::HomRef,
+            1 => Genotype::Het,
+            2 => Genotype::HomAlt,
+            3 => Genotype::HemiAlt,
+            _ => panic!("invalid genotype byte"),
+        }
+    }
+}
+
 /// Store one carrier by UUID and index in the pedigree.
 #[derive(Debug, Default, Clone, PartialOrd, Ord, PartialEq, Eq)]
 pub struct Carrier {
@@ -52,6 +85,8 @@ pub struct Carrier {
     pub uuid: uuid::Uuid,
     /// Index of the carrier in the pedigree.
     pub index: u8,
+    /// Genotype of the carrier.
+    pub genotype: Genotype,
 }
 
 /// Carrier UUIDs.
@@ -66,24 +101,30 @@ pub struct CarrierList {
 impl CarrierList {
     /// Convert to a byte vector.
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::with_capacity(2 + 17 * self.carriers.len());
+        let mut buf = Vec::with_capacity(2 + 18 * self.carriers.len());
         buf.extend_from_slice(&(self.carriers.len() as u16).to_le_bytes());
         for carrier in &self.carriers {
             buf.extend_from_slice(&carrier.uuid.as_u128().to_le_bytes());
             buf.push(carrier.index);
+            buf.push(carrier.genotype.to_byte());
         }
         buf
     }
 
     /// Convert from a byte vector.
     pub fn from_vec(buf: &[u8]) -> Self {
-        let mut carriers = Vec::with_capacity((buf.len() - 2) / 17);
+        let mut carriers = Vec::with_capacity((buf.len() - 2) / 18);
         let num_carriers = LittleEndian::read_u16(&buf[0..2]) as usize;
         for i in 0..num_carriers {
             let uuid =
-                uuid::Uuid::from_u128(LittleEndian::read_u128(&buf[2 + 17 * i..2 + 17 * i + 16]));
-            let index = buf[2 + 17 * i + 16];
-            carriers.push(Carrier { uuid, index });
+                uuid::Uuid::from_u128(LittleEndian::read_u128(&buf[2 + 18 * i..2 + 18 * i + 16]));
+            let index = buf[2 + 18 * i + 16];
+            let genotype = Genotype::from_byte(buf[2 + 18 * i + 17]);
+            carriers.push(Carrier {
+                uuid,
+                index,
+                genotype,
+            });
         }
         Self { carriers }
     }
@@ -129,17 +170,19 @@ mod test {
                 Carrier {
                     uuid: uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
                     index: 0,
+                    genotype: Genotype::HomRef,
                 },
                 Carrier {
                     uuid: uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap(),
                     index: 1,
+                    genotype: Genotype::HemiAlt,
                 },
             ],
         };
 
         let buf = carrier_list.to_vec();
         insta::assert_debug_snapshot!(&buf);
-        assert_eq!(buf.len(), 36);
+        assert_eq!(buf.len(), 38);
 
         let carrier_list2 = CarrierList::from_vec(&buf);
         insta::assert_debug_snapshot!(&carrier_list2);

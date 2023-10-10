@@ -48,6 +48,7 @@
 ##PEDIGREE=<ID=Case_1_father-N1-DNA1-WGS1>
 ##PEDIGREE=<ID=Case_1_index-N1-DNA1-WGS1,Father="Case_1_father-N1-DNA1-WGS1",Mother="Case_1_mother-N1-DNA1-WGS1">
 ##PEDIGREE=<ID=Case_1_mother-N1-DNA1-WGS1>
+##x-varfish-case-uuid=00000000-0000-0000-0000-000000000000
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="GatkHaplotypeCaller",Version="3.7-0-gcfedb67">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Case_1_father-N1-DNA1-WGS1	Case_1_index-N1-DNA1-WGS1	Case_1_mother-N1-DNA1-WGS1

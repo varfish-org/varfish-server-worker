@@ -1,0 +1,10 @@
+---
+source: src/seqvars/aggregate/mod.rs
+expression: counts
+---
+Counts {
+    count_an: 6,
+    count_het: 0,
+    count_hom: 6,
+    count_hemi: 0,
+}

@@ -1,0 +1,23 @@
+---
+source: src/seqvars/aggregate/mod.rs
+expression: carriers
+---
+CarrierList {
+    carriers: [
+        Carrier {
+            uuid: 00000000-0000-0000-0000-000000000000,
+            index: 0,
+            genotype: HomAlt,
+        },
+        Carrier {
+            uuid: 00000000-0000-0000-0000-000000000000,
+            index: 1,
+            genotype: HomAlt,
+        },
+        Carrier {
+            uuid: 00000000-0000-0000-0000-000000000000,
+            index: 2,
+            genotype: HomAlt,
+        },
+    ],
+}

@@ -14,12 +14,12 @@ pub mod header;
 #[derive(Debug, clap::Parser)]
 #[command(author, version, about = "ingest sequence variant VCF", long_about = None)]
 pub struct Args {
-    /// Maximal number of variants to write out; optional.
-    #[clap(long)]
-    pub max_var_count: Option<usize>,
     /// The path to the mehari database.
     #[clap(long)]
     pub path_mehari_db: String,
+    /// The case UUID to write out.
+    #[clap(long)]
+    pub case_uuid: uuid::Uuid,
     /// The assumed genome build.
     #[clap(long)]
     pub genomebuild: GenomeRelease,
@@ -32,6 +32,10 @@ pub struct Args {
     /// Path to output file.
     #[clap(long)]
     pub path_out: String,
+
+    /// Maximal number of variants to write out; optional.
+    #[clap(long)]
+    pub max_var_count: Option<usize>,
 }
 
 /// Return path component fo rth egiven assembly.
@@ -441,6 +445,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &input_header,
         &Some(pedigree),
         args.genomebuild,
+        &args.case_uuid,
         worker_version(),
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
@@ -489,6 +494,7 @@ mod test {
 
         let args_common = Default::default();
         let args = super::Args {
+            case_uuid: uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             max_var_count: None,
             path_mehari_db: "tests/seqvars/ingest/db".into(),
             path_ped: path.replace(".vcf", ".ped"),
@@ -520,6 +526,7 @@ mod test {
             .into();
         let args_common = Default::default();
         let args = super::Args {
+            case_uuid: uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             max_var_count: None,
             path_mehari_db: "tests/seqvars/ingest/db".into(),
             path_ped,

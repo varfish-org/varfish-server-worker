@@ -48,6 +48,7 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##contig=<ID=MT,length=16569,assembly="GRCh37",species="Homo sapiens">
 ##SAMPLE=<ID=CASE,Sex="Male",Disease="Affected">
 ##PEDIGREE=<ID=CASE>
+##x-varfish-case-uuid=00000000-0000-0000-0000-000000000000
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="Dragen",Version="SW: 07.021.624.3.10.9, HW: 07.021.624">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	CASE

@@ -39,26 +39,223 @@ pub struct Args {
 }
 
 /// Extract a PedigreeByName from the VCF header.
-fn extract_pedigree(header: &vcf::Header) -> Result<mehari::ped::PedigreeByName, anyhow::Error> {
-    let mut result = mehari::ped::PedigreeByName::default();
+fn extract_pedigree_and_case_uuid(
+    header: &vcf::Header,
+) -> Result<(mehari::ped::PedigreeByName, uuid::Uuid), anyhow::Error> {
+    let mut case_uuid = uuid::Uuid::nil();
+    let mut pedigree = mehari::ped::PedigreeByName::default();
 
-    for (key, collection) in header.other_records() {
-        if key.as_ref() == "SAMPLE" {
-            eprintln!("SAMPLE collection = {:?}", collection);
-        } else if key.as_ref() == "PEDIGREE" {
-            eprintln!("PEDIGREE collection = {:?}", collection);
+    if let vcf::header::record::value::Collection::Structured(sample_map) = header
+        .other_records()
+        .get("SAMPLE")
+        .ok_or_else(|| anyhow::anyhow!("no SAMPLE record in VCF header"))?
+    {
+        for (sample_name, sample_values) in sample_map.iter() {
+            let sex_value = sample_values
+                .other_fields()
+                .get("Sex")
+                .ok_or_else(|| anyhow::anyhow!("no Sex field in SAMPLE header?"))?
+                .as_ref();
+            let sex_value = match sex_value {
+                "Male" => mehari::ped::Sex::Male,
+                "Female" => mehari::ped::Sex::Female,
+                "Unknown" => mehari::ped::Sex::Unknown,
+                _ => anyhow::bail!("invalid value for Sex: {}", sex_value),
+            };
+
+            let disease_value = sample_values
+                .other_fields()
+                .get("Disease")
+                .ok_or_else(|| anyhow::anyhow!("no Disease field in SAMPLE header?"))?
+                .as_ref();
+            let disease_value = match disease_value {
+                "Affected" => mehari::ped::Disease::Affected,
+                "Unaffected" => mehari::ped::Disease::Unaffected,
+                "Unknown" => mehari::ped::Disease::Unknown,
+                _ => anyhow::bail!("invalid value for Disease: {}", disease_value),
+            };
+
+            pedigree.individuals.insert(
+                sample_name.clone(),
+                mehari::ped::Individual {
+                    family: "FAM".into(),
+                    name: sample_name.clone(),
+                    sex: sex_value,
+                    disease: disease_value,
+                    ..Default::default()
+                },
+            );
         }
     }
 
-    Ok(result)
+    if let vcf::header::record::value::Collection::Structured(sample_map) = header
+        .other_records()
+        .get("PEDIGREE")
+        .ok_or_else(|| anyhow::anyhow!("no PEDIGREE record in VCF header"))?
+    {
+        for (sample_name, pedigree_values) in sample_map.iter() {
+            let father_value = pedigree_values.other_fields().get("Father");
+            let mother_value = pedigree_values.other_fields().get("Mother");
+
+            let individual = pedigree.individuals.get_mut(sample_name).ok_or_else(|| {
+                anyhow::anyhow!("individual {} not found in SAMPLE header", sample_name)
+            })?;
+            if let Some(father_value) = father_value {
+                individual.father = Some(father_value.clone());
+            }
+            if let Some(mother_value) = mother_value {
+                individual.mother = Some(mother_value.clone());
+            }
+        }
+    }
+
+    if let vcf::header::record::value::Collection::Unstructured(lines) = header
+        .other_records()
+        .get("x-varfish-case-uuid")
+        .ok_or_else(|| anyhow::anyhow!("no x-varfish-case-uuid record in VCF header"))?
+    {
+        case_uuid = lines
+            .first()
+            .ok_or_else(|| {
+                anyhow::anyhow!("no x-varfish-case-uuid record in VCF header, but expected one")
+            })?
+            .parse()
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "could not parse x-varfish-case-uuid record in VCF header: {}",
+                    e
+                )
+            })?;
+    }
+
+    Ok((pedigree, case_uuid))
 }
 
 /// Extract counts and carrier data from a single VCF record.
 fn handle_record(
     input_record: &vcf::Record,
+    input_header: &vcf::Header,
     pedigree: &mehari::ped::PedigreeByName,
+    case_uuid: &uuid::Uuid,
 ) -> Result<(ds::Counts, ds::CarrierList), anyhow::Error> {
-    todo!()
+    let chrom = annonars::common::cli::canonicalize(input_record.chromosome().to_string().as_str());
+
+    #[derive(Copy, Clone)]
+    enum Chrom {
+        Auto, // or chrMT, but does not matter here
+        X,
+        Y,
+    }
+
+    let chrom = match chrom.as_ref() {
+        "X" => Chrom::X,
+        "Y" => Chrom::Y,
+        _ => Chrom::Auto,
+    };
+
+    #[derive(Copy, Clone)]
+    enum Genotype {
+        HomRef,
+        Het,
+        HomAlt,
+    }
+
+    let mut res_counts = ds::Counts::default();
+    let mut res_carriers = ds::CarrierList::default();
+
+    // TODO properly handle PAR regions
+    for (name, sample) in input_header
+        .sample_names()
+        .iter()
+        .zip(input_record.genotypes().values())
+    {
+        let individual = pedigree
+            .individuals
+            .get(name)
+            .ok_or_else(|| anyhow::anyhow!("individual {} not found in pedigree", name))?;
+
+        let genotype =
+            if let Some(Some(gt)) = sample.get(&vcf::record::genotypes::keys::key::GENOTYPE) {
+                if let vcf::record::genotypes::sample::Value::String(gt) = gt {
+                    match gt.as_str() {
+                        "0/0" | "0|0" | "0" => Genotype::HomRef,
+                        "0/1" | "1/0" | "0|1" | "1|0" => Genotype::Het,
+                        "1/1" | "1|1" | "1" => Genotype::HomAlt,
+                        _ => anyhow::bail!("invalid genotype value: {:?}", gt),
+                    }
+                } else {
+                    anyhow::bail!("invalid genotype value: {:?}", gt);
+                }
+            } else {
+                continue; // skip, no-call or empty
+            };
+
+        let carrier_genotype = match (chrom, individual.sex, genotype) {
+            // on the autosomes, male/female count the same
+            (Chrom::Auto, _, Genotype::HomRef) => {
+                res_counts.count_an += 2;
+                ds::Genotype::HomRef
+            }
+            (Chrom::Auto, _, Genotype::Het) => {
+                res_counts.count_an += 2;
+                res_counts.count_hom += 1;
+                ds::Genotype::Het
+            }
+            (Chrom::Auto, _, Genotype::HomAlt) => {
+                res_counts.count_an += 2;
+                res_counts.count_hom += 2;
+                ds::Genotype::HomAlt
+            }
+            // on the gonomosomes, we handle call male variant calls as hemizygous
+            (Chrom::X, mehari::ped::Sex::Male, Genotype::HomRef)
+            | (Chrom::Y, mehari::ped::Sex::Male, Genotype::HomRef) => {
+                res_counts.count_an += 1;
+                ds::Genotype::HomRef
+            }
+            (Chrom::X, mehari::ped::Sex::Male, Genotype::Het)
+            | (Chrom::X, mehari::ped::Sex::Male, Genotype::HomAlt)
+            | (Chrom::Y, mehari::ped::Sex::Male, Genotype::Het)
+            | (Chrom::Y, mehari::ped::Sex::Male, Genotype::HomAlt) => {
+                res_counts.count_an += 1;
+                res_counts.count_hemi += 1;
+                ds::Genotype::HemiAlt
+            }
+            // for female samples, we handle chrX as biallelic
+            (Chrom::X, mehari::ped::Sex::Female, Genotype::HomRef)
+            | (Chrom::X, mehari::ped::Sex::Female, Genotype::Het) => {
+                res_counts.count_an += 2;
+                res_counts.count_hom += 1;
+                ds::Genotype::Het
+            }
+            (Chrom::X, mehari::ped::Sex::Female, Genotype::HomAlt) => {
+                res_counts.count_an += 2;
+                res_counts.count_hom += 2;
+                ds::Genotype::HomAlt
+            }
+            // we ignore calls to chrY for female samples
+            (Chrom::Y, mehari::ped::Sex::Female, Genotype::HomRef)
+            | (Chrom::Y, mehari::ped::Sex::Female, Genotype::Het)
+            | (Chrom::Y, mehari::ped::Sex::Female, Genotype::HomAlt) => ds::Genotype::HomRef,
+            // do not count samples with unknown sex on gonomosomes
+            (Chrom::X, mehari::ped::Sex::Unknown, _) | (Chrom::Y, mehari::ped::Sex::Unknown, _) => {
+                ds::Genotype::HomRef
+            }
+        };
+
+        if carrier_genotype != ds::Genotype::HomRef {
+            res_carriers.carriers.push(ds::Carrier {
+                uuid: case_uuid.clone(),
+                index: pedigree
+                    .individuals
+                    .get_index_of(name.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("individual {} not found in pedigree", &name))?
+                    as u8,
+                genotype: carrier_genotype,
+            });
+        }
+    }
+
+    Ok((res_counts, res_carriers))
 }
 
 /// Import one VCF file into the database.
@@ -76,7 +273,7 @@ fn import_vcf(
     let cf_counts = db.cf_handle(cf_counts).expect("checked earlier");
     let cf_carriers = db.cf_handle(cf_carriers).expect("checked earlier");
 
-    let pedigree = extract_pedigree(&input_header)?;
+    let (pedigree, case_uuid) = extract_pedigree_and_case_uuid(&input_header)?;
     let mut prev = std::time::Instant::now();
     let mut records = input_reader.records(&input_header);
     loop {
@@ -86,7 +283,8 @@ fn import_vcf(
             // TODO: we need to lock the database for counts
 
             // Obtain counts from the current variant.
-            let (this_counts_data, this_carrier_data) = handle_record(&input_record, &pedigree)?;
+            let (this_counts_data, this_carrier_data) =
+                handle_record(&input_record, &input_header, &pedigree, &case_uuid)?;
             // Obtain annonars variant key from current allele for RocksDB lookup.
             let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
             let key: Vec<u8> = vcf_var.clone().into();
@@ -296,12 +494,30 @@ mod test {
     use super::*;
 
     #[test]
-    fn extract_pedigree() {
+    fn extract_pedigree_snapshot() {
         let path = "tests/seqvars/aggregate/ingest.vcf";
         let mut vcf_reader = vcf::reader::Builder.build_from_path(path).unwrap();
         let header = vcf_reader.read_header().unwrap();
 
-        let pedigree = super::extract_pedigree(&header).unwrap();
+        let (pedigree, case_uuid) = super::extract_pedigree_and_case_uuid(&header).unwrap();
         insta::assert_debug_snapshot!(pedigree);
+        insta::assert_debug_snapshot!(case_uuid);
+    }
+
+    #[test]
+    fn handle_record_snapshot() {
+        let path = "tests/seqvars/aggregate/ingest.vcf";
+        let mut vcf_reader = vcf::reader::Builder.build_from_path(path).unwrap();
+        let header = vcf_reader.read_header().unwrap();
+
+        for record in vcf_reader.records(&header) {
+            let record = record.unwrap();
+            let (pedigree, case_uuid) = super::extract_pedigree_and_case_uuid(&header).unwrap();
+            let (counts, carriers) =
+                super::handle_record(&record, &header, &pedigree, &case_uuid).unwrap();
+
+            insta::assert_debug_snapshot!(counts);
+            insta::assert_debug_snapshot!(carriers);
+        }
     }
 }
