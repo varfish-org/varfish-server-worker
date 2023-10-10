@@ -377,12 +377,11 @@ impl QueryInterpreter {
 #[cfg(test)]
 mod tests {
     use indexmap::IndexMap;
+    use mehari::annotate::strucvars::csq::interface::StrandOrientation;
 
     use crate::{
         db::conf::Database,
-        strucvars::query::schema::{
-            CallInfo, GenomicRegion, GenotypeChoice, GenotypeCriteria, StrandOrientation,
-        },
+        strucvars::query::schema::{CallInfo, GenomicRegion, GenotypeChoice, GenotypeCriteria},
     };
 
     use super::*;

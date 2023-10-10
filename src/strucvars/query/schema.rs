@@ -2,6 +2,7 @@
 
 use crate::db::conf::{Database, TadSet};
 use indexmap::IndexMap;
+use mehari::annotate::strucvars::csq::interface::StrandOrientation;
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
@@ -74,6 +75,23 @@ pub enum SvType {
     Bnd,
     /// Copy number variable region
     Cnv,
+}
+
+impl std::str::FromStr for SvType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use SvType::*;
+        match s {
+            "DEL" => Ok(Del),
+            "DUP" => Ok(Dup),
+            "INV" => Ok(Inv),
+            "INS" => Ok(Ins),
+            "BND" => Ok(Bnd),
+            "CNV" => Ok(Cnv),
+            _ => Err(anyhow::anyhow!("invalid SV type: {}", s)),
+        }
+    }
 }
 
 impl SvType {
@@ -1235,22 +1253,6 @@ impl CaseQuery {
     }
 }
 
-/// Strand orientation of
-#[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
-pub enum StrandOrientation {
-    #[serde(rename = "3to3")]
-    ThreeToThree,
-    #[serde(rename = "5to5")]
-    FiveToFive,
-    #[serde(rename = "3to5")]
-    ThreeToFive,
-    #[serde(rename = "5to3")]
-    FiveToThree,
-    #[serde(rename = "NtoN")]
-    #[default]
-    NotApplicable,
-}
-
 /// Information on the call as combined by the annotator.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct CallInfo {
@@ -1774,17 +1776,6 @@ mod tests {
     fn test_case_query_serde_smoke() {
         let query: CaseQuery = CaseQuery::new(Database::RefSeq);
         insta::assert_snapshot!(serde_json::to_string_pretty(&query).unwrap());
-    }
-
-    #[test]
-    fn test_strand_orientation_serde_smoke() {
-        assert_tokens(
-            &StrandOrientation::ThreeToFive,
-            &[Token::UnitVariant {
-                name: "StrandOrientation",
-                variant: "3to5",
-            }],
-        );
     }
 
     #[test]

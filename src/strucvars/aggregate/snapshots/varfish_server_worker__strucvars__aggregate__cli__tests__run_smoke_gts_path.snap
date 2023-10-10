@@ -1,7 +1,7 @@
 ---
-source: src/db/mk_inhouse/cli.rs
+source: src/strucvars/aggregate/cli.rs
 expression: output
 ---
 #chromosome	begin	chromosome2	end	pe_orientation	sv_type	carriers	carriers_het	carriers_hom	carriers_hemi
-1	849998	1	860000	3to5	DEL	1	0	1	0
+1	586411	1	586439	3to5	DEL	3	3	0	0
 

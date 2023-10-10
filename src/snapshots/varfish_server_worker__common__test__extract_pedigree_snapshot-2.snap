@@ -1,0 +1,5 @@
+---
+source: src/common.rs
+expression: case_uuid
+---
+00000000-0000-0000-0000-000000000000

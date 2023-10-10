@@ -22,7 +22,7 @@ use hgvs::static_data::ASSEMBLY_INFOS;
 use indexmap::IndexMap;
 use log::warn;
 use mehari::{
-    annotate::seqvars::provider::TxIntervalTrees,
+    annotate::{seqvars::provider::TxIntervalTrees, strucvars::csq::interface::StrandOrientation},
     common::open_read_maybe_gz,
     db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
 };
@@ -46,7 +46,7 @@ use self::{
     genes::{load_gene_db, GeneDb},
     masked::{load_masked_dbs, MaskedBreakpointCount, MaskedDbBundle},
     pathogenic::{load_patho_dbs, PathoDbBundle},
-    schema::{CallInfo, StrandOrientation, SvSubType, SvType, TranscriptEffect},
+    schema::{CallInfo, SvSubType, SvType, TranscriptEffect},
     tads::{load_tads, TadSetBundle},
 };
 
