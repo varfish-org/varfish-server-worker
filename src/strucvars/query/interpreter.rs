@@ -380,7 +380,7 @@ mod tests {
     use mehari::annotate::strucvars::csq::interface::StrandOrientation;
 
     use crate::{
-        db::conf::Database,
+        common::Database,
         strucvars::query::schema::{CallInfo, GenomicRegion, GenotypeChoice, GenotypeCriteria},
     };
 

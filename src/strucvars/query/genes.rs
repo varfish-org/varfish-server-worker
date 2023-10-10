@@ -9,11 +9,8 @@ use serde::Deserialize;
 use tracing::info;
 
 use crate::{
-    common::CHROMS,
-    db::{
-        conf::{Database, GenomeRelease},
-        pbs,
-    },
+    common::{Database, GenomeRelease, CHROMS},
+    strucvars::pbs,
 };
 
 /// Alias for the interval tree that we use.

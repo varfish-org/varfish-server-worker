@@ -6,7 +6,7 @@ use clap::Parser;
 
 use crate::{
     common::trace_rss_now,
-    db::to_bin::{
+    strucvars::txt_to_bin::{
         clinvar, gene_region, masked,
         vardbs::{self, InputFileType},
         xlink,
@@ -34,11 +34,11 @@ pub enum Assembly {
     Grch38,
 }
 
-impl From<Assembly> for crate::db::to_bin::clinvar::input::Assembly {
+impl From<Assembly> for crate::strucvars::txt_to_bin::clinvar::input::Assembly {
     fn from(val: Assembly) -> Self {
         match val {
-            Assembly::Grch37 => crate::db::to_bin::clinvar::input::Assembly::Grch37,
-            Assembly::Grch38 => crate::db::to_bin::clinvar::input::Assembly::Grch38,
+            Assembly::Grch37 => crate::strucvars::txt_to_bin::clinvar::input::Assembly::Grch37,
+            Assembly::Grch38 => crate::strucvars::txt_to_bin::clinvar::input::Assembly::Grch38,
         }
     }
 }
@@ -114,7 +114,7 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
             let assembly = args
                 .assembly
                 .expect("assembly required for ClinvarSv conversion");
-            let assembly: crate::db::to_bin::clinvar::input::Assembly = assembly.into();
+            let assembly: crate::strucvars::txt_to_bin::clinvar::input::Assembly = assembly.into();
             clinvar::convert_to_bin(&args.path_input, &args.path_output_bin, assembly)?
         }
         InputType::StrucvarInhouse => vardbs::convert_to_bin(
@@ -168,10 +168,10 @@ mod test {
     use super::{Args, InputType};
 
     #[rstest::rstest]
-    #[case(crate::db::to_bin::cli::Assembly::Grch37)]
-    #[case(crate::db::to_bin::cli::Assembly::Grch38)]
+    #[case(crate::strucvars::txt_to_bin::cli::Assembly::Grch37)]
+    #[case(crate::strucvars::txt_to_bin::cli::Assembly::Grch38)]
     fn run_clinvar_sv_smoke(
-        #[case] assembly: crate::db::to_bin::cli::Assembly,
+        #[case] assembly: crate::strucvars::txt_to_bin::cli::Assembly,
     ) -> Result<(), anyhow::Error> {
         let tmp_dir = temp_testdir::TempDir::default();
         let common_args = common::Args {

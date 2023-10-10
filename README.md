@@ -14,15 +14,15 @@ They are written in the Rust programming language to speed up the execution of c
 At the moment, the following sub commands exist:
 
 - `db` -- subcommands to build binary (protobuf) database files
-    - `db to-bin` -- convert text files downloaded by [varfish-db-downloader](https://github.com/bihealth/varfish-db-downloader/) to binary for fast use in query sub commands
-    - `db mk-inhouse` -- compile per-case structural variant into an in-house database previously created by `db compile`
 - `seqvars` -- subcommands for processing sequence (aka small/SNV/indel) variants
     - `seqvars ingest` -- convert single VCF file into internal format for use with `seqvars query`
+    - `seqvars query` -- perform sequence variant filtration and on-the-fly annotation
     - `seqvars prefilter` -- limit the result of `seqvars prefilter` by population frequency and/or distance to exon
     - `seqvars aggregate` -- read through multiple VCF files written by `seqvars ingest` and computes a carrier counts table.
-    - `seqvars query` -- perform sequence variant filtration and on-the-fly annotation
 - `strucvars` -- subcommands for processing structural (aka large variants, CNVs, etc.) variants
     - `strucvars ingest` -- convert one or more structural variant files for use with `strucvars query`
+    - `strucvars aggregate` -- compile per-case structural variant into an in-house database, to be converted to `.bin` with `strucvars txt-to-bin`.
+    - `strucvars txt-to-bin` -- convert text files downloaded by [varfish-db-downloader](https://github.com/bihealth/varfish-db-downloader/) to binary for fast use in `strucvars query` commands
     - `strucvars query` -- perform structural variant filtration and on-the-fly annotation
 
 ## Overall Design
@@ -38,40 +38,6 @@ For queries, the server will create a query JSON file and then pass this query J
 The worker will create a result file that can be directly imported by the server to be displayed to the user.
 
 Future versions may provide persistently running HTTP/REST servers that provide functionality without startup cost.
-
-## The `db to-bin` Command
-
-Convert output of [varfish-db-downloader](https://github.com/bihealth/varfish-db-downloader/) to a directory with databases to be used by query commands such as `strucvars query`.
-
-```
-$ varfish-server-worker db to-bin \
-    --input-type {ClinvarSv,StrucvarInhouse,...} \
-    --path-input IN.txt \
-    --path-output-bin DST.bin
-```
-
-## The `db mk-inhouse` Command
-
-Import multiple files created by `strucvars ingest` into a database previously created by `db compile`.
-You can specify the files individually.
-Paths starting with an at (`@`) character are interpreted as files with lists of paths.
-You can mix paths with `@` and without.
-
-```
-$ varfish-server-worker db mk-inhouse \
-    --genome-release {Grch37,Grch38} \
-    --path-output-tsv OUT.tsv \
-    --path-input-tsvs IN/file1.gts.tsv.gz \
-    [--path-input-tsv IN/file1.gts.tsv.gz] \
-
-# OR:
-
-$ varfish-server-worker db mk-inhouse \
-    --genome-release {Grch37,Grch38} \
-    --path-output-tsv OUT.tsv \
-    --path-input-tsvs @IN/path-list.txt \
-    [--path-input-tsvs @IN/path-list2.txt]
-```
 
 ## The `seqvars ingest` Command
 
@@ -285,6 +251,40 @@ Overall, the command will emit the following header rows in addition to the `##c
 > The `strucvars ingest` step does not perform any annotation.
 > It only merges the input VCF files from multiple callers (all files must have the same samples) and converts them into the internal format.
 > The `INFO/annsv` field is filled by `strucvars query`.
+
+## The `strucvars aggregate` Command
+
+Import multiple files created by `strucvars ingest` into a database that can be convered to `.bin` with `strucvars txt-to-bin` and then used by `strucvars query`.
+You can specify the files individually.
+Paths starting with an at (`@`) character are interpreted as files with lists of paths.
+You can mix paths with `@` and without.
+
+```
+$ varfish-server-worker strucvars aggregate \
+    --genome-release {Grch37,Grch38} \
+    --path-output OUT.tsv \
+    --path-input IN/file1.vcf.gz \
+    [--path-input IN/file1.vcf.gz] \
+
+# OR:
+
+$ varfish-server-worker db mk-inhouse \
+    --genome-release {Grch37,Grch38} \
+    --path-output OUT.tsv \
+    --path-input @IN/path-list.txt \
+    [--path-input @IN/path-list2.txt]
+```
+
+## The `strucvars txt-to-bin` Command
+
+Convert output of [varfish-db-downloader](https://github.com/bihealth/varfish-db-downloader/) to a directory with databases to be used by query commands such as `strucvars query`.
+
+```
+$ varfish-server-worker strucvars txt-to-bin \
+    --input-type {ClinvarSv,StrucvarInhouse,...} \
+    --path-input IN.txt \
+    --path-output-bin DST.bin
+```
 
 # Developer Information
 

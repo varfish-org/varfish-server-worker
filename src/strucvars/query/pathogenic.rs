@@ -9,8 +9,8 @@ use serde::Serialize;
 use tracing::{info, warn};
 
 use crate::{
+    common::GenomeRelease,
     common::{build_chrom_map, CHROMS},
-    db::conf::GenomeRelease,
 };
 
 use super::{

@@ -183,7 +183,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::db::to_bin::clinvar::input::Assembly;
+    use crate::strucvars::txt_to_bin::clinvar::input::Assembly;
     use mehari::common::open_read_maybe_gz;
 
     #[rstest::rstest]
