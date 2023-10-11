@@ -255,12 +255,6 @@ fn run_query(
 
         let mut ovl_hgnc_ids = Vec::new();
 
-        let sv_query = if matches!(record_sv.sv_type, SvType::Ins | SvType::Bnd) {
-            record_sv.pos.saturating_sub(1)..record_sv.pos
-        } else {
-            record_sv.pos.saturating_sub(1)..record_sv.end
-        };
-
         let chrom = chrom_to_acc
             .get(&annonars::common::cli::canonicalize(&record_sv.chrom))
             .expect("invalid chromosome");
@@ -287,8 +281,15 @@ fn run_query(
                 result_payload.masked_breakpoints.clone()
             },
             &mut |sv: &StructuralVariant| {
+                let sv_query: std::ops::Range<i32> =
+                    if matches!(sv.sv_type, SvType::Ins | SvType::Bnd) {
+                        sv.pos.saturating_sub(1)..sv.pos
+                    } else {
+                        sv.pos.saturating_sub(1)..sv.end
+                    };
+
                 ovl_hgnc_ids =
-                    overlapping_hgnc_ids(mehari_tx_db, mehari_tx_idx, chrom_idx, sv_query.clone());
+                    overlapping_hgnc_ids(mehari_tx_db, mehari_tx_idx, chrom_idx, sv_query);
                 ovl_hgnc_ids.sort();
                 ovl_hgnc_ids.dedup();
                 ovl_hgnc_ids.clone()
@@ -814,9 +815,9 @@ pub fn overlapping_hgnc_ids(
         .as_ref()
         .expect("transcripts must be present");
     let tree = &tx_idx.trees[chrom_idx];
-    tree.find(query)
+    tree.find(query.clone())
         .iter()
-        .map(|it| tx_db.transcripts[*it.data() as usize].gene_id.clone())
+        .map(|it| format!("HGNC:{}", tx_db.transcripts[*it.data() as usize].gene_id))
         .collect::<Vec<_>>()
 }
 
@@ -949,6 +950,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &args.path_db,
         &args.genome_release.to_string()
     );
+    tracing::debug!("  path = {}", &path_mehari_tx_db);
     let mehari_tx_db = mehari::annotate::seqvars::load_tx_db(&path_mehari_tx_db)?;
     tracing::info!(
         "...done loading mehari tx database in {:?}",
@@ -1018,8 +1020,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
+    // #[tracing_test::traced_test]
     #[test]
-    #[tracing_test::traced_test]
     fn smoke_test() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
         let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());
