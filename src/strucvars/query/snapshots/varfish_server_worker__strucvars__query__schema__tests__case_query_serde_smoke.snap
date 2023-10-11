@@ -3,7 +3,6 @@ source: src/strucvars/query/schema.rs
 expression: "serde_json::to_string_pretty(&query).unwrap()"
 ---
 {
-  "database": "refseq",
   "svdb_dgv_enabled": false,
   "svdb_dgv_min_overlap": null,
   "svdb_dgv_max_count": null,

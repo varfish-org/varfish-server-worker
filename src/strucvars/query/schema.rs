@@ -1,6 +1,6 @@
 //! Supporting code for SV query definition.
 
-use crate::common::{Database, TadSet};
+use crate::common::TadSet;
 use indexmap::IndexMap;
 use mehari::annotate::strucvars::{
     bnd::Breakend, csq::interface::StrandOrientation, PeOrientation,
@@ -1079,9 +1079,6 @@ impl GenotypeCriteria {
 /// Define a query for structural variants from a case.
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct CaseQuery {
-    /// The transcript database to use
-    pub database: Database,
-
     /// Whether to enable SVDB overlap queries with DGV.
     pub svdb_dgv_enabled: bool,
     /// The minimal reciprocal overlap for querying DGV.
@@ -1220,10 +1217,9 @@ where
     }))
 }
 
-impl CaseQuery {
-    pub fn new(database: Database) -> Self {
+impl Default for CaseQuery {
+    fn default() -> Self {
         CaseQuery {
-            database,
             svdb_dgv_enabled: false,
             svdb_dgv_min_overlap: None,
             svdb_dgv_max_count: None,
@@ -1716,28 +1712,6 @@ mod tests {
     }
 
     #[test]
-    fn test_genomic_region_serde_smoke() {
-        assert_tokens(
-            &Database::RefSeq,
-            &[Token::UnitVariant {
-                name: "Database",
-                variant: "refseq",
-            }],
-        );
-    }
-
-    #[test]
-    fn test_database_smoke() {
-        assert_tokens(
-            &Database::RefSeq,
-            &[Token::UnitVariant {
-                name: "Database",
-                variant: "refseq",
-            }],
-        );
-    }
-
-    #[test]
     fn test_sv_type_serde_smoke() {
         assert_tokens(
             &SvType::Del,
@@ -1997,7 +1971,7 @@ mod tests {
 
     #[test]
     fn test_case_query_serde_smoke() {
-        let query: CaseQuery = CaseQuery::new(Database::RefSeq);
+        let query: CaseQuery = CaseQuery::default();
         insta::assert_snapshot!(serde_json::to_string_pretty(&query).unwrap());
     }
 

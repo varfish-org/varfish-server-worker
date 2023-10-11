@@ -1,4 +1,4 @@
-//! Code implementing the "sv query" sub command.
+//! Code implementing the "strucvars query" sub command.
 
 pub mod bgdbs;
 pub mod clinvar;
@@ -36,7 +36,7 @@ use uuid::Uuid;
 
 use crate::{
     common::{build_chrom_map, numeric_gene_id, trace_rss_now},
-    common::{Database, GenomeRelease, TadSet as TadSetChoice},
+    common::{GenomeRelease, TadSet as TadSetChoice},
     strucvars::query::{
         interpreter::QueryInterpreter, pathogenic::Record as KnownPathogenicRecord,
         schema::CaseQuery, schema::StructuralVariant,
@@ -56,9 +56,9 @@ use self::{
 /// Length of the upstream/downstream region.
 static X_STREAM: i32 = 5000;
 
-/// Command line arguments for `sv query` sub command.
+/// Command line arguments for `strucvars query` sub command.
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Run query for SVs", long_about = None)]
+#[command(author, version, about = "Run query for strucvars", long_about = None)]
 pub struct Args {
     /// Genome release to assume.
     #[arg(long, value_enum)]
@@ -175,11 +175,8 @@ struct ResultRecord {
     payload: String,
 }
 
-fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Gene> {
-    let record_idxs = match database {
-        Database::RefSeq => gene_db.xlink.from_entrez.get_vec(&gene_id),
-        Database::Ensembl => gene_db.xlink.from_ensembl.get_vec(&gene_id),
-    };
+fn resolve_hgvs_id(gene_db: &GeneDb, hgvs_id: &str) -> Vec<Gene> {
+    let record_idxs = gene_db.xlink.from_hgnc.get_vec(hgvs_id);
     if let Some(record_idxs) = record_idxs {
         record_idxs
             .iter()
@@ -196,24 +193,14 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
             })
             .collect()
     } else {
-        match database {
-            Database::RefSeq => vec![Gene {
-                entrez_id: Some(gene_id),
-                symbol: None,
-                ensembl_id: None,
-                hgnc_id: None,
-                is_acmg: gene_db.acmg.contains(gene_id),
-                is_disease_gene: gene_db.mim2gene.contains(gene_id),
-            }],
-            Database::Ensembl => vec![Gene {
-                ensembl_id: Some(format!("ENSG{gene_id:011}")),
-                symbol: None,
-                entrez_id: None,
-                hgnc_id: None,
-                is_acmg: false,
-                is_disease_gene: false,
-            }],
-        }
+        vec![Gene {
+            entrez_id: None,
+            symbol: None,
+            ensembl_id: None,
+            hgnc_id: Some(hgvs_id.to_string()),
+            is_acmg: false,
+            is_disease_gene: false,
+        }]
     }
 }
 
@@ -266,13 +253,15 @@ fn run_query(
             ..ResultPayload::default()
         };
 
-        let mut ovl_gene_ids = Vec::new();
+        let mut ovl_hgnc_ids = Vec::new();
 
-        let sv_query = if matches!(record_sv.sv_type, SvType::Ins | SvType::Bnd) {
-            record_sv.pos.saturating_sub(1)..record_sv.pos
-        } else {
-            record_sv.pos.saturating_sub(1)..record_sv.end
-        };
+        let chrom = chrom_to_acc
+            .get(&annonars::common::cli::canonicalize(&record_sv.chrom))
+            .expect("invalid chromosome");
+        let chrom_idx = *mehari_tx_idx
+            .contig_to_idx
+            .get(chrom)
+            .expect("cannot map idx");
 
         let passes = interpreter.passes(
             &record_sv,
@@ -292,15 +281,18 @@ fn run_query(
                 result_payload.masked_breakpoints.clone()
             },
             &mut |sv: &StructuralVariant| {
-                ovl_gene_ids = dbs.genes.overlapping_gene_ids(
-                    interpreter.query.database,
-                    *chrom_map
-                        .get(&sv.chrom)
-                        .expect("cannot translate chromosome") as u32,
-                    sv_query.clone(),
-                );
-                ovl_gene_ids.sort();
-                ovl_gene_ids.clone()
+                let sv_query: std::ops::Range<i32> =
+                    if matches!(sv.sv_type, SvType::Ins | SvType::Bnd) {
+                        sv.pos.saturating_sub(1)..sv.pos
+                    } else {
+                        sv.pos.saturating_sub(1)..sv.end
+                    };
+
+                ovl_hgnc_ids =
+                    overlapping_hgnc_ids(mehari_tx_db, mehari_tx_idx, chrom_idx, sv_query);
+                ovl_hgnc_ids.sort();
+                ovl_hgnc_ids.dedup();
+                ovl_hgnc_ids.clone()
             },
             &mut |sv: &StructuralVariant| {
                 result_payload.tx_effects =
@@ -350,49 +342,46 @@ fn run_query(
                 .collect();
 
             // Get genes in overlapping TADs
-            let tad_gene_ids = {
-                let gene_ids: HashSet<_> = HashSet::from_iter(ovl_gene_ids.iter());
+            let tad_hgnc_ids = {
+                let hgnc_ids: HashSet<_> = HashSet::from_iter(ovl_hgnc_ids.iter());
                 let tads =
                     dbs.tad_sets
                         .overlapping_tads(TadSetChoice::Hesc, &record_sv, &chrom_map);
-                let mut tad_gene_ids = Vec::new();
+                let mut tad_hgvs_ids = Vec::new();
                 tads.iter()
                     .map(|tad| {
-                        dbs.genes.overlapping_gene_ids(
-                            interpreter.query.database,
-                            tad.chrom_no,
+                        overlapping_hgnc_ids(
+                            mehari_tx_db,
+                            mehari_tx_idx,
+                            chrom_idx,
                             (tad.begin - 1)..tad.end,
                         )
                     })
-                    .for_each(|mut v| tad_gene_ids.append(&mut v));
-                let tad_gene_ids: HashSet<_> = HashSet::from_iter(tad_gene_ids.into_iter());
-                let mut tad_gene_ids = Vec::from_iter(tad_gene_ids);
-                tad_gene_ids.retain(|gene_id| !gene_ids.contains(gene_id));
-                tad_gene_ids.sort();
-                tad_gene_ids
+                    .for_each(|mut v| tad_hgvs_ids.append(&mut v));
+                let tad_hgvs_ids: HashSet<_> = HashSet::from_iter(tad_hgvs_ids.into_iter());
+                let mut tad_hgvs_ids = Vec::from_iter(tad_hgvs_ids);
+                tad_hgvs_ids.retain(|hgvs_id| !hgnc_ids.contains(hgvs_id));
+                tad_hgvs_ids.sort();
+                tad_hgvs_ids
             };
             result_payload.tad_boundary_distance =
                 dbs.tad_sets
                     .boundary_dist(TadSetChoice::Hesc, &record_sv, &chrom_map);
 
             // Convert the genes into more verbose records and put them into the result
-            ovl_gene_ids.iter().for_each(|gene_id| {
-                result_payload.ovl_genes.append(&mut resolve_gene_id(
-                    interpreter.query.database,
-                    &dbs.genes,
-                    *gene_id,
-                ))
+            ovl_hgnc_ids.iter().for_each(|hgvs_id| {
+                result_payload
+                    .ovl_genes
+                    .append(&mut resolve_hgvs_id(&dbs.genes, hgvs_id))
             });
             result_payload.ovl_disease_gene = result_payload
                 .ovl_genes
                 .iter()
                 .any(|gene| gene.is_disease_gene);
-            tad_gene_ids.iter().for_each(|gene_id| {
-                result_payload.tad_genes.append(&mut resolve_gene_id(
-                    interpreter.query.database,
-                    &dbs.genes,
-                    *gene_id,
-                ))
+            tad_hgnc_ids.iter().for_each(|hgvs_id| {
+                result_payload
+                    .tad_genes
+                    .append(&mut resolve_hgvs_id(&dbs.genes, hgvs_id))
             });
             result_payload.tad_disease_gene = result_payload
                 .tad_genes
@@ -814,6 +803,24 @@ fn compute_tx_effects(
     }
 }
 
+/// Compute overlapping HGNC gene IDs for a given interval.
+pub fn overlapping_hgnc_ids(
+    tx_seq_db: &TxSeqDatabase,
+    tx_idx: &TxIntervalTrees,
+    chrom_idx: usize,
+    query: std::ops::Range<i32>,
+) -> Vec<String> {
+    let tx_db = tx_seq_db
+        .tx_db
+        .as_ref()
+        .expect("transcripts must be present");
+    let tree = &tx_idx.trees[chrom_idx];
+    tree.find(query.clone())
+        .iter()
+        .map(|it| format!("HGNC:{}", tx_db.transcripts[*it.data() as usize].gene_id))
+        .collect::<Vec<_>>()
+}
+
 /// Bundle the used database to reduce argument count.
 #[derive(Default, Debug)]
 pub struct Databases {
@@ -826,11 +833,7 @@ pub struct Databases {
 }
 
 /// Translate gene allow list to gene identifier sfrom
-fn translate_gene_allowlist(
-    gene_allowlist: &Vec<String>,
-    dbs: &Databases,
-    query: &CaseQuery,
-) -> HashSet<u32> {
+fn translate_gene_allowlist(gene_allowlist: &Vec<String>, dbs: &Databases) -> HashSet<String> {
     let mut result = HashSet::new();
 
     let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
@@ -839,32 +842,21 @@ fn translate_gene_allowlist(
     let re_hgnc: regex::Regex =
         regex::Regex::new(r"HGNC:\d+").expect("invalid regex in source code");
 
-    let symbol_to_id: HashMap<_, _> =
-        HashMap::from_iter(dbs.genes.xlink.records.iter().map(|record| {
-            (
-                record.symbol.clone(),
-                match query.database {
-                    Database::RefSeq => record.entrez_id,
-                    Database::Ensembl => record.ensembl_gene_id,
-                },
-            )
-        }));
+    let symbol_to_id: HashMap<_, _> = HashMap::from_iter(
+        dbs.genes
+            .xlink
+            .records
+            .iter()
+            .map(|record| (record.symbol.clone(), record.hgnc_id.clone())),
+    );
 
     for gene in gene_allowlist {
         let gene = gene.trim();
         if re_entrez.is_match(gene) {
             if let Ok(gene_id) = numeric_gene_id(gene) {
-                match query.database {
-                    Database::RefSeq => {
-                        result.insert(gene_id);
-                    }
-                    Database::Ensembl => {
-                        if let Some(record_ids) = dbs.genes.xlink.from_ensembl.get_vec(&gene_id) {
-                            for record_id in record_ids {
-                                result
-                                    .insert(dbs.genes.xlink.records[*record_id as usize].entrez_id);
-                            }
-                        };
+                if let Some(record_ids) = dbs.genes.xlink.from_ensembl.get_vec(&gene_id) {
+                    for record_id in record_ids {
+                        result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }
                 }
             } else {
@@ -873,20 +865,11 @@ fn translate_gene_allowlist(
             }
         } else if re_ensembl.is_match(gene) {
             if let Ok(gene_id) = numeric_gene_id(gene) {
-                match query.database {
-                    Database::RefSeq => {
-                        if let Some(record_ids) = dbs.genes.xlink.from_entrez.get_vec(&gene_id) {
-                            for record_id in record_ids {
-                                result.insert(
-                                    dbs.genes.xlink.records[*record_id as usize].ensembl_gene_id,
-                                );
-                            }
-                        };
+                if let Some(record_ids) = dbs.genes.xlink.from_entrez.get_vec(&gene_id) {
+                    for record_id in record_ids {
+                        result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }
-                    Database::Ensembl => {
-                        result.insert(gene_id);
-                    }
-                }
+                };
             } else {
                 warn!("Cannot map candidate ENSEMBL gene identifier {}", &gene);
                 continue;
@@ -895,17 +878,7 @@ fn translate_gene_allowlist(
             if dbs.genes.xlink.from_hgnc.contains_key(gene) {
                 if let Some(record_ids) = dbs.genes.xlink.from_hgnc.get_vec(gene) {
                     for record_id in record_ids {
-                        match query.database {
-                            Database::RefSeq => {
-                                result
-                                    .insert(dbs.genes.xlink.records[*record_id as usize].entrez_id);
-                            }
-                            Database::Ensembl => {
-                                result.insert(
-                                    dbs.genes.xlink.records[*record_id as usize].ensembl_gene_id,
-                                );
-                            }
-                        }
+                        result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }
                 }
             } else {
@@ -913,7 +886,7 @@ fn translate_gene_allowlist(
                 continue;
             }
         } else if let Some(gene_id) = symbol_to_id.get(gene) {
-            result.insert(*gene_id);
+            result.insert(gene_id.clone());
         } else {
             warn!("Could not map candidate gene symbol {}", &gene);
         }
@@ -977,6 +950,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &args.path_db,
         &args.genome_release.to_string()
     );
+    tracing::debug!("  path = {}", &path_mehari_tx_db);
     let mehari_tx_db = mehari::annotate::seqvars::load_tx_db(&path_mehari_tx_db)?;
     tracing::info!(
         "...done loading mehari tx database in {:?}",
@@ -1003,11 +977,11 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     tracing::info!("Translating gene allow list...");
-    let gene_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
+    let hgvs_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
         if gene_allowlist.is_empty() {
             None
         } else {
-            Some(translate_gene_allowlist(gene_allowlist, &dbs, &query))
+            Some(translate_gene_allowlist(gene_allowlist, &dbs))
         }
     } else {
         None
@@ -1016,7 +990,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("Running queries...");
     let before_query = Instant::now();
     let query_stats = run_query(
-        &QueryInterpreter::new(query, gene_allowlist),
+        &QueryInterpreter::new(query, hgvs_allowlist),
         args,
         &dbs,
         &mehari_tx_db,
@@ -1038,7 +1012,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     tracing::info!(
-        "All of `sv query` completed in {:?}",
+        "All of `strucvars query` completed in {:?}",
         before_anything.elapsed()
     );
     Ok(())
@@ -1046,8 +1020,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
+    // #[tracing_test::traced_test]
     #[test]
-    #[tracing_test::traced_test]
     fn smoke_test() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
         let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());

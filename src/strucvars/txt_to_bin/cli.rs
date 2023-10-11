@@ -7,7 +7,7 @@ use clap::Parser;
 use crate::{
     common::trace_rss_now,
     strucvars::txt_to_bin::{
-        clinvar, gene_region, masked,
+        clinvar, masked,
         vardbs::{self, InputFileType},
         xlink,
     },
@@ -74,8 +74,6 @@ pub enum InputType {
     StrucvarG1k,
     /// Convert gnomAD SV to binary.
     StrucvarGnomadSv,
-    /// Convert gene region to binary.
-    GeneRegion,
     /// Convert masked region to binary.
     MaskedRegion,
     /// Convert cross-link to binary.
@@ -100,7 +98,7 @@ pub struct Args {
     pub path_output: PathBuf,
 }
 
-/// Main entry point for the `sv bg-db-to-bin` command.
+/// Main entry point for the `strucvars txt-to-bin` command.
 pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     tracing::info!("Starting `db to-bin`");
     tracing::info!("  common_args = {:?}", &common_args);
@@ -140,7 +138,6 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         InputType::StrucvarGnomadSv => {
             vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Gnomad)?
         }
-        InputType::GeneRegion => gene_region::convert_to_bin(&args.path_input, &args.path_output)?,
         InputType::MaskedRegion => masked::convert_to_bin(&args.path_input, &args.path_output)?,
         InputType::Xlink => xlink::convert_to_bin(&args.path_input, &args.path_output)?,
     }
@@ -316,26 +313,6 @@ mod test {
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz",
             ),
             path_output: tmp_dir.join("gnomad.bin"),
-        };
-
-        super::run(&common_args, &args)?;
-
-        Ok(())
-    }
-
-    #[test]
-    fn run_gene_region_smoke() -> Result<(), anyhow::Error> {
-        let tmp_dir = temp_testdir::TempDir::default();
-        let common_args = common::Args {
-            verbose: Verbosity::new(0, 0),
-        };
-        let args = Args {
-            assembly: None,
-            input_type: InputType::GeneRegion,
-            path_input: String::from(
-                "tests/db/to-bin/varfish-db-downloader/features/grch37/gene_regions/refseq.bed.gz",
-            ),
-            path_output: tmp_dir.join("refseq.bin"),
         };
 
         super::run(&common_args, &args)?;

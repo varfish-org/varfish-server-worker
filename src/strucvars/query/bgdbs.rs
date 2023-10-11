@@ -133,7 +133,7 @@ impl BeginEnd for BgDbRecord {
     }
 }
 
-/// Load background database from a `.bin` file as created by `sv convert-bgdb`.
+/// Load background database from a `.bin` file as created by `strucvar txt-to-bin`.
 #[tracing::instrument]
 pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
     tracing::debug!("loading binary bg db records from {:?}", path);

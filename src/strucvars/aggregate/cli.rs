@@ -279,7 +279,7 @@ pub struct Args {
     pub slack_ins: i32,
 }
 
-/// Main entry point for the `sv bg-db-to-bin` command.
+/// Main entry point for the `strucvars txt-to-bin` command.
 pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     tracing::info!("Starting `strucvars aggregate`");
     tracing::info!("  common_args = {:?}", &common_args);

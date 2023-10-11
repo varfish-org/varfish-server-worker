@@ -2,7 +2,6 @@
 
 pub mod cli;
 pub mod clinvar;
-pub mod gene_region;
 pub mod masked;
 pub mod vardbs;
 pub mod xlink;

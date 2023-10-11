@@ -35,7 +35,7 @@ enum Commands {
     Seqvars(Seqvars),
 }
 
-/// Parsing of "sv *" sub commands.
+/// Parsing of "strucvars *" sub commands.
 #[derive(Debug, Args)]
 #[command(args_conflicts_with_subcommands = true)]
 struct Strucvars {
@@ -44,7 +44,7 @@ struct Strucvars {
     command: StrucvarsCommands,
 }
 
-/// Enum supporting the parsing of "sv *" sub commands.
+/// Enum supporting the parsing of "strucvars *" sub commands.
 #[derive(Debug, Subcommand)]
 enum StrucvarsCommands {
     Aggregate(strucvars::aggregate::cli::Args),
@@ -62,7 +62,7 @@ struct Seqvars {
     command: SeqvarsCommands,
 }
 
-/// Enum supporting the parsing of "sv *" sub commands.
+/// Enum supporting the parsing of "strucvars *" sub commands.
 #[derive(Debug, Subcommand)]
 enum SeqvarsCommands {
     Aggregate(seqvars::aggregate::Args),
