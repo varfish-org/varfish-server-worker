@@ -1,90 +1,16 @@
 //! Code for supporting annotation with overlapping genes.
 
-use std::{collections::HashSet, ops::Range, path::Path, time::Instant};
+use std::{collections::HashSet, path::Path, time::Instant};
 
-use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use serde::Deserialize;
 use tracing::info;
 
 use crate::{
-    common::{Database, GenomeRelease, CHROMS},
+    common::{Database, GenomeRelease},
     strucvars::pbs,
 };
-
-/// Alias for the interval tree that we use.
-type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
-
-/// Information to store for a TAD set entry.
-#[derive(Default, Clone, Debug)]
-pub struct GeneRegionRecord {
-    /// 0-based begin position.
-    pub begin: i32,
-    /// End position.
-    pub end: i32,
-    /// gene ID
-    pub gene_id: u32,
-}
-
-/// Gene region overlapping information.
-#[derive(Default, Debug)]
-pub struct GeneRegionDb {
-    /// Records, stored by chromosome.
-    pub records: Vec<Vec<GeneRegionRecord>>,
-    /// Interval trees, stored by chromosome.
-    pub trees: Vec<IntervalTree>,
-}
-
-impl GeneRegionDb {
-    /// Return IDs of overlapping genes.
-    pub fn overlapping_gene_ids(&self, chrom_no: u32, query: Range<i32>) -> Vec<u32> {
-        self.trees[chrom_no as usize]
-            .find(query)
-            .iter()
-            .map(|cursor| self.records[chrom_no as usize][*cursor.data() as usize].gene_id)
-            .collect()
-    }
-}
-
-#[tracing::instrument]
-fn load_gene_regions_db(path: &Path) -> Result<GeneRegionDb, anyhow::Error> {
-    tracing::debug!("loading binary gene region records from {:?}...", path);
-
-    let before_loading = Instant::now();
-    let mut result = GeneRegionDb::default();
-    for _ in CHROMS {
-        result.records.push(Vec::new());
-        result.trees.push(IntervalTree::new());
-    }
-
-    let fcontents =
-        std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
-    let gene_region_db = pbs::GeneRegionDatabase::decode(std::io::Cursor::new(fcontents))
-        .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
-
-    let mut total_count = 0;
-    for record in gene_region_db.records.into_iter() {
-        let chrom_no = record.chrom_no as usize;
-        let key = (record.start - 1)..record.stop;
-        result.trees[chrom_no].insert(key, result.records[chrom_no].len() as u32);
-        result.records[chrom_no].push(GeneRegionRecord {
-            begin: record.start - 1,
-            end: record.stop,
-            gene_id: record.gene_id,
-        });
-
-        total_count += 1;
-    }
-    result.trees.iter_mut().for_each(|tree| tree.index());
-    tracing::debug!(
-        "... done loading {} records and building trees in {:?}",
-        total_count,
-        before_loading.elapsed(),
-    );
-
-    Ok(result)
-}
 
 /// Information to store for the interlink table.
 #[derive(Default, Debug)]
@@ -287,26 +213,9 @@ fn load_mim2gene_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
 /// Bundle of gene region DBs and the xlink info packaged with VarFish.
 #[derive(Default, Debug)]
 pub struct GeneDb {
-    pub refseq: GeneRegionDb,
-    pub ensembl: GeneRegionDb,
     pub xlink: XlinkDb,
     pub acmg: AcmgDb,
     pub mim2gene: OmimDb,
-}
-
-impl GeneDb {
-    /// Return IDs of overlapping genes.
-    pub fn overlapping_gene_ids(
-        &self,
-        database: Database,
-        chrom_no: u32,
-        query: Range<i32>,
-    ) -> Vec<u32> {
-        match database {
-            Database::RefSeq => self.refseq.overlapping_gene_ids(chrom_no, query),
-            Database::Ensembl => self.ensembl.overlapping_gene_ids(chrom_no, query),
-        }
-    }
 }
 
 // Load all gene information, such as region, id mapping and symbols.
@@ -315,16 +224,6 @@ pub fn load_gene_db(path_db: &str, genome_release: GenomeRelease) -> Result<Gene
     info!("Loading gene dbs");
 
     let result = GeneDb {
-        refseq: load_gene_regions_db(
-            Path::new(path_db)
-                .join(format!("{}/genes/refseq_regions.bin", genome_release))
-                .as_path(),
-        )?,
-        ensembl: load_gene_regions_db(
-            Path::new(path_db)
-                .join(format!("{}/genes/ensembl_regions.bin", genome_release))
-                .as_path(),
-        )?,
         xlink: load_xlink_db(Path::new(path_db).join("noref/genes/xlink.bin").as_path())?,
         acmg: load_acmg_db(Path::new(path_db).join("noref/genes/acmg.tsv").as_path())?,
         mim2gene: load_mim2gene_db(

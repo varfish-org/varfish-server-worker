@@ -56,24 +56,6 @@ message MaskedDatabase {
     repeated MaskedDbRecord records = 1;
 }
 
-// Record for the gene region database.
-message GeneRegionRecord {
-    // Numeric chromosome number.
-    int32 chrom_no = 1;
-    // 1-based start position.
-    int32 start = 2;
-    // 1-based stop position.
-    int32 stop = 3;
-    // Numeric gene identifier.
-    uint32 gene_id = 4;
-}
-
-// Gene region database.
-message GeneRegionDatabase {
-    // List of gene region records.
-    repeated GeneRegionRecord records = 1;
-}
-
 // Record for the gene cross-link database.
 message XlinkRecord {
     // HGNC ID (e.g., "HGNC:123")

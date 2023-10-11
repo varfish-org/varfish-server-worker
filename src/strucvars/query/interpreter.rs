@@ -30,7 +30,7 @@ pub fn overlaps(s1: i32, e1: i32, s2: i32, e2: i32) -> bool {
 #[derive(Debug)]
 pub struct QueryInterpreter {
     pub query: CaseQuery,
-    pub gene_allowlist: Option<HashSet<u32>>,
+    pub hgvs_allowlist: Option<HashSet<String>>,
 }
 
 /// Result type for `QueryInterpreter::passes_genotype()`.
@@ -49,10 +49,10 @@ pub struct PassesResult {
 
 impl QueryInterpreter {
     /// Construct new `QueryInterpreter` with the given query settings.
-    pub fn new(query: CaseQuery, gene_allowlist: Option<HashSet<u32>>) -> Self {
+    pub fn new(query: CaseQuery, hgvs_allowlist: Option<HashSet<String>>) -> Self {
         QueryInterpreter {
             query,
-            gene_allowlist,
+            hgvs_allowlist,
         }
     }
 
@@ -302,13 +302,13 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the `sv` passes the gene allow list filter.
-    pub fn passes_genes(&self, ovl_gene_ids: &[u32]) -> bool {
-        if let Some(gene_allowlist) = self.gene_allowlist.as_ref() {
-            if gene_allowlist.is_empty() {
+    pub fn passes_genes(&self, ovl_hgvs_ids: &[String]) -> bool {
+        if let Some(hgvs_allowlist) = self.hgvs_allowlist.as_ref() {
+            if hgvs_allowlist.is_empty() {
                 true
             } else {
-                let ovl_gene_ids: HashSet<u32> = HashSet::from_iter(ovl_gene_ids.iter().copied());
-                !ovl_gene_ids.is_disjoint(gene_allowlist)
+                let ovl_hgvs_ids: HashSet<String> = HashSet::from_iter(ovl_hgvs_ids.iter().cloned());
+                !ovl_hgvs_ids.is_disjoint(hgvs_allowlist)
             }
         } else {
             true
@@ -329,18 +329,18 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `StructuralVariant` passes all criteria.
-    pub fn passes<CountBg, CountMasked, OvlGeneIds, TxEffects>(
+    pub fn passes<CountBg, CountMasked, OvlHgvsIds, TxEffects>(
         &self,
         sv: &StructuralVariant,
         count_bg: &mut CountBg,
         count_masked: &mut CountMasked,
-        ovl_gene_ids: &mut OvlGeneIds,
+        ovl_hgvs_ids: &mut OvlHgvsIds,
         tx_effects: &mut TxEffects,
     ) -> Result<PassesResult, anyhow::Error>
     where
         CountBg: FnMut(&StructuralVariant) -> BgDbOverlaps,
         CountMasked: FnMut(&StructuralVariant) -> MaskedBreakpointCount,
-        OvlGeneIds: FnMut(&StructuralVariant) -> Vec<u32>,
+        OvlHgvsIds: FnMut(&StructuralVariant) -> Vec<String>,
         TxEffects: FnMut(&StructuralVariant) -> Vec<TranscriptEffect>,
     {
         // We first check for matching genotype.  If this succeeds then we execute the
@@ -354,7 +354,7 @@ impl QueryInterpreter {
         let passes_result = self.passes_genotype(sv, &count_masked(sv))?;
         if !passes_result.pass_all {
             Ok(Default::default())
-        } else if !self.passes_genes(&ovl_gene_ids(sv)) {
+        } else if !self.passes_genes(&ovl_hgvs_ids(sv)) {
             trace!("... SV does not gene allow list filter");
             Ok(Default::default())
         } else if !self.passes_counts(&count_bg(sv)) {

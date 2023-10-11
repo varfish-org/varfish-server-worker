@@ -7,7 +7,7 @@ use clap::Parser;
 use crate::{
     common::trace_rss_now,
     strucvars::txt_to_bin::{
-        clinvar, gene_region, masked,
+        clinvar, masked,
         vardbs::{self, InputFileType},
         xlink,
     },
@@ -74,8 +74,6 @@ pub enum InputType {
     StrucvarG1k,
     /// Convert gnomAD SV to binary.
     StrucvarGnomadSv,
-    /// Convert gene region to binary.
-    GeneRegion,
     /// Convert masked region to binary.
     MaskedRegion,
     /// Convert cross-link to binary.
@@ -140,7 +138,6 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         InputType::StrucvarGnomadSv => {
             vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Gnomad)?
         }
-        InputType::GeneRegion => gene_region::convert_to_bin(&args.path_input, &args.path_output)?,
         InputType::MaskedRegion => masked::convert_to_bin(&args.path_input, &args.path_output)?,
         InputType::Xlink => xlink::convert_to_bin(&args.path_input, &args.path_output)?,
     }
