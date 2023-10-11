@@ -261,6 +261,14 @@ fn run_query(
             record_sv.pos.saturating_sub(1)..record_sv.end
         };
 
+        let chrom = chrom_to_acc
+            .get(&annonars::common::cli::canonicalize(&record_sv.chrom))
+            .expect("invalid chromosome");
+        let chrom_idx = *mehari_tx_idx
+            .contig_to_idx
+            .get(chrom)
+            .expect("cannot map idx");
+
         let passes = interpreter.passes(
             &record_sv,
             &mut |sv: &StructuralVariant| {
@@ -279,11 +287,8 @@ fn run_query(
                 result_payload.masked_breakpoints.clone()
             },
             &mut |sv: &StructuralVariant| {
-                let chrom_no = *chrom_map
-                    .get(&sv.chrom)
-                    .expect("cannot translate chromosome") as u32;
                 ovl_hgnc_ids =
-                    overlapping_hgnc_ids(mehari_tx_db, mehari_tx_idx, chrom_no, sv_query.clone());
+                    overlapping_hgnc_ids(mehari_tx_db, mehari_tx_idx, chrom_idx, sv_query.clone());
                 ovl_hgnc_ids.sort();
                 ovl_hgnc_ids.dedup();
                 ovl_hgnc_ids.clone()
@@ -347,7 +352,7 @@ fn run_query(
                         overlapping_hgnc_ids(
                             mehari_tx_db,
                             mehari_tx_idx,
-                            tad.chrom_no,
+                            chrom_idx,
                             (tad.begin - 1)..tad.end,
                         )
                     })
@@ -801,14 +806,14 @@ fn compute_tx_effects(
 pub fn overlapping_hgnc_ids(
     tx_seq_db: &TxSeqDatabase,
     tx_idx: &TxIntervalTrees,
-    chrom_no: u32,
+    chrom_idx: usize,
     query: std::ops::Range<i32>,
 ) -> Vec<String> {
     let tx_db = tx_seq_db
         .tx_db
         .as_ref()
         .expect("transcripts must be present");
-    let tree = &tx_idx.trees[chrom_no as usize];
+    let tree = &tx_idx.trees[chrom_idx];
     tree.find(query)
         .iter()
         .map(|it| tx_db.transcripts[*it.data() as usize].gene_id.clone())
