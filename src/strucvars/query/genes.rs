@@ -259,7 +259,7 @@ impl OmimDb {
 }
 
 #[tracing::instrument]
-fn load_omim_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
+fn load_mim2gene_db(path: &Path) -> Result<OmimDb, anyhow::Error> {
     tracing::debug!("loading OMIM TSV records from {:?}...", path);
 
     let before_loading = Instant::now();
@@ -291,7 +291,7 @@ pub struct GeneDb {
     pub ensembl: GeneRegionDb,
     pub xlink: XlinkDb,
     pub acmg: AcmgDb,
-    pub omim: OmimDb,
+    pub mim2gene: OmimDb,
 }
 
 impl GeneDb {
@@ -327,7 +327,7 @@ pub fn load_gene_db(path_db: &str, genome_release: GenomeRelease) -> Result<Gene
         )?,
         xlink: load_xlink_db(Path::new(path_db).join("noref/genes/xlink.bin").as_path())?,
         acmg: load_acmg_db(Path::new(path_db).join("noref/genes/acmg.tsv").as_path())?,
-        omim: load_omim_db(Path::new(path_db).join("noref/genes/omim.tsv").as_path())?,
+        mim2gene: load_mim2gene_db(Path::new(path_db).join("noref/genes/mim2gene.tsv").as_path())?,
     };
 
     Ok(result)

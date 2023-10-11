@@ -55,6 +55,18 @@ $SCRIPT_DIR/db/worker/noref/genes/acmg.tsv
 cp $SRC/worker/mim2gene-20230913+0.10.1/mim2gene.tsv \
 $SCRIPT_DIR/db/worker/noref/genes/mim2gene.tsv
 
+$TXT_TO_BIN \
+    --input-type=xlink \
+    --path-input=$SCRIPT_DIR/db/worker/noref/genes/xlink.tsv \
+    --path-output=$SCRIPT_DIR/db/worker/noref/genes/xlink.bin
+
+filter-bed $SRC/tracks/track-features-ucsc-genomicsuperdups-grch37-20111025+0/genomicSuperDups.bed.gz \
+| write-to $SCRIPT_DIR/db/worker/grch37/features/masked_seqdup.bed
+$TXT_TO_BIN \
+    --input-type=masked-region \
+    --path-input=$SCRIPT_DIR/db/worker/grch37/features/masked_seqdup.bed \
+    --path-output=$SCRIPT_DIR/db/worker/grch37/features/masked_seqdup.bin
+
 # grch37/features/
 
 filter-bed $SRC/tracks/track-features-ucsc-rmsk-grch37-20200322+0/rmsk.bed.gz \

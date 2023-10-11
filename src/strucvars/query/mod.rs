@@ -187,7 +187,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
                     entrez_id: Some(record.entrez_id),
                     hgnc_id: Some(record.hgnc_id.clone()),
                     is_acmg: gene_db.acmg.contains(record.entrez_id),
-                    is_disease_gene: gene_db.omim.contains(record.entrez_id),
+                    is_disease_gene: gene_db.mim2gene.contains(record.entrez_id),
                 }
             })
             .collect()
@@ -199,7 +199,7 @@ fn resolve_gene_id(database: Database, gene_db: &GeneDb, gene_id: u32) -> Vec<Ge
                 ensembl_id: None,
                 hgnc_id: None,
                 is_acmg: gene_db.acmg.contains(gene_id),
-                is_disease_gene: gene_db.omim.contains(gene_id),
+                is_disease_gene: gene_db.mim2gene.contains(gene_id),
             }],
             Database::Ensembl => vec![Gene {
                 ensembl_id: Some(format!("ENSG{gene_id:011}")),
@@ -480,7 +480,7 @@ fn construct_gene(entrez_id: u32, gene_db: &GeneDb) -> Gene {
         ensembl_id: Some(format!("ENSG{:011}", record.ensembl_gene_id)),
         hgnc_id: Some(record.hgnc_id.clone()),
         is_acmg: gene_db.acmg.contains(record.entrez_id),
-        is_disease_gene: gene_db.omim.contains(record.entrez_id),
+        is_disease_gene: gene_db.mim2gene.contains(record.entrez_id),
     }
 }
 
