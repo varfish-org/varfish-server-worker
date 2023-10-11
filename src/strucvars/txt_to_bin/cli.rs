@@ -98,7 +98,7 @@ pub struct Args {
     pub path_output: PathBuf,
 }
 
-/// Main entry point for the `sv bg-db-to-bin` command.
+/// Main entry point for the `strucvars txt-to-bin` command.
 pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     tracing::info!("Starting `db to-bin`");
     tracing::info!("  common_args = {:?}", &common_args);

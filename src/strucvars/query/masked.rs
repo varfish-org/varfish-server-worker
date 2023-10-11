@@ -127,7 +127,7 @@ impl BeginEnd for MaskedDbRecord {
     }
 }
 
-/// Load background database from a `.bin` file as created by `sv convert-bgdb`.
+/// Load background database from a `.bin` file as created by `strucvars txt-to-bin`.
 #[tracing::instrument]
 pub fn load_masked_db_records(path: &Path) -> Result<MaskedDb, anyhow::Error> {
     tracing::debug!("loading binary masked db records from {:?}", path);

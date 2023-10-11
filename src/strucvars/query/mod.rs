@@ -1,4 +1,4 @@
-//! Code implementing the "sv query" sub command.
+//! Code implementing the "strucvars query" sub command.
 
 pub mod bgdbs;
 pub mod clinvar;
@@ -56,9 +56,9 @@ use self::{
 /// Length of the upstream/downstream region.
 static X_STREAM: i32 = 5000;
 
-/// Command line arguments for `sv query` sub command.
+/// Command line arguments for `strucvars query` sub command.
 #[derive(Parser, Debug)]
-#[command(author, version, about = "Run query for SVs", long_about = None)]
+#[command(author, version, about = "Run query for strucvars", long_about = None)]
 pub struct Args {
     /// Genome release to assume.
     #[arg(long, value_enum)]
@@ -1012,7 +1012,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     tracing::info!(
-        "All of `sv query` completed in {:?}",
+        "All of `strucvars query` completed in {:?}",
         before_anything.elapsed()
     );
     Ok(())
