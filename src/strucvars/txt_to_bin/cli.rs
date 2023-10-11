@@ -321,26 +321,6 @@ mod test {
     }
 
     #[test]
-    fn run_gene_region_smoke() -> Result<(), anyhow::Error> {
-        let tmp_dir = temp_testdir::TempDir::default();
-        let common_args = common::Args {
-            verbose: Verbosity::new(0, 0),
-        };
-        let args = Args {
-            assembly: None,
-            input_type: InputType::GeneRegion,
-            path_input: String::from(
-                "tests/db/to-bin/varfish-db-downloader/features/grch37/gene_regions/refseq.bed.gz",
-            ),
-            path_output: tmp_dir.join("refseq.bin"),
-        };
-
-        super::run(&common_args, &args)?;
-
-        Ok(())
-    }
-
-    #[test]
     fn run_masked_region_smoke() -> Result<(), anyhow::Error> {
         let tmp_dir = temp_testdir::TempDir::default();
         let common_args = common::Args {

@@ -380,9 +380,8 @@ mod tests {
     use indexmap::IndexMap;
     use mehari::annotate::strucvars::csq::interface::StrandOrientation;
 
-    use crate::{
-        common::Database,
-        strucvars::query::schema::{CallInfo, GenomicRegion, GenotypeChoice, GenotypeCriteria},
+    use crate::strucvars::query::schema::{
+        CallInfo, GenomicRegion, GenotypeChoice, GenotypeCriteria,
     };
 
     use super::*;
@@ -399,7 +398,7 @@ mod tests {
 
     #[test]
     fn test_query_interpreter_smoke() {
-        let query = CaseQuery::new(Database::RefSeq);
+        let query = CaseQuery::default();
         let _interpreter = QueryInterpreter::new(query, None);
     }
 
@@ -407,7 +406,7 @@ mod tests {
     fn test_query_interpreter_passes_simple_pass_sv_type() {
         let query = CaseQuery {
             sv_types: vec![SvType::Del],
-            ..CaseQuery::new(Database::RefSeq)
+            ..Default::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -430,7 +429,7 @@ mod tests {
     fn test_query_interpreter_passes_simple_fail_sv_type() {
         let query = CaseQuery {
             sv_types: vec![SvType::Ins],
-            ..CaseQuery::new(Database::RefSeq)
+            ..Default::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -453,7 +452,7 @@ mod tests {
     fn test_query_interpreter_passes_simple_fail_sv_sub_type() {
         let query = CaseQuery {
             sv_sub_types: vec![SvSubType::Ins],
-            ..CaseQuery::new(Database::RefSeq)
+            ..Default::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -477,7 +476,7 @@ mod tests {
         let query = CaseQuery {
             sv_size_min: Some(50),
             sv_size_max: Some(500),
-            ..CaseQuery::new(Database::RefSeq)
+            ..Default::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -500,7 +499,7 @@ mod tests {
     fn test_query_interpreter_passes_simple_fail_size_min() {
         let query = CaseQuery {
             sv_size_min: Some(5000),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -523,7 +522,7 @@ mod tests {
     fn test_query_interpreter_passes_simple_fail_size_max() {
         let query = CaseQuery {
             sv_size_max: Some(1),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -546,7 +545,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_linear_overlap() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 150, 160)]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -569,7 +568,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_linear_whole_chromosome() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -592,7 +591,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_fail_linear_overlap() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 201, 250)]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -615,7 +614,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_fail_linear_whole_chromosome() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -638,7 +637,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_ins_overlap() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 150, 160)]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -661,7 +660,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_ins_whole_chromosome() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -684,7 +683,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_fail_ins_overlap() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 201, 250)]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -707,7 +706,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_fail_ins_whole_chromosome() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -730,7 +729,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_bnd_overlap_pos() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 150, 160)]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -753,7 +752,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_bnd_whole_chromosome_pos() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -776,7 +775,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_bnd_overlap_end() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::new("chr2", 150, 160)]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -799,7 +798,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_pass_bnd_whole_chromosome_end() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -822,7 +821,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_fail_bnd_overlap() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::new("chr1", 201, 250)]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -845,7 +844,7 @@ mod tests {
     fn test_query_interpreter_passes_genomic_region_fail_bnd_whole_chromosome() {
         let query = CaseQuery {
             genomic_region: Some(vec![GenomicRegion::whole_chrom("chr2")]),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -881,7 +880,7 @@ mod tests {
             svdb_g1k_max_count: Some(10),
             svdb_inhouse_enabled: true,
             svdb_inhouse_max_count: Some(10),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -915,7 +914,7 @@ mod tests {
             svdb_g1k_max_count: Some(10),
             svdb_inhouse_enabled: true,
             svdb_inhouse_max_count: Some(10),
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -953,7 +952,7 @@ mod tests {
                 min_sr_var: Some(5),
                 ..GenotypeCriteria::new(GenotypeChoice::Het)
             }],
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -1103,7 +1102,7 @@ mod tests {
                 min_sr_var: Some(1),
                 ..GenotypeCriteria::new(GenotypeChoice::Variant)
             }],
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -1164,7 +1163,7 @@ mod tests {
                 min_sr_var: Some(5),
                 ..GenotypeCriteria::new(GenotypeChoice::Het)
             }],
-            ..CaseQuery::new(Database::RefSeq)
+            ..CaseQuery::default()
         };
         let interpreter = QueryInterpreter::new(query, None);
 
@@ -1204,7 +1203,7 @@ mod tests {
 
     #[test]
     fn test_query_interpreter_passes_smoke() -> Result<(), anyhow::Error> {
-        let query = CaseQuery::new(Database::RefSeq);
+        let query = CaseQuery::default();
         let interpreter = QueryInterpreter::new(query, None);
 
         let sv_pass = StructuralVariant {

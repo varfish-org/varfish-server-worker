@@ -799,12 +799,20 @@ fn compute_tx_effects(
 
 /// Compute overlapping HGNC gene IDs for a given interval.
 pub fn overlapping_hgnc_ids(
-    mehari_tx_db: &TxSeqDatabase,
-    mehari_tx_idx: &TxIntervalTrees,
+    tx_seq_db: &TxSeqDatabase,
+    tx_idx: &TxIntervalTrees,
     chrom_no: u32,
     query: std::ops::Range<i32>,
 ) -> Vec<String> {
-    todo!()
+    let tx_db = tx_seq_db
+        .tx_db
+        .as_ref()
+        .expect("transcripts must be present");
+    let tree = &tx_idx.trees[chrom_no as usize];
+    tree.find(query)
+        .iter()
+        .map(|it| tx_db.transcripts[*it.data() as usize].gene_id.clone())
+        .collect::<Vec<_>>()
 }
 
 /// Bundle the used database to reduce argument count.
@@ -819,11 +827,7 @@ pub struct Databases {
 }
 
 /// Translate gene allow list to gene identifier sfrom
-fn translate_gene_allowlist(
-    gene_allowlist: &Vec<String>,
-    dbs: &Databases,
-    query: &CaseQuery,
-) -> HashSet<String> {
+fn translate_gene_allowlist(gene_allowlist: &Vec<String>, dbs: &Databases) -> HashSet<String> {
     let mut result = HashSet::new();
 
     let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
@@ -970,7 +974,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         if gene_allowlist.is_empty() {
             None
         } else {
-            Some(translate_gene_allowlist(gene_allowlist, &dbs, &query))
+            Some(translate_gene_allowlist(gene_allowlist, &dbs))
         }
     } else {
         None

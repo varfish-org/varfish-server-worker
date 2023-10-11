@@ -7,10 +7,7 @@ use prost::Message;
 use serde::Deserialize;
 use tracing::info;
 
-use crate::{
-    common::{Database, GenomeRelease},
-    strucvars::pbs,
-};
+use crate::{common::GenomeRelease, strucvars::pbs};
 
 /// Information to store for the interlink table.
 #[derive(Default, Debug)]
@@ -32,43 +29,6 @@ pub struct XlinkDb {
     pub from_ensembl: multimap::MultiMap<u32, u32>,
     /// Link from HGNC ID to indices in records.
     pub from_hgnc: multimap::MultiMap<String, u32>,
-}
-
-impl XlinkDb {
-    fn entrez_id_to_symbols(&self, entrez_id: u32) -> Vec<String> {
-        let mut tmp = self
-            .from_entrez
-            .get_vec(&entrez_id)
-            .map_or(Vec::new(), |idxs| {
-                idxs.iter()
-                    .map(|idx| self.records[*idx as usize].symbol.clone())
-                    .collect::<Vec<String>>()
-            });
-        tmp.sort();
-        tmp.dedup();
-        tmp
-    }
-
-    fn ensembl_to_symbols(&self, ensembl_id: u32) -> Vec<String> {
-        let mut tmp = self
-            .from_ensembl
-            .get_vec(&ensembl_id)
-            .map_or(Vec::new(), |idxs| {
-                idxs.iter()
-                    .map(|idx| self.records[*idx as usize].symbol.clone())
-                    .collect::<Vec<String>>()
-            });
-        tmp.sort();
-        tmp.dedup();
-        tmp
-    }
-
-    pub fn gene_id_to_symbols(&self, database: Database, gene_id: u32) -> Vec<String> {
-        match database {
-            Database::RefSeq => self.entrez_id_to_symbols(gene_id),
-            Database::Ensembl => self.ensembl_to_symbols(gene_id),
-        }
-    }
 }
 
 #[tracing::instrument]
