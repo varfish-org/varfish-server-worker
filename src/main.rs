@@ -68,6 +68,7 @@ enum SeqvarsCommands {
     Aggregate(seqvars::aggregate::Args),
     Ingest(seqvars::ingest::Args),
     Prefilter(seqvars::prefilter::Args),
+    Query(seqvars::query::Args),
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -102,6 +103,9 @@ fn main() -> Result<(), anyhow::Error> {
                 }
                 SeqvarsCommands::Prefilter(args) => {
                     seqvars::prefilter::run(&cli.common, args)?;
+                }
+                SeqvarsCommands::Query(args) => {
+                    seqvars::query::run(&cli.common, args)?;
                 }
             },
             Commands::Strucvars(strucvars) => match &strucvars.command {
