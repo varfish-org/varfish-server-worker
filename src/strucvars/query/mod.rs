@@ -29,7 +29,7 @@ use mehari::{
     db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
 };
 use noodles_vcf as vcf;
-use rand_core::{SeedableRng, RngCore};
+use rand_core::{RngCore, SeedableRng};
 use serde::Serialize;
 use thousands::Separable;
 use uuid::Uuid;
