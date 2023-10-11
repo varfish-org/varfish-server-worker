@@ -327,7 +327,11 @@ pub fn load_gene_db(path_db: &str, genome_release: GenomeRelease) -> Result<Gene
         )?,
         xlink: load_xlink_db(Path::new(path_db).join("noref/genes/xlink.bin").as_path())?,
         acmg: load_acmg_db(Path::new(path_db).join("noref/genes/acmg.tsv").as_path())?,
-        mim2gene: load_mim2gene_db(Path::new(path_db).join("noref/genes/mim2gene.tsv").as_path())?,
+        mim2gene: load_mim2gene_db(
+            Path::new(path_db)
+                .join("noref/genes/mim2gene.tsv")
+                .as_path(),
+        )?,
     };
 
     Ok(result)
