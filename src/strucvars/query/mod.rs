@@ -29,6 +29,7 @@ use mehari::{
     db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
 };
 use noodles_vcf as vcf;
+use rand_core::{SeedableRng, RngCore};
 use serde::Serialize;
 use thousands::Separable;
 use uuid::Uuid;
@@ -91,6 +92,9 @@ pub struct Args {
     /// Maximal distance to TAD to consider.
     #[arg(long, default_value_t = 10_000)]
     pub max_tad_distance: i32,
+    /// Optional seed for RNG.
+    #[arg(long)]
+    pub rng_seed: Option<u64>,
 }
 
 /// Gene information.
@@ -229,6 +233,7 @@ fn run_query(
     mehari_tx_db: &TxSeqDatabase,
     mehari_tx_idx: &TxIntervalTrees,
     chrom_to_acc: &HashMap<String, String>,
+    rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
     let chrom_map = build_chrom_map();
@@ -433,8 +438,10 @@ fn run_query(
             };
 
             // Finally, write out the record.
+            let mut uuid_buf = [0u8; 16];
+            rng.fill_bytes(&mut uuid_buf);
             csv_writer.serialize(&ResultRecord {
-                sodar_uuid: uuid::Uuid::new_v4(),
+                sodar_uuid: Uuid::from_bytes(uuid_buf),
                 release: match args.genome_release {
                     GenomeRelease::Grch37 => "GRCh37".into(),
                     GenomeRelease::Grch38 => "GRCh38".into(),
@@ -937,6 +944,14 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("args_common = {:?}", &args_common);
     tracing::info!("args = {:?}", &args);
 
+    // Initialize the random number generator from command line seed if given or local entropy
+    // source.
+    let mut rng = if let Some(rng_seed) = args.rng_seed {
+        rand::rngs::StdRng::seed_from_u64(rng_seed)
+    } else {
+        rand::rngs::StdRng::from_entropy()
+    };
+
     tracing::info!("Loading query...");
     let query: CaseQuery = serde_json::from_reader(File::open(&args.path_query_json)?)?;
     tracing::info!(
@@ -1007,6 +1022,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &mehari_tx_db,
         &mehari_tx_idx,
         &chrom_to_acc,
+        &mut rng,
     )?;
     tracing::info!("... done running query in {:?}", before_query.elapsed());
     tracing::info!(
@@ -1048,6 +1064,7 @@ mod test {
             slack_ins: 50,
             min_overlap: 0.8,
             max_tad_distance: 10_000,
+            rng_seed: Some(42),
         };
         super::run(&args_common, &args)?;
 
