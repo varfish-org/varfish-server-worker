@@ -307,7 +307,8 @@ impl QueryInterpreter {
             if hgvs_allowlist.is_empty() {
                 true
             } else {
-                let ovl_hgvs_ids: HashSet<String> = HashSet::from_iter(ovl_hgvs_ids.iter().cloned());
+                let ovl_hgvs_ids: HashSet<String> =
+                    HashSet::from_iter(ovl_hgvs_ids.iter().cloned());
                 !ovl_hgvs_ids.is_disjoint(hgvs_allowlist)
             }
         } else {

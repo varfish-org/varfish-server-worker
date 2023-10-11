@@ -36,7 +36,7 @@ use uuid::Uuid;
 
 use crate::{
     common::{build_chrom_map, numeric_gene_id, trace_rss_now},
-    common::{Database, GenomeRelease, TadSet as TadSetChoice},
+    common::{GenomeRelease, TadSet as TadSetChoice},
     strucvars::query::{
         interpreter::QueryInterpreter, pathogenic::Record as KnownPathogenicRecord,
         schema::CaseQuery, schema::StructuralVariant,
@@ -823,7 +823,7 @@ fn translate_gene_allowlist(
     gene_allowlist: &Vec<String>,
     dbs: &Databases,
     query: &CaseQuery,
-) -> HashSet<u32> {
+) -> HashSet<String> {
     let mut result = HashSet::new();
 
     let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
@@ -832,32 +832,21 @@ fn translate_gene_allowlist(
     let re_hgnc: regex::Regex =
         regex::Regex::new(r"HGNC:\d+").expect("invalid regex in source code");
 
-    let symbol_to_id: HashMap<_, _> =
-        HashMap::from_iter(dbs.genes.xlink.records.iter().map(|record| {
-            (
-                record.symbol.clone(),
-                match query.database {
-                    Database::RefSeq => record.entrez_id,
-                    Database::Ensembl => record.ensembl_gene_id,
-                },
-            )
-        }));
+    let symbol_to_id: HashMap<_, _> = HashMap::from_iter(
+        dbs.genes
+            .xlink
+            .records
+            .iter()
+            .map(|record| (record.symbol.clone(), record.hgnc_id.clone())),
+    );
 
     for gene in gene_allowlist {
         let gene = gene.trim();
         if re_entrez.is_match(gene) {
             if let Ok(gene_id) = numeric_gene_id(gene) {
-                match query.database {
-                    Database::RefSeq => {
-                        result.insert(gene_id);
-                    }
-                    Database::Ensembl => {
-                        if let Some(record_ids) = dbs.genes.xlink.from_ensembl.get_vec(&gene_id) {
-                            for record_id in record_ids {
-                                result
-                                    .insert(dbs.genes.xlink.records[*record_id as usize].entrez_id);
-                            }
-                        };
+                if let Some(record_ids) = dbs.genes.xlink.from_ensembl.get_vec(&gene_id) {
+                    for record_id in record_ids {
+                        result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }
                 }
             } else {
@@ -866,20 +855,11 @@ fn translate_gene_allowlist(
             }
         } else if re_ensembl.is_match(gene) {
             if let Ok(gene_id) = numeric_gene_id(gene) {
-                match query.database {
-                    Database::RefSeq => {
-                        if let Some(record_ids) = dbs.genes.xlink.from_entrez.get_vec(&gene_id) {
-                            for record_id in record_ids {
-                                result.insert(
-                                    dbs.genes.xlink.records[*record_id as usize].ensembl_gene_id,
-                                );
-                            }
-                        };
+                if let Some(record_ids) = dbs.genes.xlink.from_entrez.get_vec(&gene_id) {
+                    for record_id in record_ids {
+                        result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }
-                    Database::Ensembl => {
-                        result.insert(gene_id);
-                    }
-                }
+                };
             } else {
                 warn!("Cannot map candidate ENSEMBL gene identifier {}", &gene);
                 continue;
@@ -888,17 +868,7 @@ fn translate_gene_allowlist(
             if dbs.genes.xlink.from_hgnc.contains_key(gene) {
                 if let Some(record_ids) = dbs.genes.xlink.from_hgnc.get_vec(gene) {
                     for record_id in record_ids {
-                        match query.database {
-                            Database::RefSeq => {
-                                result
-                                    .insert(dbs.genes.xlink.records[*record_id as usize].entrez_id);
-                            }
-                            Database::Ensembl => {
-                                result.insert(
-                                    dbs.genes.xlink.records[*record_id as usize].ensembl_gene_id,
-                                );
-                            }
-                        }
+                        result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }
                 }
             } else {
@@ -906,7 +876,7 @@ fn translate_gene_allowlist(
                 continue;
             }
         } else if let Some(gene_id) = symbol_to_id.get(gene) {
-            result.insert(*gene_id);
+            result.insert(gene_id.clone());
         } else {
             warn!("Could not map candidate gene symbol {}", &gene);
         }
