@@ -9,7 +9,7 @@ use tracing::{info, warn};
 use crate::common::{reciprocal_overlap, GenomeRelease, CHROMS};
 
 use super::{
-    records::ChromRange,
+    schema::ChromRange,
     schema::{Pathogenicity, StructuralVariant, SvType},
 };
 

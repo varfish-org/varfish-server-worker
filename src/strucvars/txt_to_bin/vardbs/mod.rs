@@ -36,7 +36,7 @@ fn deserialize_loop<Rec>(
     reader: &mut csv::Reader<Box<dyn std::io::BufRead>>,
 ) -> Result<Vec<BgDbRecord>, anyhow::Error>
 where
-    Rec: TryInto<Option<InputRecord>> + for<'de> serde::Deserialize<'de>,
+    Rec: core::fmt::Debug + TryInto<Option<InputRecord>> + for<'de> serde::Deserialize<'de>,
     <Rec as TryInto<std::option::Option<InputRecord>>>::Error: core::fmt::Debug,
     <Rec as TryInto<std::option::Option<InputRecord>>>::Error: Send,
     <Rec as TryInto<std::option::Option<InputRecord>>>::Error: std::marker::Sync,
@@ -80,7 +80,7 @@ where
 /// Perform conversion to protobuf `.bin` file.
 pub fn convert_to_bin<P, Q>(
     path_input_tsv: P,
-    path_output_bin: Q,
+    path_output: Q,
     input_type: InputFileType,
 ) -> Result<(), anyhow::Error>
 where
@@ -115,7 +115,7 @@ where
     trace_rss_now();
 
     let before_writing = Instant::now();
-    let mut output_file = File::create(&path_output_bin)?;
+    let mut output_file = File::create(&path_output)?;
     output_file.write_all(&bg_db.encode_to_vec())?;
     output_file.flush()?;
     tracing::debug!(

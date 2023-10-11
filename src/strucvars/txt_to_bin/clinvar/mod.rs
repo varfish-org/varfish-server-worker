@@ -147,7 +147,7 @@ fn convert_jsonl_to_protobuf(
 /// Perform conversion to protocolbuffers `.bin` file.
 pub fn convert_to_bin<P, Q>(
     path_input_jsonl: P,
-    path_output_bin: Q,
+    path_output: Q,
     assembly: input::Assembly,
 ) -> Result<(), anyhow::Error>
 where
@@ -169,7 +169,7 @@ where
     trace_rss_now();
 
     let before_writing = Instant::now();
-    let mut output_file = File::create(&path_output_bin)?;
+    let mut output_file = File::create(&path_output)?;
     output_file.write_all(&clinvar_db.encode_to_vec())?;
     output_file.flush()?;
     tracing::debug!(

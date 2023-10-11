@@ -149,10 +149,10 @@ where
 )]
 pub enum GenomeRelease {
     // GRCh37 / hg19
-    #[strum(serialize = "GRCh37")]
+    #[strum(serialize = "grch37")]
     Grch37,
     /// GRCh38 / hg38
-    #[strum(serialize = "GRCh38")]
+    #[strum(serialize = "grch38")]
     Grch38,
 }
 
@@ -207,6 +207,8 @@ pub enum Genotype {
     Het,
     /// hom. alt.
     HomAlt,
+    /// other, includes no-call
+    WithNoCall,
 }
 
 impl std::str::FromStr for Genotype {
@@ -217,6 +219,7 @@ impl std::str::FromStr for Genotype {
             "0/0" | "0|0" | "0" => Genotype::HomRef,
             "0/1" | "1/0" | "0|1" | "1|0" => Genotype::Het,
             "1/1" | "1|1" | "1" => Genotype::HomAlt,
+            "./." | "./0" | "./1" | "0/." | "1/." => Genotype::WithNoCall,
             _ => anyhow::bail!("invalid genotype value: {:?}", s),
         })
     }

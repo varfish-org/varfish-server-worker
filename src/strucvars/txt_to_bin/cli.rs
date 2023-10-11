@@ -97,7 +97,7 @@ pub struct Args {
     pub path_input: String,
     /// Path to output BIN file.
     #[arg(long)]
-    pub path_output_bin: PathBuf,
+    pub path_output: PathBuf,
 }
 
 /// Main entry point for the `sv bg-db-to-bin` command.
@@ -115,42 +115,34 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
                 .assembly
                 .expect("assembly required for ClinvarSv conversion");
             let assembly: crate::strucvars::txt_to_bin::clinvar::input::Assembly = assembly.into();
-            clinvar::convert_to_bin(&args.path_input, &args.path_output_bin, assembly)?
+            clinvar::convert_to_bin(&args.path_input, &args.path_output, assembly)?
         }
         InputType::StrucvarInhouse => vardbs::convert_to_bin(
             &args.path_input,
-            &args.path_output_bin,
+            &args.path_output,
             InputFileType::InhouseDb,
         )?,
-        InputType::StrucvarDbVar => vardbs::convert_to_bin(
-            &args.path_input,
-            &args.path_output_bin,
-            InputFileType::Dbvar,
-        )?,
-        InputType::StrucvarDgv => {
-            vardbs::convert_to_bin(&args.path_input, &args.path_output_bin, InputFileType::Dgv)?
+        InputType::StrucvarDbVar => {
+            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Dbvar)?
         }
-        InputType::StrucvarDgvGs => vardbs::convert_to_bin(
-            &args.path_input,
-            &args.path_output_bin,
-            InputFileType::DgvGs,
-        )?,
+        InputType::StrucvarDgv => {
+            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Dgv)?
+        }
+        InputType::StrucvarDgvGs => {
+            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::DgvGs)?
+        }
         InputType::StrucvarExacCnv => {
-            vardbs::convert_to_bin(&args.path_input, &args.path_output_bin, InputFileType::Exac)?
+            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Exac)?
         }
         InputType::StrucvarG1k => {
-            vardbs::convert_to_bin(&args.path_input, &args.path_output_bin, InputFileType::G1k)?
+            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::G1k)?
         }
-        InputType::StrucvarGnomadSv => vardbs::convert_to_bin(
-            &args.path_input,
-            &args.path_output_bin,
-            InputFileType::Gnomad,
-        )?,
-        InputType::GeneRegion => {
-            gene_region::convert_to_bin(&args.path_input, &args.path_output_bin)?
+        InputType::StrucvarGnomadSv => {
+            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Gnomad)?
         }
-        InputType::MaskedRegion => masked::convert_to_bin(&args.path_input, &args.path_output_bin)?,
-        InputType::Xlink => xlink::convert_to_bin(&args.path_input, &args.path_output_bin)?,
+        InputType::GeneRegion => gene_region::convert_to_bin(&args.path_input, &args.path_output)?,
+        InputType::MaskedRegion => masked::convert_to_bin(&args.path_input, &args.path_output)?,
+        InputType::Xlink => xlink::convert_to_bin(&args.path_input, &args.path_output)?,
     }
     tracing::info!("... done with conversion");
 
@@ -183,7 +175,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/clinvar/clinvar-svs.jsonl.gz",
             ),
-            path_output_bin: tmp_dir.join("clinvar.bin"),
+            path_output: tmp_dir.join("clinvar.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -203,7 +195,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/inhouse.tsv",
             ),
-            path_output_bin: tmp_dir.join("strucvar_inhouse.bin"),
+            path_output: tmp_dir.join("strucvar_inhouse.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -223,7 +215,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dbvar.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("strucvar_dbvar.bin"),
+            path_output: tmp_dir.join("strucvar_dbvar.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -243,7 +235,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("strucvar_dgv.bin"),
+            path_output: tmp_dir.join("strucvar_dgv.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -263,7 +255,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv_gs.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("strucvar_dgv_gs.bin"),
+            path_output: tmp_dir.join("strucvar_dgv_gs.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -283,7 +275,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/exac.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("exac.bin"),
+            path_output: tmp_dir.join("exac.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -303,7 +295,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/g1k.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("g1k.bin"),
+            path_output: tmp_dir.join("g1k.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -323,7 +315,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("gnomad.bin"),
+            path_output: tmp_dir.join("gnomad.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -343,7 +335,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/features/grch37/gene_regions/refseq.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("refseq.bin"),
+            path_output: tmp_dir.join("refseq.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -363,7 +355,7 @@ mod test {
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/features/grch37/masked/repeat.bed.gz",
             ),
-            path_output_bin: tmp_dir.join("masked.bin"),
+            path_output: tmp_dir.join("masked.bin"),
         };
 
         super::run(&common_args, &args)?;
@@ -381,7 +373,7 @@ mod test {
             assembly: None,
             input_type: InputType::Xlink,
             path_input: String::from("tests/db/to-bin/varfish-db-downloader/genes/xlink/hgnc.tsv"),
-            path_output_bin: tmp_dir.join("xlink.bin"),
+            path_output: tmp_dir.join("xlink.bin"),
         };
 
         super::run(&common_args, &args)?;

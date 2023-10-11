@@ -154,6 +154,7 @@ impl Record {
                 };
 
             match (chrom, individual.sex, genotype) {
+                (_, _, Genotype::WithNoCall) => continue,
                 // on the autosomes, male/female count the same
                 (Chrom::Auto, _, Genotype::HomRef) => (),
                 (Chrom::Auto, _, Genotype::Het) => {

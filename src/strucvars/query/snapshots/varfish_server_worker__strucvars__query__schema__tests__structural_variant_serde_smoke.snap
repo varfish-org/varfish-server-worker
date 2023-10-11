@@ -10,5 +10,6 @@ expression: "serde_json::to_string_pretty(&sv).unwrap()"
   "chrom2": null,
   "end": 245,
   "strand_orientation": "3to5",
+  "callers": [],
   "call_info": {}
 }

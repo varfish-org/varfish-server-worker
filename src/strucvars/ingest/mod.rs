@@ -254,7 +254,6 @@ impl mehari::annotate::seqvars::AnnotatedVcfWriter for WriterWrapper {
         }
 
         let key_callers: vcf::record::info::field::Key = "callers".parse()?;
-        eprintln!("callers = {:?}", &input_record.info().get(&key_callers));
         if let Some(Some(callers)) = input_record.info().get(&key_callers) {
             if let vcf::record::info::field::Value::Array(
                 vcf::record::info::field::value::Array::String(callers),

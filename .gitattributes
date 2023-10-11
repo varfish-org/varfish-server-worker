@@ -2,3 +2,8 @@ tests/db/compile/** filter=lfs diff=lfs merge=lfs -text
 tests/db/hpo/** filter=lfs diff=lfs merge=lfs -text
 tests/seqvars/ingest/db/grch37/** filter=lfs diff=lfs merge=lfs -text
 tests/seqvars/ingest/db/grch38/** filter=lfs diff=lfs merge=lfs -text
+tests/strucvars/query/*.vcf filter=lfs diff=lfs merge=lfs -text
+tests/strucvars/query/grch37/** filter=lfs diff=lfs merge=lfs -text
+tests/strucvars/query/noref/** filter=lfs diff=lfs merge=lfs -text
+tests/strucvars/query/db/** filter=lfs diff=lfs merge=lfs -text
+src/strucvars/query/snapshots/*smoke_test*.snap filter=lfs diff=lfs merge=lfs -text

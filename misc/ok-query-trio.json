@@ -51,14 +51,13 @@
       "CNV"
     ],
     "tx_effects": [
-      "transcript_ablation",
-      "transcript_translocation",
+      "transcript_variant",
       "exon_variant",
       "splice_region_variant",
       "intron_variant",
       "upstream_variant",
       "downstream_variant",
-      "intergenic_variant",
+      "intergenic_variant"
     ],
     "gene_allowlist": null,
     "genomic_region": null,
