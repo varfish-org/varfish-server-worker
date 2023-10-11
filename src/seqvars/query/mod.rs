@@ -1,38 +1,12 @@
 //! Code implementing the "seqvars query" sub command.
 
-use std::{
-    collections::{BTreeMap, HashMap, HashSet},
-    fs::File,
-    time::Instant,
-};
+use std::time::Instant;
 
 use clap::{command, Parser};
-use csv::QuoteStyle;
-use hgvs::static_data::ASSEMBLY_INFOS;
-use indexmap::IndexMap;
-use log::warn;
-use mehari::{
-    annotate::{
-        seqvars::{provider::TxIntervalTrees, CHROM_TO_CHROM_NO},
-        strucvars::csq::interface::StrandOrientation,
-    },
-    common::open_read_maybe_gz,
-    db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
-};
-use noodles_vcf as vcf;
-use rand_core::{RngCore, SeedableRng};
-use serde::Serialize;
-use thousands::Separable;
-use uuid::Uuid;
 
-use crate::{
-    common::{build_chrom_map, numeric_gene_id, trace_rss_now},
-    common::{GenomeRelease, TadSet as TadSetChoice},
-    strucvars::query::{
-        interpreter::QueryInterpreter, pathogenic::Record as KnownPathogenicRecord,
-        schema::CaseQuery, schema::StructuralVariant,
-    },
-};
+use rand_core::SeedableRng;
+
+use crate::{common::trace_rss_now, common::GenomeRelease};
 
 /// Command line arguments for `seqvars query` sub command.
 #[derive(Parser, Debug)]
@@ -83,7 +57,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     // Initialize the random number generator from command line seed if given or local entropy
     // source.
-    let mut rng = if let Some(rng_seed) = args.rng_seed {
+    let _rng = if let Some(rng_seed) = args.rng_seed {
         rand::rngs::StdRng::seed_from_u64(rng_seed)
     } else {
         rand::rngs::StdRng::from_entropy()
