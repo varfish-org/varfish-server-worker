@@ -27,6 +27,9 @@ pub struct Args {
     /// Result set ID.
     #[arg(long)]
     pub result_set_id: Option<String>,
+    /// The case UUID.
+    #[arg(long)]
+    pub case_uuid_id: Option<uuid::Uuid>,
     /// Path to worker database to use for querying.
     #[arg(long)]
     pub path_db: String,
@@ -51,9 +54,113 @@ pub struct Args {
     pub max_tad_distance: i32,
 }
 
+/// Genotype call attributes for a `ResultPayload`.
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+struct ResultGenotype {
+    /// Depth of coverage.
+    pub dp: i32,
+    /// Alternate read depth.
+    pub ad: i32,
+    /// Genotype quality.
+    pub gq: i32,
+    /// Genotype.
+    pub gt: String,
+}
+
 /// The structured result information of the result record.
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ResultPayload {}
+struct ResultPayload {
+    /// Case UUID.
+    pub case_uuid: uuid::Uuid,
+
+    // -- gene identity -----------------------------------------------------
+    /// HGNC gene ID.
+    pub hgnc_id: String,
+    /// HGNC gene symbol.
+    pub hgnc_symbol: String,
+    /// Whether the gene is a known disease gene.
+    pub is_disease_gene: bool,
+
+    // -- HGVS variant codes ------------------------------------------------
+    /// HGVS.{c,n} code of variant
+    pub hgvs_t: String,
+    /// HGVS.p code of variant
+    pub hgvs_p: Option<String>,
+    /// The variant effect.
+    pub effect: Vec<schema::VariantEffect>,
+
+    // -- gnomAD constraint scores -------------------------------------------
+    /// gnomAD loeuf score
+    pub gnomad_loeuf: f32,
+    /// gnomAD mis_z score
+    pub gnomad_mis_z: f32,
+    /// gnomAD oe_lof score
+    pub gnomad_oe_lof: f32,
+    /// gnomAD oe_lof_lower score
+    pub gnomad_oe_lof_lower: f32,
+    /// gnomAD oe_lof_upper score
+    pub gnomad_oe_lof_upper: f32,
+    /// gnomAD oe_mis score
+    pub gnomad_oe_mis: f32,
+    /// gnomAD oe_mis_lower score
+    pub gnomad_oe_mis_lower: f32,
+    /// gnomAD oe_mis_upper score
+    pub gnomad_oe_mis_upper: f32,
+    /// gnomAD pLI score
+    pub gnomad_pli: f32,
+    /// gnomAD syn_z score
+    pub gnomad_syn_z: f32,
+
+    // -- database identifiers ----------------------------------------------
+    /// The variant's dbSNP identifier present.
+    pub dbsnp_rs: Option<String>,
+    /// The ClinVar RCV accession.
+    pub clinvar_rcv: Option<String>,
+    /// The ClinVar clinical significance.
+    pub clinvar_significance: Option<String>,
+    /// The ClinVar review status.
+    pub clinvar_review_status: Option<String>,
+
+    // -- precomputed variant scores ----------------------------------------
+    /// Specific, precomputed variant scores.
+    pub precomputed_scores: indexmap::IndexMap<String, f32>,
+
+    // -- frequency information ---------------------------------------------
+    /// Maximal frequency in gnomAD exomes.
+    pub gnomad_exomes_frequency: f32,
+    /// Maximal number of heterozygous carriers in gnomAD exomes.
+    pub gnomad_exomes_heterozygous: i32,
+    /// Maximal number of homozygous carriers in gnomAD exomes.
+    pub gnomad_exomes_homozygous: i32,
+    /// Maximal number of hemizygous carriers in gnomAD exomes.
+    pub gnomad_exomes_hemizygous: i32,
+    /// Maximal frequency in gnomAD genomes.
+    pub gnomad_genomes_frequency: f32,
+    /// Maximal number of heterozygous carriers in gnomAD genomes.
+    pub gnomad_genomes_heterozygous: i32,
+    /// Maximal number of homozygous carriers in gnomAD genomes.
+    pub gnomad_genomes_homozygous: i32,
+    /// Maximal number of hemizygous carriers in gnomAD genomes.
+    pub gnomad_genomes_hemizygous: i32,
+    /// Maximal number of in-house carriers.
+    pub inhouse_carriers: i32,
+    /// Maximal number of in-house heterozygous carriers.
+    pub inhouse_heterozygous: i32,
+    /// Maximal number of in-house homozygous carriers.
+    pub inhouse_homozygous: i32,
+    /// Maximal number of in-house hemizygous carriers.
+    pub inhouse_hemizygous: i32,
+    /// Maximal frequency in HelixMtDb
+    pub helixmtdb_frequency: f32,
+    /// Maximal number of heterozygous carriers in HelixMtDb.
+    pub helixmtdb_heterozygous: i32,
+    /// Maximal number of homozygous carriers in HelixMtDb.
+    pub helixmtdb_homozygous: i32,
+
+    // -- variant genotype information --------------------------------------
+    /// Genotypes.
+    pub genotype: indexmap::IndexMap<String, ResultGenotype>,
+}
 
 /// A result record from the query.
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
@@ -262,6 +369,7 @@ mod test {
             rng_seed: Some(42),
             max_tad_distance: 10_000,
             result_set_id: None,
+            case_uuid_id: None,
         };
         super::run(&args_common, &args)?;
 
