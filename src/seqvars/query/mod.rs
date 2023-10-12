@@ -33,22 +33,12 @@ pub struct Args {
     /// Optional maximal number of total records to write out.
     #[arg(long)]
     pub max_results: Option<usize>,
-    /// Radius around BND sites used when building the database.
-    #[arg(long, default_value_t = 50)]
-    pub slack_bnd: i32,
-    /// Radius around INS sites used when building the database.
-    #[arg(long, default_value_t = 50)]
-    pub slack_ins: i32,
-    /// Minimal reciprocal overlap for SVs of the same type, used when building
-    /// the database.
-    #[arg(long, default_value_t = 0.8)]
-    pub min_overlap: f32,
-    /// Maximal distance to TAD to consider.
-    #[arg(long, default_value_t = 10_000)]
-    pub max_tad_distance: i32,
     /// Optional seed for RNG.
     #[arg(long)]
     pub rng_seed: Option<u64>,
+    /// Maximal distance to TAD to consider (unused, but required when loading database).
+    #[arg(long, default_value_t = 10_000)]
+    pub max_tad_distance: i32,
 }
 
 /// Main entry point for `seqvars query` sub command.
@@ -65,56 +55,28 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         rand::rngs::StdRng::from_entropy()
     };
 
-    // tracing::info!("Loading query...");
-    // let query: CaseQuery = serde_json::from_reader(File::open(&args.path_query_json)?)?;
-    // tracing::info!(
-    //     "... done loading query = {}",
-    //     &serde_json::to_string(&query)?
-    // );
+    tracing::info!("Loading query...");
+    let query: schema::CaseQuery =
+        serde_json::from_reader(std::fs::File::open(&args.path_query_json)?)?;
+    tracing::info!(
+        "... done loading query = {}",
+        &serde_json::to_string(&query)?
+    );
 
-    // tracing::info!("Loading worker databases...");
-    // let before_loading = Instant::now();
-    // let path_worker_db = format!("{}/worker", &args.path_db);
-    // let dbs = load_databases(&path_worker_db, args.genome_release, args.max_tad_distance)?;
-    // tracing::info!(
-    //     "...done loading databases in {:?}",
-    //     before_loading.elapsed()
-    // );
+    tracing::info!("Loading worker databases...");
+    let before_loading = Instant::now();
+    let path_worker_db = format!("{}/worker", &args.path_db);
+    let dbs = crate::strucvars::query::load_databases(
+        &path_worker_db,
+        args.genome_release,
+        args.max_tad_distance,
+    )?;
+    tracing::info!(
+        "...done loading databases in {:?}",
+        before_loading.elapsed()
+    );
 
     trace_rss_now();
-
-    // tracing::info!("Loading mehari tx database...");
-    // let before_loading = Instant::now();
-    // let path_mehari_tx_db = format!(
-    //     "{}/mehari/{}/txs.bin.zst",
-    //     &args.path_db,
-    //     &args.genome_release.to_string()
-    // );
-    // tracing::debug!("  path = {}", &path_mehari_tx_db);
-    // let mehari_tx_db = mehari::annotate::seqvars::load_tx_db(&path_mehari_tx_db)?;
-    // tracing::info!(
-    //     "...done loading mehari tx database in {:?}",
-    //     before_loading.elapsed()
-    // );
-    // tracing::info!("Building mehari index data structures...");
-    // let before_building = Instant::now();
-    // let mehari_tx_idx = TxIntervalTrees::new(&mehari_tx_db, args.genome_release.into());
-    // let chrom_to_acc = ASSEMBLY_INFOS[args.genome_release.into()]
-    //     .sequences
-    //     .iter()
-    //     .map(|record| {
-    //         (
-    //             annonars::common::cli::canonicalize(&record.name),
-    //             record.refseq_ac.clone(),
-    //         )
-    //     })
-    //     .collect::<HashMap<_, _>>();
-    // tracing::info!(
-    //     "...done building mehari index data structures in {:?}",
-    //     before_building.elapsed()
-    // );
-
-    // trace_rss_now();
 
     // tracing::info!("Translating gene allow list...");
     // let hgvs_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
@@ -149,6 +111,9 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     //     tracing::info!("{:?} -- {}", sv_type, count);
     // }
 
+    let mut file = std::fs::File::create(&args.path_output)?;
+    std::io::Write::write_all(&mut file, b"Hello, world!")?;
+
     trace_rss_now();
 
     tracing::info!(
@@ -156,4 +121,31 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         before_anything.elapsed()
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    #[tracing_test::traced_test]
+    #[test]
+    fn smoke_test() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+        let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());
+
+        let args_common = Default::default();
+        let args = super::Args {
+            genome_release: crate::common::GenomeRelease::Grch37,
+            path_db: "tests/seqvars/query/db".into(),
+            path_query_json: "tests/seqvars/query/Case_1.query.json".into(),
+            path_input: "tests/seqvars/query/Case_1.ingested.vcf".into(),
+            path_output: path_output,
+            max_results: None,
+            rng_seed: Some(42),
+            max_tad_distance: 10_000,
+        };
+        super::run(&args_common, &args)?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(args.path_output.as_str())?);
+
+        Ok(())
+    }
 }

@@ -896,7 +896,7 @@ fn translate_gene_allowlist(gene_allowlist: &Vec<String>, dbs: &Databases) -> Ha
 }
 
 /// Load database from the given path with the given genome release.
-fn load_databases(
+pub fn load_databases(
     path_worker_db: &str,
     genome_release: GenomeRelease,
     max_tad_distance: i32,
@@ -1020,7 +1020,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
-    // #[tracing_test::traced_test]
+    #[tracing_test::traced_test]
     #[test]
     fn smoke_test() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
