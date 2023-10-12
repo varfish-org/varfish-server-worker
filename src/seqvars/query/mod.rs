@@ -225,17 +225,23 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 #[cfg(test)]
 mod test {
     #[tracing_test::traced_test]
-    #[test]
-    fn smoke_test() -> Result<(), anyhow::Error> {
+    #[rstest::rstest]
+    #[case("tests/seqvars/query/Case_1.ingested.vcf")]
+    #[case("tests/seqvars/query/dragen.ingested.vcf")]
+    fn smoke_test(#[case] path_input: &str) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
+
         let tmpdir = temp_testdir::TempDir::default();
         let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());
+        let path_input: String = path_input.into();
+        let path_query_json = path_input.replace(".ingested.vcf", ".query.json");
 
         let args_common = Default::default();
         let args = super::Args {
             genome_release: crate::common::GenomeRelease::Grch37,
             path_db: "tests/seqvars/query/db".into(),
-            path_query_json: "tests/seqvars/query/Case_1.query.json".into(),
-            path_input: "tests/seqvars/query/Case_1.ingested.vcf".into(),
+            path_query_json,
+            path_input,
             path_output: path_output,
             max_results: None,
             rng_seed: Some(42),

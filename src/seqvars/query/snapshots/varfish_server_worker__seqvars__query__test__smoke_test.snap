@@ -1,5 +1,0 @@
----
-source: src/seqvars/query/mod.rs
-expression: "std::fs::read_to_string(args.path_output.as_str())?"
----
-Hello, world!

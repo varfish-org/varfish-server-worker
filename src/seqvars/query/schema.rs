@@ -513,10 +513,10 @@ impl SequenceVariant {
             } else {
                 None
             };
-            let quality = if let Some(Some(vcf::record::genotypes::sample::Value::Float(quality))) =
+            let quality = if let Some(Some(vcf::record::genotypes::sample::Value::Integer(quality))) =
                 sample.get(&vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY)
             {
-                Some(*quality)
+                Some(*quality as f32)
             } else {
                 None
             };
@@ -620,18 +620,23 @@ pub mod test {
     #[case("tests/seqvars/query/empty.json")]
     #[case("tests/seqvars/query/full.json")]
     #[case("tests/seqvars/query/with_extra.json")]
-    pub fn smoke_test_load(#[case] path: &str) -> Result<(), anyhow::Error> {
-        let query: super::CaseQuery = serde_json::from_reader(std::fs::File::open(path)?)?;
+    pub fn smoke_test_load(#[case] path_input: &str) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
+
+        let query: super::CaseQuery = serde_json::from_reader(std::fs::File::open(path_input)?)?;
 
         insta::assert_yaml_snapshot!(&query);
 
         Ok(())
     }
 
-    #[test]
-    pub fn sequence_variant_from_vcf() -> Result<(), anyhow::Error> {
-        let path = "tests/seqvars/query/Case_1.ingested.vcf";
-        let mut vcf_reader = vcf::reader::Builder.build_from_path(path).unwrap();
+    #[rstest::rstest]
+    #[case("tests/seqvars/query/Case_1.ingested.vcf")]
+    #[case("tests/seqvars/query/dragen.ingested.vcf")]
+    pub fn sequence_variant_from_vcf(#[case] path_input: &str) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
+
+        let mut vcf_reader = vcf::reader::Builder.build_from_path(path_input).unwrap();
         let header = vcf_reader.read_header()?;
 
         for record in vcf_reader.records(&header) {
