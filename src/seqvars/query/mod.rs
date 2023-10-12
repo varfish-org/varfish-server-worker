@@ -25,19 +25,19 @@ pub struct Args {
     #[arg(long, value_enum)]
     pub genome_release: GenomeRelease,
     /// Result set ID.
-    #[arg(long, required = true)]
-    pub result_set_id: usize,
+    #[arg(long)]
+    pub result_set_id: Option<String>,
     /// Path to worker database to use for querying.
-    #[arg(long, required = true)]
+    #[arg(long)]
     pub path_db: String,
     /// Path to query JSON file.
-    #[arg(long, required = true)]
+    #[arg(long)]
     pub path_query_json: String,
     /// Path to input TSV file.
-    #[arg(long, required = true)]
+    #[arg(long)]
     pub path_input: String,
     /// Path to the output TSV file.
-    #[arg(long, required = true)]
+    #[arg(long)]
     pub path_output: String,
 
     /// Optional maximal number of total records to write out.
@@ -67,7 +67,7 @@ struct ResultRecord {
     bin: u32,
     start: i32,
     end: i32,
-    smallvariantqueryresultset_id: usize,
+    smallvariantqueryresultset_id: String,
     payload: String,
 }
 
@@ -135,7 +135,7 @@ fn run_query(
             rng.fill_bytes(&mut uuid_buf);
             csv_writer
                 .serialize(&ResultRecord {
-                    smallvariantqueryresultset_id: args.result_set_id,
+                    smallvariantqueryresultset_id: args.result_set_id.clone().unwrap_or(".".into()),
                     sodar_uuid: Uuid::from_bytes(uuid_buf),
                     release: match args.genome_release {
                         GenomeRelease::Grch37 => "GRCh37".into(),
@@ -261,7 +261,7 @@ mod test {
             max_results: None,
             rng_seed: Some(42),
             max_tad_distance: 10_000,
-            result_set_id: 0815,
+            result_set_id: None,
         };
         super::run(&args_common, &args)?;
 
