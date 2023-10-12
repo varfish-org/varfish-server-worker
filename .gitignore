@@ -1,3 +1,5 @@
+*.snap.new
+
 /*.json
 
 ## Text Editors
