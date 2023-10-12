@@ -1,5 +1,7 @@
 //! Code implementing the "seqvars query" sub command.
 
+mod schema;
+
 use std::time::Instant;
 
 use clap::{command, Parser};
