@@ -70,7 +70,7 @@ struct ResultGenotype {
 /// The structured result information of the result record.
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct ResultPayload {
-    /// Case UUID.
+    /// Case UUID as specified on the command line.
     pub case_uuid: uuid::Uuid,
 
     // -- gene identity -----------------------------------------------------
@@ -165,16 +165,27 @@ struct ResultPayload {
 /// A result record from the query.
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 struct ResultRecord {
+    /// UUID for the record.
     sodar_uuid: Uuid,
+    /// Genome release for the coordinate.
     release: String,
+    /// Chromosome name.
     chromosome: String,
+    /// Chromosome number.
     chromosome_no: i32,
+    /// Reference allele sequence.
     reference: String,
+    /// Alternative allele sequence.
     alternative: String,
+    /// UCSC bin of the record.
     bin: u32,
+    /// Start position of the record.
     start: i32,
+    /// End position of the record.
     end: i32,
+    /// The result set ID as specified on the command line.
     smallvariantqueryresultset_id: String,
+    /// The JSON-serialized `ResultPayload`.
     payload: String,
 }
 
