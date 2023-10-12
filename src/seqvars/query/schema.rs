@@ -513,13 +513,14 @@ impl SequenceVariant {
             } else {
                 None
             };
-            let quality = if let Some(Some(vcf::record::genotypes::sample::Value::Integer(quality))) =
-                sample.get(&vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY)
-            {
-                Some(*quality as f32)
-            } else {
-                None
-            };
+            let quality =
+                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(quality))) =
+                    sample.get(&vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY)
+                {
+                    Some(*quality as f32)
+                } else {
+                    None
+                };
             let dp = if let Some(Some(vcf::record::genotypes::sample::Value::Integer(dp))) =
                 sample.get(&vcf::record::genotypes::keys::key::READ_DEPTH)
             {

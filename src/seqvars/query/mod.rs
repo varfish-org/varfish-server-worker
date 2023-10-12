@@ -24,6 +24,9 @@ pub struct Args {
     /// Genome release to assume.
     #[arg(long, value_enum)]
     pub genome_release: GenomeRelease,
+    /// Result set ID.
+    #[arg(long, required = true)]
+    pub result_set_id: usize,
     /// Path to worker database to use for querying.
     #[arg(long, required = true)]
     pub path_db: String,
@@ -59,8 +62,12 @@ struct ResultRecord {
     release: String,
     chromosome: String,
     chromosome_no: i32,
-    // TODO: remove bin
+    reference: String,
+    alternative: String,
     bin: u32,
+    start: i32,
+    end: i32,
+    smallvariantqueryresultset_id: usize,
     payload: String,
 }
 
@@ -102,17 +109,25 @@ fn run_query(
         stats.count_total += 1;
         let record_seqvar = SequenceVariant::from_vcf(&input_record?, &input_header)
             .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
-
         tracing::debug!("processing record {:?}", record_seqvar);
 
         let passes = interpreter.passes(&record_seqvar)?;
 
-        let bin = mehari::annotate::seqvars::binning::bin_from_range(
-            record_seqvar.pos as i32 - 1,
-            record_seqvar.pos as i32 + record_seqvar.reference.len() as i32 - 1,
-        )? as u32;
+        let start = record_seqvar.pos;
+        let end = start + record_seqvar.reference.len() as i32 - 1;
+        let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
 
         let result_payload = ResultPayload::default();
+
+        let SequenceVariant {
+            chrom: chromosome,
+            reference,
+            alternative,
+            ..
+        } = record_seqvar;
+        let chromosome_no = *chrom_to_chrom_no
+            .get(&chromosome)
+            .expect("invalid chromosome") as i32;
 
         if passes.pass_all {
             // Finally, write out the record.
@@ -120,16 +135,19 @@ fn run_query(
             rng.fill_bytes(&mut uuid_buf);
             csv_writer
                 .serialize(&ResultRecord {
+                    smallvariantqueryresultset_id: args.result_set_id,
                     sodar_uuid: Uuid::from_bytes(uuid_buf),
                     release: match args.genome_release {
                         GenomeRelease::Grch37 => "GRCh37".into(),
                         GenomeRelease::Grch38 => "GRCh38".into(),
                     },
-                    chromosome: record_seqvar.chrom.clone(),
-                    chromosome_no: *chrom_to_chrom_no
-                        .get(&record_seqvar.chrom)
-                        .expect("invalid chromosome") as i32,
+                    chromosome,
+                    chromosome_no,
+                    start,
+                    end,
                     bin,
+                    reference,
+                    alternative,
                     payload: serde_json::to_string(&result_payload)
                         .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
                 })
@@ -210,9 +228,6 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         tracing::info!("{:?} -- {}", effect, count);
     }
 
-    let mut file = std::fs::File::create(&args.path_output)?;
-    std::io::Write::write_all(&mut file, b"Hello, world!")?;
-
     trace_rss_now();
 
     tracing::info!(
@@ -246,6 +261,7 @@ mod test {
             max_results: None,
             rng_seed: Some(42),
             max_tad_distance: 10_000,
+            result_set_id: 0815,
         };
         super::run(&args_common, &args)?;
 

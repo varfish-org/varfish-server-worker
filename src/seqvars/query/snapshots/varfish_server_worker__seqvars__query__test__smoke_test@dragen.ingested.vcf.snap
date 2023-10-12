@@ -1,0 +1,8 @@
+---
+source: src/seqvars/query/mod.rs
+expression: "std::fs::read_to_string(args.path_output.as_str())?"
+---
+sodar_uuid	release	chromosome	chromosome_no	reference	alternative	bin	start	end	smallvariantqueryresultset_id	payload
+a2242722-6377-cc86-7d51-ad3f130af08a	GRCh37	17	17	CA	C	899	41256074	41256075	815	{}
+d13451de-7160-efa2-b230-76fd782de967	GRCh37	MT	25	A	G	585	750	750	815	{}
+
