@@ -398,20 +398,28 @@ impl Default for CaseQuery {
     }
 }
 
-/// Information on the call as combined by the annotator.
+/// Information on the call as written out by ingest.
+///
+/// Note that the ingested files have exactly one alternate allele.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct CallInfo {
     /// The genotype, if applicable, e.g., "0/1", "./1", "."
     pub genotype: Option<String>,
     /// Genotype quality score, if applicable
     pub quality: Option<f32>,
+    /// Total read coverage at site in the sample.
+    pub dp: Option<i32>,
+    /// Alternate allele depth for the single allele in the sample.
+    pub ad: Option<i32>,
+    /// Physical phasing ID for this sample.
+    pub phasing_id: Option<i32>,
 }
 
 /// Definition of a sequence variant with per-sample genotype calls.
 ///
 /// This uses a subset/specialization of what is described by the VCF standard
 /// for the purpose of running SV queries in `varfish-server-worker`.
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct SequenceVariant {
     /// Chromosome name
     pub chrom: String,
@@ -422,6 +430,40 @@ pub struct SequenceVariant {
     pub reference: String,
     /// Alternative allele.
     pub alternative: String,
+
+    /// Number of alleles in gnomAD exomes (not for chrMT).
+    pub gnomad_exomes_an: i32,
+    /// Number of homozygous carriers in gnomAD exomes (not for chrMT).
+    pub gnomad_exomes_hom: i32,
+    /// Number of heterozygous carriers in gnomAD exomes (not for chrMT).
+    pub gnomad_exomes_het: i32,
+    /// Number of hemizygous carriers in gnomAD exomes (not for chrMT).
+    pub gnomad_exomes_hemi: i32,
+
+    /// Number of alleles in gnomAD genomes (also for chrMT).
+    pub gnomad_genomes_an: i32,
+    /// Number of homozygous carriers in gnomAD genomes (also for chrMT).
+    pub gnomad_genomes_hom: i32,
+    /// Number of heterozygous carriers in gnomAD genomes (also for chrMT).
+    pub gnomad_genomes_het: i32,
+    /// Number of hemizygous carriers in gnomAD genomes (not for chrMT).
+    pub gnomad_genomes_hemi: i32,
+
+    /// Number of alleles in HelixMtDb cohort (only chrMT).
+    pub helix_an: i32,
+    /// Number of homoplasmic carriers in HelixMtDb cohort (only chrMT).
+    pub helix_hom: i32,
+    /// Number of heteroplasmic carriers in HelixMtDb cohort (only chrMT).
+    pub helix_het: i32,
+
+    /// Number of in-house alleles (also for chrMT).
+    pub inhouse_an: i32,
+    /// Number of homozygous carriers in in-house cohort (also for chrMT).
+    pub inhouse_hom: i32,
+    /// Number of heterozygous carriers in in-house cohort (also for chrMT).
+    pub inhouse_het: i32,
+    /// Number of hemizygous carriers in in-house cohort (not for chrMT).
+    pub inhouse_hemi: i32,
 
     /// Mapping of sample to genotype information for the SV.
     pub call_info: indexmap::IndexMap<String, CallInfo>,
@@ -437,15 +479,19 @@ impl SequenceVariant {
         let reference = record.reference_bases().to_string();
         let alternative = record.alternate_bases()[0].to_string();
 
-        let call_info = Self::build_call_info(record, header)?;
+        let call_info: indexmap::IndexMap<String, CallInfo> =
+            Self::build_call_info(record, header)?;
 
-        Ok(Self {
+        let result = Self {
             chrom,
             pos,
-            call_info,
             reference,
             alternative,
-        })
+            call_info,
+            ..Default::default()
+        };
+
+        Ok(Self::copy_freqs(result, record)?)
     }
 
     /// Build call information.
@@ -474,16 +520,100 @@ impl SequenceVariant {
             } else {
                 None
             };
+            let dp = if let Some(Some(vcf::record::genotypes::sample::Value::Integer(dp))) =
+                sample.get(&vcf::record::genotypes::keys::key::READ_DEPTH)
+            {
+                Some(*dp)
+            } else {
+                None
+            };
+            let ad = if let Some(Some(vcf::record::genotypes::sample::Value::Array(
+                vcf::record::genotypes::sample::value::Array::Integer(ad),
+            ))) = sample.get(&vcf::record::genotypes::keys::key::READ_DEPTHS)
+            {
+                Some(ad[1].expect("empty AD?"))
+            } else {
+                None
+            };
+            let phase_set = if let Some(Some(vcf::record::genotypes::sample::Value::Integer(id))) =
+                sample.get(&vcf::record::genotypes::keys::key::PHASE_SET)
+            {
+                Some(*id)
+            } else {
+                None
+            };
 
-            result.insert(name.clone(), CallInfo { genotype, quality });
+            result.insert(
+                name.clone(),
+                CallInfo {
+                    genotype,
+                    quality,
+                    dp,
+                    ad,
+                    phasing_id: phase_set,
+                },
+            );
         }
 
         Ok(result)
+    }
+
+    /// Copy the frequencies from `record` to `result`.
+    fn copy_freqs(
+        result: SequenceVariant,
+        record: &vcf::Record,
+    ) -> Result<SequenceVariant, anyhow::Error> {
+        use vcf::record::info::field::Key;
+        use vcf::record::info::field::Value;
+
+        macro_rules! extract_key {
+            ($key:ident) => {
+                let $key = if let Some(Some(Value::Integer($key))) = record.info().get(
+                    &stringify!($key)
+                        .parse::<Key>()
+                        .expect(&format!("could not parse key: {:?}", stringify!($key))),
+                ) {
+                    *$key
+                } else {
+                    0
+                };
+            };
+        }
+
+        extract_key!(gnomad_exomes_an);
+        extract_key!(gnomad_exomes_hom);
+        extract_key!(gnomad_exomes_het);
+        extract_key!(gnomad_exomes_hemi);
+
+        extract_key!(gnomad_genomes_an);
+        extract_key!(gnomad_genomes_hom);
+        extract_key!(gnomad_genomes_het);
+        extract_key!(gnomad_genomes_hemi);
+
+        extract_key!(helix_an);
+        extract_key!(helix_hom);
+        extract_key!(helix_het);
+
+        Ok(SequenceVariant {
+            gnomad_exomes_an,
+            gnomad_exomes_hom,
+            gnomad_exomes_het,
+            gnomad_exomes_hemi,
+            gnomad_genomes_an,
+            gnomad_genomes_hom,
+            gnomad_genomes_het,
+            gnomad_genomes_hemi,
+            helix_an,
+            helix_hom,
+            helix_het,
+            ..result
+        })
     }
 }
 
 #[cfg(test)]
 pub mod test {
+    use noodles_vcf as vcf;
     use rstest::rstest;
 
     #[rstest]
@@ -494,6 +624,22 @@ pub mod test {
         let query: super::CaseQuery = serde_json::from_reader(std::fs::File::open(path)?)?;
 
         insta::assert_yaml_snapshot!(&query);
+
+        Ok(())
+    }
+
+    #[test]
+    pub fn sequence_variant_from_vcf() -> Result<(), anyhow::Error> {
+        let path = "tests/seqvars/query/Case_1.ingested.vcf";
+        let mut vcf_reader = vcf::reader::Builder.build_from_path(path).unwrap();
+        let header = vcf_reader.read_header()?;
+
+        for record in vcf_reader.records(&header) {
+            let record = record?;
+            let seqvar = super::SequenceVariant::from_vcf(&record, &header)?;
+
+            insta::assert_yaml_snapshot!(&seqvar);
+        }
 
         Ok(())
     }

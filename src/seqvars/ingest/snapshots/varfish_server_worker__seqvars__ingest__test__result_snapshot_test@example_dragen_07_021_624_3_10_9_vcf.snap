@@ -53,6 +53,6 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="Dragen",Version="SW: 07.021.624.3.10.9, HW: 07.021.624">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	CASE
-17	41256074	.	CA	C	.	.	gnomad_exomes_an=20150;gnomad_exomes_hom=2725;gnomad_exomes_het=5476;gnomad_genomes_an=0;gnomad_genomes_hom=0;gnomad_genomes_het=0;ANN=C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007294.4|Coding|6/22|c.441+64delT|p.?|554/7088|441/5592||63|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007297.4|Coding|5/21|c.300+64delT|p.?|494/7028|300/5451||63|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007299.4|Coding|6/21|c.441+64delT|p.?|548/3696|441/2100||63|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007300.4|Coding|6/23|c.441+64delT|p.?|554/7151|441/5655||63|	GT:AD:DP:GQ:PS	0|1:18:32:47:41256074
-MT	750	.	A	G	.	.	.	GT:GQ:AD:DP	1/1:98.13:1:5608
+17	41256074	.	CA	C	.	.	gnomad_exomes_an=20150;gnomad_exomes_hom=2725;gnomad_exomes_het=5476;gnomad_genomes_an=0;gnomad_genomes_hom=0;gnomad_genomes_het=0;ANN=C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007294.4|Coding|6/22|c.441+64delT|p.?|554/7088|441/5592||63|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007297.4|Coding|5/21|c.300+64delT|p.?|494/7028|300/5451||63|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007299.4|Coding|6/21|c.441+64delT|p.?|548/3696|441/2100||63|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007300.4|Coding|6/23|c.441+64delT|p.?|554/7151|441/5655||63|	GT:AD:DP:GQ:PS	0|1:18,14:32:47:41256074
+MT	750	.	A	G	.	.	.	GT:GQ:AD:DP	1/1:98.13:1,5607:5608
 

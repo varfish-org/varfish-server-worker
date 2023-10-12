@@ -106,22 +106,84 @@ impl KnownFormatKeys {
 /// The known `FORMAT` keys.
 static KNOWN_FORMAT_KEYS: OnceLock<KnownFormatKeys> = OnceLock::new();
 
+/// Regular expression for parsing `GT` values.
+static GT_RE: OnceLock<regex::Regex> = OnceLock::new();
+
 /// Transform the ``FORMAT`` key if known.
 fn transform_format_value(
     value: &Option<&vcf::record::genotypes::sample::Value>,
     key: &vcf::record::genotypes::keys::Key,
     allele_no: usize,
+    sample: &vcf::record::genotypes::Sample<'_>,
 ) -> Option<Option<vcf::record::genotypes::sample::Value>> {
+    let gt_re = GT_RE
+        .get_or_init(|| regex::Regex::new(r"([^\|]+)([/|])([^\|]+)").expect("could not parse RE"));
+
+    let curr_allele = format!("{}", allele_no);
+
+    fn transform_allele(allele_to_transform: &str, curr_allele: &str) -> &'static str {
+        if allele_to_transform == "." {
+            "."
+        } else if allele_to_transform == curr_allele {
+            "1"
+        } else {
+            "0"
+        }
+    }
+
     if let Some(value) = value {
         Some(Some(match key.as_ref() {
+            "GT" => {
+                let gt = match sample
+                    .get(&vcf::record::genotypes::keys::key::GENOTYPE)
+                    .expect("FORMAT/GT must be present")
+                    .cloned()
+                    .unwrap_or_else(|| unreachable!("FORMAT/GT must be present and not None"))
+                {
+                    vcf::record::genotypes::sample::Value::String(gt) => gt.clone(),
+                    _ => unreachable!("FORMAT/GT must be string"),
+                };
+
+                let gt_captures = gt_re
+                    .captures(&gt)
+                    .expect(&format!("FORMAT/GT cannot be parsed: {}", &gt));
+                let gt_1 = gt_captures.get(1).expect("must be capture").as_str();
+                let gt_2 = gt_captures.get(2).expect("must be capture").as_str();
+                let gt_3 = gt_captures.get(3).expect("must be capture").as_str();
+
+                let new_gt = format!(
+                    "{}{}{}",
+                    transform_allele(gt_1, &curr_allele),
+                    gt_2,
+                    transform_allele(gt_3, &curr_allele),
+                );
+
+                vcf::record::genotypes::sample::Value::String(new_gt)
+            }
             "AD" => {
-                // Only write out current allele as AD.
+                let dp = match sample
+                    .get(&vcf::record::genotypes::keys::key::READ_DEPTH)
+                    .expect("FORMAT/DP must be present")
+                    .cloned()
+                    .unwrap_or_else(|| unreachable!("FORMAT/DP must be present and not None"))
+                {
+                    vcf::record::genotypes::sample::Value::Integer(dp) => dp,
+                    _ => unreachable!("FORMAT/DP must be integer"),
+                };
+
+                // Only write out reference and current allele as AD.
                 match *value {
                     vcf::record::genotypes::sample::Value::Array(
                         vcf::record::genotypes::sample::value::Array::Integer(ad_values),
-                    ) => vcf::record::genotypes::sample::Value::Integer(
-                        ad_values[allele_no].expect("SQ should be integer value"),
-                    ),
+                    ) => {
+                        let ad = ad_values[allele_no].expect("AD should be integer value");
+                        vcf::record::genotypes::sample::Value::Array(
+                            vcf::record::genotypes::sample::value::Array::Integer(vec![
+                                Some(dp - ad),
+                                Some(ad),
+                            ]),
+                        )
+                    }
                     _ => return None, // unreachable!("FORMAT/AD must be array of integer"),
                 }
             }
@@ -134,7 +196,7 @@ fn transform_format_value(
                     vcf::record::genotypes::sample::Value::Array(
                         vcf::record::genotypes::sample::value::Array::Float(sq_values),
                     ) => vcf::record::genotypes::sample::Value::Float(
-                        sq_values[allele_no].expect("SQ should be float value"),
+                        sq_values[allele_no - 1].expect("SQ should be float value"),
                     ),
                     _ => return None, // unreachable!("FORMAT/PS must be integer"),
                 }
@@ -181,7 +243,9 @@ fn copy_format(
                 .iter()
                 .map(|key| {
                     let input_value = sample.get(key).expect("key must be valid");
-                    if let Some(value) = transform_format_value(&input_value, key, allele_no) {
+                    if let Some(value) =
+                        transform_format_value(&input_value, key, allele_no, &sample)
+                    {
                         value
                     } else if known_format_keys.output_keys.contains(key) {
                         input_value.cloned()
@@ -290,6 +354,7 @@ where
             let input_record = input_record?;
 
             for (allele_no, alt_allele) in input_record.alternate_bases().iter().enumerate() {
+                let allele_no = allele_no + 1;
                 // Construct record with first few fields describing one variant allele.
                 let builder = vcf::Record::builder()
                     .set_chromosome(input_record.chromosome().clone())

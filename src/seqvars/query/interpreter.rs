@@ -29,7 +29,7 @@ impl QueryInterpreter {
     }
 
     /// Determine whether the annotated `SequenceVariant` passes all criteria.
-    pub fn passes(&self, seqvar: &SequenceVariant) -> Result<PassesResult, anyhow::Error> {
-        todo!()
+    pub fn passes(&self, _seqvar: &SequenceVariant) -> Result<PassesResult, anyhow::Error> {
+        Ok(PassesResult { pass_all: true })
     }
 }

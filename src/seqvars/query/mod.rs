@@ -77,7 +77,7 @@ struct QueryStats {
 fn run_query(
     interpreter: &interpreter::QueryInterpreter,
     args: &Args,
-    dbs: &crate::strucvars::query::Databases,
+    _dbs: &crate::strucvars::query::Databases,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;

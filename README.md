@@ -144,6 +144,10 @@ varfish-server-worker seqvars aggregate \
     --path-in-vcf @path/to/file/list.txt
 ```
 
+## The `seqvars query` Command
+
+This command perform the querying of sequence variants and further annotation using annonars databases.
+
 ## The `strucvars ingest` Command
 
 This command takes as the input one or more VCF files from structural variant callers and converts it into a file for further querying.
