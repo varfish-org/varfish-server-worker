@@ -78,16 +78,19 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     trace_rss_now();
 
-    // tracing::info!("Translating gene allow list...");
-    // let hgvs_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
-    //     if gene_allowlist.is_empty() {
-    //         None
-    //     } else {
-    //         Some(translate_gene_allowlist(gene_allowlist, &dbs))
-    //     }
-    // } else {
-    //     None
-    // };
+    tracing::info!("Translating gene allow list...");
+    let hgvs_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
+        if gene_allowlist.is_empty() {
+            None
+        } else {
+            Some(crate::strucvars::query::translate_gene_allowlist(
+                gene_allowlist,
+                &dbs,
+            ))
+        }
+    } else {
+        None
+    };
 
     // tracing::info!("Running queries...");
     // let before_query = Instant::now();

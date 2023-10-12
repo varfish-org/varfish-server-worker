@@ -833,7 +833,7 @@ pub struct Databases {
 }
 
 /// Translate gene allow list to gene identifier sfrom
-fn translate_gene_allowlist(gene_allowlist: &Vec<String>, dbs: &Databases) -> HashSet<String> {
+pub fn translate_gene_allowlist(gene_allowlist: &Vec<String>, dbs: &Databases) -> HashSet<String> {
     let mut result = HashSet::new();
 
     let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
