@@ -1431,7 +1431,7 @@ impl StructuralVariant {
     }
 
     /// Build call information.
-    pub fn build_call_info(
+    fn build_call_info(
         record: &vcf::Record,
         header: &vcf::Header,
     ) -> Result<IndexMap<String, CallInfo>, anyhow::Error> {

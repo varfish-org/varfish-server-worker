@@ -1,14 +1,21 @@
 //! Code implementing the "seqvars query" sub command.
 
+mod interpreter;
 mod schema;
 
 use std::time::Instant;
 
 use clap::{command, Parser};
+use noodles_vcf as vcf;
 
-use rand_core::SeedableRng;
+use mehari::{annotate::seqvars::CHROM_TO_CHROM_NO, common::open_read_maybe_gz};
+use rand_core::{RngCore, SeedableRng};
+use thousands::Separable;
+use uuid::Uuid;
 
 use crate::{common::trace_rss_now, common::GenomeRelease};
+
+use self::schema::SequenceVariant;
 
 /// Command line arguments for `seqvars query` sub command.
 #[derive(Parser, Debug)]
@@ -41,6 +48,98 @@ pub struct Args {
     pub max_tad_distance: i32,
 }
 
+/// The structured result information of the result record.
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+struct ResultPayload {}
+
+/// A result record from the query.
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
+struct ResultRecord {
+    sodar_uuid: Uuid,
+    release: String,
+    chromosome: String,
+    chromosome_no: i32,
+    // TODO: remove bin
+    bin: u32,
+    payload: String,
+}
+
+/// Utility struct to store statistics about counts.
+#[derive(Debug, Default)]
+struct QueryStats {
+    pub count_passed: usize,
+    pub count_total: usize,
+    pub by_effect: indexmap::IndexMap<schema::VariantEffect, usize>,
+}
+
+/// Run the `args.path_input` VCF file and run through the given `interpreter` writing to
+/// `args.path_output`.
+fn run_query(
+    interpreter: &interpreter::QueryInterpreter,
+    args: &Args,
+    dbs: &crate::strucvars::query::Databases,
+    rng: &mut rand::rngs::StdRng,
+) -> Result<QueryStats, anyhow::Error> {
+    let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
+    let mut stats = QueryStats::default();
+
+    // Open VCF file, create reader, and read header.
+    let mut input_reader = open_read_maybe_gz(&args.path_input).map_err(|e| {
+        anyhow::anyhow!("could not open file {} for reading: {}", args.path_input, e)
+    })?;
+    let mut input_reader = vcf::Reader::new(&mut input_reader);
+    let input_header = input_reader.read_header()?;
+
+    // Create output TSV writer.
+    let mut csv_writer = csv::WriterBuilder::new()
+        .has_headers(true)
+        .delimiter(b'\t')
+        .quote_style(csv::QuoteStyle::Never)
+        .from_path(&args.path_output)?;
+
+    // Read through input records using the query interpreter as a filter
+    for input_record in input_reader.records(&input_header) {
+        stats.count_total += 1;
+        let record_seqvar = SequenceVariant::from_vcf(&input_record?, &input_header)
+            .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
+
+        tracing::debug!("processing record {:?}", record_seqvar);
+
+        let passes = interpreter.passes(&record_seqvar)?;
+
+        let bin = mehari::annotate::seqvars::binning::bin_from_range(
+            record_seqvar.pos as i32 - 1,
+            record_seqvar.pos as i32 + record_seqvar.reference.len() as i32 - 1,
+        )? as u32;
+
+        let result_payload = ResultPayload::default();
+
+        if passes.pass_all {
+            // Finally, write out the record.
+            let mut uuid_buf = [0u8; 16];
+            rng.fill_bytes(&mut uuid_buf);
+            csv_writer
+                .serialize(&ResultRecord {
+                    sodar_uuid: Uuid::from_bytes(uuid_buf),
+                    release: match args.genome_release {
+                        GenomeRelease::Grch37 => "GRCh37".into(),
+                        GenomeRelease::Grch38 => "GRCh38".into(),
+                    },
+                    chromosome: record_seqvar.chrom.clone(),
+                    chromosome_no: *chrom_to_chrom_no
+                        .get(&record_seqvar.chrom)
+                        .expect("invalid chromosome") as i32,
+                    bin,
+                    payload: serde_json::to_string(&result_payload)
+                        .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
+                })
+                .map_err(|e| anyhow::anyhow!("could not write record: {}", e))?;
+        }
+    }
+
+    Ok(stats)
+}
+
 /// Main entry point for `seqvars query` sub command.
 pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = Instant::now();
@@ -49,7 +148,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
     // Initialize the random number generator from command line seed if given or local entropy
     // source.
-    let _rng = if let Some(rng_seed) = args.rng_seed {
+    let mut rng = if let Some(rng_seed) = args.rng_seed {
         rand::rngs::StdRng::seed_from_u64(rng_seed)
     } else {
         rand::rngs::StdRng::from_entropy()
@@ -92,27 +191,24 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         None
     };
 
-    // tracing::info!("Running queries...");
-    // let before_query = Instant::now();
-    // let query_stats = run_query(
-    //     &QueryInterpreter::new(query, hgvs_allowlist),
-    //     args,
-    //     &dbs,
-    //     &mehari_tx_db,
-    //     &mehari_tx_idx,
-    //     &chrom_to_acc,
-    //     &mut rng,
-    // )?;
-    // tracing::info!("... done running query in {:?}", before_query.elapsed());
-    // tracing::info!(
-    //     "summary: {} records passed out of {}",
-    //     query_stats.count_passed.separate_with_commas(),
-    //     query_stats.count_total.separate_with_commas()
-    // );
-    // tracing::info!("passing records by SV type");
-    // for (sv_type, count) in query_stats.by_sv_type.iter() {
-    //     tracing::info!("{:?} -- {}", sv_type, count);
-    // }
+    tracing::info!("Running queries...");
+    let before_query = Instant::now();
+    let query_stats = run_query(
+        &interpreter::QueryInterpreter::new(query, hgvs_allowlist),
+        args,
+        &dbs,
+        &mut rng,
+    )?;
+    tracing::info!("... done running query in {:?}", before_query.elapsed());
+    tracing::info!(
+        "summary: {} records passed out of {}",
+        query_stats.count_passed.separate_with_commas(),
+        query_stats.count_total.separate_with_commas()
+    );
+    tracing::info!("passing records by effect type");
+    for (effect, count) in query_stats.by_effect.iter() {
+        tracing::info!("{:?} -- {}", effect, count);
+    }
 
     let mut file = std::fs::File::create(&args.path_output)?;
     std::io::Write::write_all(&mut file, b"Hello, world!")?;

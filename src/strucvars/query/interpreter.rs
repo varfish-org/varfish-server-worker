@@ -1,4 +1,4 @@
-//! Apply settings from a `CaseQuery` to `StructuralVariant` records.
+//! Apply settings from a `strucvar::query::schema::CaseQuery` to `StructuralVariant` records.
 
 use std::collections::{HashMap, HashSet};
 

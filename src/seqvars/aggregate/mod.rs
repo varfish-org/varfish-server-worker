@@ -253,7 +253,7 @@ fn import_vcf(
         }
     }
 
-    todo!()
+    Ok(())
 }
 
 /// Perform the parallel import of VCF files.

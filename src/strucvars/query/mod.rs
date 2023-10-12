@@ -16,7 +16,6 @@ use std::{
 };
 
 use clap::{command, Parser};
-use csv::QuoteStyle;
 use hgvs::static_data::ASSEMBLY_INFOS;
 use indexmap::IndexMap;
 use log::warn;
@@ -212,7 +211,8 @@ struct QueryStats {
     pub by_sv_type: BTreeMap<SvType, usize>,
 }
 
-/// Open the SV file at `path_sv_tsv` and run through the given `interpreter`.
+/// Run the `args.path_input` VCF file and run through the given `interpreter` writing to
+/// `args.path_output`.
 fn run_query(
     interpreter: &QueryInterpreter,
     args: &Args,
@@ -226,24 +226,25 @@ fn run_query(
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
 
+    // Open VCF file, create reader, and read header.
     let mut input_reader = open_read_maybe_gz(&args.path_input).map_err(|e| {
         anyhow::anyhow!("could not open file {} for reading: {}", args.path_input, e)
     })?;
     let mut input_reader = vcf::Reader::new(&mut input_reader);
     let input_header = input_reader.read_header()?;
 
+    // Create output TSV writer.
     let mut csv_writer = csv::WriterBuilder::new()
         .has_headers(true)
         .delimiter(b'\t')
-        .quote_style(QuoteStyle::Never)
+        .quote_style(csv::QuoteStyle::Never)
         .from_path(&args.path_output)?;
 
     // Read through input records using the query interpreter as a filter
     for input_record in input_reader.records(&input_header) {
         stats.count_total += 1;
-        let record_sv: StructuralVariant =
-            StructuralVariant::from_vcf(&input_record?, &input_header)
-                .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
+        let record_sv = StructuralVariant::from_vcf(&input_record?, &input_header)
+            .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
 
         tracing::debug!("processing record {:?}", record_sv);
 
@@ -429,33 +430,36 @@ fn run_query(
             // Finally, write out the record.
             let mut uuid_buf = [0u8; 16];
             rng.fill_bytes(&mut uuid_buf);
-            csv_writer.serialize(&ResultRecord {
-                sodar_uuid: Uuid::from_bytes(uuid_buf),
-                release: match args.genome_release {
-                    GenomeRelease::Grch37 => "GRCh37".into(),
-                    GenomeRelease::Grch38 => "GRCh38".into(),
-                },
-                chromosome: record_sv.chrom.clone(),
-                chromosome_no: *chrom_to_chrom_no
-                    .get(&record_sv.chrom)
-                    .expect("invalid chromosome") as i32,
-                start: record_sv.pos,
-                bin,
-                chromosome2: record_sv
-                    .chrom2
-                    .as_ref()
-                    .unwrap_or(&record_sv.chrom)
-                    .clone(),
-                chromosome_no2: *chrom_to_chrom_no
-                    .get(&record_sv.chrom)
-                    .expect("invalid chromosome") as i32,
-                bin2,
-                end: record_sv.end,
-                pe_orientation: record_sv.strand_orientation,
-                sv_type: record_sv.sv_type,
-                sv_sub_type: record_sv.sv_sub_type,
-                payload: serde_json::to_string(&result_payload)?,
-            })?;
+            csv_writer
+                .serialize(&ResultRecord {
+                    sodar_uuid: Uuid::from_bytes(uuid_buf),
+                    release: match args.genome_release {
+                        GenomeRelease::Grch37 => "GRCh37".into(),
+                        GenomeRelease::Grch38 => "GRCh38".into(),
+                    },
+                    chromosome: record_sv.chrom.clone(),
+                    chromosome_no: *chrom_to_chrom_no
+                        .get(&record_sv.chrom)
+                        .expect("invalid chromosome") as i32,
+                    start: record_sv.pos,
+                    bin,
+                    chromosome2: record_sv
+                        .chrom2
+                        .as_ref()
+                        .unwrap_or(&record_sv.chrom)
+                        .clone(),
+                    chromosome_no2: *chrom_to_chrom_no
+                        .get(&record_sv.chrom)
+                        .expect("invalid chromosome") as i32,
+                    bin2,
+                    end: record_sv.end,
+                    pe_orientation: record_sv.strand_orientation,
+                    sv_type: record_sv.sv_type,
+                    sv_sub_type: record_sv.sv_sub_type,
+                    payload: serde_json::to_string(&result_payload)
+                        .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
+                })
+                .map_err(|e| anyhow::anyhow!("could not write record: {}", e))?;
         }
     }
 

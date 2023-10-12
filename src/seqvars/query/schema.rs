@@ -1,5 +1,6 @@
 //! Supporting code for seqvar query definition.
 
+use noodles_vcf as vcf;
 use strum::IntoEnumIterator;
 
 /// Variant effects.
@@ -394,6 +395,90 @@ impl Default for CaseQuery {
             helixmtdb_heterozygous: Default::default(),
             helixmtdb_homozygous: Default::default(),
         }
+    }
+}
+
+/// Information on the call as combined by the annotator.
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
+pub struct CallInfo {
+    /// The genotype, if applicable, e.g., "0/1", "./1", "."
+    pub genotype: Option<String>,
+    /// Genotype quality score, if applicable
+    pub quality: Option<f32>,
+}
+
+/// Definition of a sequence variant with per-sample genotype calls.
+///
+/// This uses a subset/specialization of what is described by the VCF standard
+/// for the purpose of running SV queries in `varfish-server-worker`.
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
+pub struct SequenceVariant {
+    /// Chromosome name
+    pub chrom: String,
+    /// 1-based start position of the variant (or position on first chromosome
+    /// for break-ends)
+    pub pos: i32,
+    /// Reference allele.
+    pub reference: String,
+    /// Alternative allele.
+    pub alternative: String,
+
+    /// Mapping of sample to genotype information for the SV.
+    pub call_info: indexmap::IndexMap<String, CallInfo>,
+}
+
+impl SequenceVariant {
+    /// Convert from VCF record.
+    pub fn from_vcf(record: &vcf::Record, header: &vcf::Header) -> Result<Self, anyhow::Error> {
+        let chrom = record.chromosome().to_string();
+        let pos: usize = record.position().into();
+        let pos = pos as i32;
+
+        let reference = record.reference_bases().to_string();
+        let alternative = record.alternate_bases()[0].to_string();
+
+        let call_info = Self::build_call_info(record, header)?;
+
+        Ok(Self {
+            chrom,
+            pos,
+            call_info,
+            reference,
+            alternative,
+        })
+    }
+
+    /// Build call information.
+    fn build_call_info(
+        record: &vcf::Record,
+        header: &vcf::Header,
+    ) -> Result<indexmap::IndexMap<String, CallInfo>, anyhow::Error> {
+        let mut result = indexmap::IndexMap::new();
+
+        for (name, sample) in header
+            .sample_names()
+            .iter()
+            .zip(record.genotypes().values())
+        {
+            let genotype = if let Some(Some(vcf::record::genotypes::sample::Value::String(gt))) =
+                sample.get(&vcf::record::genotypes::keys::key::GENOTYPE)
+            {
+                Some(gt.clone())
+            } else {
+                None
+            };
+            let quality = if let Some(Some(vcf::record::genotypes::sample::Value::Float(quality))) =
+                sample.get(&vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY)
+            {
+                Some(*quality)
+            } else {
+                None
+            };
+
+            result.insert(name.clone(), CallInfo { genotype, quality });
+        }
+
+        Ok(result)
     }
 }
 
