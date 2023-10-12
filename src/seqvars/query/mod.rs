@@ -197,6 +197,12 @@ struct QueryStats {
     pub by_effect: indexmap::IndexMap<schema::VariantEffect, usize>,
 }
 
+/// Annotate the payload of the record with `annonars`.
+fn create_payload(seqvar: &SequenceVariant) -> Result<ResultPayload, anyhow::Error> {
+    todo!()
+    // Ok(())
+}
+
 /// Run the `args.path_input` VCF file and run through the given `interpreter` writing to
 /// `args.path_output`.
 fn run_query(
@@ -207,6 +213,9 @@ fn run_query(
 ) -> Result<QueryStats, anyhow::Error> {
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
     let mut stats = QueryStats::default();
+
+    // Buffer for generating UUIDs.
+    let mut uuid_buf = [0u8; 16];
 
     // Open VCF file, create reader, and read header.
     let mut input_reader = open_read_maybe_gz(&args.path_input).map_err(|e| {
@@ -231,30 +240,33 @@ fn run_query(
 
         let passes = interpreter.passes(&record_seqvar)?;
 
-        let start = record_seqvar.pos;
-        let end = start + record_seqvar.reference.len() as i32 - 1;
-        let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
-
-        let result_payload = ResultPayload::default();
-
-        let SequenceVariant {
-            chrom: chromosome,
-            reference,
-            alternative,
-            ..
-        } = record_seqvar;
-        let chromosome_no = *chrom_to_chrom_no
-            .get(&chromosome)
-            .expect("invalid chromosome") as i32;
-
+        // Finally, perform annotation of the record using the annonars library and write it
+        // in TSV format, ready for import into the database.
         if passes.pass_all {
-            // Finally, write out the record.
-            let mut uuid_buf = [0u8; 16];
-            rng.fill_bytes(&mut uuid_buf);
+            let result_payload = create_payload(&record_seqvar)
+                .map_err(|e| anyhow::anyhow!("could not annotate record: {}", e))?;
+
+            let start = record_seqvar.pos;
+            let end = start + record_seqvar.reference.len() as i32 - 1;
+            let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
+
+            let SequenceVariant {
+                chrom: chromosome,
+                reference,
+                alternative,
+                ..
+            } = record_seqvar;
+            let chromosome_no = *chrom_to_chrom_no
+                .get(&chromosome)
+                .expect("invalid chromosome") as i32;
+
             csv_writer
                 .serialize(&ResultRecord {
                     smallvariantqueryresultset_id: args.result_set_id.clone().unwrap_or(".".into()),
-                    sodar_uuid: Uuid::from_bytes(uuid_buf),
+                    sodar_uuid: Uuid::from_bytes({
+                        rng.fill_bytes(&mut uuid_buf);
+                        uuid_buf
+                    }),
                     release: match args.genome_release {
                         GenomeRelease::Grch37 => "GRCh37".into(),
                         GenomeRelease::Grch38 => "GRCh38".into(),
