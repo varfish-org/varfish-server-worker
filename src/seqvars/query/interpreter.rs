@@ -36,16 +36,18 @@ impl QueryInterpreter {
     /// Determine whether the annotated `SequenceVariant` passes all criteria.
     pub fn passes(&self, seqvar: &SequenceVariant) -> Result<PassesResult, anyhow::Error> {
         let pass_frequency = self.passes_frequency(seqvar)?;
-        let pass_effects = self.passes_effects(seqvar)?;
+        let pass_consequences = self.passes_consequences(seqvar)?;
         let pass_quality = self.passes_quality(seqvar)?;
         let pass_genotype = self.passes_genotype(seqvar)?;
-        let pass_genes_regions = self.passes_genes_regions(seqvar)?;
+        let pass_genes_allowlist = self.passes_genes_allowlist(seqvar)?;
+        let pass_regions_allowlist = self.passes_regions_allowlist(seqvar)?;
         let pass_clinvar = self.passes_clinvar(seqvar)?;
         let pass_all = pass_frequency
-            && pass_effects
+            && pass_consequences
             && pass_quality
             && pass_genotype
-            && pass_genes_regions
+            && pass_genes_allowlist
+            && pass_regions_allowlist
             && pass_clinvar;
         Ok(PassesResult { pass_all })
     }
@@ -113,8 +115,26 @@ impl QueryInterpreter {
         Ok(true)
     }
 
-    fn passes_effects(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
-        Ok(true)
+    /// Determine whether the `seqvar` passes the consequences filter.
+    ///
+    /// If no consequences are given for filtration then this is a pass.
+    fn passes_consequences(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
+        if self.query.consequences.is_empty() {
+            return Ok(true);
+        }
+
+        let query_csq =
+            std::collections::BTreeSet::from_iter(self.query.consequences.iter().cloned());
+        for ann_field in &seqvar.ann_fields {
+            let seqvar_csq =
+                std::collections::BTreeSet::from_iter(ann_field.consequences.iter().cloned());
+            let intersection_csq = query_csq.intersection(&seqvar_csq);
+            if intersection_csq.count() > 0 {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
     }
 
     fn passes_quality(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
@@ -125,7 +145,11 @@ impl QueryInterpreter {
         Ok(true)
     }
 
-    fn passes_genes_regions(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
+    fn passes_genes_allowlist(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
+        Ok(true)
+    }
+
+    fn passes_regions_allowlist(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
         Ok(true)
     }
 
@@ -136,11 +160,66 @@ impl QueryInterpreter {
 
 #[cfg(test)]
 mod test {
+    use mehari::annotate::seqvars::ann::{AnnField, Consequence};
     use rstest::rstest;
+    use strum::IntoEnumIterator;
 
     use crate::seqvars::query::schema::{CaseQuery, SequenceVariant};
 
     use super::QueryInterpreter;
+
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn passes_consequence_negative(#[case] c_equals_csq: bool) -> Result<(), anyhow::Error> {
+        for csq in Consequence::iter() {
+            let interpreter = QueryInterpreter {
+                query: CaseQuery {
+                    consequences: Consequence::iter()
+                        .filter(|c| (*c == csq) == c_equals_csq)
+                        .collect(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            let seq_var = SequenceVariant {
+                reference: "G".into(),
+                alternative: "A".into(),
+                ann_fields: vec![AnnField {
+                    allele: mehari::annotate::seqvars::ann::Allele::Alt {
+                        alternative: "A".into(),
+                    },
+                    consequences: vec![csq],
+                    putative_impact: csq.impact(),
+                    gene_symbol: Default::default(),
+                    gene_id: Default::default(),
+                    feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
+                        term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
+                    },
+                    feature_id: Default::default(),
+                    feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
+                    rank: Default::default(),
+                    hgvs_t: Default::default(),
+                    hgvs_p: Default::default(),
+                    tx_pos: Default::default(),
+                    cds_pos: Default::default(),
+                    protein_pos: Default::default(),
+                    distance: Default::default(),
+                    messages: Default::default(),
+                }],
+                ..Default::default()
+            };
+
+            assert_eq!(
+                interpreter.passes(&seq_var)?.pass_all,
+                c_equals_csq,
+                "csq = {:?}",
+                &csq
+            );
+        }
+
+        Ok(())
+    }
 
     #[rstest]
     // -- frequency ---------------------------------------------------------
@@ -224,6 +303,30 @@ mod test {
             gnomad_exomes_hom: seqvar_gnomad_exomes_hom,
             gnomad_exomes_hemi: seqvar_gnomad_exomes_hemi,
             chrom: "X".to_string(),
+            reference: "G".into(),
+            alternative: "A".into(),
+            ann_fields: vec![AnnField {
+                allele: mehari::annotate::seqvars::ann::Allele::Alt {
+                    alternative: "A".into(),
+                },
+                consequences: vec![Consequence::MissenseVariant],
+                putative_impact: Consequence::MissenseVariant.impact(),
+                gene_symbol: Default::default(),
+                gene_id: Default::default(),
+                feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
+                    term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
+                },
+                feature_id: Default::default(),
+                feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
+                rank: Default::default(),
+                hgvs_t: Default::default(),
+                hgvs_p: Default::default(),
+                tx_pos: Default::default(),
+                cds_pos: Default::default(),
+                protein_pos: Default::default(),
+                distance: Default::default(),
+                messages: Default::default(),
+            }],
             ..Default::default()
         };
 
@@ -314,6 +417,30 @@ mod test {
             gnomad_genomes_hom: seqvar_gnomad_genomes_hom,
             gnomad_genomes_hemi: seqvar_gnomad_genomes_hemi,
             chrom: "X".to_string(),
+            reference: "G".into(),
+            alternative: "A".into(),
+            ann_fields: vec![AnnField {
+                allele: mehari::annotate::seqvars::ann::Allele::Alt {
+                    alternative: "A".into(),
+                },
+                consequences: vec![Consequence::MissenseVariant],
+                putative_impact: Consequence::MissenseVariant.impact(),
+                gene_symbol: Default::default(),
+                gene_id: Default::default(),
+                feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
+                    term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
+                },
+                feature_id: Default::default(),
+                feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
+                rank: Default::default(),
+                hgvs_t: Default::default(),
+                hgvs_p: Default::default(),
+                tx_pos: Default::default(),
+                cds_pos: Default::default(),
+                protein_pos: Default::default(),
+                distance: Default::default(),
+                messages: Default::default(),
+            }],
             ..Default::default()
         };
 
@@ -383,6 +510,30 @@ mod test {
             helix_het: seqvar_helix_het,
             helix_hom: seqvar_helix_hom,
             chrom: "MT".to_string(),
+            reference: "G".into(),
+            alternative: "A".into(),
+            ann_fields: vec![AnnField {
+                allele: mehari::annotate::seqvars::ann::Allele::Alt {
+                    alternative: "A".into(),
+                },
+                consequences: vec![Consequence::MissenseVariant],
+                putative_impact: Consequence::MissenseVariant.impact(),
+                gene_symbol: Default::default(),
+                gene_id: Default::default(),
+                feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
+                    term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
+                },
+                feature_id: Default::default(),
+                feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
+                rank: Default::default(),
+                hgvs_t: Default::default(),
+                hgvs_p: Default::default(),
+                tx_pos: Default::default(),
+                cds_pos: Default::default(),
+                protein_pos: Default::default(),
+                distance: Default::default(),
+                messages: Default::default(),
+            }],
             ..Default::default()
         };
 
@@ -452,6 +603,30 @@ mod test {
             gnomad_genomes_het: seqvar_gnomad_genomes_het,
             gnomad_genomes_hom: seqvar_gnomad_genomes_hom,
             chrom: "MT".to_string(),
+            reference: "G".into(),
+            alternative: "A".into(),
+            ann_fields: vec![AnnField {
+                allele: mehari::annotate::seqvars::ann::Allele::Alt {
+                    alternative: "A".into(),
+                },
+                consequences: vec![Consequence::MissenseVariant],
+                putative_impact: Consequence::MissenseVariant.impact(),
+                gene_symbol: Default::default(),
+                gene_id: Default::default(),
+                feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
+                    term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
+                },
+                feature_id: Default::default(),
+                feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
+                rank: Default::default(),
+                hgvs_t: Default::default(),
+                hgvs_p: Default::default(),
+                tx_pos: Default::default(),
+                cds_pos: Default::default(),
+                protein_pos: Default::default(),
+                distance: Default::default(),
+                messages: Default::default(),
+            }],
             ..Default::default()
         };
 

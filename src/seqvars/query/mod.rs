@@ -88,7 +88,7 @@ struct ResultPayload {
     /// HGVS.p code of variant
     pub hgvs_p: Option<String>,
     /// The variant effect.
-    pub effect: Vec<schema::VariantEffect>,
+    pub effect: Vec<mehari::annotate::seqvars::ann::Consequence>,
 
     // -- gnomAD constraint scores -------------------------------------------
     /// gnomAD loeuf score
@@ -195,7 +195,7 @@ struct ResultRecord {
 struct QueryStats {
     pub count_passed: usize,
     pub count_total: usize,
-    pub by_effect: indexmap::IndexMap<schema::VariantEffect, usize>,
+    pub by_effect: indexmap::IndexMap<mehari::annotate::seqvars::ann::Consequence, usize>,
 }
 
 /// Annotate the payload of the record with `annonars`.

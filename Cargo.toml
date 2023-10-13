@@ -16,6 +16,7 @@ annonars = "0.22"
 anyhow = { version = "1.0", features = ["backtrace"] }
 base16ct = "0.2"
 bio = "1.4"
+byteorder = { version = "1.5.0", features = ["i128"] }
 byte-unit = "4.0"
 chrono = { version = "0.4", features = ["serde"] }
 clap-verbosity-flag = "2.0"
@@ -29,11 +30,18 @@ hgvs = "0.11"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
 log = "0.4"
-mehari = "0.12"
+mehari = { path = "../mehari" }
 multimap = "0.9"
+noodles-bgzf = "0.24.0"
+noodles-vcf = "0.40.0"
 procfs = "0.15"
 prost = "0.12"
+rand = "0.8"
+rand_core = "0.6"
+rayon = "1.8.0"
 regex = "1.9"
+rocksdb-utils-lookup = "0.3.0"
+rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
 serde_json = "1.0"
 serde-jsonlines = "0.4"
 serde = { version = "1.0", features = ["serde_derive"] }
@@ -47,14 +55,6 @@ thousands = "0.2"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 uuid = { version = "1.4", features = ["v4", "fast-rng", "serde"] }
-noodles-vcf = "0.40.0"
-rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
-noodles-bgzf = "0.24.0"
-rand = "0.8"
-rand_core = "0.6"
-rocksdb-utils-lookup = "0.3.0"
-rayon = "1.8.0"
-byteorder = { version = "1.5.0", features = ["i128"] }
 
 [build-dependencies]
 prost-build = "0.12"

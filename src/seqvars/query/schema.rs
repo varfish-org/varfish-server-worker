@@ -1,133 +1,6 @@
 //! Supporting code for seqvar query definition.
 
 use noodles_vcf as vcf;
-use strum::IntoEnumIterator;
-
-/// Variant effects.
-#[derive(
-    serde::Serialize,
-    serde::Deserialize,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Debug,
-    Clone,
-    Copy,
-    strum::EnumIter,
-)]
-pub enum VariantEffect {
-    /// 3' UTR exon variant.
-    #[serde(rename = "3_prime_UTR_exon_variant")]
-    ThreePrimeUtrExonVariant,
-    /// 3' UTR intron variant.
-    #[serde(rename = "3_prime_UTR_intron_variant")]
-    ThreePrimeUtrIntronVariant,
-    /// 5' UTR exon variant.
-    #[serde(rename = "5_prime_UTR_exon_variant")]
-    FivePrimeUtrExonVariant,
-    /// 5' UTR intron variant.
-    #[serde(rename = "5_prime_UTR_intron_variant")]
-    FivePrimeUtrIntronVariant,
-    /// Coding transcript intron variant.
-    #[serde(rename = "coding_transcript_intron_variant")]
-    CodingTranscriptIntronVariant,
-    /// Complex substitution.
-    #[serde(rename = "complex_substitution")]
-    ComplexSubstitution,
-    /// Direct tandem duplication.
-    #[serde(rename = "direct_tandem_duplication")]
-    DirectTandemDuplication,
-    /// Disruptive in-frame deletion.
-    #[serde(rename = "disruptive_inframe_deletion")]
-    DisruptiveInframeDeletion,
-    /// Disruptive in-frame insertion.
-    #[serde(rename = "disruptive_inframe_insertion")]
-    DisruptiveInframeInsertion,
-    /// Downstream gene variant.
-    #[serde(rename = "downstream_gene_variant")]
-    DownstreamGeneVariant,
-    /// Exon loss variant.
-    #[serde(rename = "exon_loss_variant")]
-    ExonLossVariant,
-    /// Feature truncation.
-    #[serde(rename = "feature_truncation")]
-    FeatureTruncation,
-    /// Frameshift elongation.
-    #[serde(rename = "frameshift_elongation")]
-    FrameshiftElongation,
-    /// Frameshift truncation.
-    #[serde(rename = "frameshift_truncation")]
-    FrameshiftTruncation,
-    /// Frameshift variant.
-    #[serde(rename = "frameshift_variant")]
-    FrameshiftVariant,
-    /// In-frame deletion.
-    #[serde(rename = "inframe_deletion")]
-    InframeDeletion,
-    /// In-frame insertion.
-    #[serde(rename = "inframe_insertion")]
-    InframeInsertion,
-    /// Intergenic variant.
-    #[serde(rename = "intergenic_variant")]
-    IntergenicVariant,
-    /// Internal feature elongation.
-    #[serde(rename = "internal_feature_elongation")]
-    InternalFeatureElongation,
-    /// Missense variant.
-    #[serde(rename = "missense_variant")]
-    MissenseVariant,
-    /// MNV.
-    #[serde(rename = "mnv")]
-    Mnv,
-    /// Non-coding transcript exon variant.
-    #[serde(rename = "non_coding_transcript_exon_variant")]
-    NonCodingTranscriptExonVariant,
-    /// Non-coding transcript intron variant.
-    #[serde(rename = "non_coding_transcript_intron_variant")]
-    NonCodingTranscriptIntronVariant,
-    /// Splice acceptor variant.
-    #[serde(rename = "splice_acceptor_variant")]
-    SpliceAcceptorVariant,
-    /// Splice donor variant.
-    #[serde(rename = "splice_donor_variant")]
-    SpliceDonorVariant,
-    /// Splice region variant.
-    #[serde(rename = "splice_region_variant")]
-    SpliceRegionVariant,
-    /// Start lost.
-    #[serde(rename = "start_lost")]
-    StartLost,
-    /// Stop gained.
-    #[serde(rename = "stop_gained")]
-    StopGained,
-    /// Stop lost.
-    #[serde(rename = "stop_lost")]
-    StopLost,
-    /// Stop retained variant.
-    #[serde(rename = "stop_retained_variant")]
-    StopRetainedVariant,
-    /// Structural variant.
-    #[serde(rename = "structural_variant")]
-    StructuralVariant,
-    /// Synonymous variant.
-    #[serde(rename = "synonymous_variant")]
-    SynonymousVariant,
-    /// Transcript ablation.
-    #[serde(rename = "transcript_ablation")]
-    TranscriptAblation,
-    /// Upstream gene variant.
-    #[serde(rename = "upstream_gene_variant")]
-    UpstreamGeneVariant,
-}
-
-impl VariantEffect {
-    /// Return vector of all values of `VariantEffect`.
-    pub fn all() -> Vec<Self> {
-        Self::iter().collect()
-    }
-}
 
 /// Enumeration for recessive mode queries.
 #[derive(
@@ -265,8 +138,8 @@ pub struct GenomicRegion {
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct CaseQuery {
-    /// Effects to consider.
-    pub effects: Vec<VariantEffect>,
+    /// Molecular consequences to consider.
+    pub consequences: Vec<mehari::annotate::seqvars::ann::Consequence>,
 
     /// Quality settings for each individual.
     pub quality: indexmap::IndexMap<String, QualitySettings>,
@@ -357,7 +230,7 @@ impl Default for CaseQuery {
     /// Returns default values for a `CaseQuery` which makes all variants pass.
     fn default() -> Self {
         Self {
-            effects: VariantEffect::all(),
+            consequences: mehari::annotate::seqvars::ann::Consequence::all(),
             gnomad_exomes_enabled: Default::default(),
             gnomad_genomes_enabled: Default::default(),
             inhouse_enabled: Default::default(),
@@ -419,7 +292,7 @@ pub struct CallInfo {
 ///
 /// This uses a subset/specialization of what is described by the VCF standard
 /// for the purpose of running SV queries in `varfish-server-worker`.
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, /*Clone,*/ Default)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct SequenceVariant {
     /// Chromosome name
     pub chrom: String,
