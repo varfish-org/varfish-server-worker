@@ -93,6 +93,31 @@ pub enum GenotypeChoice {
     RecessiveParent,
 }
 
+impl GenotypeChoice {
+    /// Return wehther the genotype choice matches the genotype string.
+    ///
+    /// Note that we assume properly ingested VCFs with only one alternate allele.
+    /// The valid genotype strings have the form "<VAL>/<VAL>", "<VAL>|<VAL>" or
+    /// "<VAL>" with "<VAL>" being one of "0", "1", and ".".
+    pub fn matches(&self, gt_str: &str) -> Result<bool, anyhow::Error> {
+        Ok(match self {
+            GenotypeChoice::Any => true,
+            GenotypeChoice::Ref => ["0", "0|0"].contains(&gt_str),
+            GenotypeChoice::Het => ["0/1", "0|1", "1/0", "1|0"].contains(&gt_str),
+            GenotypeChoice::Hom => ["1", "1/1", "1|1"].contains(&gt_str),
+            GenotypeChoice::NonHom => !["1", "1/1", "1|1"].contains(&gt_str),
+            GenotypeChoice::Variant => ["1", "0/1", "0|1", "1/0", "1|1"].contains(&gt_str),
+            GenotypeChoice::NonVariant => !["1", "0/1", "0|1", "1/0", "1|1"].contains(&gt_str),
+            GenotypeChoice::NonReference => !["0", "0|0"].contains(&gt_str),
+            GenotypeChoice::ComphetIndex
+            | GenotypeChoice::RecessiveIndex
+            | GenotypeChoice::RecessiveParent => {
+                anyhow::bail!("recessive marker is not a genotype choice")
+            }
+        })
+    }
+}
+
 /// Quality settings for one sample.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct QualitySettings {
@@ -147,6 +172,10 @@ pub struct CaseQuery {
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
     /// List of selected variants.
     pub selected_variants: Option<Vec<String>>, // TODO: remove?
+    /// Selected recessive mode.
+    pub recessive_mode: Option<RecessiveMode>,
+    /// Recessive index, if any.
+    pub recessive_index: Option<String>,
 
     /// Whether to include coding transcripts.
     pub transcripts_coding: bool,
@@ -267,6 +296,8 @@ impl Default for CaseQuery {
             helixmtdb_frequency: Default::default(),
             helixmtdb_heteroplasmic: Default::default(),
             helixmtdb_homoplasmic: Default::default(),
+            recessive_mode: Default::default(),
+            recessive_index: Default::default(),
         }
     }
 }

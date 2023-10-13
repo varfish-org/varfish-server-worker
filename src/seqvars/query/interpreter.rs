@@ -142,7 +142,182 @@ impl QueryInterpreter {
     }
 
     fn passes_genotype(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
-        Ok(true)
+        let result = if let (Some(index_name), Some(mode)) = (
+            self.query.recessive_index.as_ref(),
+            self.query.recessive_mode,
+        ) {
+            self.process_genotype_recessive_modes(mode, index_name, seqvar)?
+        } else {
+            self.process_genotype_non_recessive_mode(seqvar)?
+        };
+
+        tracing::trace!(
+            "variant {:?} has result {} for genotype filter {:?}",
+            seqvar,
+            result,
+            &self.query.genotype
+        );
+        Ok(result)
+    }
+
+    /// Handle case of the mode being one of the recessive modes.
+    fn process_genotype_recessive_modes(
+        &self,
+        mode: super::schema::RecessiveMode,
+        index_name: &str,
+        seqvar: &SequenceVariant,
+    ) -> Result<bool, anyhow::Error> {
+        // For recessive mode, we have to know the samples selected for index and parents.
+        let index_gt_string = {
+            let call_info = seqvar.call_info.get(index_name).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "index sample {} not found in call info for {:?}",
+                    &index_name,
+                    &seqvar
+                )
+            })?;
+            call_info.genotype.as_ref().cloned().ok_or_else(|| {
+                anyhow::anyhow!(
+                    "index sample {} has no genotype in call info for {:?}",
+                    &index_name,
+                    &seqvar
+                )
+            })?
+        };
+        let parent_names = self
+            .query
+            .genotype
+            .iter()
+            .flat_map(|(sample, choice)| {
+                if matches!(
+                    choice,
+                    Some(crate::seqvars::query::schema::GenotypeChoice::RecessiveParent)
+                ) {
+                    Some(sample.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+        let parent_gt_strings = parent_names
+            .iter()
+            .map(|parent_name| {
+                seqvar
+                    .call_info
+                    .get(parent_name)
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "parent sample {} not found in call info for {:?}",
+                            &parent_name,
+                            &seqvar
+                        )
+                    })?
+                    .genotype
+                    .as_ref()
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "parent sample {} has no genotype in call info for {:?}",
+                            &parent_name,
+                            &seqvar
+                        )
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let compound_recessive_ok_index = crate::seqvars::query::schema::GenotypeChoice::Het
+            .matches(&index_gt_string)
+            .map_err(|e| anyhow::anyhow!("invalid index genotype: {}", e))?;
+        let compound_recessive_parents_ref = parent_gt_strings
+            .iter()
+            .filter(|parent_gt_string| {
+                crate::seqvars::query::schema::GenotypeChoice::Ref
+                    .matches(parent_gt_string)
+                    .unwrap_or(false)
+            })
+            .count();
+        let compound_recessive_parents_het = parent_gt_strings
+            .iter()
+            .filter(|parent_gt_string| {
+                crate::seqvars::query::schema::GenotypeChoice::Het
+                    .matches(parent_gt_string)
+                    .unwrap_or(false)
+            })
+            .count();
+        let compound_recessive_parents_hom = parent_gt_strings
+            .iter()
+            .filter(|parent_gt_string| {
+                crate::seqvars::query::schema::GenotypeChoice::Hom
+                    .matches(parent_gt_string)
+                    .unwrap_or(false)
+            })
+            .count();
+        let compound_recessive_ok = compound_recessive_ok_index
+            && compound_recessive_parents_ref <= 1
+            && compound_recessive_parents_het <= 1
+            && compound_recessive_parents_hom == 0;
+
+        let homozygous_recessive_ok_index = crate::seqvars::query::schema::GenotypeChoice::Hom
+            .matches(&index_gt_string)
+            .map_err(|e| anyhow::anyhow!("invalid index genotype: {}", e))?;
+        let homozygous_recessive_ok_parents = parent_gt_strings
+            .iter()
+            .map(|parent_gt_string| {
+                crate::seqvars::query::schema::GenotypeChoice::Het
+                    .matches(parent_gt_string)
+                    .map_err(|e| anyhow::anyhow!("invalid parent genotype: {}", e))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let homozygous_recessive_ok =
+            homozygous_recessive_ok_index && homozygous_recessive_ok_parents.iter().all(|&ok| ok);
+
+        match mode {
+            super::schema::RecessiveMode::Recessive => {
+                Ok(compound_recessive_ok && homozygous_recessive_ok)
+            }
+            super::schema::RecessiveMode::CompoundRecessive => Ok(compound_recessive_ok),
+        }
+    }
+
+    /// Handle case if the mode is not "recessive".  Note that this actually includes the
+    /// homozygous recessive mode.
+    fn process_genotype_non_recessive_mode(
+        &self,
+        seqvar: &SequenceVariant,
+    ) -> Result<bool, anyhow::Error> {
+        for (sample_name, genotype) in self.query.genotype.iter() {
+            let genotype_choice = if let Some(genotype_choice) = genotype {
+                genotype_choice
+            } else {
+                tracing::trace!("no genotype choice for sample {} (skip&pass)", sample_name);
+                continue;
+            };
+            let genotype = if let Some(call_info) = seqvar.call_info.get(sample_name) {
+                if let Some(genotype) = call_info.genotype.as_ref() {
+                    genotype
+                } else {
+                    tracing::trace!("no GT for sample {} (skip&fail)", sample_name);
+                    return Ok(false);
+                }
+            } else {
+                tracing::trace!("no call info for sample {} (skip&fail)", sample_name);
+                return Ok(false);
+            };
+
+            if !genotype_choice
+                .matches(genotype)
+                .map_err(|e| anyhow::anyhow!("invalid genotype choice in {:?}: {}", &seqvar, e))?
+            {
+                tracing::trace!(
+                    "variant {:?} fails genotype filter {:?} on sample {}",
+                    seqvar,
+                    &self.query.genotype,
+                    sample_name
+                );
+                return Ok(false);
+            }
+        }
+
+        Ok(true) // all good up to here
     }
 
     fn passes_genes_allowlist(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
@@ -168,10 +343,52 @@ mod test {
 
     use super::QueryInterpreter;
 
+    #[test]
+    fn passes_gt_non_recessive_mode() -> Result<(), anyhow::Error> {
+        let interpreter = QueryInterpreter {
+            query: CaseQuery {
+                consequences: Consequence::iter()
+                    .filter(|c| (*c == csq) == c_equals_csq)
+                    .collect(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let seq_var = SequenceVariant {
+            reference: "G".into(),
+            alternative: "A".into(),
+            ann_fields: vec![AnnField {
+                allele: mehari::annotate::seqvars::ann::Allele::Alt {
+                    alternative: "A".into(),
+                },
+                consequences: vec![csq],
+                putative_impact: csq.impact(),
+                gene_symbol: Default::default(),
+                gene_id: Default::default(),
+                feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
+                    term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
+                },
+                feature_id: Default::default(),
+                feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
+                rank: Default::default(),
+                hgvs_t: Default::default(),
+                hgvs_p: Default::default(),
+                tx_pos: Default::default(),
+                cds_pos: Default::default(),
+                protein_pos: Default::default(),
+                distance: Default::default(),
+                messages: Default::default(),
+            }],
+            ..Default::default()
+        };
+
+        Ok(())
+    }
+
     #[rstest]
     #[case(true)]
     #[case(false)]
-    fn passes_consequence_negative(#[case] c_equals_csq: bool) -> Result<(), anyhow::Error> {
+    fn passes_consequence(#[case] c_equals_csq: bool) -> Result<(), anyhow::Error> {
         for csq in Consequence::iter() {
             let interpreter = QueryInterpreter {
                 query: CaseQuery {
