@@ -17,6 +17,7 @@ TXT_TO_BIN="cargo run --release -- strucvars txt-to-bin --assembly=grch37"
 mkdir -p $SCRIPT_DIR/db/worker/grch37/{features,genes,strucvars/bgdbs,tads}
 mkdir -p $SCRIPT_DIR/db/worker/noref/genes
 mkdir -p $SCRIPT_DIR/db/mehari/grch37
+mkdir -p $SCRIPT_DIR/db/annonars/grch37
 
 # Filter BED files
 filter-bed()
@@ -30,6 +31,18 @@ write-to()
 {
     tee $1 >/dev/null
 }
+
+# annonars/grch37
+
+SRC_ANNONARS=/data/sshfs/data/cephfs-1/work/projects/cubi_varfish_data/2023-06-05_varfish-db-downloader/varfish-db-downloader/output/reduced-dev/annonars
+for src in $SRC_ANNONARS/*-grch37*; do
+    if [[ $src == *c+* ]] || [[ $src == *gnomad* ]]; then
+        continue
+    fi
+    cp -r $src $SCRIPT_DIR/db/annonars/grch37/$(basename ${src%-grch37*})
+done
+
+exit 0
 
 # mehari/grch37/
 

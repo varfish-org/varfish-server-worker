@@ -216,7 +216,7 @@ struct QueryStats {
 fn run_query(
     interpreter: &QueryInterpreter,
     args: &Args,
-    dbs: &Databases,
+    dbs: &InMemoryDbs,
     mehari_tx_db: &TxSeqDatabase,
     mehari_tx_idx: &TxIntervalTrees,
     chrom_to_acc: &HashMap<String, String>,
@@ -825,9 +825,9 @@ pub fn overlapping_hgnc_ids(
         .collect::<Vec<_>>()
 }
 
-/// Bundle the used database to reduce argument count.
+/// Bundle the used in-memory database to reduce argument count.
 #[derive(Default, Debug)]
-pub struct Databases {
+pub struct InMemoryDbs {
     pub bg_dbs: BgDbBundle,
     pub patho_dbs: PathoDbBundle,
     pub tad_sets: TadSetBundle,
@@ -837,7 +837,10 @@ pub struct Databases {
 }
 
 /// Translate gene allow list to gene identifier sfrom
-pub fn translate_gene_allowlist(gene_allowlist: &Vec<String>, dbs: &Databases) -> HashSet<String> {
+pub fn translate_gene_allowlist(
+    gene_allowlist: &Vec<String>,
+    dbs: &InMemoryDbs,
+) -> HashSet<String> {
     let mut result = HashSet::new();
 
     let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
@@ -904,8 +907,8 @@ pub fn load_databases(
     path_worker_db: &str,
     genome_release: GenomeRelease,
     max_tad_distance: i32,
-) -> Result<Databases, anyhow::Error> {
-    Ok(Databases {
+) -> Result<InMemoryDbs, anyhow::Error> {
+    Ok(InMemoryDbs {
         bg_dbs: load_bg_dbs(path_worker_db, genome_release)?,
         patho_dbs: load_patho_dbs(path_worker_db, genome_release)?,
         tad_sets: load_tads(path_worker_db, genome_release, max_tad_distance)?,

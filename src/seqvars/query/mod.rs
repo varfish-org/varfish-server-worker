@@ -1,5 +1,6 @@
 //! Code implementing the "seqvars query" sub command.
 
+mod annonars;
 mod interpreter;
 mod schema;
 
@@ -208,7 +209,8 @@ fn create_payload(seqvar: &SequenceVariant) -> Result<ResultPayload, anyhow::Err
 fn run_query(
     interpreter: &interpreter::QueryInterpreter,
     args: &Args,
-    _dbs: &crate::strucvars::query::Databases,
+    in_memory_dbs: &crate::strucvars::query::InMemoryDbs,
+    annonars_dbs: &annonars::AnnonarsDbs,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
@@ -313,11 +315,26 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("Loading worker databases...");
     let before_loading = Instant::now();
     let path_worker_db = format!("{}/worker", &args.path_db);
-    let dbs = crate::strucvars::query::load_databases(
+    let in_memory_dbs = crate::strucvars::query::load_databases(
         &path_worker_db,
         args.genome_release,
         args.max_tad_distance,
-    )?;
+    )
+    .map_err(|e| {
+        anyhow::anyhow!(
+            "could not load worker databases from {}: {}",
+            path_worker_db,
+            e
+        )
+    })?;
+    let annonars_dbs = annonars::AnnonarsDbs::from_path(&args.path_db, args.genome_release)
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "could not load annonars databases from {}: {}",
+                args.path_db,
+                e
+            )
+        })?;
     tracing::info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()
@@ -332,7 +349,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         } else {
             Some(crate::strucvars::query::translate_gene_allowlist(
                 gene_allowlist,
-                &dbs,
+                &in_memory_dbs,
             ))
         }
     } else {
@@ -344,7 +361,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let query_stats = run_query(
         &interpreter::QueryInterpreter::new(query, hgvs_allowlist),
         args,
-        &dbs,
+        &in_memory_dbs,
+        &annonars_dbs,
         &mut rng,
     )?;
     tracing::info!("... done running query in {:?}", before_query.elapsed());

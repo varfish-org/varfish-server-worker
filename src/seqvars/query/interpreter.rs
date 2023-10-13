@@ -22,6 +22,9 @@ pub struct PassesResult {
 impl QueryInterpreter {
     /// Construct new `QueryInterpreter` with the given query settings.
     pub fn new(query: CaseQuery, hgvs_allowlist: Option<HashSet<String>>) -> Self {
+        tracing::error!(
+            "note well that we will need a second pass for compound heterozygous variants"
+        );
         QueryInterpreter {
             query,
             hgvs_allowlist,
@@ -30,6 +33,7 @@ impl QueryInterpreter {
 
     /// Determine whether the annotated `SequenceVariant` passes all criteria.
     pub fn passes(&self, _seqvar: &SequenceVariant) -> Result<PassesResult, anyhow::Error> {
-        Ok(PassesResult { pass_all: true })
+        todo!()
+        // Ok(PassesResult { pass_all: true })
     }
 }
