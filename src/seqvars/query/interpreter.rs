@@ -343,47 +343,47 @@ mod test {
 
     use super::QueryInterpreter;
 
-    #[test]
-    fn passes_gt_non_recessive_mode() -> Result<(), anyhow::Error> {
-        let interpreter = QueryInterpreter {
-            query: CaseQuery {
-                consequences: Consequence::iter()
-                    .filter(|c| (*c == csq) == c_equals_csq)
-                    .collect(),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-        let seq_var = SequenceVariant {
-            reference: "G".into(),
-            alternative: "A".into(),
-            ann_fields: vec![AnnField {
-                allele: mehari::annotate::seqvars::ann::Allele::Alt {
-                    alternative: "A".into(),
-                },
-                consequences: vec![csq],
-                putative_impact: csq.impact(),
-                gene_symbol: Default::default(),
-                gene_id: Default::default(),
-                feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
-                    term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
-                },
-                feature_id: Default::default(),
-                feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
-                rank: Default::default(),
-                hgvs_t: Default::default(),
-                hgvs_p: Default::default(),
-                tx_pos: Default::default(),
-                cds_pos: Default::default(),
-                protein_pos: Default::default(),
-                distance: Default::default(),
-                messages: Default::default(),
-            }],
-            ..Default::default()
-        };
+    // #[test]
+    // fn passes_gt_non_recessive_mode() -> Result<(), anyhow::Error> {
+    //     let interpreter = QueryInterpreter {
+    //         query: CaseQuery {
+    //             consequences: Consequence::iter()
+    //                 .filter(|c| (*c == csq) == c_equals_csq)
+    //                 .collect(),
+    //             ..Default::default()
+    //         },
+    //         ..Default::default()
+    //     };
+    //     let seq_var = SequenceVariant {
+    //         reference: "G".into(),
+    //         alternative: "A".into(),
+    //         ann_fields: vec![AnnField {
+    //             allele: mehari::annotate::seqvars::ann::Allele::Alt {
+    //                 alternative: "A".into(),
+    //             },
+    //             consequences: vec![csq],
+    //             putative_impact: csq.impact(),
+    //             gene_symbol: Default::default(),
+    //             gene_id: Default::default(),
+    //             feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
+    //                 term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
+    //             },
+    //             feature_id: Default::default(),
+    //             feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
+    //             rank: Default::default(),
+    //             hgvs_t: Default::default(),
+    //             hgvs_p: Default::default(),
+    //             tx_pos: Default::default(),
+    //             cds_pos: Default::default(),
+    //             protein_pos: Default::default(),
+    //             distance: Default::default(),
+    //             messages: Default::default(),
+    //         }],
+    //         ..Default::default()
+    //     };
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     #[rstest]
     #[case(true)]

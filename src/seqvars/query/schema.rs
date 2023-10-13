@@ -550,6 +550,62 @@ pub mod test {
     use noodles_vcf as vcf;
     use rstest::rstest;
 
+    pub mod genotype_choice {
+        use super::super::GenotypeChoice::{self, *};
+        use rstest::rstest;
+
+        #[rstest]
+        #[case(Any, &["0",
+        "0/0",
+        "0|0",
+        "1",
+        "1/1",
+        "1|1",
+        "0/1",
+        "0/.",
+        "0|1",
+        "0|.",
+        "1/0",
+        "1|0",
+        ".",
+        "./0",
+        "./1",
+        "./.",
+        ".|0",
+        ".|1",
+        ".|."], true)]
+        #[case(Ref, &["0",
+        "0/0",
+        "0|0",
+], true)]
+        #[case(Ref, &[
+        "1",
+        "1/1",
+        "1|1",
+        "0/1",
+        "0/.",
+        "0|1",
+        "0|.",
+        "1/0",
+        "1|0",
+        ".",
+        "./0",
+        "./1",
+        "./.",
+        ".|0",
+        ".|1",
+        ".|."], false)]
+        pub fn matches(
+            #[case] genotype_choice: GenotypeChoice,
+            #[case] gt_strs: &[&str],
+            #[case] expected: bool,
+        ) {
+            for gt_str in gt_strs {
+                assert_eq!(genotype_choice.matches(gt_str).unwrap(), expected);
+            }
+        }
+    }
+
     #[rstest]
     #[case("tests/seqvars/query/empty.json")]
     #[case("tests/seqvars/query/full.json")]
