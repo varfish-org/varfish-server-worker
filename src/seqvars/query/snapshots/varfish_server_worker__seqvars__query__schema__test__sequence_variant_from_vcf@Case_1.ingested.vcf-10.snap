@@ -6,6 +6,7 @@ chrom: "17"
 pos: 41273700
 reference: C
 alternative: CA
+ann_fields: []
 gnomad_exomes_an: 0
 gnomad_exomes_hom: 0
 gnomad_exomes_het: 0

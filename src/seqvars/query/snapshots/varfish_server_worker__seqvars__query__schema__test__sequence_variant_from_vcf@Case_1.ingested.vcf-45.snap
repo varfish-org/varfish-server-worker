@@ -6,6 +6,7 @@ chrom: MT
 pos: 11204
 reference: T
 alternative: C
+ann_fields: []
 gnomad_exomes_an: 0
 gnomad_exomes_hom: 0
 gnomad_exomes_het: 0

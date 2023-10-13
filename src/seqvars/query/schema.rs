@@ -102,13 +102,19 @@ impl GenotypeChoice {
     pub fn matches(&self, gt_str: &str) -> Result<bool, anyhow::Error> {
         Ok(match self {
             GenotypeChoice::Any => true,
-            GenotypeChoice::Ref => ["0", "0|0"].contains(&gt_str),
+            GenotypeChoice::Ref => ["0", "0|0", "0/0"].contains(&gt_str),
             GenotypeChoice::Het => ["0/1", "0|1", "1/0", "1|0"].contains(&gt_str),
             GenotypeChoice::Hom => ["1", "1/1", "1|1"].contains(&gt_str),
             GenotypeChoice::NonHom => !["1", "1/1", "1|1"].contains(&gt_str),
-            GenotypeChoice::Variant => ["1", "0/1", "0|1", "1/0", "1|1"].contains(&gt_str),
-            GenotypeChoice::NonVariant => !["1", "0/1", "0|1", "1/0", "1|1"].contains(&gt_str),
-            GenotypeChoice::NonReference => !["0", "0|0"].contains(&gt_str),
+            GenotypeChoice::Variant => [
+                "1", "0/1", "0|1", "1/0", "1|0", "1|1", "1/1", "./1", ".|1", "1/.", "1|.",
+            ]
+            .contains(&gt_str),
+            GenotypeChoice::NonVariant => ![
+                "1", "0/1", "0|1", "1/0", "1|0", "1|1", "1/1", "./1", ".|1", "1/.", "1|.",
+            ]
+            .contains(&gt_str),
+            GenotypeChoice::NonReference => !["0", "0|0", "0/0"].contains(&gt_str),
             GenotypeChoice::ComphetIndex
             | GenotypeChoice::RecessiveIndex
             | GenotypeChoice::RecessiveParent => {
@@ -555,53 +561,34 @@ pub mod test {
         use rstest::rstest;
 
         #[rstest]
-        #[case(Any, &["0",
-        "0/0",
-        "0|0",
-        "1",
-        "1/1",
-        "1|1",
-        "0/1",
-        "0/.",
-        "0|1",
-        "0|.",
-        "1/0",
-        "1|0",
-        ".",
-        "./0",
-        "./1",
-        "./.",
-        ".|0",
-        ".|1",
-        ".|."], true)]
-        #[case(Ref, &["0",
-        "0/0",
-        "0|0",
-], true)]
-        #[case(Ref, &[
-        "1",
-        "1/1",
-        "1|1",
-        "0/1",
-        "0/.",
-        "0|1",
-        "0|.",
-        "1/0",
-        "1|0",
-        ".",
-        "./0",
-        "./1",
-        "./.",
-        ".|0",
-        ".|1",
-        ".|."], false)]
+        #[case(Any, &["0", "0/0", "0|0", "1", "1/1", "1|1", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], true)]
+        #[case(Ref, &["0", "0/0", "0|0"], true)]
+        #[case(Ref, &[ "1", "1/1", "1|1", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], false)]
+        #[case(NonReference, &["0", "0/0", "0|0"], false)]
+        #[case(NonReference, &[ "1", "1/1", "1|1", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], true)]
+        #[case(Het, &["0/1", "0|1", "1/0", "1|0"], true)]
+        #[case(Het, &["0", "0/0", "0|0", "1", "1/1", "1|1", "0/.", "0|.", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], false)]
+        #[case(Hom, &["1", "1/1", "1|1"], true)]
+        #[case(Hom, &["0", "0/0", "0|0", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], false)]
+        #[case(NonHom, &["1", "1/1", "1|1"], false)]
+        #[case(NonHom, &["0", "0/0", "0|0", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], true)]
+        #[case(Variant, &["1", "1/1", "1|1", "0/1",  "0|1",  "1/0", "1|0", "./1", ".|1"], true)]
+        #[case(Variant, &["0", "0/0", "0|0", "0/.", "0|.", ".", "./0", "./.", ".|0", ".|."], false)]
+        #[case(NonVariant, &["1", "1/1", "1|1", "0/1", "0|1",  "1/0", "1|0", "./1", ".|1"], false)]
+        #[case(NonVariant, &["0", "0/0", "0|0", "0|.", "0/.", ".", "./0", "./.", ".|0", ".|."], true)]
         pub fn matches(
             #[case] genotype_choice: GenotypeChoice,
             #[case] gt_strs: &[&str],
             #[case] expected: bool,
         ) {
             for gt_str in gt_strs {
-                assert_eq!(genotype_choice.matches(gt_str).unwrap(), expected);
+                assert_eq!(
+                    genotype_choice.matches(gt_str).unwrap(),
+                    expected,
+                    "{:?} {}",
+                    genotype_choice,
+                    gt_str
+                );
             }
         }
     }

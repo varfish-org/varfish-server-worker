@@ -6,6 +6,7 @@ chrom: "17"
 pos: 41252691
 reference: ATATAAT
 alternative: A
+ann_fields: []
 gnomad_exomes_an: 2368
 gnomad_exomes_hom: 10
 gnomad_exomes_het: 80

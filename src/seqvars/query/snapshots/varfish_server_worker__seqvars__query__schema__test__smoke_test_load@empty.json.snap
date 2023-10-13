@@ -2,48 +2,61 @@
 source: src/seqvars/query/schema.rs
 expression: "&query"
 ---
-effects:
-  - 3_prime_UTR_exon_variant
-  - 3_prime_UTR_intron_variant
-  - 5_prime_UTR_exon_variant
-  - 5_prime_UTR_intron_variant
-  - coding_transcript_intron_variant
-  - complex_substitution
-  - direct_tandem_duplication
-  - disruptive_inframe_deletion
-  - disruptive_inframe_insertion
-  - downstream_gene_variant
-  - exon_loss_variant
-  - feature_truncation
-  - frameshift_elongation
-  - frameshift_truncation
-  - frameshift_variant
-  - inframe_deletion
-  - inframe_insertion
-  - intergenic_variant
-  - internal_feature_elongation
-  - missense_variant
-  - mnv
-  - non_coding_transcript_exon_variant
-  - non_coding_transcript_intron_variant
-  - splice_acceptor_variant
-  - splice_donor_variant
-  - splice_region_variant
-  - start_lost
-  - stop_gained
-  - stop_lost
-  - stop_retained_variant
-  - structural_variant
-  - synonymous_variant
-  - transcript_ablation
-  - upstream_gene_variant
-gnomad_exomes_enabled: false
-gnomad_genomes_enabled: false
-inhouse_enabled: false
-helixmtdb_enabled: false
+consequences:
+  - ChromosomeNumberVariation
+  - ExonLossVariant
+  - FrameshiftVariant
+  - RareAminoAcidVariant
+  - SpliceAcceptorVariant
+  - SpliceDonorVariant
+  - StartLost
+  - StopGained
+  - StopLost
+  - TranscriptAblation
+  - ThreePrimeUtrTruncation
+  - FivePrimeUtrTruncaction
+  - ConservativeInframeDeletion
+  - ConservativeInframeInsertion
+  - DisruptiveInframeDeletion
+  - DisruptiveInframeInsertion
+  - MissenseVariant
+  - RegulatoryRegionAblation
+  - SpliceRegionVariant
+  - TbfsAblation
+  - FivePrimeUtrPrematureStartCodonGainVariant
+  - InitiatorCodonVariant
+  - StartRetained
+  - StopRetainedVariant
+  - SynonymousVariant
+  - ThreePrimeUtrVariant
+  - FivePrimeUtrVariant
+  - CodingSequenceVariant
+  - ConservedIntergenicVariant
+  - ConservedIntronVariant
+  - DownstreamGeneVariant
+  - ExonVariant
+  - FeatureElongation
+  - FeatureTruncation
+  - GeneVariant
+  - IntergenicVariant
+  - IntronVariant
+  - MatureMirnaVariant
+  - Mirna
+  - NmdTranscriptVariant
+  - NonCodingTranscriptExonVariant
+  - NonCodingTranscriptIntronVariant
+  - RegulatoryRegionAmplification
+  - RegulatoryRegionVariant
+  - TfBindingSiteVariant
+  - TfbsAmplification
+  - TranscriptAmplification
+  - TranscriptVariant
+  - UpstreamGeneVariant
 quality: {}
 genotype: {}
 selected_variants: ~
+recessive_mode: ~
+recessive_index: ~
 transcripts_coding: true
 transcripts_noncoding: true
 var_type_snv: true
@@ -58,6 +71,10 @@ clinvar_include_pathogenic: true
 clinvar_include_likely_benign: true
 clinvar_include_likely_pathogenic: true
 clinvar_include_uncertain_significance: true
+gnomad_exomes_enabled: false
+gnomad_genomes_enabled: false
+inhouse_enabled: false
+helixmtdb_enabled: false
 gnomad_exomes_frequency: ~
 gnomad_exomes_heterozygous: ~
 gnomad_exomes_homozygous: ~
@@ -71,6 +88,6 @@ inhouse_heterozygous: ~
 inhouse_homozygous: ~
 inhouse_hemizygous: ~
 helixmtdb_frequency: ~
-helixmtdb_heterozygous: ~
-helixmtdb_homozygous: ~
+helixmtdb_heteroplasmic: ~
+helixmtdb_homoplasmic: ~
 
