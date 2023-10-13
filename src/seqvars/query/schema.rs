@@ -268,15 +268,6 @@ pub struct CaseQuery {
     /// Effects to consider.
     pub effects: Vec<VariantEffect>,
 
-    /// Whether to enable filtration by gnomAD exomes.
-    pub gnomad_exomes_enabled: bool,
-    /// Whether to enable filtration by gnomAD genomes
-    pub gnomad_genomes_enabled: bool,
-    /// Whether to enable filtration by 1000 Genomes.
-    pub inhouse_enabled: bool,
-    /// Whether to enable filtration by mtDB.
-    pub helixmtdb_enabled: bool,
-
     /// Quality settings for each individual.
     pub quality: indexmap::IndexMap<String, QualitySettings>,
     /// Genotype choice for each individual.
@@ -318,6 +309,15 @@ pub struct CaseQuery {
     /// Whether to include uncertain significance ClinVar variants.
     pub clinvar_include_uncertain_significance: bool,
 
+    /// Whether to enable filtration by gnomAD exomes.
+    pub gnomad_exomes_enabled: bool,
+    /// Whether to enable filtration by gnomAD genomes
+    pub gnomad_genomes_enabled: bool,
+    /// Whether to enable filtration by 1000 Genomes.
+    pub inhouse_enabled: bool,
+    /// Whether to enable filtration by mtDB.
+    pub helixmtdb_enabled: bool,
+
     /// Maximal frequency in gnomAD exomes.
     pub gnomad_exomes_frequency: Option<f32>,
     /// Maximal number of heterozygous carriers in gnomAD exomes.
@@ -348,9 +348,9 @@ pub struct CaseQuery {
     /// Maximal frequency in HelixMtDb
     pub helixmtdb_frequency: Option<f32>,
     /// Maximal number of heterozygous carriers in HelixMtDb.
-    pub helixmtdb_heterozygous: Option<i32>,
+    pub helixmtdb_heteroplasmic: Option<i32>,
     /// Maximal number of homozygous carriers in HelixMtDb.
-    pub helixmtdb_homozygous: Option<i32>,
+    pub helixmtdb_homoplasmic: Option<i32>,
 }
 
 impl Default for CaseQuery {
@@ -392,8 +392,8 @@ impl Default for CaseQuery {
             inhouse_homozygous: Default::default(),
             inhouse_hemizygous: Default::default(),
             helixmtdb_frequency: Default::default(),
-            helixmtdb_heterozygous: Default::default(),
-            helixmtdb_homozygous: Default::default(),
+            helixmtdb_heteroplasmic: Default::default(),
+            helixmtdb_homoplasmic: Default::default(),
         }
     }
 }
@@ -419,7 +419,7 @@ pub struct CallInfo {
 ///
 /// This uses a subset/specialization of what is described by the VCF standard
 /// for the purpose of running SV queries in `varfish-server-worker`.
-#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, /*Clone,*/ Default)]
 pub struct SequenceVariant {
     /// Chromosome name
     pub chrom: String,
@@ -430,6 +430,9 @@ pub struct SequenceVariant {
     pub reference: String,
     /// Alternative allele.
     pub alternative: String,
+
+    /// Variant effect annotation.
+    pub ann_fields: Vec<mehari::annotate::seqvars::ann::AnnField>,
 
     /// Number of alleles in gnomAD exomes (not for chrMT).
     pub gnomad_exomes_an: i32,
@@ -609,6 +612,32 @@ impl SequenceVariant {
             helix_het,
             ..result
         })
+    }
+
+    /// Return allele frequency in gnomAD exomes.
+    pub fn gnomad_exomes_af(&self) -> f32 {
+        let an = self.gnomad_exomes_an as f32;
+        let hom = self.gnomad_exomes_hom as f32;
+        let het = self.gnomad_exomes_het as f32;
+        let hemi = self.gnomad_exomes_hemi as f32;
+        (2.0 * hom + het + hemi) / an
+    }
+
+    /// Return allele frequency in gnomAD genomes.
+    pub fn gnomad_genomes_af(&self) -> f32 {
+        let an = self.gnomad_genomes_an as f32;
+        let hom = self.gnomad_genomes_hom as f32;
+        let het = self.gnomad_genomes_het as f32;
+        let hemi = self.gnomad_genomes_hemi as f32;
+        (2.0 * hom + het + hemi) / an
+    }
+
+    /// Return allele frequency in HelixMtDb.
+    pub fn helixmtdb_af(&self) -> f32 {
+        let an = self.helix_an as f32;
+        let hom = self.helix_hom as f32;
+        let het = self.helix_het as f32;
+        (2.0 * hom + het) / an
     }
 }
 
