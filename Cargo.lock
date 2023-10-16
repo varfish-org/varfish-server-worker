@@ -55,7 +55,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tracing",
- "zstd",
+ "zstd 0.12.4",
 ]
 
 [[package]]
@@ -255,9 +255,9 @@ dependencies = [
 
 [[package]]
 name = "annonars"
-version = "0.21.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe254418f47df5e2ca6dadf365aa55865d8e9740388422faf3e81b64729ba337"
+checksum = "17a6e189155aa6d3488e373db9625fc80733ec50cda565e6ed4b160a337760c8"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -276,7 +276,7 @@ dependencies = [
  "indicatif",
  "log",
  "noodles-bed",
- "noodles-bgzf",
+ "noodles-bgzf 0.25.0",
  "noodles-core",
  "noodles-csi",
  "noodles-tabix",
@@ -1804,9 +1804,9 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0065ee55e312f43f41238309e4a311b2b16d02ee7ce7765bcb39a70e1c06417b"
+checksum = "ad5a7d9e2c5c19a95ec03a385a867b30d66cc7237f916f3ff0071ab7eb990f0d"
 dependencies = [
  "actix-web",
  "annonars",
@@ -1829,10 +1829,10 @@ dependencies = [
  "lazy_static",
  "log",
  "nom",
- "noodles-bgzf",
+ "noodles-bgzf 0.25.0",
  "noodles-core",
  "noodles-csi",
- "noodles-fasta",
+ "noodles-fasta 0.30.0",
  "noodles-tabix",
  "noodles-vcf",
  "parse-display",
@@ -1854,7 +1854,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "zstd",
+ "zstd 0.13.0",
 ]
 
 [[package]]
@@ -2006,6 +2006,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "noodles-bgzf"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d578e5a173cbfac77295db4188c959966ce24a3364e009d363170d1ed44066a"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "crossbeam-channel",
+ "flate2",
+]
+
+[[package]]
 name = "noodles-core"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2013,14 +2025,14 @@ checksum = "94fbe3192fe33acacabaedd387657f39b0fc606f1996d546db0dfe14703b843a"
 
 [[package]]
 name = "noodles-csi"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b2bb780250c88bc9ea69b56c1aa9df75decc6b79035f3f5ab10c0cd84d24fc6"
+checksum = "f327250086b20edade50756b6aee1851d656a3a5967cf94cbe4d4e10a5ef85d7"
 dependencies = [
  "bit-vec",
  "byteorder",
  "indexmap 2.0.2",
- "noodles-bgzf",
+ "noodles-bgzf 0.25.0",
  "noodles-core",
 ]
 
@@ -2032,32 +2044,44 @@ checksum = "1012431f881aad1912f9650a8d33e7f7493c6202bc2e889949ec1bc26a55f26d"
 dependencies = [
  "bytes",
  "memchr",
- "noodles-bgzf",
+ "noodles-bgzf 0.24.0",
+ "noodles-core",
+]
+
+[[package]]
+name = "noodles-fasta"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "310dcfb61e8e2cafb65d9da4b329a98a390f2b570c17599a7f4639328cfb3e2c"
+dependencies = [
+ "bytes",
+ "memchr",
+ "noodles-bgzf 0.25.0",
  "noodles-core",
 ]
 
 [[package]]
 name = "noodles-tabix"
-version = "0.29.0"
+version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "056e394ddb4c64bcc9806551a69833294062159600aa8ecf7167a922512bda4f"
+checksum = "f69786c5eaa25460ae5ea61215f8869edd7eb1728c043f314420cea0bbe59ed3"
 dependencies = [
  "bit-vec",
  "byteorder",
- "noodles-bgzf",
+ "noodles-bgzf 0.25.0",
  "noodles-core",
  "noodles-csi",
 ]
 
 [[package]]
 name = "noodles-vcf"
-version = "0.40.0"
+version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcd62cddca514dd04a13d3f4bf4ff83b5c7bca63c8e6b9ae0de2186ea6517a48"
+checksum = "a0c31d3f5fd3bef22fcca702e2a85ab93f1c076a9e34cb94bc0c21874d2f4e02"
 dependencies = [
  "indexmap 2.0.2",
  "memchr",
- "noodles-bgzf",
+ "noodles-bgzf 0.25.0",
  "noodles-core",
  "noodles-csi",
  "noodles-tabix",
@@ -2826,9 +2850,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94b3579efbd2915e936798fb9f52629feec3cbeef1ef23eb556d49d89ff31455"
 dependencies = [
  "chrono",
- "noodles-bgzf",
+ "noodles-bgzf 0.24.0",
  "noodles-core",
- "noodles-fasta",
+ "noodles-fasta 0.29.0",
  "rusqlite",
  "thiserror",
  "tracing",
@@ -3501,7 +3525,7 @@ dependencies = [
  "log",
  "mehari",
  "multimap 0.9.0",
- "noodles-bgzf",
+ "noodles-bgzf 0.25.0",
  "noodles-vcf",
  "pretty_assertions",
  "procfs",
@@ -3848,7 +3872,16 @@ version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a27595e173641171fc74a1232b7b1c7a7cb6e18222c11e9dfb9888fa424c53c"
 dependencies = [
- "zstd-safe",
+ "zstd-safe 6.0.6",
+]
+
+[[package]]
+name = "zstd"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bffb3309596d527cfcba7dfc6ed6052f1d39dfbd7c867aa2e865e4a449c10110"
+dependencies = [
+ "zstd-safe 7.0.0",
 ]
 
 [[package]]
@@ -3858,6 +3891,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee98ffd0b48ee95e6c5168188e44a54550b1564d9d530ee21d5f0eaed1069581"
 dependencies = [
  "libc",
+ "zstd-sys",
+]
+
+[[package]]
+name = "zstd-safe"
+version = "7.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43747c7422e2924c11144d5229878b98180ef8b06cca4ab5af37afc8a8d8ea3e"
+dependencies = [
  "zstd-sys",
 ]
 
