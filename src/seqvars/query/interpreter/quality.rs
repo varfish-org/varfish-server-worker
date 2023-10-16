@@ -138,10 +138,74 @@ mod test {
     use rstest::rstest;
 
     use crate::seqvars::query::schema::{
-        CallInfo,
+        CallInfo, CaseQuery,
         FailChoice::{self, *},
-        QualitySettings,
+        QualitySettings, SequenceVariant,
     };
+
+    #[rstest]
+    #[case(Ignore, true, true, false)]
+    #[case(Ignore, false, true, false)]
+    #[case(Drop, true, true, false)]
+    #[case(Drop, false, false, false)]
+    #[case(NoCall, true, true, false)]
+    #[case(NoCall, false, true, true)]
+    fn passes(
+        #[case] q_fail: FailChoice,
+        #[case] should_pass: bool,
+        #[case] expected_pass: bool,
+        #[case] any_no_call_sample: bool,
+    ) -> Result<(), anyhow::Error> {
+        let query = CaseQuery {
+            quality: vec![(
+                String::from("sample"),
+                QualitySettings {
+                    dp_het: None,
+                    dp_hom: None,
+                    gq: if should_pass { None } else { Some(40) },
+                    ab: None,
+                    ad: None,
+                    ad_max: None,
+                    fail: q_fail,
+                },
+            )]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        };
+        let seqvar = SequenceVariant {
+            call_info: vec![(
+                String::from("sample"),
+                CallInfo {
+                    quality: if should_pass { None } else { Some(30f32) },
+                    ..Default::default()
+                },
+            )]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        };
+
+        let res = super::passes(&query, &seqvar)?;
+
+        assert_eq!(
+            res.pass, expected_pass,
+            "query = {:#?}, seqvar = {:#?}",
+            &query, &seqvar
+        );
+        let expected = if any_no_call_sample {
+            vec![String::from("sample")]
+        } else {
+            vec![]
+        };
+        assert_eq!(
+            &res.no_call_samples, &expected,
+            "query = {:#?}, seqvar = {:#?}",
+            &query, &seqvar
+        );
+
+        Ok(())
+    }
 
     #[rstest]
     // het, pass dp
