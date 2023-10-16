@@ -43,7 +43,6 @@ regex = "1.9"
 rocksdb-utils-lookup = "0.3.0"
 rocksdb = { version = "0.21.0", features = ["multi-threaded-cf"] }
 serde_json = "1.0"
-serde-jsonlines = "0.4"
 serde = { version = "1.0", features = ["serde_derive"] }
 serde_with = { version = "3.3", features = ["indexmap_2"] }
 shellexpand = "3.0"

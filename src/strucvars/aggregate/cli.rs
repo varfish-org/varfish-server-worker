@@ -3,7 +3,7 @@
 use std::{
     collections::HashMap,
     fs::File,
-    io::{BufReader, BufWriter, Write},
+    io::{BufRead, BufReader, BufWriter, Write},
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -13,7 +13,6 @@ use clap::{command, Parser};
 use mehari::common::open_read_maybe_gz;
 use noodles_vcf as vcf;
 use serde_json::to_writer;
-use serde_jsonlines::JsonLinesReader;
 use strum::IntoEnumIterator;
 use thousands::Separable;
 
@@ -130,8 +129,20 @@ fn merge_to_out(
     let mut records: Vec<super::output::Record> = Vec::new();
 
     // Read in all records and perform the "merge compression"
-    let mut reader = JsonLinesReader::new(reader);
-    while let Ok(Some(record)) = reader.read::<super::output::Record>() {
+    for line in reader.lines() {
+        let line = if let Ok(line) = line {
+            line
+        } else {
+            anyhow::bail!("error reading line from input file")
+        };
+        let record: super::output::Record = serde_json::from_str(&line).map_err(|e| {
+            anyhow::anyhow!(
+                "error parsing line from input file: {:?} (line: {:?})",
+                e,
+                &line
+            )
+        })?;
+
         let begin = match record.sv_type {
             SvType::Bnd => record.begin - 1 - args.slack_bnd,
             SvType::Ins => record.begin - 1 - args.slack_ins,

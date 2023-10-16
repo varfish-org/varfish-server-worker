@@ -24,7 +24,7 @@ use crate::seqvars::query::schema::GenotypeChoice;
 use crate::{common::trace_rss_now, common::GenomeRelease};
 
 use self::schema::CaseQuery;
-use self::sorting::ByHgncId;
+use self::sorting::{ByCoordinate, ByHgncId};
 use self::{annonars::AnnonarsDbs, schema::SequenceVariant};
 
 /// Command line arguments for `seqvars query` sub command.
@@ -378,6 +378,9 @@ fn run_query(
     }
 
     let path_by_hgnc = tmp_dir.path().join("by_hgnc_filtered.jsonl");
+    let path_by_coord = tmp_dir.path().join("by_coord.jsonl");
+
+    let elem_count = 10_000; // at most 10k records in memory
 
     // Now:
     //
@@ -398,17 +401,17 @@ fn run_query(
         let sorter: ExternalSorter<sorting::ByHgncId, std::io::Error, LimitedBufferBuilder> =
             ExternalSorterBuilder::new()
                 .with_tmp_dir(tmp_dir.as_ref())
-                .with_buffer(LimitedBufferBuilder::new(100_000, true))
+                .with_buffer(LimitedBufferBuilder::new(elem_count, false))
                 .build()
                 .map_err(|e| anyhow::anyhow!("problem creating external sorter: {}", e))?;
-        let sorted = sorter
+        let sorted_iter = sorter
             .sort(tmp_unsorted.lines().map(|res| {
                 Ok(serde_json::from_str(&res.expect("problem reading line"))
                     .expect("problem deserializing"))
             }))
             .map_err(|e| anyhow::anyhow!("problem sorting temporary unsorted file: {}", e))?;
 
-        sorted
+        sorted_iter
             .map(|res| res.expect("problem reading line after sorting by HGNC ID"))
             .group_by(|by_hgnc_id| by_hgnc_id.hgnc_id.clone())
             .into_iter()
@@ -445,29 +448,77 @@ fn run_query(
             .map_err(|e| {
                 anyhow::anyhow!("could not open temporary tmp_by_hgnc_filtered file: {}", e)
             })?;
+        let mut tmp_by_coord = std::fs::File::create(&path_by_coord)
+            .map(std::io::BufWriter::new)
+            .map_err(|e| anyhow::anyhow!("could not create temporary by_coord file: {}", e))?;
+
+        let sorter: ExternalSorter<sorting::ByCoordinate, std::io::Error, LimitedBufferBuilder> =
+            ExternalSorterBuilder::new()
+                .with_tmp_dir(tmp_dir.as_ref())
+                .with_buffer(LimitedBufferBuilder::new(elem_count, false))
+                .build()
+                .map_err(|e| anyhow::anyhow!("problem creating external sorter: {}", e))?;
+        let sorted_iter = sorter
+            .sort(tmp_by_hgnc_filtered.lines().map(|res| {
+                Ok(serde_json::from_str(&res.expect("problem reading line"))
+                    .expect("problem deserializing"))
+            }))
+            .map_err(|e| anyhow::anyhow!("problem sorting temporary unsorted file: {}", e))?;
+
+        sorted_iter
+            .map(|res| res.expect("problem reading line after sorting by HGNC ID"))
+            .for_each(|ByCoordinate { seqvar, .. }| {
+                writeln!(tmp_by_coord, "{}", serde_json::to_string(&seqvar).unwrap())
+                    .expect("could not write record to by_coord");
+            });
+
+        tmp_by_coord.flush().map_err(|e| {
+            anyhow::anyhow!(
+                "could not flush temporary output file by_hgnc_filtered: {}",
+                e
+            )
+        })?;
     }
 
-    // // Create output TSV writer.
-    // let mut csv_writer = csv::WriterBuilder::new()
-    //     .has_headers(true)
-    //     .delimiter(b'\t')
-    //     .quote_style(csv::QuoteStyle::Never)
-    //     .from_path(&args.path_output)?;
+    // Finally, perform annotation of the record using the annonars library and write it
+    // in TSV format, ready for import into the database.  However, in recessive mode, we
+    // have to do a second pass to properly collect compound heterozygous variants.
 
-    // // Finally, perform annotation of the record using the annonars library and write it
-    // // in TSV format, ready for import into the database.  However, in recessive mode, we
-    // // have to do a second pass to properly collect compound heterozygous variants.
-    // if passes.pass_all {
-    //     create_payload_and_write_record(
-    //         record_seqvar,
-    //         annonars_dbs,
-    //         chrom_to_chrom_no,
-    //         &mut csv_writer,
-    //         args,
-    //         rng,
-    //         &mut uuid_buf,
-    //     )?;
-    // }
+    let mut csv_writer = csv::WriterBuilder::new()
+        .has_headers(true)
+        .delimiter(b'\t')
+        .quote_style(csv::QuoteStyle::Never)
+        .from_path(&args.path_output)?;
+
+    let mut tmp_by_coord = std::fs::File::open(&path_by_coord)
+        .map(std::io::BufReader::new)
+        .map_err(|e| anyhow::anyhow!("could not open temporary by_coord file: {}", e))?;
+
+    for line in tmp_by_coord.lines() {
+        // get next line into a String
+        let line = if let Ok(line) = line {
+            line
+        } else {
+            anyhow::bail!("error reading line from input file")
+        };
+        let seqvar: SequenceVariant = serde_json::from_str(&line).map_err(|e| {
+            anyhow::anyhow!(
+                "error parsing line from input file: {:?} (line: {:?})",
+                e,
+                &line
+            )
+        })?;
+
+        create_payload_and_write_record(
+            seqvar,
+            annonars_dbs,
+            chrom_to_chrom_no,
+            &mut csv_writer,
+            args,
+            rng,
+            &mut uuid_buf,
+        )?;
+    }
 
     Ok(stats)
 }
