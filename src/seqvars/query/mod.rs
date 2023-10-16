@@ -212,6 +212,8 @@ fn create_payload(
     seqvar: &SequenceVariant,
     annonars_dbs: &AnnonarsDbs,
 ) -> Result<ResultPayload, anyhow::Error> {
+    let _ = seqvar;
+    let _ = annonars_dbs;
     todo!()
 }
 
@@ -349,11 +351,15 @@ fn run_query(
     let mut input_reader = vcf::Reader::new(&mut input_reader);
     let input_header = input_reader.read_header()?;
 
+    let path_unsorted = tmp_dir.path().join("unsorted.jsonl");
+    let path_by_hgnc = tmp_dir.path().join("by_hgnc_filtered.jsonl");
+    let path_by_coord = tmp_dir.path().join("by_coord.jsonl");
+
     // Read through input records using the query interpreter as a filter and write to
     // temporary file for unsorted records.
     {
         // Create temporary output file.
-        let mut tmp_unsorted = std::fs::File::create("unsorted.jsonl")
+        let mut tmp_unsorted = std::fs::File::create(&path_unsorted)
             .map(std::io::BufWriter::new)
             .map_err(|e| anyhow::anyhow!("could not create temporary unsorted file: {}", e))?;
 
@@ -377,9 +383,6 @@ fn run_query(
         })?;
     }
 
-    let path_by_hgnc = tmp_dir.path().join("by_hgnc_filtered.jsonl");
-    let path_by_coord = tmp_dir.path().join("by_coord.jsonl");
-
     let elem_count = 10_000; // at most 10k records in memory
 
     // Now:
@@ -389,7 +392,7 @@ fn run_query(
     // - keep the groups where the recessive criteria are met according to query
     // - write out the records again for later sorting by coordinate
     {
-        let tmp_unsorted = std::fs::File::open("unsorted.jsonl")
+        let tmp_unsorted = std::fs::File::open(&path_unsorted)
             .map(std::io::BufReader::new)
             .map_err(|e| anyhow::anyhow!("could not open temporary unsorted file: {}", e))?;
         let mut tmp_by_hgnc_filtered = std::fs::File::create(&path_by_hgnc)
@@ -443,7 +446,7 @@ fn run_query(
     // - sort surviving records by coordinate
     // - generate payload with annotations
     {
-        let mut tmp_by_hgnc_filtered = std::fs::File::open(&path_by_hgnc)
+        let tmp_by_hgnc_filtered = std::fs::File::open(&path_by_hgnc)
             .map(std::io::BufReader::new)
             .map_err(|e| {
                 anyhow::anyhow!("could not open temporary tmp_by_hgnc_filtered file: {}", e)
@@ -490,7 +493,7 @@ fn run_query(
         .quote_style(csv::QuoteStyle::Never)
         .from_path(&args.path_output)?;
 
-    let mut tmp_by_coord = std::fs::File::open(&path_by_coord)
+    let tmp_by_coord = std::fs::File::open(&path_by_coord)
         .map(std::io::BufReader::new)
         .map_err(|e| anyhow::anyhow!("could not open temporary by_coord file: {}", e))?;
 
