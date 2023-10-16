@@ -7,6 +7,7 @@ mod frequency;
 mod genes_allowlist;
 mod genotype;
 mod quality;
+mod regions_allowlist;
 
 use super::schema::{CaseQuery, SequenceVariant};
 
@@ -54,7 +55,7 @@ impl QueryInterpreter {
                 .collect::<Vec<_>>(),
         )?;
         let pass_genes_allowlist = genes_allowlist::passes(&self.query, seqvar);
-        let pass_regions_allowlist = self.passes_regions_allowlist(seqvar)?;
+        let pass_regions_allowlist = regions_allowlist::passes(&self.query, seqvar);
         let pass_clinvar = self.passes_clinvar(seqvar)?;
         let pass_all = pass_frequency
             && pass_consequences
@@ -64,10 +65,6 @@ impl QueryInterpreter {
             && pass_regions_allowlist
             && pass_clinvar;
         Ok(PassesResult { pass_all })
-    }
-
-    fn passes_regions_allowlist(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
-        Ok(true)
     }
 
     fn passes_clinvar(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
