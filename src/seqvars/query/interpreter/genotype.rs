@@ -125,10 +125,22 @@ fn passes_recessive_modes(
                 .unwrap_or(false)
         })
         .count();
-    let compound_recessive_ok = compound_recessive_ok_index
-        && compound_recessive_parents_ref <= 1
-        && compound_recessive_parents_het <= 1
-        && compound_recessive_parents_hom == 0;
+
+    let compound_recessive_ok = match parent_names.len() {
+        0 => compound_recessive_ok_index,
+        1 => {
+            compound_recessive_ok_index
+                && compound_recessive_parents_ref + compound_recessive_parents_het == 1
+                && compound_recessive_parents_hom == 0
+        }
+        2 => {
+            compound_recessive_ok_index
+                && compound_recessive_parents_ref == 1
+                && compound_recessive_parents_het == 1
+                && compound_recessive_parents_hom == 0
+        }
+        _ => anyhow::bail!("more than two recessive parents selected"),
+    };
 
     let homozygous_recessive_ok_index = crate::seqvars::query::schema::GenotypeChoice::Hom
         .matches(&index_gt_string)
@@ -146,8 +158,11 @@ fn passes_recessive_modes(
 
     match index_gt_choice {
         GenotypeChoice::ComphetIndex => Ok(compound_recessive_ok),
-        GenotypeChoice::RecessiveIndex => Ok(compound_recessive_ok && homozygous_recessive_ok),
-        _ => anyhow::bail!("invalid genotype choice for recessive mode: {:?}", index_gt_choice),
+        GenotypeChoice::RecessiveIndex => Ok(compound_recessive_ok || homozygous_recessive_ok),
+        _ => anyhow::bail!(
+            "invalid genotype choice for recessive mode: {:?}",
+            index_gt_choice
+        ),
     }
 }
 
@@ -470,13 +485,13 @@ mod test {
     #[case("./.", ComphetIndex, false)]
     #[case(".|.", ComphetIndex, false)]
     // recessive-index: passes
-    #[case("0/1", RecessiveIndex, false)]
-    #[case("0|1", RecessiveIndex, false)]
-    #[case("1/0", RecessiveIndex, false)]
-    #[case("1|0", RecessiveIndex, false)]
-    #[case("1/1", RecessiveIndex, false)]
-    #[case("1|1", RecessiveIndex, false)]
-    #[case("1", RecessiveIndex, false)]
+    #[case("0/1", RecessiveIndex, true)]
+    #[case("0|1", RecessiveIndex, true)]
+    #[case("1/0", RecessiveIndex, true)]
+    #[case("1|0", RecessiveIndex, true)]
+    #[case("1/1", RecessiveIndex, true)]
+    #[case("1|1", RecessiveIndex, true)]
+    #[case("1", RecessiveIndex, true)]
     // recessive-index: passes NOT
     #[case("0/0", RecessiveIndex, false)]
     #[case("0|0", RecessiveIndex, false)]
@@ -520,7 +535,6 @@ mod test {
         Ok(())
     }
 
-
     #[rstest]
     // recessive mode: passes
     #[case("0/1,0/0,0/0", RecessiveIndex, Any, Any, true)]
@@ -530,8 +544,11 @@ mod test {
     #[case("1/0,0/1,0/0", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
     #[case("1/0,0/0,0/1", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
     #[case("1/1,0/1,0/1", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("1/1,0/0,0/1", RecessiveIndex, Any, RecessiveParent, true)]
+    #[case("1/1,0/1,0/0", RecessiveIndex, RecessiveParent, Any, true)]
     #[case("1|1,0|1,1|0", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
     // recessive mode: passes NOT
+    #[case("1/1,1/1,0/0", RecessiveIndex, RecessiveParent, Any, false)]
     #[case("0/1,0/0,0/0", RecessiveIndex, RecessiveParent, RecessiveParent, false)]
     #[case("0/1,1/1,0/0", RecessiveIndex, RecessiveParent, RecessiveParent, false)]
     #[case("0/1,0/0,1/1", RecessiveIndex, RecessiveParent, RecessiveParent, false)]
@@ -541,11 +558,13 @@ mod test {
     #[case("0|1,0/0,0/0", ComphetIndex, Any, Any, true)]
     #[case("1/0,0/0,0/0", ComphetIndex, Any, Any, true)]
     #[case("1|0,0/0,0/0", ComphetIndex, Any, Any, true)]
+    #[case("0/1,1/1,0/0", ComphetIndex, Any, RecessiveParent, true)]
+    #[case("0/1,0/0,1/1", ComphetIndex, RecessiveParent, Any, true)]
     #[case("1/0,0/1,0/0", ComphetIndex, RecessiveParent, RecessiveParent, true)]
     #[case("1/0,0/0,0/1", ComphetIndex, RecessiveParent, RecessiveParent, true)]
     // compound recessive mode: passes NOT
-    #[case("1/1,0/1,0/1", ComphetIndex, RecessiveParent, RecessiveParent, true)]
-    #[case("1|1,0|1,1|0", ComphetIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("1/1,0/1,0/1", ComphetIndex, RecessiveParent, RecessiveParent, false)]
+    #[case("1|1,0|1,1|0", ComphetIndex, RecessiveParent, RecessiveParent, false)]
     #[case("0/1,0/0,0/0", ComphetIndex, RecessiveParent, RecessiveParent, false)]
     #[case("0/1,1/1,0/0", ComphetIndex, RecessiveParent, RecessiveParent, false)]
     #[case("0/1,0/0,1/1", ComphetIndex, RecessiveParent, RecessiveParent, false)]
@@ -612,5 +631,4 @@ mod test {
 
         Ok(())
     }
-
 }
