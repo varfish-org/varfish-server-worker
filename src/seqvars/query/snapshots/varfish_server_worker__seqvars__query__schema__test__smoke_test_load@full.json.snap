@@ -64,8 +64,6 @@ quality:
 genotype:
   sample: het
 selected_variants: ~
-recessive_mode: ~
-recessive_index: ~
 transcripts_coding: true
 transcripts_noncoding: true
 var_type_snv: true

@@ -1,11 +1,12 @@
-use crate::seqvars::query::schema::{CaseQuery, GenotypeChoice, RecessiveMode, SequenceVariant};
+use crate::seqvars::query::schema::{CaseQuery, GenotypeChoice, SequenceVariant};
 
 /// Determine whether the `SequenceVariant` passes the genotype filter.
 pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
-    let result = if let (Some(index_name), Some(mode)) =
-        (query.recessive_index.as_ref(), query.recessive_mode)
-    {
-        passes_recessive_modes(&query.genotype, mode, index_name, seqvar)?
+    let result = if query.recessive_mode() {
+        let index_sample = query.index_sample().ok_or_else(|| {
+            anyhow::anyhow!("recessive mode requires an index sample, but none was found")
+        })?;
+        passes_recessive_modes(&query.genotype, &index_sample, seqvar)?
     } else {
         passes_non_recessive_mode(&query.genotype, seqvar)?
     };
@@ -22,10 +23,26 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<bool, anyho
 /// Handle case of the mode being one of the recessive modes.
 fn passes_recessive_modes(
     query_genotype: &indexmap::IndexMap<String, Option<GenotypeChoice>>,
-    mode: RecessiveMode,
     index_name: &str,
     seqvar: &SequenceVariant,
 ) -> Result<bool, anyhow::Error> {
+    // Get genotype choice of index.
+    let index_gt_choice = query_genotype
+        .get(index_name)
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "index sample {} not found in genotype filter {:?}",
+                &index_name,
+                &query_genotype
+            )
+        })?
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "index sample {} has no genotype choice in genotype filter {:?}",
+                &index_name,
+                &query_genotype
+            )
+        })?;
     // For recessive mode, we have to know the samples selected for index and parents.
     let index_gt_string = {
         let call_info = seqvar.call_info.get(index_name).ok_or_else(|| {
@@ -127,9 +144,10 @@ fn passes_recessive_modes(
     let homozygous_recessive_ok =
         homozygous_recessive_ok_index && homozygous_recessive_ok_parents.iter().all(|&ok| ok);
 
-    match mode {
-        RecessiveMode::Recessive => Ok(compound_recessive_ok && homozygous_recessive_ok),
-        RecessiveMode::CompoundRecessive => Ok(compound_recessive_ok),
+    match index_gt_choice {
+        GenotypeChoice::ComphetIndex => Ok(compound_recessive_ok),
+        GenotypeChoice::RecessiveIndex => Ok(compound_recessive_ok && homozygous_recessive_ok),
+        _ => anyhow::bail!("invalid genotype choice for recessive mode: {:?}", index_gt_choice),
     }
 }
 
@@ -279,36 +297,7 @@ mod test {
     #[case(".", Variant, false)]
     #[case("./.", Variant, false)]
     #[case(".|.", Variant, false)]
-    // // comphet-index: passes
-    // #[case("0/1", ComphetIndex, true)]
-    // #[case("0|1", ComphetIndex, true)]
-    // #[case("1/0", ComphetIndex, true)]
-    // #[case("1|0", ComphetIndex, true)]
-    // // comphet-index: passes NOT
-    // #[case("0/0", ComphetIndex, false)]
-    // #[case("0|0", ComphetIndex, false)]
-    // #[case("0", ComphetIndex, false)]
-    // #[case("1/1", ComphetIndex, false)]
-    // #[case("1|1", ComphetIndex, false)]
-    // #[case("1", ComphetIndex, false)]
-    // #[case(".", ComphetIndex, false)]
-    // #[case("./.", ComphetIndex, false)]
-    // #[case(".|.", ComphetIndex, false)]
-    // // recessive-index: passes
-    // #[case("0/1", RecessiveIndex, false)]
-    // #[case("0|1", RecessiveIndex, false)]
-    // #[case("1/0", RecessiveIndex, false)]
-    // #[case("1|0", RecessiveIndex, false)]
-    // #[case("1/1", RecessiveIndex, false)]
-    // #[case("1|1", RecessiveIndex, false)]
-    // #[case("1", RecessiveIndex, false)]
-    // // recessive-index: passes NOT
-    // #[case("0/0", RecessiveIndex, false)]
-    // #[case("0|0", RecessiveIndex, false)]
-    // #[case("0", RecessiveIndex, false)]
-    // #[case(".", RecessiveIndex, false)]
-    // #[case("./.", RecessiveIndex, false)]
-    // #[case(".|.", RecessiveIndex, false)]
+
     fn passes_non_recessive_mode_singleton(
         #[case] sample_gt: &str,
         #[case] query_gt: GenotypeChoice,
@@ -463,4 +452,165 @@ mod test {
 
         Ok(())
     }
+
+    #[rstest]
+    // comphet-index: passes
+    #[case("0/1", ComphetIndex, true)]
+    #[case("0|1", ComphetIndex, true)]
+    #[case("1/0", ComphetIndex, true)]
+    #[case("1|0", ComphetIndex, true)]
+    // comphet-index: passes NOT
+    #[case("0/0", ComphetIndex, false)]
+    #[case("0|0", ComphetIndex, false)]
+    #[case("0", ComphetIndex, false)]
+    #[case("1/1", ComphetIndex, false)]
+    #[case("1|1", ComphetIndex, false)]
+    #[case("1", ComphetIndex, false)]
+    #[case(".", ComphetIndex, false)]
+    #[case("./.", ComphetIndex, false)]
+    #[case(".|.", ComphetIndex, false)]
+    // recessive-index: passes
+    #[case("0/1", RecessiveIndex, false)]
+    #[case("0|1", RecessiveIndex, false)]
+    #[case("1/0", RecessiveIndex, false)]
+    #[case("1|0", RecessiveIndex, false)]
+    #[case("1/1", RecessiveIndex, false)]
+    #[case("1|1", RecessiveIndex, false)]
+    #[case("1", RecessiveIndex, false)]
+    // recessive-index: passes NOT
+    #[case("0/0", RecessiveIndex, false)]
+    #[case("0|0", RecessiveIndex, false)]
+    #[case("0", RecessiveIndex, false)]
+    #[case(".", RecessiveIndex, false)]
+    #[case("./.", RecessiveIndex, false)]
+    #[case(".|.", RecessiveIndex, false)]
+    fn passes_recessive_modes_singleton(
+        #[case] sample_gt: &str,
+        #[case] query_gt: GenotypeChoice,
+        #[case] expected: bool,
+    ) -> Result<(), anyhow::Error> {
+        let query_genotype: indexmap::IndexMap<_, _> =
+            vec![(String::from(INDEX_NAME), Some(query_gt))]
+                .into_iter()
+                .collect();
+        let seq_var = SequenceVariant {
+            call_info: vec![
+                ((
+                    INDEX_NAME.into(),
+                    CallInfo {
+                        genotype: Some(sample_gt.into()),
+                        ..Default::default()
+                    },
+                )),
+            ]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            super::passes_recessive_modes(&query_genotype, INDEX_NAME, &seq_var)?,
+            expected,
+            "sample_gt = {}, query_gt = {:?}, expected = {}",
+            sample_gt,
+            query_gt,
+            expected
+        );
+
+        Ok(())
+    }
+
+
+    #[rstest]
+    // recessive mode: passes
+    #[case("0/1,0/0,0/0", RecessiveIndex, Any, Any, true)]
+    #[case("0|1,0/0,0/0", RecessiveIndex, Any, Any, true)]
+    #[case("1/0,0/0,0/0", RecessiveIndex, Any, Any, true)]
+    #[case("1|0,0/0,0/0", RecessiveIndex, Any, Any, true)]
+    #[case("1/0,0/1,0/0", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("1/0,0/0,0/1", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("1/1,0/1,0/1", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("1|1,0|1,1|0", RecessiveIndex, RecessiveParent, RecessiveParent, true)]
+    // recessive mode: passes NOT
+    #[case("0/1,0/0,0/0", RecessiveIndex, RecessiveParent, RecessiveParent, false)]
+    #[case("0/1,1/1,0/0", RecessiveIndex, RecessiveParent, RecessiveParent, false)]
+    #[case("0/1,0/0,1/1", RecessiveIndex, RecessiveParent, RecessiveParent, false)]
+    #[case("0/1,0/1,0/1", RecessiveIndex, RecessiveParent, RecessiveParent, false)]
+    // compound recessive mode: passes
+    #[case("0/1,0/0,0/0", ComphetIndex, Any, Any, true)]
+    #[case("0|1,0/0,0/0", ComphetIndex, Any, Any, true)]
+    #[case("1/0,0/0,0/0", ComphetIndex, Any, Any, true)]
+    #[case("1|0,0/0,0/0", ComphetIndex, Any, Any, true)]
+    #[case("1/0,0/1,0/0", ComphetIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("1/0,0/0,0/1", ComphetIndex, RecessiveParent, RecessiveParent, true)]
+    // compound recessive mode: passes NOT
+    #[case("1/1,0/1,0/1", ComphetIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("1|1,0|1,1|0", ComphetIndex, RecessiveParent, RecessiveParent, true)]
+    #[case("0/1,0/0,0/0", ComphetIndex, RecessiveParent, RecessiveParent, false)]
+    #[case("0/1,1/1,0/0", ComphetIndex, RecessiveParent, RecessiveParent, false)]
+    #[case("0/1,0/0,1/1", ComphetIndex, RecessiveParent, RecessiveParent, false)]
+    #[case("0/1,0/1,0/1", ComphetIndex, RecessiveParent, RecessiveParent, false)]
+    fn passes_recessive_modes_trio(
+        #[case] sample_gts: &str,
+        #[case] query_gt_index: GenotypeChoice,
+        #[case] query_gt_father: GenotypeChoice,
+        #[case] query_gt_mother: GenotypeChoice,
+        #[case] expected: bool,
+    ) -> Result<(), anyhow::Error> {
+        let query_genotype: indexmap::IndexMap<_, _> = vec![
+            (String::from(INDEX_NAME), Some(query_gt_index)),
+            (String::from(FATHER_NAME), Some(query_gt_father)),
+            (String::from(MOTHER_NAME), Some(query_gt_mother)),
+        ]
+        .into_iter()
+        .collect();
+        let sample_gts = sample_gts
+            .split(",")
+            .into_iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>();
+        let seq_var = SequenceVariant {
+            call_info: vec![
+                (
+                    String::from(INDEX_NAME),
+                    CallInfo {
+                        genotype: Some(sample_gts[0].clone()),
+                        ..Default::default()
+                    },
+                ),
+                (
+                    String::from(FATHER_NAME),
+                    CallInfo {
+                        genotype: Some(sample_gts[1].clone()),
+                        ..Default::default()
+                    },
+                ),
+                (
+                    String::from(MOTHER_NAME),
+                    CallInfo {
+                        genotype: Some(sample_gts[2].clone()),
+                        ..Default::default()
+                    },
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        };
+
+        assert_eq!(
+            super::passes_recessive_modes(&query_genotype, &INDEX_NAME, &seq_var)?,
+            expected,
+            "sample_gt = {:?}, query_gt_index = {:?}, query_gt_father = {:?}, \
+            query_gt_mother = {:?}, expected = {}",
+            sample_gts,
+            query_gt_index,
+            query_gt_father,
+            query_gt_mother,
+            expected
+        );
+
+        Ok(())
+    }
+
 }

@@ -166,10 +166,6 @@ pub struct CaseQuery {
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
     /// List of selected variants.
     pub selected_variants: Option<Vec<String>>, // TODO: remove?
-    /// Selected recessive mode.
-    pub recessive_mode: Option<RecessiveMode>,
-    /// Recessive index, if any.
-    pub recessive_index: Option<String>,
 
     /// Whether to include coding transcripts.
     pub transcripts_coding: bool,
@@ -290,12 +286,35 @@ impl Default for CaseQuery {
             helixmtdb_frequency: Default::default(),
             helixmtdb_heteroplasmic: Default::default(),
             helixmtdb_homoplasmic: Default::default(),
-            recessive_mode: Default::default(),
-            recessive_index: Default::default(),
         }
     }
 }
 
+impl CaseQuery {
+    /// Return whether recessive mode has been enabled.
+    pub fn recessive_mode(&self) -> bool {
+        self.genotype.values().any(|gt_choice| {
+            matches!(
+                gt_choice,
+                Some(GenotypeChoice::ComphetIndex)
+                    | Some(GenotypeChoice::RecessiveIndex)
+                    | Some(GenotypeChoice::RecessiveParent)
+            )
+        })
+    }
+
+    /// Returns name of the recessive index sample.
+    pub fn index_sample(&self) -> Option<String> {
+        self.genotype
+            .iter()
+            .find_map(|(name, gt_choice)| match gt_choice {
+                Some(GenotypeChoice::ComphetIndex) | Some(GenotypeChoice::RecessiveIndex) => {
+                    Some(name.clone())
+                }
+                _ => None,
+            })
+    }
+}
 /// Information on the call as written out by ingest.
 ///
 /// Note that the ingested files have exactly one alternate allele.
