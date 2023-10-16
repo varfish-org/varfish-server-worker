@@ -1,14 +1,18 @@
 use crate::seqvars::query::schema::{CaseQuery, GenotypeChoice, SequenceVariant};
 
 /// Determine whether the `SequenceVariant` passes the genotype filter.
-pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
+pub fn passes(
+    query: &CaseQuery,
+    seqvar: &SequenceVariant,
+    no_call_samples: &[&str],
+) -> Result<bool, anyhow::Error> {
     let result = if query.recessive_mode() {
         let index_sample = query.index_sample().ok_or_else(|| {
             anyhow::anyhow!("recessive mode requires an index sample, but none was found")
         })?;
-        passes_recessive_modes(&query.genotype, &index_sample, seqvar)?
+        passes_recessive_modes(&query.genotype, &index_sample, seqvar, no_call_samples)?
     } else {
-        passes_non_recessive_mode(&query.genotype, seqvar)?
+        passes_non_recessive_mode(&query.genotype, seqvar, no_call_samples)?
     };
 
     tracing::trace!(
@@ -25,6 +29,7 @@ fn passes_recessive_modes(
     query_genotype: &indexmap::IndexMap<String, Option<GenotypeChoice>>,
     index_name: &str,
     seqvar: &SequenceVariant,
+    no_call_samples: &[&str],
 ) -> Result<bool, anyhow::Error> {
     // Get genotype choice of index.
     let index_gt_choice = query_genotype
@@ -44,7 +49,9 @@ fn passes_recessive_modes(
             )
         })?;
     // For recessive mode, we have to know the samples selected for index and parents.
-    let index_gt_string = {
+    let index_gt_string = if no_call_samples.contains(&index_name) {
+        String::from(".")
+    } else {
         let call_info = seqvar.call_info.get(index_name).ok_or_else(|| {
             anyhow::anyhow!(
                 "index sample {} not found in call info for {:?}",
@@ -76,25 +83,29 @@ fn passes_recessive_modes(
     let parent_gt_strings = parent_names
         .iter()
         .map(|parent_name| {
-            seqvar
-                .call_info
-                .get(parent_name)
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "parent sample {} not found in call info for {:?}",
-                        &parent_name,
-                        &seqvar
-                    )
-                })?
-                .genotype
-                .as_ref()
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "parent sample {} has no genotype in call info for {:?}",
-                        &parent_name,
-                        &seqvar
-                    )
-                })
+            if no_call_samples.contains(&parent_name.as_str()) {
+                Ok(String::from(".")) // no-call
+            } else {
+                seqvar
+                    .call_info
+                    .get(parent_name)
+                    .cloned()
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "parent sample {} not found in call info for {:?}",
+                            &parent_name,
+                            &seqvar
+                        )
+                    })?
+                    .genotype
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "parent sample {} has no genotype in call info for {:?}",
+                            &parent_name,
+                            &seqvar
+                        )
+                    })
+            }
         })
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -171,6 +182,7 @@ fn passes_recessive_modes(
 fn passes_non_recessive_mode(
     query_genotype: &indexmap::IndexMap<String, Option<GenotypeChoice>>,
     seqvar: &SequenceVariant,
+    no_call_samples: &[&str],
 ) -> Result<bool, anyhow::Error> {
     for (sample_name, genotype) in query_genotype.iter() {
         let genotype_choice = if let Some(genotype_choice) = genotype {
@@ -179,7 +191,9 @@ fn passes_non_recessive_mode(
             tracing::trace!("no genotype choice for sample {} (skip&pass)", sample_name);
             continue;
         };
-        let genotype = if let Some(call_info) = seqvar.call_info.get(sample_name) {
+        let genotype = if no_call_samples.contains(&sample_name.as_str()) {
+            "." // no-call
+        } else if let Some(call_info) = seqvar.call_info.get(sample_name) {
             if let Some(genotype) = call_info.genotype.as_ref() {
                 genotype
             } else {
@@ -338,7 +352,7 @@ mod test {
         };
 
         assert_eq!(
-            super::passes_non_recessive_mode(&query_genotype, &seq_var)?,
+            super::passes_non_recessive_mode(&query_genotype, &seq_var, &[])?,
             expected,
             "sample_gt = {}, query_gt = {:?}, expected = {}",
             sample_gt,
@@ -421,7 +435,7 @@ mod test {
         };
 
         assert_eq!(
-            super::passes_non_recessive_mode(&query_genotype, &seq_var)?,
+            super::passes_non_recessive_mode(&query_genotype, &seq_var, &[])?,
             expected,
             "sample_gt = {:?}, query_gt_index = {:?}, query_gt_father = {:?}, \
             query_gt_mother = {:?}, expected = {}",
@@ -463,7 +477,7 @@ mod test {
             ..Default::default()
         };
 
-        assert!(super::passes_non_recessive_mode(&query_genotype, &seq_var).is_err(),);
+        assert!(super::passes_non_recessive_mode(&query_genotype, &seq_var, &[]).is_err(),);
 
         Ok(())
     }
@@ -524,7 +538,7 @@ mod test {
         };
 
         assert_eq!(
-            super::passes_recessive_modes(&query_genotype, INDEX_NAME, &seq_var)?,
+            super::passes_recessive_modes(&query_genotype, INDEX_NAME, &seq_var, &[])?,
             expected,
             "sample_gt = {}, query_gt = {:?}, expected = {}",
             sample_gt,
@@ -618,7 +632,7 @@ mod test {
         };
 
         assert_eq!(
-            super::passes_recessive_modes(&query_genotype, &INDEX_NAME, &seq_var)?,
+            super::passes_recessive_modes(&query_genotype, &INDEX_NAME, &seq_var, &[])?,
             expected,
             "sample_gt = {:?}, query_gt_index = {:?}, query_gt_father = {:?}, \
             query_gt_mother = {:?}, expected = {}",

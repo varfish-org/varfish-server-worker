@@ -5,6 +5,7 @@ use std::collections::HashSet;
 mod consequences;
 mod frequency;
 mod genotype;
+mod quality;
 
 use super::schema::{CaseQuery, SequenceVariant};
 
@@ -41,23 +42,27 @@ impl QueryInterpreter {
     pub fn passes(&self, seqvar: &SequenceVariant) -> Result<PassesResult, anyhow::Error> {
         let pass_frequency = frequency::passes(&self.query, seqvar)?;
         let pass_consequences = consequences::passes(&self.query, seqvar)?;
-        let pass_quality = self.passes_quality(seqvar)?;
-        let pass_genotype = genotype::passes(&self.query, seqvar)?;
+        let res_quality = quality::passes(&self.query, seqvar)?;
+        let pass_genotype = genotype::passes(
+            &self.query,
+            seqvar,
+            &res_quality
+                .no_call_samples
+                .iter()
+                .map(|s| s.as_str())
+                .collect::<Vec<_>>(),
+        )?;
         let pass_genes_allowlist = self.passes_genes_allowlist(seqvar)?;
         let pass_regions_allowlist = self.passes_regions_allowlist(seqvar)?;
         let pass_clinvar = self.passes_clinvar(seqvar)?;
         let pass_all = pass_frequency
             && pass_consequences
-            && pass_quality
+            && res_quality.pass
             && pass_genotype
             && pass_genes_allowlist
             && pass_regions_allowlist
             && pass_clinvar;
         Ok(PassesResult { pass_all })
-    }
-
-    fn passes_quality(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
-        Ok(true)
     }
 
     fn passes_genes_allowlist(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {

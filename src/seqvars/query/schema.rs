@@ -121,7 +121,7 @@ pub struct QualitySettings {
     pub dp_hom: Option<i32>,
     /// Minimal genotype quality.
     pub gq: Option<i32>,
-    /// Minimal allele balance.
+    /// Minimal allele balance for het. variants.
     pub ab: Option<f32>,
     /// Minimal number of alternate reads.
     pub ad: Option<i32>,
