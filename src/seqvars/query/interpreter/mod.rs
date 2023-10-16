@@ -4,6 +4,7 @@ use std::collections::HashSet;
 
 mod consequences;
 mod frequency;
+mod genes_allowlist;
 mod genotype;
 mod quality;
 
@@ -52,7 +53,7 @@ impl QueryInterpreter {
                 .map(|s| s.as_str())
                 .collect::<Vec<_>>(),
         )?;
-        let pass_genes_allowlist = self.passes_genes_allowlist(seqvar)?;
+        let pass_genes_allowlist = genes_allowlist::passes(&self.query, seqvar);
         let pass_regions_allowlist = self.passes_regions_allowlist(seqvar)?;
         let pass_clinvar = self.passes_clinvar(seqvar)?;
         let pass_all = pass_frequency
@@ -63,10 +64,6 @@ impl QueryInterpreter {
             && pass_regions_allowlist
             && pass_clinvar;
         Ok(PassesResult { pass_all })
-    }
-
-    fn passes_genes_allowlist(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
-        Ok(true)
     }
 
     fn passes_regions_allowlist(&self, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
