@@ -5,6 +5,10 @@ use std::{path::Path, sync::Arc};
 use crate::{common::GenomeRelease, seqvars::ingest::path_component};
 
 pub struct AnnonarsDbs {
+    /// ClinVar database as annonars RocksDB.
+    pub clinvar_db: Arc<rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>>,
+    /// ClinVar metadata from annonars.
+    pub clinvar_meta: annonars::clinvar_minimal::cli::query::Meta,
     /// CADD database as annonars RocksDB.
     pub cadd_db: Arc<rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>>,
     /// CADD metadata from annonars.
@@ -25,6 +29,18 @@ impl AnnonarsDbs {
             .as_ref()
             .join("annonars")
             .join(path_component(genome_release));
+        let (clinvar_db, clinvar_meta) = {
+            let path: std::path::PathBuf = path_base.join("clinvar-minimal").join("rocksdb");
+            annonars::clinvar_minimal::cli::query::open_rocksdb(&path, "clinvar", "meta").map_err(
+                |e| {
+                    anyhow::anyhow!(
+                        "problem opening ClinVar database at {}: {}",
+                        path.as_os_str().to_string_lossy(),
+                        e
+                    )
+                },
+            )?
+        };
         let (cadd_db, cadd_meta) = {
             let path: std::path::PathBuf = path_base.join("cadd").join("rocksdb");
             annonars::tsv::cli::query::open_rocksdb(&path, "tsv_data", "meta").map_err(|e| {
@@ -47,6 +63,8 @@ impl AnnonarsDbs {
         };
 
         Ok(Self {
+            clinvar_db,
+            clinvar_meta,
             cadd_db,
             cadd_meta,
             dbnsfp_db,

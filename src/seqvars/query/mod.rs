@@ -199,7 +199,10 @@ struct QueryStats {
 }
 
 /// Annotate the payload of the record with `annonars`.
-fn create_payload(seqvar: &SequenceVariant) -> Result<ResultPayload, anyhow::Error> {
+fn create_payload(
+    seqvar: &SequenceVariant,
+    annonars_dbs: &AnnonarsDbs,
+) -> Result<ResultPayload, anyhow::Error> {
     todo!()
     // Ok(())
 }
@@ -209,7 +212,6 @@ fn create_payload(seqvar: &SequenceVariant) -> Result<ResultPayload, anyhow::Err
 fn run_query(
     interpreter: &interpreter::QueryInterpreter,
     args: &Args,
-    in_memory_dbs: &crate::strucvars::query::InMemoryDbs,
     annonars_dbs: &annonars::AnnonarsDbs,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
@@ -240,12 +242,12 @@ fn run_query(
             .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
         tracing::debug!("processing record {:?}", record_seqvar);
 
-        let passes = interpreter.passes(&record_seqvar)?;
+        let passes = interpreter.passes(&record_seqvar, &annonars_dbs)?;
 
         // Finally, perform annotation of the record using the annonars library and write it
         // in TSV format, ready for import into the database.
         if passes.pass_all {
-            let result_payload = create_payload(&record_seqvar)
+            let result_payload = create_payload(&record_seqvar, &annonars_dbs)
                 .map_err(|e| anyhow::anyhow!("could not annotate record: {}", e))?;
 
             let start = record_seqvar.pos;
@@ -361,7 +363,6 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let query_stats = run_query(
         &interpreter::QueryInterpreter::new(query, hgvs_allowlist),
         args,
-        &in_memory_dbs,
         &annonars_dbs,
         &mut rng,
     )?;

@@ -42,7 +42,13 @@ for src in $SRC_ANNONARS/*-grch37*; do
     cp -r $src $SCRIPT_DIR/db/annonars/grch37/$(basename ${src%-grch37*})
 done
 
-exit 0
+# annonars/grch37/clinvar-minimal
+
+pushd /tmp
+wget https://github.com/bihealth/annonars-data-clinvar/releases/download/clinvar-weekly-20230910/annonars-clinvar-minimal-grch37-20230910+0.18.0.tar.gz
+tar -vxf annonars-clinvar-minimal-grch37-20230910+0.18.0.tar.gz
+mv tmp/for-upload/annonars-clinvar-minimal-grch37-20230910+0.18.0 $SCRIPT_DIR/db/annonars/grch37/clinvar-minimal
+popd
 
 # mehari/grch37/
 
