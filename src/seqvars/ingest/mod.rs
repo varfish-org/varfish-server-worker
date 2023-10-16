@@ -122,9 +122,7 @@ fn transform_format_value(
     let curr_allele = format!("{}", allele_no);
 
     fn transform_allele(allele_to_transform: &str, curr_allele: &str) -> &'static str {
-        if allele_to_transform == "." {
-            "."
-        } else if allele_to_transform == curr_allele {
+        if allele_to_transform == curr_allele {
             "1"
         } else {
             "0"
@@ -143,22 +141,27 @@ fn transform_format_value(
                     vcf::record::genotypes::sample::Value::String(gt) => gt.clone(),
                     _ => unreachable!("FORMAT/GT must be string"),
                 };
+                if ["./.", ".|.", "."].contains(&gt.as_str()) {
+                    // no need to transform no-call
+                    vcf::record::genotypes::sample::Value::String(gt.into())
+                } else {
+                    // transform all others
+                    let gt_captures = gt_re
+                        .captures(&gt)
+                        .expect(&format!("FORMAT/GT cannot be parsed: {}", &gt));
+                    let gt_1 = gt_captures.get(1).expect("must be capture").as_str();
+                    let gt_2 = gt_captures.get(2).expect("must be capture").as_str();
+                    let gt_3 = gt_captures.get(3).expect("must be capture").as_str();
 
-                let gt_captures = gt_re
-                    .captures(&gt)
-                    .expect(&format!("FORMAT/GT cannot be parsed: {}", &gt));
-                let gt_1 = gt_captures.get(1).expect("must be capture").as_str();
-                let gt_2 = gt_captures.get(2).expect("must be capture").as_str();
-                let gt_3 = gt_captures.get(3).expect("must be capture").as_str();
+                    let new_gt = format!(
+                        "{}{}{}",
+                        transform_allele(gt_1, &curr_allele),
+                        gt_2,
+                        transform_allele(gt_3, &curr_allele),
+                    );
 
-                let new_gt = format!(
-                    "{}{}{}",
-                    transform_allele(gt_1, &curr_allele),
-                    gt_2,
-                    transform_allele(gt_3, &curr_allele),
-                );
-
-                vcf::record::genotypes::sample::Value::String(new_gt)
+                    vcf::record::genotypes::sample::Value::String(new_gt)
+                }
             }
             "AD" => {
                 let dp = match sample
