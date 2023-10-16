@@ -3,10 +3,15 @@
 mod annonars;
 mod interpreter;
 mod schema;
+mod sorting;
 
+use std::io::{BufRead, Write};
 use std::time::Instant;
 
 use clap::{command, Parser};
+use ext_sort::LimitedBufferBuilder;
+use ext_sort::{ExternalSorter, ExternalSorterBuilder};
+use itertools::Itertools;
 use noodles_vcf as vcf;
 
 use mehari::{annotate::seqvars::CHROM_TO_CHROM_NO, common::open_read_maybe_gz};
@@ -14,9 +19,13 @@ use rand_core::{RngCore, SeedableRng};
 use thousands::Separable;
 use uuid::Uuid;
 
+use crate::common;
+use crate::seqvars::query::schema::GenotypeChoice;
 use crate::{common::trace_rss_now, common::GenomeRelease};
 
-use self::schema::SequenceVariant;
+use self::schema::CaseQuery;
+use self::sorting::ByHgncId;
+use self::{annonars::AnnonarsDbs, schema::SequenceVariant};
 
 /// Command line arguments for `seqvars query` sub command.
 #[derive(Parser, Debug)]
@@ -206,6 +215,117 @@ fn create_payload(
     todo!()
 }
 
+/// Checks whether the variants pass through the query interpreter.
+///
+/// This function is only relevant if the query uses recessive mode.
+fn passes_for_gene(
+    query: &CaseQuery,
+    seqvars: &Vec<SequenceVariant>,
+) -> Result<bool, anyhow::Error> {
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    enum Mode {
+        ComphetRecessive,
+        Recessive,
+        Other,
+    }
+
+    let mut mode = Mode::Other;
+    let mut index_name = String::default();
+    let mut parents = Vec::new();
+    query
+        .genotype
+        .iter()
+        .for_each(|(sample_name, genotype_choice)| match genotype_choice {
+            &Some(GenotypeChoice::ComphetIndex) => {
+                index_name = sample_name.clone();
+                mode = Mode::ComphetRecessive;
+            }
+            &Some(GenotypeChoice::RecessiveIndex) => {
+                index_name = sample_name.clone();
+                mode = Mode::Recessive;
+            }
+            &Some(GenotypeChoice::RecessiveParent) => {
+                parents.push(sample_name.clone());
+            }
+            _ => (),
+        });
+
+    eprintln!(
+        "mode = {:?}, index_name = {:?}, parents = {:?}",
+        mode, &index_name, &parents
+    );
+
+    // No special handling for non-recessive mode.
+    if mode == Mode::Other {
+        return Ok(true);
+    }
+
+    let mut seen_het_parents = Vec::new();
+    for seqvar in seqvars {
+        // Get parsed index genotype.
+        let index_gt: common::Genotype = seqvar
+            .call_info
+            .get(&index_name)
+            .expect("no call info for index")
+            .genotype
+            .as_ref()
+            .expect("no GT for index")
+            .parse()
+            .map_err(|e| anyhow::anyhow!("could not parse index genotype: {}", e))?;
+
+        eprintln!(
+            "seqvar = {:?}, index_gt = {:?}, mode = {:?}",
+            &seqvar, &index_gt, mode
+        );
+        if mode == Mode::Recessive && index_gt == common::Genotype::HomAlt {
+            // if hom. recessive is allowed then we are done
+            return Ok(true);
+        } else if mode != Mode::Recessive && index_gt != common::Genotype::Het {
+            // it only makese sense to continue in recessive mode if the index is het.
+            return Ok(false);
+        }
+
+        // Otherwise, the index must be Het and we have to check which parent is also het.
+        // At this point, only one parent can be het.
+        let parent_gts = parents
+            .iter()
+            .map(|parent_name| {
+                seqvar
+                    .call_info
+                    .get(parent_name)
+                    .expect("no call info for parent")
+                    .genotype
+                    .as_ref()
+                    .expect("no GT for parent")
+                    .parse::<common::Genotype>()
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let het_parents = parents
+            .iter()
+            .zip(parent_gts.iter())
+            .filter(|(_, gt)| **gt == common::Genotype::Het)
+            .map(|(name, _)| name.clone())
+            .collect::<Vec<_>>();
+        assert!(het_parents.len() <= 1);
+        eprintln!("het_parents = {:?}", &het_parents);
+        if let Some(parent) = het_parents.first() {
+            if !seen_het_parents.contains(parent) {
+                seen_het_parents.push(parent.clone());
+            }
+        }
+
+        eprintln!("seen_het_parents = {:?}", &seen_het_parents);
+
+        // If the number of seen het. parents is equal to the number of parents, we are done.
+        if seen_het_parents.len() == parents.len() {
+            return Ok(true);
+        }
+    }
+
+    // one of the recessive modes was active and we did not find all parents
+    Ok(false)
+}
+
 /// Run the `args.path_input` VCF file and run through the given `interpreter` writing to
 /// `args.path_output`.
 fn run_query(
@@ -214,6 +334,8 @@ fn run_query(
     annonars_dbs: &annonars::AnnonarsDbs,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
+    let tmp_dir = tempdir::TempDir::new("vfw")?;
+
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
     let mut stats = QueryStats::default();
 
@@ -227,68 +349,176 @@ fn run_query(
     let mut input_reader = vcf::Reader::new(&mut input_reader);
     let input_header = input_reader.read_header()?;
 
-    // Create output TSV writer.
-    let mut csv_writer = csv::WriterBuilder::new()
-        .has_headers(true)
-        .delimiter(b'\t')
-        .quote_style(csv::QuoteStyle::Never)
-        .from_path(&args.path_output)?;
+    // Read through input records using the query interpreter as a filter and write to
+    // temporary file for unsorted records.
+    {
+        // Create temporary output file.
+        let mut tmp_unsorted = std::fs::File::create("unsorted.jsonl")
+            .map(std::io::BufWriter::new)
+            .map_err(|e| anyhow::anyhow!("could not create temporary unsorted file: {}", e))?;
 
-    // Read through input records using the query interpreter as a filter
-    for input_record in input_reader.records(&input_header) {
-        stats.count_total += 1;
-        let record_seqvar = SequenceVariant::from_vcf(&input_record?, &input_header)
-            .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
-        tracing::debug!("processing record {:?}", record_seqvar);
+        for input_record in input_reader.records(&input_header) {
+            stats.count_total += 1;
+            let record_seqvar = SequenceVariant::from_vcf(&input_record?, &input_header)
+                .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
+            tracing::debug!("processing record {:?}", record_seqvar);
 
-        let passes = interpreter.passes(&record_seqvar, &annonars_dbs)?;
-
-        // Finally, perform annotation of the record using the annonars library and write it
-        // in TSV format, ready for import into the database.
-        if passes.pass_all {
-            let result_payload = create_payload(&record_seqvar, &annonars_dbs)
-                .map_err(|e| anyhow::anyhow!("could not annotate record: {}", e))?;
-
-            let start = record_seqvar.pos;
-            let end = start + record_seqvar.reference.len() as i32 - 1;
-            let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
-
-            let SequenceVariant {
-                chrom: chromosome,
-                reference,
-                alternative,
-                ..
-            } = record_seqvar;
-            let chromosome_no = *chrom_to_chrom_no
-                .get(&chromosome)
-                .expect("invalid chromosome") as i32;
-
-            csv_writer
-                .serialize(&ResultRecord {
-                    smallvariantqueryresultset_id: args.result_set_id.clone().unwrap_or(".".into()),
-                    sodar_uuid: Uuid::from_bytes({
-                        rng.fill_bytes(&mut uuid_buf);
-                        uuid_buf
-                    }),
-                    release: match args.genome_release {
-                        GenomeRelease::Grch37 => "GRCh37".into(),
-                        GenomeRelease::Grch38 => "GRCh38".into(),
-                    },
-                    chromosome,
-                    chromosome_no,
-                    start,
-                    end,
-                    bin,
-                    reference,
-                    alternative,
-                    payload: serde_json::to_string(&result_payload)
-                        .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
-                })
-                .map_err(|e| anyhow::anyhow!("could not write record: {}", e))?;
+            if interpreter.passes(&record_seqvar, &annonars_dbs)?.pass_all {
+                writeln!(
+                    tmp_unsorted,
+                    "{}",
+                    serde_json::to_string(&sorting::ByHgncId::from(record_seqvar))?
+                )
+                .map_err(|e| anyhow::anyhow!("could not write record to unsorted: {}", e))?;
+            }
         }
+        tmp_unsorted.flush().map_err(|e| {
+            anyhow::anyhow!("could not flush temporary output file unsorted: {}", e)
+        })?;
     }
 
+    let path_by_hgnc = tmp_dir.path().join("by_hgnc_filtered.jsonl");
+
+    // Now:
+    //
+    // - sort the records by HGNC ID using external sorting
+    // - group by HGNC id
+    // - keep the groups where the recessive criteria are met according to query
+    // - write out the records again for later sorting by coordinate
+    {
+        let tmp_unsorted = std::fs::File::open("unsorted.jsonl")
+            .map(std::io::BufReader::new)
+            .map_err(|e| anyhow::anyhow!("could not open temporary unsorted file: {}", e))?;
+        let mut tmp_by_hgnc_filtered = std::fs::File::create(&path_by_hgnc)
+            .map(std::io::BufWriter::new)
+            .map_err(|e| {
+                anyhow::anyhow!("could not create temporary by_hgnc_filtered file: {}", e)
+            })?;
+
+        let sorter: ExternalSorter<sorting::ByHgncId, std::io::Error, LimitedBufferBuilder> =
+            ExternalSorterBuilder::new()
+                .with_tmp_dir(tmp_dir.as_ref())
+                .with_buffer(LimitedBufferBuilder::new(100_000, true))
+                .build()
+                .map_err(|e| anyhow::anyhow!("problem creating external sorter: {}", e))?;
+        let sorted = sorter
+            .sort(tmp_unsorted.lines().map(|res| {
+                Ok(serde_json::from_str(&res.expect("problem reading line"))
+                    .expect("problem deserializing"))
+            }))
+            .map_err(|e| anyhow::anyhow!("problem sorting temporary unsorted file: {}", e))?;
+
+        sorted
+            .map(|res| res.expect("problem reading line after sorting by HGNC ID"))
+            .group_by(|by_hgnc_id| by_hgnc_id.hgnc_id.clone())
+            .into_iter()
+            .map(|(_, group)| {
+                group
+                    .map(|ByHgncId { seqvar, .. }| seqvar)
+                    .collect::<Vec<_>>()
+            })
+            .filter(|seqvars| passes_for_gene(&interpreter.query, seqvars).unwrap())
+            .for_each(|seqvars| {
+                seqvars.into_iter().for_each(|seqvar| {
+                    writeln!(
+                        tmp_by_hgnc_filtered,
+                        "{}",
+                        serde_json::to_string(&sorting::ByCoordinate::from(seqvar)).unwrap()
+                    )
+                    .expect("could not write record to by_hgnc_filtered");
+                })
+            });
+        tmp_by_hgnc_filtered.flush().map_err(|e| {
+            anyhow::anyhow!(
+                "could not flush temporary output file by_hgnc_filtered: {}",
+                e
+            )
+        })?;
+    }
+
+    // Finally:
+    // - sort surviving records by coordinate
+    // - generate payload with annotations
+    {
+        let mut tmp_by_hgnc_filtered = std::fs::File::open(&path_by_hgnc)
+            .map(std::io::BufReader::new)
+            .map_err(|e| {
+                anyhow::anyhow!("could not open temporary tmp_by_hgnc_filtered file: {}", e)
+            })?;
+    }
+
+    // // Create output TSV writer.
+    // let mut csv_writer = csv::WriterBuilder::new()
+    //     .has_headers(true)
+    //     .delimiter(b'\t')
+    //     .quote_style(csv::QuoteStyle::Never)
+    //     .from_path(&args.path_output)?;
+
+    // // Finally, perform annotation of the record using the annonars library and write it
+    // // in TSV format, ready for import into the database.  However, in recessive mode, we
+    // // have to do a second pass to properly collect compound heterozygous variants.
+    // if passes.pass_all {
+    //     create_payload_and_write_record(
+    //         record_seqvar,
+    //         annonars_dbs,
+    //         chrom_to_chrom_no,
+    //         &mut csv_writer,
+    //         args,
+    //         rng,
+    //         &mut uuid_buf,
+    //     )?;
+    // }
+
     Ok(stats)
+}
+
+/// Create output payload and write the record to the output file.
+fn create_payload_and_write_record(
+    record_seqvar: SequenceVariant,
+    annonars_dbs: &AnnonarsDbs,
+    chrom_to_chrom_no: &CHROM_TO_CHROM_NO,
+    csv_writer: &mut csv::Writer<std::fs::File>,
+    args: &Args,
+    rng: &mut rand::rngs::StdRng,
+    uuid_buf: &mut [u8; 16],
+) -> Result<(), anyhow::Error> {
+    let result_payload = create_payload(&record_seqvar, &annonars_dbs)
+        .map_err(|e| anyhow::anyhow!("could not annotate record: {}", e))?;
+    let start = record_seqvar.pos;
+    let end = start + record_seqvar.reference.len() as i32 - 1;
+    let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
+    let SequenceVariant {
+        chrom: chromosome,
+        reference,
+        alternative,
+        ..
+    } = record_seqvar;
+    let chromosome_no = *chrom_to_chrom_no
+        .get(&chromosome)
+        .expect("invalid chromosome") as i32;
+    csv_writer
+        .serialize(&ResultRecord {
+            smallvariantqueryresultset_id: args.result_set_id.clone().unwrap_or(".".into()),
+            sodar_uuid: Uuid::from_bytes({
+                rng.fill_bytes(uuid_buf);
+                *uuid_buf
+            }),
+            release: match args.genome_release {
+                GenomeRelease::Grch37 => "GRCh37".into(),
+                GenomeRelease::Grch38 => "GRCh38".into(),
+            },
+            chromosome,
+            chromosome_no,
+            start,
+            end,
+            bin,
+            reference,
+            alternative,
+            payload: serde_json::to_string(&result_payload)
+                .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
+        })
+        .map_err(|e| anyhow::anyhow!("could not write record: {}", e))?;
+    Ok(())
 }
 
 /// Main entry point for `seqvars query` sub command.
@@ -344,7 +574,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     tracing::info!("Translating gene allow list...");
-    let hgvs_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
+    let hgnc_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
         if gene_allowlist.is_empty() {
             None
         } else {
@@ -360,7 +590,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("Running queries...");
     let before_query = Instant::now();
     let query_stats = run_query(
-        &interpreter::QueryInterpreter::new(query, hgvs_allowlist),
+        &interpreter::QueryInterpreter::new(query, hgnc_allowlist),
         args,
         &annonars_dbs,
         &mut rng,
@@ -387,6 +617,97 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
+    use rstest::rstest;
+
+    use super::schema::{CallInfo, SequenceVariant};
+    use crate::seqvars::query::schema::{CaseQuery, GenotypeChoice};
+
+    #[rstest]
+    #[case(
+        GenotypeChoice::ComphetIndex,
+        vec!["0/1,0/1,0/0"],
+        false,
+    )]
+    #[case(
+        GenotypeChoice::ComphetIndex,
+        vec!["1/1,0/0,0/0"],
+        false,
+    )]
+    #[case(
+        GenotypeChoice::ComphetIndex,
+        vec!["0/1,0/1,0/0","0/1,0/0,0/1"],
+        true,
+    )]
+    #[case(
+        GenotypeChoice::RecessiveIndex,
+        vec!["1/1,0/0,0/0","0/1,0/0,0/1"],
+        true,
+    )]
+    #[case(
+        GenotypeChoice::RecessiveIndex,
+        vec!["1/0,1/0,0/0","0/1,0/0,0/1"],
+        true,
+    )]
+    #[case(
+        GenotypeChoice::RecessiveIndex,
+        vec!["1/0,1/0,0/0","1/0,0/1,0/0"],
+        false,
+    )]
+    fn passes_for_gene_full_trio(
+        #[case] gt_choice_index: GenotypeChoice,
+        #[case] trio_gts: Vec<&str>,
+        #[case] passes: bool,
+    ) -> Result<(), anyhow::Error> {
+        let query = CaseQuery {
+            genotype: vec![
+                ("index".into(), Some(gt_choice_index)),
+                ("father".into(), Some(GenotypeChoice::RecessiveParent)),
+                ("mother".into(), Some(GenotypeChoice::RecessiveParent)),
+            ]
+            .into_iter()
+            .collect(),
+            ..Default::default()
+        };
+        let seqvars = trio_gts
+            .iter()
+            .map(|gts| {
+                let gts: Vec<&str> = gts.split(",").map(|gt| gt).collect();
+                SequenceVariant {
+                    call_info: vec![
+                        (
+                            String::from("index"),
+                            CallInfo {
+                                genotype: Some(gts[0].into()),
+                                ..Default::default()
+                            },
+                        ),
+                        (
+                            String::from("father"),
+                            CallInfo {
+                                genotype: Some(gts[1].into()),
+                                ..Default::default()
+                            },
+                        ),
+                        (
+                            String::from("mother"),
+                            CallInfo {
+                                genotype: Some(gts[2].into()),
+                                ..Default::default()
+                            },
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    ..Default::default()
+                }
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(super::passes_for_gene(&query, &seqvars)?, passes);
+
+        Ok(())
+    }
+
     #[tracing_test::traced_test]
     #[rstest::rstest]
     #[case("tests/seqvars/query/Case_1.ingested.vcf")]

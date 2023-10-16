@@ -22,7 +22,7 @@ pub struct QueryInterpreter {
     /// The case query settings.
     pub query: CaseQuery,
     /// Gene allowlist with HGNC IDs.
-    pub hgvs_allowlist: Option<HashSet<String>>,
+    pub hgnc_allowlist: Option<HashSet<String>>,
 }
 
 /// Result type for `QueryInterpreter::passes_genotype()`.
@@ -34,13 +34,13 @@ pub struct PassesResult {
 
 impl QueryInterpreter {
     /// Construct new `QueryInterpreter` with the given query settings.
-    pub fn new(query: CaseQuery, hgvs_allowlist: Option<HashSet<String>>) -> Self {
+    pub fn new(query: CaseQuery, hgnc_allowlist: Option<HashSet<String>>) -> Self {
         tracing::error!(
             "note well that we will need a second pass for compound heterozygous variants"
         );
         QueryInterpreter {
             query,
-            hgvs_allowlist,
+            hgnc_allowlist,
         }
     }
 
@@ -54,7 +54,7 @@ impl QueryInterpreter {
         let pass_frequency = frequency::passes(&self.query, seqvar)?;
         let pass_consequences = consequences::passes(&self.query, seqvar)?;
         let res_quality = quality::passes(&self.query, seqvar)?;
-        let pass_genes_allowlist = genes_allowlist::passes(&self.query, seqvar);
+        let pass_genes_allowlist = genes_allowlist::passes(&self.hgnc_allowlist, seqvar);
         let pass_regions_allowlist = regions_allowlist::passes(&self.query, seqvar);
         if !pass_frequency
             || !pass_consequences
