@@ -204,7 +204,6 @@ fn create_payload(
     annonars_dbs: &AnnonarsDbs,
 ) -> Result<ResultPayload, anyhow::Error> {
     todo!()
-    // Ok(())
 }
 
 /// Run the `args.path_input` VCF file and run through the given `interpreter` writing to
