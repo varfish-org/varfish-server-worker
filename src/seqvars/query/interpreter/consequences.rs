@@ -46,22 +46,7 @@ mod test {
                         alternative: "A".into(),
                     },
                     consequences: vec![csq],
-                    putative_impact: csq.impact(),
-                    gene_symbol: Default::default(),
-                    gene_id: Default::default(),
-                    feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
-                        term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
-                    },
-                    feature_id: Default::default(),
-                    feature_biotype: mehari::annotate::seqvars::ann::FeatureBiotype::Coding,
-                    rank: Default::default(),
-                    hgvs_t: Default::default(),
-                    hgvs_p: Default::default(),
-                    tx_pos: Default::default(),
-                    cds_pos: Default::default(),
-                    protein_pos: Default::default(),
-                    distance: Default::default(),
-                    messages: Default::default(),
+                    ..Default::default()
                 }],
                 ..Default::default()
             };

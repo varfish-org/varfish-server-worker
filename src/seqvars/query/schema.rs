@@ -76,12 +76,6 @@ pub enum GenotypeChoice {
     /// Variant genotype.
     #[serde(rename = "variant")]
     Variant,
-    /// Non-variant genotype.
-    #[serde(rename = "non-variant")]
-    NonVariant,
-    /// Non-reference genotype.
-    #[serde(rename = "non-reference")]
-    NonReference,
     /// Index in comp. het. recessive inheritance.
     #[serde(rename = "comphet-index")]
     ComphetIndex,
@@ -106,15 +100,9 @@ impl GenotypeChoice {
             GenotypeChoice::Het => ["0/1", "0|1", "1/0", "1|0"].contains(&gt_str),
             GenotypeChoice::Hom => ["1", "1/1", "1|1"].contains(&gt_str),
             GenotypeChoice::NonHom => !["1", "1/1", "1|1"].contains(&gt_str),
-            GenotypeChoice::Variant => [
-                "1", "0/1", "0|1", "1/0", "1|0", "1|1", "1/1", "./1", ".|1", "1/.", "1|.",
-            ]
-            .contains(&gt_str),
-            GenotypeChoice::NonVariant => ![
-                "1", "0/1", "0|1", "1/0", "1|0", "1|1", "1/1", "./1", ".|1", "1/.", "1|.",
-            ]
-            .contains(&gt_str),
-            GenotypeChoice::NonReference => !["0", "0|0", "0/0"].contains(&gt_str),
+            GenotypeChoice::Variant => {
+                ["1", "0/1", "0|1", "1/0", "1|0", "1|1", "1/1"].contains(&gt_str)
+            }
             GenotypeChoice::ComphetIndex
             | GenotypeChoice::RecessiveIndex
             | GenotypeChoice::RecessiveParent => {
@@ -313,7 +301,7 @@ impl Default for CaseQuery {
 /// Note that the ingested files have exactly one alternate allele.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct CallInfo {
-    /// The genotype, if applicable, e.g., "0/1", "./1", "."
+    /// The genotype, if applicable, e.g., "0/1"
     pub genotype: Option<String>,
     /// Genotype quality score, if applicable
     pub quality: Option<f32>,
@@ -561,21 +549,17 @@ pub mod test {
         use rstest::rstest;
 
         #[rstest]
-        #[case(Any, &["0", "0/0", "0|0", "1", "1/1", "1|1", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], true)]
+        #[case(Any, &["0", "0/0", "0|0", "1", "1/1", "1|1", "0/1", "0/.", "0|1", "1/0", "1|0", ".", "./.", ".|."], true)]
         #[case(Ref, &["0", "0/0", "0|0"], true)]
-        #[case(Ref, &[ "1", "1/1", "1|1", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], false)]
-        #[case(NonReference, &["0", "0/0", "0|0"], false)]
-        #[case(NonReference, &[ "1", "1/1", "1|1", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], true)]
+        #[case(Ref, &[ "1", "1/1", "1|1", "0/1", "0/.", "0|1", "1/0", "1|0", ".", "./.", ".|."], false)]
         #[case(Het, &["0/1", "0|1", "1/0", "1|0"], true)]
-        #[case(Het, &["0", "0/0", "0|0", "1", "1/1", "1|1", "0/.", "0|.", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], false)]
+        #[case(Het, &["0", "0/0", "0|0", "1", "1/1", "1|1", ".", "./.", ".|."], false)]
         #[case(Hom, &["1", "1/1", "1|1"], true)]
-        #[case(Hom, &["0", "0/0", "0|0", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], false)]
+        #[case(Hom, &["0", "0/0", "0|0", "0/1", "0/.", "0|1", "1/0", "1|0", ".", "./.", ".|."], false)]
         #[case(NonHom, &["1", "1/1", "1|1"], false)]
-        #[case(NonHom, &["0", "0/0", "0|0", "0/1", "0/.", "0|1", "0|.", "1/0", "1|0", ".", "./0", "./1", "./.", ".|0", ".|1", ".|."], true)]
-        #[case(Variant, &["1", "1/1", "1|1", "0/1",  "0|1",  "1/0", "1|0", "./1", ".|1"], true)]
-        #[case(Variant, &["0", "0/0", "0|0", "0/.", "0|.", ".", "./0", "./.", ".|0", ".|."], false)]
-        #[case(NonVariant, &["1", "1/1", "1|1", "0/1", "0|1",  "1/0", "1|0", "./1", ".|1"], false)]
-        #[case(NonVariant, &["0", "0/0", "0|0", "0|.", "0/.", ".", "./0", "./.", ".|0", ".|."], true)]
+        #[case(NonHom, &["0", "0/0", "0|0", "0/1", "0/.", "0|1", "1/0", "1|0", ".", "./.", ".|."], true)]
+        #[case(Variant, &["1", "1/1", "1|1", "0/1",  "0|1",  "1/0", "1|0"], true)]
+        #[case(Variant, &["0", "0/0", "0|0", ".", "./.", ".|."], false)]
         pub fn matches(
             #[case] genotype_choice: GenotypeChoice,
             #[case] gt_strs: &[&str],
