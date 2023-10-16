@@ -89,9 +89,10 @@ fn passes_for_sample(
             if let (Some(settings_ab), Some(call_dp), Some(call_ad)) =
                 (quality_settings.ab, call_info.dp, call_info.ad)
             {
-                let ab_raw = call_ad as f32 / call_dp as f32;
+                let ab_raw = call_ad as f64 / call_dp as f64;
                 let ab = if ab_raw > 0.5 { 1.0 - ab_raw } else { ab_raw };
-                if ab < settings_ab {
+                let eps = 1e-6f64;
+                if ab + eps < settings_ab as f64 {
                     return Some(quality_settings.fail);
                 }
             }
@@ -130,4 +131,298 @@ fn passes_for_sample(
     }
 
     None
+}
+
+#[cfg(test)]
+mod test {
+    use rstest::rstest;
+
+    use crate::seqvars::query::schema::{
+        CallInfo,
+        FailChoice::{self, *},
+        QualitySettings,
+    };
+
+    #[rstest]
+    // het, pass dp
+    #[case(
+        Some(10), // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("0/1"), // c_genotype
+        None, // c_quality
+        Some(10), // c_dp
+        None, // c_ad
+        None,  // expected, None = pass
+    )]
+    // het, fail dp
+    #[case(
+        Some(10), // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("0/1"), // c_genotype
+        None, // c_quality
+        Some(9), // c_dp
+        None, // c_ad
+        Some(Ignore),  // expected, None = pass
+    )]
+    // hom, pass dp
+    #[case(
+        None, // q_dp_het
+        Some(10), // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("1/1"), // c_genotype
+        None, // c_quality
+        Some(10), // c_dp
+        None, // c_ad
+        None,  // expected, None = pass
+    )]
+    // hom, fail dp
+    #[case(
+        None, // q_dp_het
+        Some(10), // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("1/1"), // c_genotype
+        None, // c_quality
+        Some(9), // c_dp
+        None, // c_ad
+        Some(Ignore),  // expected, None = pass
+    )]
+    // pass gq
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        Some(10), // q_gq
+        None, // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        None, // c_genotype
+        Some(10f32), // c_quality
+        None, // c_dp
+        None, // c_ad
+        None,  // expected, None = pass
+    )]
+    // fail gq
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        Some(10), // q_gq
+        None, // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("0/1"), // c_genotype
+        Some(9f32), // c_quality
+        None, // c_dp
+        None, // c_ad
+        Some(Ignore),  // expected, None = pass
+    )]
+    // het, pass ab lower
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        Some(0.2), // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("0/1"), // c_genotype
+        None, // c_quality
+        Some(100), // c_dp
+        Some(20), // c_ad
+        None,  // expected, None = pass
+    )]
+    // het, pass ab upper
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        Some(0.2), // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("0/1"), // c_genotype
+        None, // c_quality
+        Some(100), // c_dp
+        Some(80), // c_ad
+        None,  // expected, None = pass
+    )]
+    // het, fail ab lower
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        Some(0.2), // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("0/1"), // c_genotype
+        None, // c_quality
+        Some(100), // c_dp
+        Some(19), // c_ad
+        Some(Ignore),  // expected, None = pass
+    )]
+    // het, fail ab upper
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        Some(0.2), // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("0/1"), // c_genotype
+        None, // c_quality
+        Some(100), // c_dp
+        Some(81), // c_ad
+        Some(Ignore),  // expected, None = pass
+    )]
+    // hom, ab ignored
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        Some(0.2), // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        Some("1/1"), // c_genotype
+        None, // c_quality
+        None, // c_dp
+        None, // c_ad
+        None,  // expected, None = pass
+    )]
+    // pass ad
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        Some(10), // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        None, // c_genotype
+        None, // c_quality
+        None, // c_dp
+        Some(10), // c_ad
+        None,  // expected, None = pass
+    )]
+    // fail ad
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        Some(10), // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        None, // c_genotype
+        None, // c_quality
+        None, // c_dp
+        Some(9), // c_ad
+        Some(Ignore),  // expected, None = pass
+    )]
+    // pass ad_max
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        None, // q_ad
+        Some(10), // q_ad_max
+        Ignore, // q_fail
+        None, // c_genotype
+        None, // c_quality
+        None, // c_dp
+        Some(10), // c_ad
+        None,  // expected, None = pass
+    )]
+    // fail ad_max
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        None, // q_ad
+        Some(10), // q_ad_max
+        Ignore, // q_fail
+        None, // c_genotype
+        None, // c_quality
+        None, // c_dp
+        Some(11), // c_ad
+        Some(Ignore),  // expected, None = pass
+    )]
+    // all none
+    #[case(
+        None, // q_dp_het
+        None, // q_dp_hom
+        None, // q_gq
+        None, // q_ab
+        None, // q_ad
+        None, // q_ad_max
+        Ignore, // q_fail
+        None, // c_genotype
+        None, // c_quality
+        None, // c_dp
+        None, // c_ad
+        None,  // expected, None = pass
+    )]
+    fn passes_for_sample(
+        #[case] q_dp_het: Option<i32>,
+        #[case] q_dp_hom: Option<i32>,
+        #[case] q_gq: Option<i32>,
+        #[case] q_ab: Option<f32>,
+        #[case] q_ad: Option<i32>,
+        #[case] q_ad_max: Option<i32>,
+        #[case] q_fail: FailChoice,
+        #[case] c_genotype: Option<&'static str>,
+        #[case] c_quality: Option<f32>,
+        #[case] c_dp: Option<i32>,
+        #[case] c_ad: Option<i32>,
+        #[case] expected: Option<FailChoice>,
+    ) -> Result<(), anyhow::Error> {
+        let settings = QualitySettings {
+            dp_het: q_dp_het,
+            dp_hom: q_dp_hom,
+            gq: q_gq,
+            ab: q_ab,
+            ad: q_ad,
+            ad_max: q_ad_max,
+            fail: q_fail,
+        };
+        let call_info = CallInfo {
+            genotype: c_genotype.map(|s| s.to_string()),
+            quality: c_quality,
+            dp: c_dp,
+            ad: c_ad,
+            ..Default::default()
+        };
+
+        assert_eq!(
+            super::passes_for_sample(&settings, &call_info),
+            expected,
+            "settings: {:?}, call info: {:?}",
+            settings,
+            call_info
+        );
+
+        Ok(())
+    }
 }
