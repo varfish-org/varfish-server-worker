@@ -4,7 +4,7 @@ use std::{
     fs::File,
     io::{BufRead, BufWriter, Write},
     ops::Range,
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use byte_unit::Byte;
