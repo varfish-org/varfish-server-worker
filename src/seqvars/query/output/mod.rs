@@ -42,8 +42,10 @@ pub struct Payload {
     /// Case UUID as specified on the command line.
     pub case_uuid: uuid::Uuid,
     /// The affected gene and consequence, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub gene_related: Option<gene_related::Record>,
     /// Variant-related information, always present.
+    #[serde(skip_serializing_if = "variant_related::Record::is_empty")]
     pub variant_related: variant_related::Record,
     /// Genotypes call related, always present.
     pub call_related: call_related::Record,

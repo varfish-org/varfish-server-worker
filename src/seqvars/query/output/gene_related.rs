@@ -12,8 +12,10 @@ pub struct Record {
     /// Gene-related consequences of a variant.
     pub consequences: Consequences,
     /// Phenotype-related information, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub phenotype: Option<Phenotype>,
     /// Gene-wise constraints on the gene, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub constraints: Option<Constraints>,
 }
 
@@ -72,9 +74,11 @@ pub struct Consequences {
     /// HGVS.{c,n} code of variant
     pub hgvs_t: String,
     /// HGVS.p code of variant
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub hgvs_p: Option<String>,
 
     /// The predicted variant consequences.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub consequences: Vec<Consequence>,
 }
 

@@ -61,6 +61,7 @@ fn passes_for_sample(
     quality_settings: &QualitySettings,
     call_info: &CallInfo,
 ) -> Option<FailChoice> {
+    #[derive(PartialEq, Eq)]
     enum Genotype {
         Het,
         Hom,
@@ -122,17 +123,19 @@ fn passes_for_sample(
         }
     }
 
-    // ad
-    if let (Some(settings_ad), Some(call_ad)) = (quality_settings.ad, call_info.ad) {
-        if call_ad < settings_ad {
-            return Some(quality_settings.fail);
+    if genotype != Genotype::Ref {
+        // ad
+        if let (Some(settings_ad), Some(call_ad)) = (quality_settings.ad, call_info.ad) {
+            if call_ad < settings_ad {
+                return Some(quality_settings.fail);
+            }
         }
-    }
 
-    // ad_max
-    if let (Some(settings_ad_max), Some(call_ad)) = (quality_settings.ad_max, call_info.ad) {
-        if call_ad > settings_ad_max {
-            return Some(quality_settings.fail);
+        // ad_max
+        if let (Some(settings_ad_max), Some(call_ad)) = (quality_settings.ad_max, call_info.ad) {
+            if call_ad > settings_ad_max {
+                return Some(quality_settings.fail);
+            }
         }
     }
 

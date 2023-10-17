@@ -2,7 +2,13 @@ use crate::seqvars::query::schema::{CaseQuery, SequenceVariant};
 
 /// Determine whether the `SequenceVariant` passes the consequences filter.
 pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<bool, anyhow::Error> {
+    // If no consequences are specified, the variant passes.
     if query.consequences.is_empty() {
+        return Ok(true);
+    }
+    // Variants on chrMT always pass.
+    let chrom = annonars::common::cli::canonicalize(&seqvar.chrom);
+    if chrom == "MT" {
         return Ok(true);
     }
 

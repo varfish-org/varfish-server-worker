@@ -399,8 +399,8 @@ impl SequenceVariant {
         let reference = record.reference_bases().to_string();
         let alternative = record.alternate_bases()[0].to_string();
 
-        let call_info: indexmap::IndexMap<String, CallInfo> =
-            Self::build_call_info(record, header)?;
+        let call_info = Self::build_call_info(record, header)?;
+        let ann_fields = Self::extract_ann_fields(record)?;
 
         let result = Self {
             chrom,
@@ -408,10 +408,11 @@ impl SequenceVariant {
             reference,
             alternative,
             call_info,
+            ann_fields,
             ..Default::default()
         };
 
-        Self::copy_freqs(result, record)
+        Self::with_freqs(result, record)
     }
 
     /// Build call information.
@@ -479,8 +480,34 @@ impl SequenceVariant {
         Ok(result)
     }
 
+    /// Extract `INFO/ANN` entries
+    fn extract_ann_fields(
+        record: &vcf::Record,
+    ) -> Result<Vec<mehari::annotate::seqvars::ann::AnnField>, anyhow::Error> {
+        if let Some(Some(ann)) = record.info().get(
+            &"ANN"
+                .parse::<vcf::record::info::field::Key>()
+                .expect("invalid key INFO/ANN?"),
+        ) {
+            if let vcf::record::info::field::Value::Array(
+                vcf::record::info::field::value::Array::String(ann),
+            ) = ann
+            {
+                ann.iter()
+                    .flatten()
+                    .map(|s| s.parse::<mehari::annotate::seqvars::ann::AnnField>())
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|e| anyhow::anyhow!("problem parsing ANN: {}", e))
+            } else {
+                anyhow::bail!("invalid type of INFO/ANN")
+            }
+        } else {
+            Ok(Vec::default())
+        }
+    }
+
     /// Copy the frequencies from `record` to `result`.
-    fn copy_freqs(
+    fn with_freqs(
         result: SequenceVariant,
         record: &vcf::Record,
     ) -> Result<SequenceVariant, anyhow::Error> {
