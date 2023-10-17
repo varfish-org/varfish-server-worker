@@ -204,7 +204,7 @@ struct ResultRecord {
 struct QueryStats {
     pub count_passed: usize,
     pub count_total: usize,
-    pub by_effect: indexmap::IndexMap<mehari::annotate::seqvars::ann::Consequence, usize>,
+    pub by_consequence: indexmap::IndexMap<mehari::annotate::seqvars::ann::Consequence, usize>,
 }
 
 /// Annotate the payload of the record with `annonars`.
@@ -370,6 +370,16 @@ fn run_query(
             tracing::debug!("processing record {:?}", record_seqvar);
 
             if interpreter.passes(&record_seqvar, &annonars_dbs)?.pass_all {
+                stats.count_passed += 1;
+                if let Some(ann) = record_seqvar.ann_fields.first() {
+                    ann.consequences.iter().for_each(|csq| {
+                        stats
+                            .by_consequence
+                            .entry(*csq)
+                            .and_modify(|e| *e += 1)
+                            .or_insert(1);
+                    })
+                }
                 writeln!(
                     tmp_unsorted,
                     "{}",
@@ -656,7 +666,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         query_stats.count_total.separate_with_commas()
     );
     tracing::info!("passing records by effect type");
-    for (effect, count) in query_stats.by_effect.iter() {
+    for (effect, count) in query_stats.by_consequence.iter() {
         tracing::info!("{:?} -- {}", effect, count);
     }
 
