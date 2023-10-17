@@ -65,7 +65,6 @@ impl DbIds {
         seqvar: &SequenceVariant,
         annotator: &Annotator,
     ) -> Result<Self, anyhow::Error> {
-        // TODO: need to properly separate error from no result in annonars.
         Ok(Self {
             dbsnp_rs: annotator
                 .query_dbsnp(seqvar)
@@ -83,7 +82,6 @@ impl DbIds {
 /// ClinVar-related information.
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
 pub struct Clinvar {
-    // TODO: switch to VCV summary or hierarchical?
     /// The RCV accession.
     pub rcv: String,
     /// The clinical significance.
@@ -98,7 +96,6 @@ impl Clinvar {
         seqvar: &SequenceVariant,
         annotator: &Annotator,
     ) -> Result<Option<Self>, anyhow::Error> {
-        // TODO: need to properly separate error from no result in annonars.
         annotator
             .query_clinvar_minimal(seqvar)
             .ok()
@@ -168,7 +165,6 @@ pub struct Frequency {
 impl Frequency {
     /// Extract frequency information from `seqvar`
     pub fn with_seqvar(seqvar: &SequenceVariant) -> Result<Frequency, anyhow::Error> {
-        // TODO: inhouse not supported at the moment
         let chrom = annonars::common::cli::canonicalize(&seqvar.chrom);
         let frequency = if chrom == "MT" {
             FrequencyBuilder::default()

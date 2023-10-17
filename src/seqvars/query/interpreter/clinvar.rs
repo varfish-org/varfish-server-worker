@@ -39,8 +39,6 @@ pub fn passes(
     } else {
         // Because of the annonars API, we currently need to swallow any error,
         // as "not found" currently maps to an error.
-        //
-        // TODO: fix annonars
         Ok(true)
     }
 }

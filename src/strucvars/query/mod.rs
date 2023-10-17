@@ -161,7 +161,6 @@ struct ResultRecord {
     release: String,
     chromosome: String,
     chromosome_no: i32,
-    // TODO: remove bin
     bin: u32,
     chromosome2: String,
     chromosome_no2: i32,

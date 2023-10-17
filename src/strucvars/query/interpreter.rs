@@ -369,10 +369,6 @@ impl QueryInterpreter {
             Ok(passes_result)
         }
     }
-
-    // TODO: regulatory ensembl/vista
-    // TODO: regulatory custom
-    // TODO: recessive mdoe
 }
 
 #[cfg(test)]

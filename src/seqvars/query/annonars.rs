@@ -107,8 +107,6 @@ impl Annotator {
     /// # Errors
     ///
     /// If there is a problem querying the database.
-    ///
-    /// TODO: also if no entry could be found, needs change in annonars
     pub fn query_clinvar_minimal(
         &self,
         seqvar: &SequenceVariant,
@@ -140,8 +138,6 @@ impl Annotator {
     /// # Errors
     ///
     /// If there is a problem querying the database.
-    ///
-    /// TODO: also if no entry could be found, needs change in annonars
     pub fn query_dbsnp(
         &self,
         seqvar: &SequenceVariant,

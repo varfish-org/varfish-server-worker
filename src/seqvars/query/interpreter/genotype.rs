@@ -32,8 +32,6 @@ fn passes_recessive_modes(
     seqvar: &SequenceVariant,
     no_call_samples: &[&str],
 ) -> Result<bool, anyhow::Error> {
-    // TODO: properly handle X recessive mode
-
     // Get genotype choice of index.
     let index_gt_choice = query_genotype
         .get(index_name)

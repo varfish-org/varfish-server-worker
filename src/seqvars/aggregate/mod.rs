@@ -53,7 +53,6 @@ fn handle_record(
     let mut res_counts = ds::Counts::default();
     let mut res_carriers = ds::CarrierList::default();
 
-    // TODO properly handle PAR regions
     for (name, sample) in input_header
         .sample_names()
         .iter()
