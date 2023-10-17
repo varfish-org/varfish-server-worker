@@ -15,7 +15,10 @@ pub fn passes(
         return Ok(true);
     }
 
-    if let Ok(record) = annotator.query_clinvar_minimal(seqvar) {
+    if let Some(record) = annotator
+        .query_clinvar_minimal(seqvar)
+        .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
+    {
         let clinical_significance: ClinicalSignificance =
             record
                 .clinical_significance

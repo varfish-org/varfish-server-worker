@@ -177,7 +177,7 @@ impl Annotator {
     pub fn query_clinvar_minimal(
         &self,
         seqvar: &SequenceVariant,
-    ) -> Result<annonars::clinvar_minimal::pbs::Record, anyhow::Error> {
+    ) -> Result<Option<annonars::clinvar_minimal::pbs::Record>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .clinvar_db
@@ -208,12 +208,12 @@ impl Annotator {
     pub fn query_dbsnp(
         &self,
         seqvar: &SequenceVariant,
-    ) -> Result<annonars::dbsnp::pbs::Record, anyhow::Error> {
+    ) -> Result<Option<annonars::dbsnp::pbs::Record>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .dbsnp_db
-            .cf_handle("dbsnp")
-            .ok_or_else(|| anyhow::anyhow!("could not get dbsnp column family"))?;
+            .cf_handle("dbsnp_data")
+            .ok_or_else(|| anyhow::anyhow!("could not get dbsnp_data column family"))?;
 
         let variant = annonars::common::spdi::Var::new(
             annonars::common::cli::canonicalize(&seqvar.chrom),
@@ -239,7 +239,7 @@ impl Annotator {
     pub fn query_cadd(
         &self,
         seqvar: &SequenceVariant,
-    ) -> Result<Vec<serde_json::Value>, anyhow::Error> {
+    ) -> Result<Option<Vec<serde_json::Value>>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .cadd_db
@@ -273,7 +273,7 @@ impl Annotator {
     pub fn query_dbnsfp(
         &self,
         seqvar: &SequenceVariant,
-    ) -> Result<Vec<serde_json::Value>, anyhow::Error> {
+    ) -> Result<Option<Vec<serde_json::Value>>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .dbnsfp_db

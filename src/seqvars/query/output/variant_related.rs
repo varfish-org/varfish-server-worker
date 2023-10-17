@@ -173,7 +173,11 @@ impl Record {
         let mut result = indexmap::IndexMap::new();
 
         // Extract values from CADD.
-        if let Some(cadd_values) = annotator.query_cadd(seqvar).as_ref().ok() {
+        if let Some(cadd_values) = annotator
+            .query_cadd(seqvar)
+            .as_ref()
+            .map_err(|e| anyhow::anyhow!("problem querying CADD: {}", e))?
+        {
             let mut collectors: Vec<Box<dyn Collector>> = vec![
                 Box::new(SingleValueCollector::new("PHRED", "cadd_phred")),
                 Box::new(SingleValueCollector::new("SIFTval", "sift")),
@@ -210,7 +214,11 @@ impl Record {
 
         // Extract values from dbNSFP
 
-        if let Some(dbnsfp_values) = annotator.query_dbnsfp(seqvar).as_ref().ok() {
+        if let Some(dbnsfp_values) = annotator
+            .query_dbnsfp(seqvar)
+            .as_ref()
+            .map_err(|e| anyhow::anyhow!("problem querying dbNSFP: {}", e))?
+        {
             // REVEL_score
             // BayesDel_addAF_score
             let mut collectors: Vec<Box<dyn Collector>> = vec![
@@ -268,7 +276,7 @@ impl DbIds {
         Ok(Self {
             dbsnp_rs: annotator
                 .query_dbsnp(seqvar)
-                .ok()
+                .map_err(|e| anyhow::anyhow!("problem querying dbSNP: {}", e))?
                 .map(|record| format!("rs{}", record.rs_id)),
         })
     }
@@ -298,7 +306,7 @@ impl Clinvar {
     ) -> Result<Option<Self>, anyhow::Error> {
         annotator
             .query_clinvar_minimal(seqvar)
-            .ok()
+            .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
             .map(|record| {
                 let annonars::clinvar_minimal::pbs::Record {
                     rcv,
