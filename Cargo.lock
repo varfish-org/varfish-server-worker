@@ -256,6 +256,46 @@ dependencies = [
 [[package]]
 name = "annonars"
 version = "0.23.1"
+dependencies = [
+ "actix-web",
+ "anyhow",
+ "bgzip",
+ "boolvec",
+ "byteorder",
+ "chrono",
+ "clap",
+ "clap-verbosity-flag",
+ "csv",
+ "enum-map 2.6.3",
+ "env_logger",
+ "flate2",
+ "hgvs",
+ "indexmap 2.0.2",
+ "indicatif",
+ "log",
+ "noodles-bed",
+ "noodles-bgzf 0.25.0",
+ "noodles-core",
+ "noodles-csi",
+ "noodles-tabix",
+ "noodles-vcf",
+ "prost",
+ "prost-build",
+ "rayon",
+ "rocksdb",
+ "rocksdb-utils-lookup",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "strum",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "annonars"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17a6e189155aa6d3488e373db9625fc80733ec50cda565e6ed4b160a337760c8"
 dependencies = [
@@ -1906,7 +1946,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad5a7d9e2c5c19a95ec03a385a867b30d66cc7237f916f3ff0071ab7eb990f0d"
 dependencies = [
  "actix-web",
- "annonars",
+ "annonars 0.23.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow",
  "bgzip",
  "bio",
@@ -3622,7 +3662,7 @@ checksum = "830b7e5d4d90034032940e4ace0d9a9a057e7a45cd94e6c007832e39edb82f6d"
 name = "varfish-server-worker"
 version = "0.10.2"
 dependencies = [
- "annonars",
+ "annonars 0.23.1",
  "anyhow",
  "base16ct",
  "bio",

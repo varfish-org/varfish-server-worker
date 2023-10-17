@@ -6,7 +6,115 @@ chrom: "17"
 pos: 41254393
 reference: G
 alternative: T
-ann_fields: []
+ann_fields:
+  - allele:
+      Alt:
+        alternative: T
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007294.4
+    feature_biotype: Coding
+    rank:
+      ord: 6
+      total: 22
+    hgvs_t: c.441+1746C>A
+    hgvs_p: p.?
+    tx_pos:
+      ord: 554
+      total: 7088
+    cds_pos:
+      ord: 441
+      total: 5592
+    protein_pos: ~
+    distance: 1745
+    messages: ~
+  - allele:
+      Alt:
+        alternative: T
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007297.4
+    feature_biotype: Coding
+    rank:
+      ord: 5
+      total: 21
+    hgvs_t: c.300+1746C>A
+    hgvs_p: p.?
+    tx_pos:
+      ord: 494
+      total: 7028
+    cds_pos:
+      ord: 300
+      total: 5451
+    protein_pos: ~
+    distance: 1745
+    messages: ~
+  - allele:
+      Alt:
+        alternative: T
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007299.4
+    feature_biotype: Coding
+    rank:
+      ord: 6
+      total: 21
+    hgvs_t: c.441+1746C>A
+    hgvs_p: p.?
+    tx_pos:
+      ord: 548
+      total: 3696
+    cds_pos:
+      ord: 441
+      total: 2100
+    protein_pos: ~
+    distance: 1745
+    messages: ~
+  - allele:
+      Alt:
+        alternative: T
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007300.4
+    feature_biotype: Coding
+    rank:
+      ord: 6
+      total: 23
+    hgvs_t: c.441+1746C>A
+    hgvs_p: p.?
+    tx_pos:
+      ord: 554
+      total: 7151
+    cds_pos:
+      ord: 441
+      total: 5655
+    protein_pos: ~
+    distance: 1745
+    messages: ~
 gnomad_exomes_an: 1936
 gnomad_exomes_hom: 0
 gnomad_exomes_het: 167

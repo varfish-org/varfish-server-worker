@@ -54,7 +54,6 @@ consequences:
   - upstream_gene_variant
 quality: {}
 genotype: {}
-selected_variants: ~
 transcripts_coding: true
 transcripts_noncoding: true
 var_type_snv: true

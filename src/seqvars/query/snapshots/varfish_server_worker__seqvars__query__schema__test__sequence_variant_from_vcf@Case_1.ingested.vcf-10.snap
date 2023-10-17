@@ -6,7 +6,116 @@ chrom: "17"
 pos: 41273700
 reference: C
 alternative: CA
-ann_fields: []
+ann_fields:
+  - allele:
+      Alt:
+        alternative: CA
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007294.4
+    feature_biotype: Coding
+    rank:
+      ord: 2
+      total: 22
+    hgvs_t: c.80+2333_80+2334insT
+    hgvs_p: p.?
+    tx_pos:
+      ord: 193
+      total: 7088
+    cds_pos:
+      ord: 80
+      total: 5592
+    protein_pos: ~
+    distance: 2333
+    messages: ~
+  - allele:
+      Alt:
+        alternative: CA
+    consequences:
+      - 5_prime_UTR_variant
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007297.4
+    feature_biotype: Coding
+    rank:
+      ord: 2
+      total: 21
+    hgvs_t: c.-8+2333_-8+2334insT
+    hgvs_p: p.?
+    tx_pos:
+      ord: 187
+      total: 7028
+    cds_pos:
+      ord: -8
+      total: 5451
+    protein_pos: ~
+    distance: 2333
+    messages: ~
+  - allele:
+      Alt:
+        alternative: CA
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007299.4
+    feature_biotype: Coding
+    rank:
+      ord: 2
+      total: 21
+    hgvs_t: c.80+2333_80+2334insT
+    hgvs_p: p.?
+    tx_pos:
+      ord: 187
+      total: 3696
+    cds_pos:
+      ord: 80
+      total: 2100
+    protein_pos: ~
+    distance: 2333
+    messages: ~
+  - allele:
+      Alt:
+        alternative: CA
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007300.4
+    feature_biotype: Coding
+    rank:
+      ord: 2
+      total: 23
+    hgvs_t: c.80+2333_80+2334insT
+    hgvs_p: p.?
+    tx_pos:
+      ord: 193
+      total: 7151
+    cds_pos:
+      ord: 80
+      total: 5655
+    protein_pos: ~
+    distance: 2333
+    messages: ~
 gnomad_exomes_an: 0
 gnomad_exomes_hom: 0
 gnomad_exomes_het: 0

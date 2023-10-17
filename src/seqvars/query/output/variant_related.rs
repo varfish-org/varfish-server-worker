@@ -1,13 +1,145 @@
 //! Variant-related information.
 
-use crate::seqvars::query::{annonars::Annotator, schema::SequenceVariant};
+use crate::seqvars::query::{
+    annonars::Annotator,
+    output::variant_related::score_collection::{
+        Collector, ExtremalValueCollector, SingleValueCollector,
+    },
+    schema::SequenceVariant,
+};
+
+/// Helper modules for score collection.
+pub mod score_collection {
+    /// Trait for score collection.
+    pub trait Collector {
+        /// Return column names of interest.
+        fn column_names(&self) -> Vec<String>;
+        /// Register one column value.
+        fn register(&mut self, column_name: &str, value: &serde_json::Value);
+        /// Write collected scores to the given `indexmap::IndexMap``.
+        fn write_to(&self, dict: &mut indexmap::IndexMap<String, serde_json::Value>);
+    }
+
+    /// Simple implementation for collecting a single score.
+    #[derive(Debug, Clone)]
+    pub struct SingleValueCollector {
+        /// The column name to collect.
+        pub input_column_name: String,
+        /// The output column name.
+        pub output_column_name: String,
+        /// The collected value, if any.
+        pub value: Option<serde_json::Value>,
+    }
+
+    impl SingleValueCollector {
+        /// Construct given column name.
+        pub fn new(input_column_name: &str, output_column_name: &str) -> Self {
+            Self {
+                input_column_name: input_column_name.into(),
+                output_column_name: output_column_name.into(),
+                value: None,
+            }
+        }
+    }
+
+    impl Collector for SingleValueCollector {
+        fn column_names(&self) -> Vec<String> {
+            vec![self.input_column_name.clone()]
+        }
+
+        fn register(&mut self, column_name: &str, value: &serde_json::Value) {
+            if column_name == self.input_column_name && !value.is_null() {
+                self.value = Some(value.clone());
+            }
+        }
+
+        fn write_to(&self, dict: &mut indexmap::IndexMap<String, serde_json::Value>) {
+            if let Some(value) = self.value.as_ref() {
+                dict.insert(self.input_column_name.clone(), value.clone());
+            }
+        }
+    }
+
+    /// Simple implementation for collecting aggregated min/max score.
+    #[derive(Debug, Clone)]
+    pub struct ExtremalValueCollector {
+        /// Whether is max (else is min).
+        pub is_max: bool,
+        /// The output column name.
+        pub output_column_name: String,
+        /// The column names to collect.
+        pub column_names: Vec<String>,
+        /// The collected values, if any.
+        pub values: indexmap::IndexMap<String, serde_json::Value>,
+    }
+
+    impl ExtremalValueCollector {
+        /// Construct given column name.
+        pub fn new(column_names: &[&str], output_column_name: &str, is_max: bool) -> Self {
+            Self {
+                is_max,
+                output_column_name: output_column_name.to_string(),
+                column_names: column_names.iter().map(|s| s.to_string()).collect(),
+                values: Default::default(),
+            }
+        }
+    }
+
+    impl Collector for ExtremalValueCollector {
+        fn column_names(&self) -> Vec<String> {
+            self.column_names.clone()
+        }
+
+        fn register(&mut self, column_name: &str, value: &serde_json::Value) {
+            if self.column_names.iter().any(|s| s.as_str() == column_name) {
+                if !value.is_null() {
+                    self.values.insert(column_name.to_string(), value.clone());
+                }
+            }
+        }
+
+        fn write_to(&self, dict: &mut indexmap::IndexMap<String, serde_json::Value>) {
+            let mut sel_name = None;
+            let mut sel_value = serde_json::Value::Null;
+            for (name, value) in self.values.iter() {
+                if value.is_null() || !value.is_number() {
+                    // can only select numeric values that are not null
+                    continue;
+                }
+
+                if sel_value.is_null() {
+                    sel_name = Some(name.clone());
+                    sel_value = value.clone();
+                } else if (self.is_max
+                    && value.as_f64().unwrap_or_default() > sel_value.as_f64().unwrap_or_default())
+                    || (!self.is_max
+                        && value.as_f64().unwrap_or_default()
+                            < sel_value.as_f64().unwrap_or_default())
+                {
+                    sel_name = Some(name.clone());
+                    sel_value = value.clone();
+                }
+            }
+
+            if let Some(sel_name) = sel_name {
+                dict.insert(self.output_column_name.clone(), sel_value);
+                dict.insert(
+                    format!("{}_argmax", self.output_column_name),
+                    serde_json::Value::String(sel_name),
+                );
+            }
+        }
+    }
+}
+
+/// Simple
 
 /// Record for variant-related scores.
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
 pub struct Record {
     /// Precomputed scores.
     #[serde(skip_serializing_if = "indexmap::IndexMap::is_empty")]
-    pub precomputed_scores: indexmap::IndexMap<String, f32>,
+    pub precomputed_scores: indexmap::IndexMap<String, serde_json::Value>,
     /// Database identifiers.
     #[serde(skip_serializing_if = "DbIds::is_empty")]
     pub db_ids: DbIds,
@@ -35,11 +167,79 @@ impl Record {
 
     /// Query precomputed scores for `seqvar` from annonars `annotator`.
     pub fn query_precomputed_scores(
-        _seqvar: &SequenceVariant,
-        _annotator: &Annotator,
-    ) -> Result<indexmap::IndexMap<String, f32>, anyhow::Error> {
-        // TODO: implement me!
-        Ok(indexmap::IndexMap::default())
+        seqvar: &SequenceVariant,
+        annotator: &Annotator,
+    ) -> Result<indexmap::IndexMap<String, serde_json::Value>, anyhow::Error> {
+        let mut result = indexmap::IndexMap::new();
+
+        // Extract values from CADD.
+        if let Some(cadd_values) = annotator.query_cadd(seqvar).as_ref().ok() {
+            let mut collectors: Vec<Box<dyn Collector>> = vec![
+                Box::new(SingleValueCollector::new("PHRED", "cadd_phred")),
+                Box::new(SingleValueCollector::new("SIFTval", "sift")),
+                Box::new(SingleValueCollector::new("PolyPhenVal", "polyphen")),
+                Box::new(ExtremalValueCollector::new(
+                    &[
+                        "SpliceAI-acc-gain",
+                        "SpliceAI-acc-loss",
+                        "SpliceAI-don-gain",
+                        "SpliceAI-don-loss",
+                    ],
+                    "spliceai",
+                    true,
+                )),
+            ];
+
+            for (column, value) in annotator
+                .annonars_dbs
+                .cadd_ctx
+                .schema
+                .columns
+                .iter()
+                .zip(cadd_values.iter())
+            {
+                for collector in collectors.iter_mut() {
+                    collector.register(column.name.as_str(), value);
+                }
+            }
+
+            collectors.iter_mut().for_each(|collector| {
+                collector.write_to(&mut result);
+            })
+        }
+
+        // Extract values from dbNSFP
+
+        if let Some(dbnsfp_values) = annotator.query_dbnsfp(seqvar).as_ref().ok() {
+            // REVEL_score
+            // BayesDel_addAF_score
+            let mut collectors: Vec<Box<dyn Collector>> = vec![
+                Box::new(SingleValueCollector::new("REVEL_score", "revel")),
+                Box::new(SingleValueCollector::new(
+                    "BayesDel_addAF_score",
+                    "bayesel_addaf",
+                )),
+            ];
+
+            for (column, value) in annotator
+                .annonars_dbs
+                .cadd_ctx
+                .schema
+                .columns
+                .iter()
+                .zip(dbnsfp_values.iter())
+            {
+                for collector in collectors.iter_mut() {
+                    collector.register(column.name.as_str(), value);
+                }
+            }
+
+            collectors.iter_mut().for_each(|collector| {
+                collector.write_to(&mut result);
+            })
+        }
+
+        Ok(result)
     }
 
     /// Returns whether all fields are empty and would not be serialized.

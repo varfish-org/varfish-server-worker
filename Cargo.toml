@@ -12,7 +12,8 @@ rust-version = "1.64.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-annonars = "0.23"
+#annonars = "0.23"
+annonars = { path = "../annonars" }
 anyhow = { version = "1.0", features = ["backtrace"] }
 base16ct = "0.2"
 bio = "1.4"

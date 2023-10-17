@@ -63,7 +63,6 @@ quality:
     fail: drop-variant
 genotype:
   sample: het
-selected_variants: ~
 transcripts_coding: true
 transcripts_noncoding: true
 var_type_snv: true

@@ -6,7 +6,127 @@ chrom: "17"
 pos: 41249263
 reference: G
 alternative: A
-ann_fields: []
+ann_fields:
+  - allele:
+      Alt:
+        alternative: A
+    consequences:
+      - splice_region_variant
+      - synonymous_variant
+    putative_impact: MODERATE
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007294.4
+    feature_biotype: Coding
+    rank:
+      ord: 8
+      total: 23
+    hgvs_t: c.591C>T
+    hgvs_p: p.C197=
+    tx_pos:
+      ord: 704
+      total: 7088
+    cds_pos:
+      ord: 591
+      total: 5592
+    protein_pos:
+      ord: 197
+      total: 1864
+    distance: 44
+    messages: ~
+  - allele:
+      Alt:
+        alternative: A
+    consequences:
+      - splice_region_variant
+      - synonymous_variant
+    putative_impact: MODERATE
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007297.4
+    feature_biotype: Coding
+    rank:
+      ord: 7
+      total: 22
+    hgvs_t: c.450C>T
+    hgvs_p: p.C150=
+    tx_pos:
+      ord: 644
+      total: 7028
+    cds_pos:
+      ord: 450
+      total: 5451
+    protein_pos:
+      ord: 150
+      total: 1817
+    distance: 44
+    messages: ~
+  - allele:
+      Alt:
+        alternative: A
+    consequences:
+      - splice_region_variant
+      - synonymous_variant
+    putative_impact: MODERATE
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007299.4
+    feature_biotype: Coding
+    rank:
+      ord: 8
+      total: 22
+    hgvs_t: c.591C>T
+    hgvs_p: p.C197=
+    tx_pos:
+      ord: 698
+      total: 3696
+    cds_pos:
+      ord: 591
+      total: 2100
+    protein_pos:
+      ord: 197
+      total: 700
+    distance: 44
+    messages: ~
+  - allele:
+      Alt:
+        alternative: A
+    consequences:
+      - splice_region_variant
+      - synonymous_variant
+    putative_impact: MODERATE
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007300.4
+    feature_biotype: Coding
+    rank:
+      ord: 8
+      total: 24
+    hgvs_t: c.591C>T
+    hgvs_p: p.C197=
+    tx_pos:
+      ord: 704
+      total: 7151
+    cds_pos:
+      ord: 591
+      total: 5655
+    protein_pos:
+      ord: 197
+      total: 1885
+    distance: 44
+    messages: ~
 gnomad_exomes_an: 31398
 gnomad_exomes_hom: 0
 gnomad_exomes_het: 56
