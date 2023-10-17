@@ -32,7 +32,7 @@ impl Eq for ByHgncId {}
 
 impl PartialOrd for ByHgncId {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.hgnc_id.partial_cmp(&other.hgnc_id)
+        Some(self.cmp(other))
     }
 }
 
@@ -68,7 +68,7 @@ impl Eq for ByCoordinate {}
 
 impl PartialOrd for ByCoordinate {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.coordinate.partial_cmp(&other.coordinate)
+        Some(self.cmp(other))
     }
 }
 

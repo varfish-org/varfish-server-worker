@@ -79,6 +79,7 @@ pub struct Consequences {
 }
 
 /// Result gene constraint information.
+#[allow(clippy::too_many_arguments)]
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
 pub struct Constraints {
     /// gnomAD loeuf score
