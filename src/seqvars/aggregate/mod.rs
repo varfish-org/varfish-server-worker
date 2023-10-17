@@ -165,8 +165,6 @@ fn import_vcf(
     for input_record in records {
         let input_record = input_record?;
 
-        // TODO: we need to lock the database for counts
-
         // Obtain counts from the current variant.
         let (this_counts_data, this_carrier_data) =
             handle_record(&input_record, &input_header, &pedigree, &case_uuid)?;

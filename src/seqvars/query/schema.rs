@@ -164,8 +164,6 @@ pub struct CaseQuery {
     pub quality: indexmap::IndexMap<String, QualitySettings>,
     /// Genotype choice for each individual.
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
-    /// List of selected variants.
-    pub selected_variants: Option<Vec<String>>, // TODO: remove?
 
     /// Whether to include coding transcripts.
     pub transcripts_coding: bool,
