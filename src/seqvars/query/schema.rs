@@ -411,7 +411,7 @@ impl SequenceVariant {
             ..Default::default()
         };
 
-        Ok(Self::copy_freqs(result, record)?)
+        Self::copy_freqs(result, record)
     }
 
     /// Build call information.

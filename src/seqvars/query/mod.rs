@@ -226,7 +226,7 @@ fn run_query(
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
             tracing::debug!("processing record {:?}", record_seqvar);
 
-            if interpreter.passes(&record_seqvar, &annotator)?.pass_all {
+            if interpreter.passes(&record_seqvar, annotator)?.pass_all {
                 stats.count_passed += 1;
                 if let Some(ann) = record_seqvar.ann_fields.first() {
                     ann.consequences.iter().for_each(|csq| {
@@ -404,7 +404,7 @@ fn create_payload_and_write_record(
     uuid_buf: &mut [u8; 16],
 ) -> Result<(), anyhow::Error> {
     let result_payload = output::PayloadBuilder::default()
-        .case_uuid(args.case_uuid_id.unwrap_or_default().clone())
+        .case_uuid(args.case_uuid_id.unwrap_or_default())
         .gene_related(
             output::gene_related::Record::with_seqvar(&seqvar)
                 .map_err(|e| anyhow::anyhow!("problem creating gene-related payload: {}", e))?,
@@ -606,7 +606,7 @@ mod test {
         let seqvars = trio_gts
             .iter()
             .map(|gts| {
-                let gts: Vec<&str> = gts.split(",").map(|gt| gt).collect();
+                let gts: Vec<&str> = gts.split(',').collect();
                 SequenceVariant {
                     call_info: vec![
                         (
@@ -661,7 +661,7 @@ mod test {
             path_db: "tests/seqvars/query/db".into(),
             path_query_json,
             path_input,
-            path_output: path_output,
+            path_output,
             max_results: None,
             rng_seed: Some(42),
             max_tad_distance: 10_000,

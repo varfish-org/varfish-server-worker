@@ -143,12 +143,12 @@ fn transform_format_value(
                 };
                 if ["./.", ".|.", "."].contains(&gt.as_str()) {
                     // no need to transform no-call
-                    vcf::record::genotypes::sample::Value::String(gt.into())
+                    vcf::record::genotypes::sample::Value::String(gt)
                 } else {
                     // transform all others
                     let gt_captures = gt_re
                         .captures(&gt)
-                        .expect(&format!("FORMAT/GT cannot be parsed: {}", &gt));
+                        .unwrap_or_else(|| panic!("FORMAT/GT cannot be parsed: {}", &gt));
                     let gt_1 = gt_captures.get(1).expect("must be capture").as_str();
                     let gt_2 = gt_captures.get(2).expect("must be capture").as_str();
                     let gt_3 = gt_captures.get(3).expect("must be capture").as_str();

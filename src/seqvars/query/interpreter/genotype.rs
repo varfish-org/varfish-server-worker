@@ -233,9 +233,9 @@ mod test {
         SequenceVariant,
     };
 
-    static INDEX_NAME: &'static str = "sample";
-    static FATHER_NAME: &'static str = "father";
-    static MOTHER_NAME: &'static str = "mother";
+    static INDEX_NAME: &str = "sample";
+    static FATHER_NAME: &str = "father";
+    static MOTHER_NAME: &str = "mother";
 
     #[rstest]
     // any: passes
@@ -402,8 +402,7 @@ mod test {
         .into_iter()
         .collect();
         let sample_gts = sample_gts
-            .split(",")
-            .into_iter()
+            .split(',')
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
         let seq_var = SequenceVariant {
@@ -599,8 +598,7 @@ mod test {
         .into_iter()
         .collect();
         let sample_gts = sample_gts
-            .split(",")
-            .into_iter()
+            .split(',')
             .map(|s| s.to_string())
             .collect::<Vec<_>>();
         let seq_var = SequenceVariant {
@@ -633,7 +631,7 @@ mod test {
         };
 
         assert_eq!(
-            super::passes_recessive_modes(&query_genotype, &INDEX_NAME, &seq_var, &[])?,
+            super::passes_recessive_modes(&query_genotype, INDEX_NAME, &seq_var, &[])?,
             expected,
             "sample_gt = {:?}, query_gt_index = {:?}, query_gt_father = {:?}, \
             query_gt_mother = {:?}, expected = {}",

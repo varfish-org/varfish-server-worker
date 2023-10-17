@@ -6,41 +6,37 @@ pub fn passes(query: &CaseQuery, s: &SequenceVariant) -> Result<bool, anyhow::Er
     let is_mtdna = annonars::common::cli::canonicalize(&s.chrom) == "MT";
 
     if is_mtdna {
-        if q.helixmtdb_enabled {
-            if q.helixmtdb_frequency.is_some()
+        if q.helixmtdb_enabled
+            && (q.helixmtdb_frequency.is_some()
                 && s.helixmtdb_af() > q.helixmtdb_frequency.expect("tested before")
                 || q.helixmtdb_heteroplasmic.is_some()
                     && s.helix_het > q.helixmtdb_heteroplasmic.expect("tested before")
                 || q.helixmtdb_homoplasmic.is_some()
-                    && s.helix_hom > q.helixmtdb_homoplasmic.expect("tested before")
-            {
-                tracing::trace!("variant {:?} fails HelixMtDb frequency filter {:?}", s, &q);
-                return Ok(false);
-            }
+                    && s.helix_hom > q.helixmtdb_homoplasmic.expect("tested before"))
+        {
+            tracing::trace!("variant {:?} fails HelixMtDb frequency filter {:?}", s, &q);
+            return Ok(false);
         }
-    } else {
-        if q.gnomad_exomes_enabled {
-            if q.gnomad_exomes_frequency.is_some()
-                && s.gnomad_exomes_af() > q.gnomad_exomes_frequency.expect("tested before")
-                || q.gnomad_exomes_heterozygous.is_some()
-                    && s.gnomad_exomes_het > q.gnomad_exomes_heterozygous.expect("tested before")
-                || q.gnomad_exomes_homozygous.is_some()
-                    && s.gnomad_exomes_hom > q.gnomad_exomes_homozygous.expect("tested before")
-                || q.gnomad_exomes_hemizygous.is_some()
-                    && s.gnomad_exomes_hemi > q.gnomad_exomes_hemizygous.expect("tested before")
-            {
-                tracing::trace!(
-                    "variant {:?} fails gnomAD exomes frequency filter {:?}",
-                    s,
-                    &q.gnomad_exomes_frequency
-                );
-                return Ok(false);
-            }
-        }
+    } else if q.gnomad_exomes_enabled
+        && (q.gnomad_exomes_frequency.is_some()
+            && s.gnomad_exomes_af() > q.gnomad_exomes_frequency.expect("tested before")
+            || q.gnomad_exomes_heterozygous.is_some()
+                && s.gnomad_exomes_het > q.gnomad_exomes_heterozygous.expect("tested before")
+            || q.gnomad_exomes_homozygous.is_some()
+                && s.gnomad_exomes_hom > q.gnomad_exomes_homozygous.expect("tested before")
+            || q.gnomad_exomes_hemizygous.is_some()
+                && s.gnomad_exomes_hemi > q.gnomad_exomes_hemizygous.expect("tested before"))
+    {
+        tracing::trace!(
+            "variant {:?} fails gnomAD exomes frequency filter {:?}",
+            s,
+            &q.gnomad_exomes_frequency
+        );
+        return Ok(false);
     }
 
-    if q.gnomad_genomes_enabled {
-        if q.gnomad_genomes_frequency.is_some()
+    if q.gnomad_genomes_enabled
+        && (q.gnomad_genomes_frequency.is_some()
             && s.gnomad_genomes_af() > q.gnomad_genomes_frequency.expect("tested before")
             || q.gnomad_genomes_heterozygous.is_some()
                 && s.gnomad_genomes_het > q.gnomad_genomes_heterozygous.expect("tested before")
@@ -48,15 +44,14 @@ pub fn passes(query: &CaseQuery, s: &SequenceVariant) -> Result<bool, anyhow::Er
                 && s.gnomad_genomes_hom > q.gnomad_genomes_homozygous.expect("tested before")
             || !is_mtdna
                 && q.gnomad_genomes_hemizygous.is_some()
-                && s.gnomad_genomes_hemi > q.gnomad_genomes_hemizygous.expect("tested before")
-        {
-            tracing::trace!(
-                "variant {:?} fails gnomAD genomes frequency filter {:?}",
-                s,
-                &q.gnomad_genomes_frequency
-            );
-            return Ok(false);
-        }
+                && s.gnomad_genomes_hemi > q.gnomad_genomes_hemizygous.expect("tested before"))
+    {
+        tracing::trace!(
+            "variant {:?} fails gnomAD genomes frequency filter {:?}",
+            s,
+            &q.gnomad_genomes_frequency
+        );
+        return Ok(false);
     }
 
     Ok(true)
