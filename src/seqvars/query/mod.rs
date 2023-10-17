@@ -64,139 +64,289 @@ pub struct Args {
     pub max_tad_distance: i32,
 }
 
-/// Genotype call attributes for a `ResultPayload`.
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ResultGenotype {
-    /// Depth of coverage.
-    pub dp: i32,
-    /// Alternate read depth.
-    pub ad: i32,
-    /// Genotype quality.
-    pub gq: i32,
-    /// Genotype.
-    pub gt: String,
+/// Gene-related information for the gene.
+pub mod gene_related {
+    use mehari::annotate::seqvars::ann::Consequence;
+
+    use super::schema::SequenceVariant;
+
+    /// Gene-related information for a `ResultPayload`.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Record {
+        /// Gene identity related (for display of gene symbol).
+        pub identity: Identity,
+        /// Gene-related consequences of a variant.
+        pub consequences: Consequences,
+        /// Phenotype-related information, if any.
+        pub phenotype: Option<Phenotype>,
+        /// Gene-wise constraints on the gene, if any.
+        pub constraints: Option<Constraints>,
+    }
+
+    impl Record {
+        /// Construct given a `SequenceVariant` if the information is given in the annotation.
+        ///
+        /// Note that we will only look at the first annotation record as the ingest creates
+        /// one `SequenceVariant` record per gene.
+        ///
+        /// # Error
+        ///
+        /// Returns an error if `seqvar` does not contain all necessary information.
+        pub fn with_seqvar(seqvar: &SequenceVariant) -> Result<Option<Self>, anyhow::Error> {
+            if let Some(ann) = seqvar.ann_fields.first() {
+                if !ann.gene_id.is_empty() && !ann.gene_symbol.is_empty() {
+                    return Ok(Some(Self {
+                        identity: Identity::new(ann.gene_id.clone(), ann.gene_symbol.clone()),
+                        consequences: Consequences::new(
+                            ann.hgvs_t
+                                .clone()
+                                .ok_or_else(|| anyhow::anyhow!("missing hgvs_t annotation"))?,
+                            ann.hgvs_p.clone(),
+                            ann.consequences.clone(),
+                        ),
+                        // TODO: phenotype
+                        // TODO: constraints
+                        ..Default::default()
+                    }));
+                }
+            }
+            Ok(None)
+        }
+    }
+
+    /// Result information for gene identity.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Identity {
+        /// HGNC gene ID.
+        pub hgnc_id: String,
+        /// HGNC gene symbol.
+        pub hgnc_symbol: String,
+    }
+
+    /// Result information related to phenotype / disease.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Phenotype {
+        /// Whether the gene is a known disease gene.
+        pub is_disease_gene: bool,
+        // TODO: modes of inheritance
+        // TODO: disease/phenotype terms?
+    }
+
+    /// Consequences related to a gene.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Consequences {
+        /// HGVS.{c,n} code of variant
+        pub hgvs_t: String,
+        /// HGVS.p code of variant
+        pub hgvs_p: Option<String>,
+
+        /// The predicted variant consequences.
+        pub consequences: Vec<Consequence>,
+    }
+
+    /// Result gene constraint information.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Constraints {
+        /// gnomAD loeuf score
+        pub gnomad_loeuf: f32,
+        /// gnomAD mis_z score
+        pub gnomad_mis_z: f32,
+        /// gnomAD oe_lof score
+        pub gnomad_oe_lof: f32,
+        /// gnomAD oe_lof_lower score
+        pub gnomad_oe_lof_lower: f32,
+        /// gnomAD oe_lof_upper score
+        pub gnomad_oe_lof_upper: f32,
+        /// gnomAD oe_mis score
+        pub gnomad_oe_mis: f32,
+        /// gnomAD oe_mis_lower score
+        pub gnomad_oe_mis_lower: f32,
+        /// gnomAD oe_mis_upper score
+        pub gnomad_oe_mis_upper: f32,
+        /// gnomAD pLI score
+        pub gnomad_pli: f32,
+        /// gnomAD syn_z score
+        pub gnomad_syn_z: f32,
+    }
 }
 
-/// The structured result information of the result record.
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ResultPayload {
-    /// Case UUID as specified on the command line.
-    pub case_uuid: uuid::Uuid,
+/// Variant-related information.
+pub mod variant_related {
+    /// Record for variant-related scores.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Record {
+        /// Precomputed scores.
+        pub precomputed_scores: indexmap::IndexMap<String, f32>,
+        /// Database identifiers.
+        pub db_ids: DbIds,
+        /// Clinvar information.
+        pub clinvar: Option<Clinvar>,
+    }
 
-    // -- gene identity -----------------------------------------------------
-    /// HGNC gene ID.
-    pub hgnc_id: String,
-    /// HGNC gene symbol.
-    pub hgnc_symbol: String,
-    /// Whether the gene is a known disease gene.
-    pub is_disease_gene: bool,
+    /// Database identifiers.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct DbIds {
+        /// The variant's dbSNP identifier present.
+        pub dbsnp_rs: Option<String>,
+    }
 
-    // -- HGVS variant codes ------------------------------------------------
-    /// HGVS.{c,n} code of variant
-    pub hgvs_t: String,
-    /// HGVS.p code of variant
-    pub hgvs_p: Option<String>,
-    /// The variant effect.
-    pub effect: Vec<mehari::annotate::seqvars::ann::Consequence>,
+    /// ClinVar-related information.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Clinvar {
+        // TODO: switch to VCV summary or hierarchical?
+        /// The ClinVar RCV accession.
+        pub clinvar_rcv: String,
+        /// The ClinVar clinical significance.
+        pub clinvar_significance: String,
+        /// The ClinVar review status.
+        pub clinvar_review_status: String,
+    }
 
-    // -- gnomAD constraint scores -------------------------------------------
-    /// gnomAD loeuf score
-    pub gnomad_loeuf: f32,
-    /// gnomAD mis_z score
-    pub gnomad_mis_z: f32,
-    /// gnomAD oe_lof score
-    pub gnomad_oe_lof: f32,
-    /// gnomAD oe_lof_lower score
-    pub gnomad_oe_lof_lower: f32,
-    /// gnomAD oe_lof_upper score
-    pub gnomad_oe_lof_upper: f32,
-    /// gnomAD oe_mis score
-    pub gnomad_oe_mis: f32,
-    /// gnomAD oe_mis_lower score
-    pub gnomad_oe_mis_lower: f32,
-    /// gnomAD oe_mis_upper score
-    pub gnomad_oe_mis_upper: f32,
-    /// gnomAD pLI score
-    pub gnomad_pli: f32,
-    /// gnomAD syn_z score
-    pub gnomad_syn_z: f32,
+    /// Frequency information.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Frequency {
+        /// gnomAD-genomes frequency
+        pub gnomad_genomes: Option<NuclearFrequency>,
+        /// gnomAD-exomes frequency
+        pub gnomad_exomes: Option<NuclearFrequency>,
+        /// gnomad-mtDNA frequency
+        pub gnomad_mtdna: Option<MtdnaFrequency>,
+        /// HelixMtDb frequency
+        pub gnomad_helixmtdb: Option<MtdnaFrequency>,
+        /// in-house frequency
+        pub inhouse: Option<NuclearFrequency>,
+    }
 
-    // -- database identifiers ----------------------------------------------
-    /// The variant's dbSNP identifier present.
-    pub dbsnp_rs: Option<String>,
-    /// The ClinVar RCV accession.
-    pub clinvar_rcv: Option<String>,
-    /// The ClinVar clinical significance.
-    pub clinvar_significance: Option<String>,
-    /// The ClinVar review status.
-    pub clinvar_review_status: Option<String>,
+    /// Nuclear frequency information.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct NuclearFrequency {
+        /// Overall allele frequency.
+        pub allele_freq: f32,
+        /// Number of alleles.
+        pub allele_count: i32,
+        /// Number of heterozygous carriers.
+        pub het_carriers: i32,
+        /// Number of homozygous carriers.
+        pub hom_carriers: i32,
+        /// Number of hemizygous carriers.
+        pub hemi_carriers: i32,
+    }
 
-    // -- precomputed variant scores ----------------------------------------
-    /// Specific, precomputed variant scores.
-    pub precomputed_scores: indexmap::IndexMap<String, f32>,
-
-    // -- frequency information ---------------------------------------------
-    /// Maximal frequency in gnomAD exomes.
-    pub gnomad_exomes_frequency: f32,
-    /// Maximal number of heterozygous carriers in gnomAD exomes.
-    pub gnomad_exomes_heterozygous: i32,
-    /// Maximal number of homozygous carriers in gnomAD exomes.
-    pub gnomad_exomes_homozygous: i32,
-    /// Maximal number of hemizygous carriers in gnomAD exomes.
-    pub gnomad_exomes_hemizygous: i32,
-    /// Maximal frequency in gnomAD genomes.
-    pub gnomad_genomes_frequency: f32,
-    /// Maximal number of heterozygous carriers in gnomAD genomes.
-    pub gnomad_genomes_heterozygous: i32,
-    /// Maximal number of homozygous carriers in gnomAD genomes.
-    pub gnomad_genomes_homozygous: i32,
-    /// Maximal number of hemizygous carriers in gnomAD genomes.
-    pub gnomad_genomes_hemizygous: i32,
-    /// Maximal number of in-house carriers.
-    pub inhouse_carriers: i32,
-    /// Maximal number of in-house heterozygous carriers.
-    pub inhouse_heterozygous: i32,
-    /// Maximal number of in-house homozygous carriers.
-    pub inhouse_homozygous: i32,
-    /// Maximal number of in-house hemizygous carriers.
-    pub inhouse_hemizygous: i32,
-    /// Maximal frequency in HelixMtDb
-    pub helixmtdb_frequency: f32,
-    /// Maximal number of heterozygous carriers in HelixMtDb.
-    pub helixmtdb_heterozygous: i32,
-    /// Maximal number of homozygous carriers in HelixMtDb.
-    pub helixmtdb_homozygous: i32,
-
-    // -- variant genotype information --------------------------------------
-    /// Genotypes.
-    pub genotype: indexmap::IndexMap<String, ResultGenotype>,
+    /// Mitochondrial frequency information.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct MtdnaFrequency {
+        /// Overall allele frequency.
+        pub allele_freq: f32,
+        /// Number of alleles.
+        pub allele_count: i32,
+        /// Number of heterplasmic carriers.
+        pub het_carriers: i32,
+        /// Number of homoplasmic carriers.
+        pub hom_carriers: i32,
+    }
 }
 
-/// A result record from the query.
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-struct ResultRecord {
-    /// UUID for the record.
-    sodar_uuid: Uuid,
-    /// Genome release for the coordinate.
-    release: String,
-    /// Chromosome name.
-    chromosome: String,
-    /// Chromosome number.
-    chromosome_no: i32,
-    /// Reference allele sequence.
-    reference: String,
-    /// Alternative allele sequence.
-    alternative: String,
-    /// UCSC bin of the record.
-    bin: u32,
-    /// Start position of the record.
-    start: i32,
-    /// End position of the record.
-    end: i32,
-    /// The result set ID as specified on the command line.
-    smallvariantqueryresultset_id: String,
-    /// The JSON-serialized `ResultPayload`.
-    payload: String,
+/// Call-related information.
+pub mod call_related {
+    use super::schema::SequenceVariant;
+
+    /// Call-related record.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    pub struct Record {
+        /// The genotype information for each sample.
+        pub call_info: indexmap::IndexMap<String, CallInfo>,
+    }
+
+    impl Record {
+        /// Construct a new `Record` from a `SequenceVariant`.
+        ///
+        /// # Error
+        ///
+        /// Returns an error if the `SequenceVariant` does not contain all necessary information.
+        pub fn with_seqvar(seqvar: &SequenceVariant) -> Result<Self, anyhow::Error> {
+            Ok(Self {
+                call_info: seqvar
+                    .call_info
+                    .iter()
+                    .map(|(sample_name, call_info)| {
+                        (
+                            sample_name.clone(),
+                            CallInfo::new(
+                                call_info.dp,
+                                call_info.ad,
+                                call_info.quality.map(|q| q as i32),
+                                call_info.genotype.clone(),
+                            ),
+                        )
+                    })
+                    .collect(),
+            })
+        }
+    }
+
+    /// Genotype information.
+    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    struct CallInfo {
+        /// Depth of coverage.
+        pub dp: Option<i32>,
+        /// Alternate read depth.
+        pub ad: Option<i32>,
+        /// Genotype quality.
+        pub gq: Option<i32>,
+        /// Genotype.
+        pub gt: Option<String>,
+    }
+}
+
+/// Result record information.
+pub mod result {
+    /// A result record from the query.
+    ///
+    /// These records are written to TSV for import into the database.   They contain the
+    /// bare necessary information for sorting etc. in the database.  The actual main
+    /// data is in the payload, serialized as JSON.
+    #[derive(
+        Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_builder::Builder,
+    )]
+    pub struct Record {
+        /// UUID for the record.
+        pub sodar_uuid: uuid::Uuid,
+        /// Genome release for the coordinate.
+        pub release: String,
+        /// Chromosome name.
+        pub chromosome: String,
+        /// Chromosome number.
+        pub chromosome_no: i32,
+        /// Reference allele sequence.
+        pub reference: String,
+        /// Alternative allele sequence.
+        pub alternative: String,
+        /// UCSC bin of the record.
+        pub bin: u32,
+        /// Start position of the record.
+        pub start: i32,
+        /// End position of the record.
+        pub end: i32,
+        /// The result set ID as specified on the command line.
+        pub smallvariantqueryresultset_id: String,
+        /// The JSON-serialized `ResultPayload`.
+        pub payload: String,
+    }
+
+    /// The structured result information of the result record.
+    #[derive(
+        Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_builder::Builder,
+    )]
+    pub struct Payload {
+        /// Case UUID as specified on the command line.
+        pub case_uuid: uuid::Uuid,
+        /// The affected gene and consequence, if any.
+        pub gene_related: Option<super::gene_related::Record>,
+        /// Variant-related information, always present.
+        pub variant_related: super::variant_related::Record,
+        /// Genotypes call related, always present.
+        pub call_related: super::call_related::Record,
+    }
 }
 
 /// Utility struct to store statistics about counts.
@@ -205,16 +355,6 @@ struct QueryStats {
     pub count_passed: usize,
     pub count_total: usize,
     pub by_consequence: indexmap::IndexMap<mehari::annotate::seqvars::ann::Consequence, usize>,
-}
-
-/// Annotate the payload of the record with `annonars`.
-fn create_payload(
-    seqvar: &SequenceVariant,
-    annonars_dbs: &AnnonarsDbs,
-) -> Result<ResultPayload, anyhow::Error> {
-    let _ = seqvar;
-    let _ = annonars_dbs;
-    todo!()
 }
 
 /// Checks whether the variants pass through the query interpreter.
@@ -546,8 +686,19 @@ fn create_payload_and_write_record(
     rng: &mut rand::rngs::StdRng,
     uuid_buf: &mut [u8; 16],
 ) -> Result<(), anyhow::Error> {
-    let result_payload = create_payload(&record_seqvar, &annonars_dbs)
-        .map_err(|e| anyhow::anyhow!("could not annotate record: {}", e))?;
+    let result_payload = result::PayloadBuilder::default()
+        .case_uuid(args.case_uuid_id.unwrap_or_default().clone())
+        .gene_related(
+            gene_related::Record::with_seqvar(&record_seqvar)
+                .map_err(|e| anyhow::anyhow!("problem with gene-related payload: {}", e))?,
+        )
+        .variant_related(None)
+        .call_related(
+            call_related::Record::with_seqvar(&record_seqvar)
+                .map_err(|e| anyhow::anyhow!("problem with call-related payload: {}", e))?,
+        )
+        .build()
+        .map_err(|e| anyhow::anyhow!("could not build payload: {}", e))?;
     let start = record_seqvar.pos;
     let end = start + record_seqvar.reference.len() as i32 - 1;
     let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
@@ -557,30 +708,36 @@ fn create_payload_and_write_record(
         alternative,
         ..
     } = record_seqvar;
-    let chromosome_no = *chrom_to_chrom_no
-        .get(&chromosome)
-        .expect("invalid chromosome") as i32;
     csv_writer
-        .serialize(&ResultRecord {
-            smallvariantqueryresultset_id: args.result_set_id.clone().unwrap_or(".".into()),
-            sodar_uuid: Uuid::from_bytes({
-                rng.fill_bytes(uuid_buf);
-                *uuid_buf
-            }),
-            release: match args.genome_release {
-                GenomeRelease::Grch37 => "GRCh37".into(),
-                GenomeRelease::Grch38 => "GRCh38".into(),
-            },
-            chromosome,
-            chromosome_no,
-            start,
-            end,
-            bin,
-            reference,
-            alternative,
-            payload: serde_json::to_string(&result_payload)
-                .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
-        })
+        .serialize(
+            &result::RecordBuilder::default()
+                .smallvariantqueryresultset_id(args.result_set_id.clone().unwrap_or(".".into()))
+                .sodar_uuid(Uuid::from_bytes({
+                    rng.fill_bytes(uuid_buf);
+                    *uuid_buf
+                }))
+                .release(match args.genome_release {
+                    GenomeRelease::Grch37 => "GRCh37".into(),
+                    GenomeRelease::Grch38 => "GRCh38".into(),
+                })
+                .chromosome(chromosome)
+                .chromosome_no(
+                    *chrom_to_chrom_no
+                        .get(&chromosome)
+                        .expect("invalid chromosome") as i32,
+                )
+                .start(start)
+                .end(end)
+                .bin(bin)
+                .reference(reference)
+                .alternative(alternative)
+                .payload(
+                    serde_json::to_string(&result_payload)
+                        .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
+                )
+                .build()
+                .map_err(|e| anyhow::anyhow!("could not build record: {}", e))?,
+        )
         .map_err(|e| anyhow::anyhow!("could not write record: {}", e))?;
     Ok(())
 }
