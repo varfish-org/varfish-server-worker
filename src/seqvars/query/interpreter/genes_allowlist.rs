@@ -13,7 +13,11 @@ pub fn passes(hgnc_allowlist: &Option<HashSet<String>>, seqvar: &SequenceVariant
                 .iter()
                 .any(|ann_field| hgnc_allowlist.contains(&ann_field.gene_id));
             if !res {
-                tracing::trace!("variant {:?} fails gene allowlist filter {:?}", seqvar, &hgnc_allowlist);
+                tracing::trace!(
+                    "variant {:?} fails gene allowlist filter {:?}",
+                    seqvar,
+                    &hgnc_allowlist
+                );
             }
             res
         }

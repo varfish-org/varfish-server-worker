@@ -26,7 +26,12 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCal
                         // ignore quality failure for sample
                     }
                     FailChoice::Drop => {
-                        tracing::trace!("sample {} in variant {:?} fails quality filter {:?}", &sample_name, &seqvar, &quality_settings);
+                        tracing::trace!(
+                            "sample {} in variant {:?} fails quality filter {:?}",
+                            &sample_name,
+                            &seqvar,
+                            &quality_settings
+                        );
                         result.pass = false;
                         break;
                     }

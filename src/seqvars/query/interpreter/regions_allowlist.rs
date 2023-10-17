@@ -15,7 +15,11 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> bool {
                 )
             });
             if !res {
-                tracing::trace!("variant {:?} fails region allowlist filter {:?}", seqvar, &region_allowlist);
+                tracing::trace!(
+                    "variant {:?} fails region allowlist filter {:?}",
+                    seqvar,
+                    &region_allowlist
+                );
             }
             res
         }
