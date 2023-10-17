@@ -21,7 +21,6 @@ use thousands::Separable;
 use uuid::Uuid;
 
 use crate::common;
-use crate::seqvars::query::output::{call_related, gene_related, result, variant_related};
 use crate::seqvars::query::schema::GenotypeChoice;
 use crate::{common::trace_rss_now, common::GenomeRelease};
 
@@ -404,18 +403,18 @@ fn create_payload_and_write_record(
     rng: &mut rand::rngs::StdRng,
     uuid_buf: &mut [u8; 16],
 ) -> Result<(), anyhow::Error> {
-    let result_payload = result::PayloadBuilder::default()
+    let result_payload = output::PayloadBuilder::default()
         .case_uuid(args.case_uuid_id.unwrap_or_default().clone())
         .gene_related(
-            gene_related::Record::with_seqvar(&seqvar)
+            output::gene_related::Record::with_seqvar(&seqvar)
                 .map_err(|e| anyhow::anyhow!("problem creating gene-related payload: {}", e))?,
         )
         .variant_related(
-            variant_related::Record::with_seqvar_and_annotator(&seqvar, annotator)
+            output::variant_related::Record::with_seqvar_and_annotator(&seqvar, annotator)
                 .map_err(|e| anyhow::anyhow!("problem creating variant-related payload: {}", e))?,
         )
         .call_related(
-            call_related::Record::with_seqvar(&seqvar)
+            output::call_related::Record::with_seqvar(&seqvar)
                 .map_err(|e| anyhow::anyhow!("problem creating call-related payload: {}", e))?,
         )
         .build()
@@ -432,7 +431,7 @@ fn create_payload_and_write_record(
     } = seqvar;
     csv_writer
         .serialize(
-            &result::RecordBuilder::default()
+            &output::RecordBuilder::default()
                 .smallvariantqueryresultset_id(args.result_set_id.clone().unwrap_or(".".into()))
                 .sodar_uuid(Uuid::from_bytes({
                     rng.fill_bytes(uuid_buf);
