@@ -84,9 +84,9 @@
     }
   },
   "genotype": {
-    "Case_1_index-N1-DNA1-WGS1": "any",
-    "Case_1_father-N1-DNA1-WGS1": "any",
-    "Case_1_mother-N1-DNA1-WGS1": "any"
+    "Case_1_index-N1-DNA1-WGS1": "variant",
+    "Case_1_father-N1-DNA1-WGS1": "ref",
+    "Case_1_mother-N1-DNA1-WGS1": "ref"
   },
   "selected_variants": null,
   "transcripts_coding": true,

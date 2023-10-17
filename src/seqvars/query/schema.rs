@@ -254,7 +254,6 @@ impl Default for CaseQuery {
             helixmtdb_enabled: Default::default(),
             quality: Default::default(),
             genotype: Default::default(),
-            selected_variants: Default::default(),
             transcripts_coding: true,
             transcripts_noncoding: true,
             var_type_snv: true,

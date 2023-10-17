@@ -2,6 +2,8 @@
 
 use std::{path::Path, sync::Arc};
 
+use prost::Message;
+
 use crate::{common::GenomeRelease, seqvars::ingest::path_component};
 
 use super::schema::SequenceVariant;
@@ -28,6 +30,9 @@ struct AnnonarsDbs {
     /// dbNSFP metadata from annonars.
     #[allow(dead_code)]
     dbnsfp_meta: annonars::tsv::cli::query::Meta,
+    /// annonaars gene RocksDB.
+    #[allow(dead_code)]
+    genes_db: Arc<rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>>,
 }
 
 impl AnnonarsDbs {
@@ -36,14 +41,13 @@ impl AnnonarsDbs {
         path: P,
         genome_release: GenomeRelease,
     ) -> Result<Self, anyhow::Error> {
-        let path_base = path
-            .as_ref()
-            .join("annonars")
-            .join(path_component(genome_release));
+        let path_annonars = path.as_ref().join("annonars");
+        let path_genome_release = path_annonars.join(path_component(genome_release));
 
         macro_rules! open_rocksdb {
             ($path_token:expr, $module:ident, $db_name:expr, $meta_name:expr) => {{
-                let path: std::path::PathBuf = path_base.join($path_token).join("rocksdb");
+                let path: std::path::PathBuf =
+                    path_genome_release.join($path_token).join("rocksdb");
                 annonars::$module::cli::query::open_rocksdb(&path, $db_name, $meta_name).map_err(
                     |e| {
                         anyhow::anyhow!(
@@ -63,6 +67,16 @@ impl AnnonarsDbs {
         let (dbnsfp_db, dbnsfp_meta) = open_rocksdb!("dbnsfp", tsv, "tsv_data", "meta");
         let (dbsnp_db, dbsnp_meta) = open_rocksdb!("dbsnp", dbsnp, "dbsnp_data", "meta");
 
+        let path_rocksdb = path_annonars.join("genes").join("rocksdb");
+        let genes_db = annonars::genes::cli::query::open_rocksdb(&path_rocksdb, "genes", "meta")
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "problem opening genes metadata at {}: {}",
+                    path_rocksdb.as_os_str().to_string_lossy(),
+                    e
+                )
+            })?;
+
         Ok(Self {
             clinvar_db,
             clinvar_meta,
@@ -72,6 +86,7 @@ impl AnnonarsDbs {
             cadd_meta,
             dbnsfp_db,
             dbnsfp_meta,
+            genes_db,
         })
     }
 }
@@ -162,5 +177,47 @@ impl Annotator {
             &cf_data,
         )
         .map_err(|e| anyhow::anyhow!("problem querying dbsnp database: {}", e))
+    }
+
+    /// Query `genes` database for a given HGNC ID.
+    ///
+    /// # Errors
+    ///
+    /// If there is a problem querying the database.
+    pub fn query_genes(
+        &self,
+        hgnc_id: &str,
+    ) -> Result<Option<annonars::genes::pbs::Record>, anyhow::Error> {
+        let cf_data = self
+            .annonars_dbs
+            .genes_db
+            .cf_handle("genes")
+            .ok_or_else(|| anyhow::anyhow!("could not get genes column family"))?;
+
+        let raw_value = self
+            .annonars_dbs
+            .genes_db
+            .get_cf(&cf_data, hgnc_id.as_bytes())
+            .map_err(|e| {
+                anyhow::anyhow!(
+                    "problem querying genes database for HGNC ID {}: {}",
+                    hgnc_id,
+                    e
+                )
+            })?;
+
+        raw_value
+            .map(|raw_value| {
+                annonars::genes::pbs::Record::decode(&mut std::io::Cursor::new(&raw_value)).map_err(
+                    |e| {
+                        anyhow::anyhow!(
+                            "problem decoding record from genes database for HGNC ID {}: {}",
+                            hgnc_id,
+                            e
+                        )
+                    },
+                )
+            })
+            .transpose()
     }
 }

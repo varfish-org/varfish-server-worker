@@ -32,9 +32,13 @@ write-to()
     tee $1 >/dev/null
 }
 
+# annonars/genes
+
+cp -r $SRC/annonars/genes-3.1+2.1.1+4.4+20230606+10.1+20230913+0.19.0 tests/seqvars/query/db/annonars/genes
+
 # annonars/grch37
 
-SRC_ANNONARS=/data/sshfs/data/cephfs-1/work/projects/cubi_varfish_data/2023-06-05_varfish-db-downloader/varfish-db-downloader/output/reduced-dev/annonars
+SRC_ANNONARS=$SRC/annonars
 for src in $SRC_ANNONARS/*-grch37*; do
     if [[ $src == *c+* ]] || [[ $src == *gnomad* ]]; then
         continue

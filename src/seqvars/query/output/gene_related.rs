@@ -2,7 +2,7 @@
 
 use mehari::annotate::seqvars::ann::Consequence;
 
-use crate::seqvars::query::schema::SequenceVariant;
+use crate::seqvars::query::{annonars::Annotator, schema::SequenceVariant};
 
 /// Gene-related information for a `ResultPayload`.
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
@@ -28,11 +28,20 @@ impl Record {
     /// # Error
     ///
     /// Returns an error if `seqvar` does not contain all necessary information.
-    pub fn with_seqvar(seqvar: &SequenceVariant) -> Result<Option<Self>, anyhow::Error> {
+    pub fn with_seqvar_and_annotator(
+        seqvar: &SequenceVariant,
+        annotator: &Annotator,
+    ) -> Result<Option<Self>, anyhow::Error> {
         if let Some(ann) = seqvar.ann_fields.first() {
+            let hgnc_id = ann.gene_id.clone();
+
+            let gene_record = annotator
+                .query_genes(&hgnc_id)
+                .map_err(|e| anyhow::anyhow!("problem querying genes database: {}", e))?;
+
             if !ann.gene_id.is_empty() && !ann.gene_symbol.is_empty() {
                 return Ok(Some(Self {
-                    identity: Identity::new(ann.gene_id.clone(), ann.gene_symbol.clone()),
+                    identity: Identity::new(hgnc_id, ann.gene_symbol.clone()),
                     consequences: Consequences::new(
                         ann.hgvs_t
                             .clone()
@@ -40,8 +49,20 @@ impl Record {
                         ann.hgvs_p.clone(),
                         ann.consequences.clone(),
                     ),
-                    // TODO: phenotype
-                    // TODO: constraints
+                    phenotype: gene_record
+                        .as_ref()
+                        .map(|gene_record| Phenotype::with_gene_record(gene_record)),
+                    constraints: gene_record
+                        .as_ref()
+                        .map(|gene_record| {
+                            gene_record
+                                .gnomad_constraints
+                                .as_ref()
+                                .map(|gnomad_constraints| {
+                                    Constraints::with_constraints_record(gnomad_constraints)
+                                })
+                        })
+                        .flatten(),
                     ..Default::default()
                 }));
             }
@@ -62,10 +83,20 @@ pub struct Identity {
 /// Result information related to phenotype / disease.
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
 pub struct Phenotype {
+    /// Whether the gene is on the ACMG supplementary finding list.
+    pub is_acmg_sf: bool,
     /// Whether the gene is a known disease gene.
     pub is_disease_gene: bool,
-    // TODO: modes of inheritance
-    // TODO: disease/phenotype terms?
+}
+
+impl Phenotype {
+    /// Construct given a `genes` database record.
+    pub fn with_gene_record(gene_record: &annonars::genes::pbs::Record) -> Self {
+        Self {
+            is_acmg_sf: gene_record.acmg_sf.is_some(),
+            is_disease_gene: gene_record.omim.is_some() || gene_record.orpha.is_some(),
+        }
+    }
 }
 
 /// Consequences related to a gene.
@@ -86,15 +117,13 @@ pub struct Consequences {
 #[allow(clippy::too_many_arguments)]
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
 pub struct Constraints {
-    /// gnomAD loeuf score
-    pub gnomad_loeuf: f32,
     /// gnomAD mis_z score
     pub gnomad_mis_z: f32,
     /// gnomAD oe_lof score
     pub gnomad_oe_lof: f32,
     /// gnomAD oe_lof_lower score
     pub gnomad_oe_lof_lower: f32,
-    /// gnomAD oe_lof_upper score
+    /// gnomAD oe_lof_upper score (LOEF)
     pub gnomad_oe_lof_upper: f32,
     /// gnomAD oe_mis score
     pub gnomad_oe_mis: f32,
@@ -106,4 +135,23 @@ pub struct Constraints {
     pub gnomad_pli: f32,
     /// gnomAD syn_z score
     pub gnomad_syn_z: f32,
+}
+
+impl Constraints {
+    /// Construct given a `genes` database record.
+    pub fn with_constraints_record(
+        constraints: &annonars::genes::pbs::GnomadConstraintsRecord,
+    ) -> Self {
+        Self {
+            gnomad_mis_z: constraints.mis_z.unwrap_or_default() as f32,
+            gnomad_oe_lof: constraints.oe_lof.unwrap_or_default() as f32,
+            gnomad_oe_lof_lower: constraints.oe_lof_lower.unwrap_or_default() as f32,
+            gnomad_oe_lof_upper: constraints.oe_lof_upper.unwrap_or_default() as f32,
+            gnomad_oe_mis: constraints.oe_mis.unwrap_or_default() as f32,
+            gnomad_oe_mis_lower: constraints.oe_mis_lower.unwrap_or_default() as f32,
+            gnomad_oe_mis_upper: constraints.oe_mis_upper.unwrap_or_default() as f32,
+            gnomad_pli: constraints.pli.unwrap_or_default() as f32,
+            gnomad_syn_z: constraints.syn_z.unwrap_or_default() as f32,
+        }
+    }
 }

@@ -406,7 +406,7 @@ fn create_payload_and_write_record(
     let result_payload = output::PayloadBuilder::default()
         .case_uuid(args.case_uuid_id.unwrap_or_default())
         .gene_related(
-            output::gene_related::Record::with_seqvar(&seqvar)
+            output::gene_related::Record::with_seqvar_and_annotator(&seqvar, annotator)
                 .map_err(|e| anyhow::anyhow!("problem creating gene-related payload: {}", e))?,
         )
         .variant_related(
