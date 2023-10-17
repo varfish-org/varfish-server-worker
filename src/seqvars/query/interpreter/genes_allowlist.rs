@@ -8,10 +8,14 @@ pub fn passes(hgnc_allowlist: &Option<HashSet<String>>, seqvar: &SequenceVariant
         if hgnc_allowlist.is_empty() {
             true
         } else {
-            seqvar
+            let res = seqvar
                 .ann_fields
                 .iter()
-                .any(|ann_field| hgnc_allowlist.contains(&ann_field.gene_id))
+                .any(|ann_field| hgnc_allowlist.contains(&ann_field.gene_id));
+            if !res {
+                tracing::trace!("variant {:?} fails gene allowlist filter {:?}", seqvar, &hgnc_allowlist);
+            }
+            res
         }
     } else {
         true

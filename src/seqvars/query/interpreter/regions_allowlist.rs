@@ -6,14 +6,18 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> bool {
         if region_allowlist.is_empty() {
             true
         } else {
-            region_allowlist.iter().any(|region| {
+            let res = region_allowlist.iter().any(|region| {
                 overlaps(
                     region,
                     &seqvar.chrom,
                     seqvar.pos,
                     seqvar.pos + seqvar.reference.len() as i32 - 1,
                 )
-            })
+            });
+            if !res {
+                tracing::trace!("variant {:?} fails region allowlist filter {:?}", seqvar, &region_allowlist);
+            }
+            res
         }
     } else {
         true

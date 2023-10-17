@@ -23,9 +23,10 @@ use crate::common;
 use crate::seqvars::query::schema::GenotypeChoice;
 use crate::{common::trace_rss_now, common::GenomeRelease};
 
+use self::annonars::Annotator;
 use self::schema::CaseQuery;
+use self::schema::SequenceVariant;
 use self::sorting::{ByCoordinate, ByHgncId};
-use self::{annonars::AnnonarsDbs, schema::SequenceVariant};
 
 /// Command line arguments for `seqvars query` sub command.
 #[derive(Parser, Debug)]
@@ -172,6 +173,8 @@ pub mod gene_related {
 
 /// Variant-related information.
 pub mod variant_related {
+    use super::{annonars::Annotator, schema::SequenceVariant};
+
     /// Record for variant-related scores.
     #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
     pub struct Record {
@@ -181,6 +184,34 @@ pub mod variant_related {
         pub db_ids: DbIds,
         /// Clinvar information.
         pub clinvar: Option<Clinvar>,
+        /// Frequency information.
+        pub frequency: Frequency,
+    }
+
+    impl Record {
+        /// Construct given sequence variant and annonars annotator.
+        pub fn with_seqvar_and_annotator(
+            seqvar: &SequenceVariant,
+            annotator: &Annotator,
+        ) -> Result<Self, anyhow::Error> {
+            Ok(Self {
+                precomputed_scores: Self::query_precomputed_scores(
+                    seqvar, annotator,
+                )?,
+                db_ids: DbIds::with_seqvar_and_annotator(seqvar, annotator)?,
+                clinvar: Clinvar::with_seqvar_and_annotator(seqvar, annotator)?,
+                frequency: Frequency::with_seqvar(seqvar)?,
+            })
+        }
+
+        /// Query precomputed scores for `seqvar` from annonars `annotator`.
+        pub fn query_precomputed_scores(
+            _seqvar: &SequenceVariant,
+            _annotator: &Annotator,
+        ) -> Result<indexmap::IndexMap<String, f32>, anyhow::Error> {
+            // TODO: implement me!
+            Ok(indexmap::IndexMap::default())
+        }
     }
 
     /// Database identifiers.
@@ -190,20 +221,77 @@ pub mod variant_related {
         pub dbsnp_rs: Option<String>,
     }
 
+    impl DbIds {
+        /// Construct given sequence variant and annonars annotator.
+        pub fn with_seqvar_and_annotator(
+            seqvar: &SequenceVariant,
+            annotator: &Annotator,
+        ) -> Result<Self, anyhow::Error> {
+            // TODO: need to properly separate error from no result in annonars.
+            Ok(Self {
+                dbsnp_rs: annotator
+                    .query_dbsnp(seqvar)
+                    .ok()
+                    .map(|record| format!("rs{}", record.rs_id)),
+            })
+        }
+    }
+
     /// ClinVar-related information.
     #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
     pub struct Clinvar {
         // TODO: switch to VCV summary or hierarchical?
-        /// The ClinVar RCV accession.
-        pub clinvar_rcv: String,
-        /// The ClinVar clinical significance.
-        pub clinvar_significance: String,
-        /// The ClinVar review status.
-        pub clinvar_review_status: String,
+        /// The RCV accession.
+        pub rcv: String,
+        /// The clinical significance.
+        pub significance: String,
+        /// The review status.
+        pub review_status: String,
+    }
+
+    impl Clinvar {
+        /// Construct given sequence variant and annonars annotator.
+        pub fn with_seqvar_and_annotator(
+            seqvar: &SequenceVariant,
+            annotator: &Annotator,
+        ) -> Result<Option<Self>, anyhow::Error> {
+            // TODO: need to properly separate error from no result in annonars.
+            annotator.query_clinvar_minimal(seqvar).ok().map(|record| {
+                let annonars::clinvar_minimal::pbs::Record {
+                    rcv,
+                    clinical_significance,
+                    review_status,
+                    ..
+                } = record;
+                Ok(Self {
+                    rcv,
+                    significance: match clinical_significance {
+                        0 => "Pathogenic",
+                        1 => "Likely pathogenic",
+                        2 => "Uncertain significance",
+                        3 => "Likely benign",
+                        4 => "Benign",
+                        _ => anyhow::bail!("invalid clinical significance enum: {}", clinical_significance)
+                    }.into(),
+                    review_status: match review_status {
+                        0 => "no assertion provided",
+                        1 => "no assertion criteria provided",
+                        2 => "criteria provided, conflicting interpretations",
+                        3 => "criteria provided, single submitter",
+                        4 => "criteria provided, multiple submitters, no conflicts",
+                        5 => "reviewed by expert panel",
+                        6 => "practice guideline",
+                        _ => anyhow::bail!("invalid review status enum: {}", review_status)
+                    }.into(),
+                })
+            }).transpose()
+        }
     }
 
     /// Frequency information.
-    #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
+    #[derive(
+        Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_builder::Builder,
+    )]
     pub struct Frequency {
         /// gnomAD-genomes frequency
         pub gnomad_genomes: Option<NuclearFrequency>,
@@ -212,9 +300,51 @@ pub mod variant_related {
         /// gnomad-mtDNA frequency
         pub gnomad_mtdna: Option<MtdnaFrequency>,
         /// HelixMtDb frequency
-        pub gnomad_helixmtdb: Option<MtdnaFrequency>,
+        pub helixmtdb: Option<MtdnaFrequency>,
         /// in-house frequency
         pub inhouse: Option<NuclearFrequency>,
+    }
+
+    impl Frequency {
+        /// Extract frequency information from `seqvar`
+        pub fn with_seqvar(seqvar: &SequenceVariant) -> Result<Frequency, anyhow::Error> {
+            let chrom = annonars::common::cli::canonicalize(&seqvar.chrom);
+            let frequency = if chrom == "MT" {
+                FrequencyBuilder::default()
+                    .gnomad_genomes(Some(NuclearFrequency::new(
+                        seqvar.gnomad_genomes_af(),
+                        seqvar.gnomad_genomes_an,
+                        seqvar.gnomad_genomes_het,
+                        seqvar.gnomad_genomes_hom,
+                        seqvar.gnomad_genomes_hemi,
+                    )))
+                    .gnomad_exomes(Some(NuclearFrequency::new(
+                        seqvar.gnomad_exomes_af(),
+                        seqvar.gnomad_exomes_an,
+                        seqvar.gnomad_exomes_het,
+                        seqvar.gnomad_exomes_hom,
+                        seqvar.gnomad_exomes_hemi,
+                    )))
+                    .build()
+            } else {
+                FrequencyBuilder::default()
+                    .gnomad_mtdna(Some(MtdnaFrequency::new(
+                        seqvar.gnomad_genomes_af(),
+                        seqvar.gnomad_genomes_an,
+                        seqvar.gnomad_genomes_het,
+                        seqvar.gnomad_genomes_hom,
+                    )))
+                    .helixmtdb(Some(MtdnaFrequency::new(
+                        seqvar.helixmtdb_af(),
+                        seqvar.helix_an,
+                        seqvar.helix_het,
+                        seqvar.helix_hom,
+                    )))
+                    .build()
+            }
+            .map_err(|e| anyhow::anyhow!("could not build frequency information: {}", e))?;
+            Ok(frequency)
+        }
     }
 
     /// Nuclear frequency information.
@@ -286,7 +416,7 @@ pub mod call_related {
 
     /// Genotype information.
     #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
-    struct CallInfo {
+    pub struct CallInfo {
         /// Depth of coverage.
         pub dp: Option<i32>,
         /// Alternate read depth.
@@ -473,7 +603,7 @@ fn passes_for_gene(
 fn run_query(
     interpreter: &interpreter::QueryInterpreter,
     args: &Args,
-    annonars_dbs: &annonars::AnnonarsDbs,
+    annotator: &annonars::Annotator,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
     let tmp_dir = tempdir::TempDir::new("vfw")?;
@@ -509,7 +639,7 @@ fn run_query(
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
             tracing::debug!("processing record {:?}", record_seqvar);
 
-            if interpreter.passes(&record_seqvar, &annonars_dbs)?.pass_all {
+            if interpreter.passes(&record_seqvar, &annotator)?.pass_all {
                 stats.count_passed += 1;
                 if let Some(ann) = record_seqvar.ann_fields.first() {
                     ann.consequences.iter().for_each(|csq| {
@@ -664,7 +794,7 @@ fn run_query(
 
         create_payload_and_write_record(
             seqvar,
-            annonars_dbs,
+            annotator,
             chrom_to_chrom_no,
             &mut csv_writer,
             args,
@@ -678,8 +808,8 @@ fn run_query(
 
 /// Create output payload and write the record to the output file.
 fn create_payload_and_write_record(
-    record_seqvar: SequenceVariant,
-    annonars_dbs: &AnnonarsDbs,
+    seqvar: SequenceVariant,
+    annotator: &Annotator,
     chrom_to_chrom_no: &CHROM_TO_CHROM_NO,
     csv_writer: &mut csv::Writer<std::fs::File>,
     args: &Args,
@@ -689,25 +819,29 @@ fn create_payload_and_write_record(
     let result_payload = result::PayloadBuilder::default()
         .case_uuid(args.case_uuid_id.unwrap_or_default().clone())
         .gene_related(
-            gene_related::Record::with_seqvar(&record_seqvar)
-                .map_err(|e| anyhow::anyhow!("problem with gene-related payload: {}", e))?,
+            gene_related::Record::with_seqvar(&seqvar)
+                .map_err(|e| anyhow::anyhow!("problem creating gene-related payload: {}", e))?,
         )
-        .variant_related(None)
+        .variant_related(
+            variant_related::Record::with_seqvar_and_annotator(&seqvar, annotator)
+                .map_err(|e| anyhow::anyhow!("problem creating variant-related payload: {}", e))?,
+        )
         .call_related(
-            call_related::Record::with_seqvar(&record_seqvar)
-                .map_err(|e| anyhow::anyhow!("problem with call-related payload: {}", e))?,
+            call_related::Record::with_seqvar(&seqvar)
+                .map_err(|e| anyhow::anyhow!("problem creating call-related payload: {}", e))?,
         )
         .build()
         .map_err(|e| anyhow::anyhow!("could not build payload: {}", e))?;
-    let start = record_seqvar.pos;
-    let end = start + record_seqvar.reference.len() as i32 - 1;
+    eprintln!("result_payload = {:?}", &result_payload);
+    let start = seqvar.pos;
+    let end = start + seqvar.reference.len() as i32 - 1;
     let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
     let SequenceVariant {
         chrom: chromosome,
         reference,
         alternative,
         ..
-    } = record_seqvar;
+    } = seqvar;
     csv_writer
         .serialize(
             &result::RecordBuilder::default()
@@ -720,12 +854,12 @@ fn create_payload_and_write_record(
                     GenomeRelease::Grch37 => "GRCh37".into(),
                     GenomeRelease::Grch38 => "GRCh38".into(),
                 })
-                .chromosome(chromosome)
                 .chromosome_no(
                     *chrom_to_chrom_no
                         .get(&chromosome)
                         .expect("invalid chromosome") as i32,
                 )
+                .chromosome(chromosome)
                 .start(start)
                 .end(end)
                 .bin(bin)
@@ -779,14 +913,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
             e
         )
     })?;
-    let annonars_dbs = annonars::AnnonarsDbs::from_path(&args.path_db, args.genome_release)
-        .map_err(|e| {
-            anyhow::anyhow!(
-                "could not load annonars databases from {}: {}",
-                args.path_db,
-                e
-            )
-        })?;
+    let annotator = annonars::Annotator::with_path(&args.path_db, args.genome_release)?;
     tracing::info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()
@@ -813,7 +940,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let query_stats = run_query(
         &interpreter::QueryInterpreter::new(query, hgnc_allowlist),
         args,
-        &annonars_dbs,
+        &annotator,
         &mut rng,
     )?;
     tracing::info!("... done running query in {:?}", before_query.elapsed());

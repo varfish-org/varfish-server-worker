@@ -11,7 +11,7 @@ mod quality;
 mod regions_allowlist;
 
 use super::{
-    annonars::AnnonarsDbs,
+    annonars::Annotator,
     schema::{CaseQuery, SequenceVariant},
 };
 
@@ -35,9 +35,6 @@ pub struct PassesResult {
 impl QueryInterpreter {
     /// Construct new `QueryInterpreter` with the given query settings.
     pub fn new(query: CaseQuery, hgnc_allowlist: Option<HashSet<String>>) -> Self {
-        tracing::error!(
-            "note well that we will need a second pass for compound heterozygous variants"
-        );
         QueryInterpreter {
             query,
             hgnc_allowlist,
@@ -48,7 +45,7 @@ impl QueryInterpreter {
     pub fn passes(
         &self,
         seqvar: &SequenceVariant,
-        annonars_dbs: &AnnonarsDbs,
+        annotator: &Annotator,
     ) -> Result<PassesResult, anyhow::Error> {
         // Check the filters first that are cheap to compute.
         let pass_frequency = frequency::passes(&self.query, seqvar)?;
@@ -78,7 +75,7 @@ impl QueryInterpreter {
         }
         // If we passed until here, check the presence in ClinVar which needs a database lookup.
         Ok(PassesResult {
-            pass_all: clinvar::passes(&self.query, annonars_dbs, seqvar)?,
+            pass_all: clinvar::passes(&self.query, annotator, seqvar)?,
         })
     }
 }

@@ -50,10 +50,10 @@
     "transcript_variant",
     "upstream_gene_variant"
   ],
-  "gnomad_exomes_enabled": true,
-  "gnomad_genomes_enabled": true,
-  "inhouse_enabled": true,
-  "helixmtdb_enabled": true,
+  "gnomad_exomes_enabled": false,
+  "gnomad_genomes_enabled": false,
+  "inhouse_enabled": false,
+  "helixmtdb_enabled": false,
   "quality": {
     "Case_1_index-N1-DNA1-WGS1": {
       "dp_het": 10,

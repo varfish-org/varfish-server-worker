@@ -15,12 +15,13 @@ pub fn passes(
         passes_non_recessive_mode(&query.genotype, seqvar, no_call_samples)?
     };
 
-    tracing::trace!(
-        "variant {:?} has result {} for genotype filter {:?}",
-        seqvar,
-        result,
-        &query.genotype
-    );
+    if !result {
+        tracing::trace!(
+            "variant {:?} fails for genotype filter {:?}",
+            seqvar,
+            &query.genotype
+        );
+    }
     Ok(result)
 }
 

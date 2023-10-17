@@ -533,6 +533,9 @@ impl SequenceVariant {
 
     /// Return allele frequency in gnomAD exomes.
     pub fn gnomad_exomes_af(&self) -> f32 {
+        if self.gnomad_exomes_an == 0 {
+            return 0f32;
+        }
         let an = self.gnomad_exomes_an as f32;
         let hom = self.gnomad_exomes_hom as f32;
         let het = self.gnomad_exomes_het as f32;
@@ -542,6 +545,9 @@ impl SequenceVariant {
 
     /// Return allele frequency in gnomAD genomes.
     pub fn gnomad_genomes_af(&self) -> f32 {
+        if self.gnomad_genomes_an == 0 {
+            return 0f32;
+        }
         let an = self.gnomad_genomes_an as f32;
         let hom = self.gnomad_genomes_hom as f32;
         let het = self.gnomad_genomes_het as f32;
@@ -551,6 +557,9 @@ impl SequenceVariant {
 
     /// Return allele frequency in HelixMtDb.
     pub fn helixmtdb_af(&self) -> f32 {
+        if self.helix_an == 0 {
+            return 0f32;
+        }
         let an = self.helix_an as f32;
         let hom = self.helix_hom as f32;
         let het = self.helix_het as f32;

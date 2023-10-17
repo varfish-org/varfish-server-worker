@@ -16,6 +16,7 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<bool, anyho
         }
     }
 
+    tracing::trace!("variant {:?} fails consequence filter {:?}", &seqvar, &query.consequences);
     Ok(false)
 }
 
