@@ -2,7 +2,7 @@
 
 use std::io::{BufRead, Write};
 
-use crate::common::{self, io::open_write_maybe_gz, worker_version, GenomeRelease};
+use crate::common::{self, io::std::open_write_maybe_gz, worker_version, GenomeRelease};
 use mehari::{annotate::seqvars::AnnotatedVcfWriter, common::open_read_maybe_gz};
 use rand_core::SeedableRng;
 

@@ -9,7 +9,7 @@ use tracing::{info, warn};
 
 use crate::{
     common::GenomeRelease,
-    common::{build_chrom_map, io::open_read_maybe_gz, CHROMS},
+    common::{build_chrom_map, io::std::open_read_maybe_gz, CHROMS},
 };
 
 use super::{

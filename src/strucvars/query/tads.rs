@@ -8,7 +8,7 @@ use tracing::info;
 
 use crate::{
     common::{build_chrom_map, CHROMS},
-    common::{io::open_read_maybe_gz, GenomeRelease, TadSet as TadSetChoice},
+    common::{io::std::open_read_maybe_gz, GenomeRelease, TadSet as TadSetChoice},
 };
 
 use super::{

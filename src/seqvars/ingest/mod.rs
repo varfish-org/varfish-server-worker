@@ -4,7 +4,7 @@ use std::sync::{Arc, OnceLock};
 
 use crate::common::{
     self,
-    io::{open_read_maybe_gz, open_write_maybe_gz},
+    io::std::{open_read_maybe_gz, open_write_maybe_gz},
     worker_version, GenomeRelease,
 };
 use mehari::annotate::seqvars::provider::MehariProvider;

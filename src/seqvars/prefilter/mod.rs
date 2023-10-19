@@ -6,7 +6,7 @@ use mehari::annotate::seqvars::ann::AnnField;
 use noodles_vcf as vcf;
 use thousands::Separable;
 
-use crate::common::{self, io::open_read_maybe_gz};
+use crate::common::{self, io::std::open_read_maybe_gz};
 
 /// Arguments for the `seqvars prefilter` subcommand.
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -213,10 +213,11 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
                 vcf::header::record::Value::from(""),
             )?;
 
-            let mut writer =
-                vcf::Writer::new(common::io::open_write_maybe_gz(&params.path_out).map_err(
-                    |e| anyhow::anyhow!("could not open output file {}: {}", &params.path_out, e),
-                )?);
+            let mut writer = vcf::Writer::new(
+                common::io::std::open_write_maybe_gz(&params.path_out).map_err(|e| {
+                    anyhow::anyhow!("could not open output file {}: {}", &params.path_out, e)
+                })?,
+            );
             writer.write_header(&header).map_err(|e| {
                 anyhow::anyhow!("could not write header to {}: {}", &params.path_out, e)
             })?;

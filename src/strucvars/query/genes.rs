@@ -7,7 +7,7 @@ use serde::Deserialize;
 use tracing::info;
 
 use crate::{
-    common::{io::open_read_maybe_gz, GenomeRelease},
+    common::{io::std::open_read_maybe_gz, GenomeRelease},
     strucvars::pbs,
 };
 

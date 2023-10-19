@@ -6,7 +6,7 @@ use prost::Message;
 use thousands::Separable;
 
 use crate::{
-    common::{build_chrom_map, io::open_read_maybe_gz, trace_rss_now},
+    common::{build_chrom_map, io::std::open_read_maybe_gz, trace_rss_now},
     strucvars::query::clinvar::pbs::{Pathogenicity, SvDatabase, SvRecord},
 };
 
@@ -189,7 +189,7 @@ mod test {
     #[case(Assembly::Grch38)]
     fn run_convert_jsonl_to_protobuf(#[case] assembly: Assembly) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{:?}", assembly);
-        let reader = crate::common::io::open_read_maybe_gz(
+        let reader = crate::common::io::std::open_read_maybe_gz(
             "tests/db/to-bin/varfish-db-downloader/vardbs/clinvar/clinvar-svs.jsonl",
         )?;
         let records = super::convert_jsonl_to_protobuf(reader, assembly)?;
