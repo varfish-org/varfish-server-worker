@@ -1,19 +1,15 @@
 //! Common functionality.
 
-use std::{
-    fs::File,
-    io::{BufRead, BufWriter, Write},
-    ops::Range,
-    path::Path,
-};
+use std::ops::Range;
 
 use byte_unit::Byte;
 use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
-use flate2::{write::GzEncoder, Compression};
 use hgvs::static_data::Assembly;
 use indexmap::IndexMap;
 use noodles_vcf as vcf;
+
+pub mod io;
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
@@ -67,24 +63,6 @@ pub fn build_chrom_map() -> IndexMap<String, usize> {
     result
 }
 
-/// Transparently opena  file with gzip encoder.
-pub fn open_write_maybe_gz<P>(path: P) -> Result<Box<dyn Write>, anyhow::Error>
-where
-    P: AsRef<Path>,
-{
-    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
-        tracing::trace!("Opening {:?} as gzip for writing", path.as_ref());
-        let file = File::create(path)?;
-        let bufwriter = BufWriter::new(file);
-        let encoder = GzEncoder::new(bufwriter, Compression::default());
-        Ok(Box::new(encoder))
-    } else {
-        tracing::trace!("Opening {:?} as plain text for writing", path.as_ref());
-        let file = File::create(path)?;
-        Ok(Box::new(file))
-    }
-}
-
 // Compute reciprocal overlap between two ranges.
 pub fn reciprocal_overlap(lhs: Range<i32>, rhs: Range<i32>) -> f32 {
     let lhs_b = lhs.start;
@@ -119,18 +97,6 @@ pub fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
     clean_id
         .parse::<u32>()
         .map_err(|e| anyhow::anyhow!("could not parse gene id {:?}: {}", &clean_id, &e))
-}
-
-// The output is wrapped in a Result to allow matching on errors
-// Returns an Iterator to the Reader of the lines of the file.
-pub fn read_lines<P: AsRef<Path>>(
-    filename: P,
-) -> std::io::Result<std::io::Lines<std::io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(std::io::BufReader::new(file).lines())
 }
 
 /// Select the genome release to use.
@@ -539,7 +505,6 @@ pub enum TadSet {
 #[cfg(test)]
 mod test {
     use noodles_vcf as vcf;
-    use std::io::Read;
 
     #[test]
     fn trace_rss_now_smoke() {
@@ -550,29 +515,6 @@ mod test {
     fn build_chrom_map_snapshot() {
         let map = super::build_chrom_map();
         insta::assert_yaml_snapshot!(map);
-    }
-
-    #[rstest::rstest]
-    #[case(true)]
-    #[case(false)]
-    fn open_write_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
-        mehari::common::set_snapshot_suffix!("{:?}", is_gzip);
-
-        let filename = if is_gzip { "test.txt" } else { "test.txt.gz" };
-        let tmp_dir = temp_testdir::TempDir::default();
-
-        {
-            let mut f = super::open_write_maybe_gz(tmp_dir.join(filename))?;
-            f.flush()?;
-        }
-
-        let mut f = std::fs::File::open(tmp_dir.join(filename)).map(std::io::BufReader::new)?;
-        let mut buf = Vec::new();
-        f.read_to_end(&mut buf)?;
-
-        insta::assert_snapshot!(format!("{:x?}", &buf));
-
-        Ok(())
     }
 
     #[rstest::rstest]
@@ -597,15 +539,6 @@ mod test {
     fn numeric_gene_id(#[case] raw_id: &str, #[case] expected: u32) {
         let actual = super::numeric_gene_id(raw_id).unwrap();
         assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn read_lines() -> Result<(), anyhow::Error> {
-        let lines = super::read_lines("tests/common/lines.txt")?.collect::<Result<Vec<_>, _>>()?;
-
-        insta::assert_yaml_snapshot!(lines);
-
-        Ok(())
     }
 
     #[rstest::rstest]

@@ -18,7 +18,8 @@ use thousands::Separable;
 
 use crate::{
     common::{
-        build_chrom_map, open_write_maybe_gz, read_lines, trace_rss_now, GenomeRelease, CHROMS,
+        build_chrom_map, io::open_write_maybe_gz, io::read_lines, trace_rss_now, GenomeRelease,
+        CHROMS,
     },
     strucvars::query::schema::SvType,
 };

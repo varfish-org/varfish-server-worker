@@ -214,9 +214,9 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
             )?;
 
             let mut writer =
-                vcf::Writer::new(common::open_write_maybe_gz(&params.path_out).map_err(|e| {
-                    anyhow::anyhow!("could not open output file {}: {}", &params.path_out, e)
-                })?);
+                vcf::Writer::new(common::io::open_write_maybe_gz(&params.path_out).map_err(
+                    |e| anyhow::anyhow!("could not open output file {}: {}", &params.path_out, e),
+                )?);
             writer.write_header(&header).map_err(|e| {
                 anyhow::anyhow!("could not write header to {}: {}", &params.path_out, e)
             })?;
