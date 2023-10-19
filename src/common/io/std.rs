@@ -8,12 +8,20 @@ use std::{
 
 use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
 
+/// Returns whether the path looks like a gzip or bgzip file.
+pub fn is_gz<P>(path: P) -> bool
+where
+    P: AsRef<Path>,
+{
+    [Some(Some("gz")), Some(Some("bgz"))].contains(&path.as_ref().extension().map(|s| s.to_str()))
+}
+
 /// Transparently open a file with gzip decoder.
 pub fn open_read_maybe_gz<P>(path: P) -> Result<Box<dyn BufRead>, anyhow::Error>
 where
     P: AsRef<Path>,
 {
-    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
+    if is_gz(path.as_ref()) {
         tracing::trace!("Opening {:?} as gzip for reading", path.as_ref());
         let file = File::open(path)?;
         let bufreader = BufReader::new(file);
@@ -85,9 +93,28 @@ mod test {
 
     #[test]
     fn read_lines() -> Result<(), anyhow::Error> {
-        let lines = super::read_lines("tests/common/lines.txt")?.collect::<Result<Vec<_>, _>>()?;
+        let lines =
+            super::read_lines("tests/common/io/lines.txt")?.collect::<Result<Vec<_>, _>>()?;
 
         insta::assert_yaml_snapshot!(lines);
+
+        Ok(())
+    }
+
+    #[rstest::rstest]
+    #[case("14kb.txt")]
+    #[case("14kb.txt.gz")]
+    #[case("14kb.txt.bgz")]
+    fn open_read_maybe_gz(#[case] path: &str) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!("{}", path);
+        // Note that the 14kb.txt file contains about 14 KB of data so bgz will have multiple 4KB
+        // blocks.
+
+        let mut reader = super::open_read_maybe_gz(&format!("tests/common/io/{}", path))?;
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf)?;
+
+        insta::assert_snapshot!(String::from_utf8(buf)?);
 
         Ok(())
     }
