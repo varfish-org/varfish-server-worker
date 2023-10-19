@@ -45,6 +45,8 @@ This command takes as the input a single VCF file from a (supported) variant cal
 The command interprets the following fields which are written out by the commonly used variant callers such as GATK UnifiedGenotyper, GATK HaplotypeCaller, and Illumina Dragen.
 
 - `FORMAT/GT` -- genotype
+    - the following `GT` values are written out as `0/0`, `0/1`, `1/0`, `1/1`, `0|0`, `0|1`, `1|0`, `1|1`, `./.`, `.|.`, `.`
+    - no combination of no-call (`.`) and called allele is written out
 - `FORMAT/GQ` -- genotype quality
 - `FORMAT/DP` -- total read coverage
 - `FORMAT/AD` -- allelic depth, one value per allele (including reference0)
@@ -143,6 +145,10 @@ varfish-server-worker seqvars aggregate \
     --path-in-vcf path/to/vcf.gz \
     --path-in-vcf @path/to/file/list.txt
 ```
+
+## The `seqvars query` Command
+
+This command perform the querying of sequence variants and further annotation using annonars databases.
 
 ## The `strucvars ingest` Command
 

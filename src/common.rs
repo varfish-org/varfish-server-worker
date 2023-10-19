@@ -199,7 +199,7 @@ impl std::str::FromStr for GenomeRelease {
 }
 
 /// Helper type for encoding genotypes in parsing.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Genotype {
     /// hom. ref.
     HomRef,

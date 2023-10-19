@@ -257,7 +257,6 @@ impl TryInto<VariationType> for MeasureType {
             MeasureType::Deletion => Ok(VariationType::Del),
             MeasureType::Duplication => Ok(VariationType::Dup),
             MeasureType::TandemDuplication => Ok(VariationType::Dup),
-            MeasureType::StructuralVariant => todo!(),
             MeasureType::CopyNumberGain => Ok(VariationType::Dup),
             MeasureType::CopyNumberLoss => Ok(VariationType::Del),
             MeasureType::Microsatellite => Ok(VariationType::Microsatellite),
@@ -272,6 +271,7 @@ impl TryInto<VariationType> for MeasureType {
             | MeasureType::ProteinOnly
             | MeasureType::Fusion
             | MeasureType::Qtl
+            | MeasureType::StructuralVariant
             | MeasureType::Other => anyhow::bail!("unsupported measure type: {:?}", self),
         }
     }

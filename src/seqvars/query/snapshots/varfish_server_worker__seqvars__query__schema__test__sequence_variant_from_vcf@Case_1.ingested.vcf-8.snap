@@ -1,0 +1,152 @@
+---
+source: src/seqvars/query/schema.rs
+expression: "&seqvar"
+---
+chrom: "17"
+pos: 41252697
+reference: A
+alternative: ATT
+ann_fields:
+  - allele:
+      Alt:
+        alternative: ATT
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007294.4
+    feature_biotype: Coding
+    rank:
+      ord: 6
+      total: 22
+    hgvs_t: c.442-801_442-800insAA
+    hgvs_p: p.?
+    tx_pos:
+      ord: 555
+      total: 7088
+    cds_pos:
+      ord: 442
+      total: 5592
+    protein_pos: ~
+    distance: -800
+    messages: ~
+  - allele:
+      Alt:
+        alternative: ATT
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007297.4
+    feature_biotype: Coding
+    rank:
+      ord: 5
+      total: 21
+    hgvs_t: c.301-801_301-800insAA
+    hgvs_p: p.?
+    tx_pos:
+      ord: 495
+      total: 7028
+    cds_pos:
+      ord: 301
+      total: 5451
+    protein_pos: ~
+    distance: -800
+    messages: ~
+  - allele:
+      Alt:
+        alternative: ATT
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007299.4
+    feature_biotype: Coding
+    rank:
+      ord: 6
+      total: 21
+    hgvs_t: c.442-801_442-800insAA
+    hgvs_p: p.?
+    tx_pos:
+      ord: 549
+      total: 3696
+    cds_pos:
+      ord: 442
+      total: 2100
+    protein_pos: ~
+    distance: -800
+    messages: ~
+  - allele:
+      Alt:
+        alternative: ATT
+    consequences:
+      - intron_variant
+    putative_impact: MODIFIER
+    gene_symbol: BRCA1
+    gene_id: "HGNC:1100"
+    feature_type:
+      SoTerm:
+        term: Transcript
+    feature_id: NM_007300.4
+    feature_biotype: Coding
+    rank:
+      ord: 6
+      total: 23
+    hgvs_t: c.442-801_442-800insAA
+    hgvs_p: p.?
+    tx_pos:
+      ord: 555
+      total: 7151
+    cds_pos:
+      ord: 442
+      total: 5655
+    protein_pos: ~
+    distance: -800
+    messages: ~
+gnomad_exomes_an: 0
+gnomad_exomes_hom: 0
+gnomad_exomes_het: 0
+gnomad_exomes_hemi: 0
+gnomad_genomes_an: 0
+gnomad_genomes_hom: 0
+gnomad_genomes_het: 0
+gnomad_genomes_hemi: 0
+helix_an: 0
+helix_hom: 0
+helix_het: 0
+inhouse_an: 0
+inhouse_hom: 0
+inhouse_het: 0
+inhouse_hemi: 0
+call_info:
+  Case_1_father-N1-DNA1-WGS1:
+    genotype: 0/0
+    quality: 99
+    dp: 45
+    ad: 0
+    phasing_id: ~
+  Case_1_index-N1-DNA1-WGS1:
+    genotype: 0/1
+    quality: 99
+    dp: 33
+    ad: 16
+    phasing_id: ~
+  Case_1_mother-N1-DNA1-WGS1:
+    genotype: 0/1
+    quality: 99
+    dp: 33
+    ad: 21
+    phasing_id: ~
+

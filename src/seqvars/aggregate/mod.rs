@@ -53,7 +53,6 @@ fn handle_record(
     let mut res_counts = ds::Counts::default();
     let mut res_carriers = ds::CarrierList::default();
 
-    // TODO properly handle PAR regions
     for (name, sample) in input_header
         .sample_names()
         .iter()
@@ -165,8 +164,6 @@ fn import_vcf(
     for input_record in records {
         let input_record = input_record?;
 
-        // TODO: we need to lock the database for counts
-
         // Obtain counts from the current variant.
         let (this_counts_data, this_carrier_data) =
             handle_record(&input_record, &input_header, &pedigree, &case_uuid)?;
@@ -253,7 +250,7 @@ fn import_vcf(
         }
     }
 
-    todo!()
+    Ok(())
 }
 
 /// Perform the parallel import of VCF files.

@@ -1,4 +1,4 @@
-//! Apply settings from a `CaseQuery` to `StructuralVariant` records.
+//! Apply settings from a `strucvar::query::schema::CaseQuery` to `StructuralVariant` records.
 
 use std::collections::{HashMap, HashSet};
 
@@ -369,10 +369,6 @@ impl QueryInterpreter {
             Ok(passes_result)
         }
     }
-
-    // TODO: regulatory ensembl/vista
-    // TODO: regulatory custom
-    // TODO: recessive mdoe
 }
 
 #[cfg(test)]

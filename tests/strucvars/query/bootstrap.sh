@@ -17,6 +17,7 @@ TXT_TO_BIN="cargo run --release -- strucvars txt-to-bin --assembly=grch37"
 mkdir -p $SCRIPT_DIR/db/worker/grch37/{features,genes,strucvars/bgdbs,tads}
 mkdir -p $SCRIPT_DIR/db/worker/noref/genes
 mkdir -p $SCRIPT_DIR/db/mehari/grch37
+mkdir -p $SCRIPT_DIR/db/annonars/grch37
 
 # Filter BED files
 filter-bed()
@@ -30,6 +31,28 @@ write-to()
 {
     tee $1 >/dev/null
 }
+
+# annonars/genes
+
+cp -r $SRC/annonars/genes-3.1+2.1.1+4.4+20230606+10.1+20230913+0.19.0 tests/seqvars/query/db/annonars/genes
+
+# annonars/grch37
+
+SRC_ANNONARS=$SRC/annonars
+for src in $SRC_ANNONARS/*-grch37*; do
+    if [[ $src == *c+* ]] || [[ $src == *gnomad* ]]; then
+        continue
+    fi
+    cp -r $src $SCRIPT_DIR/db/annonars/grch37/$(basename ${src%-grch37*})
+done
+
+# annonars/grch37/clinvar-minimal
+
+pushd /tmp
+wget https://github.com/bihealth/annonars-data-clinvar/releases/download/clinvar-weekly-20230910/annonars-clinvar-minimal-grch37-20230910+0.18.0.tar.gz
+tar -vxf annonars-clinvar-minimal-grch37-20230910+0.18.0.tar.gz
+mv tmp/for-upload/annonars-clinvar-minimal-grch37-20230910+0.18.0 $SCRIPT_DIR/db/annonars/grch37/clinvar-minimal
+popd
 
 # mehari/grch37/
 
