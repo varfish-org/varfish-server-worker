@@ -1901,7 +1901,9 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.14.0"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f7d28d45b0c27d227b832b059ef52e2f8a30d03087369b21b734216f3710197"
 dependencies = [
  "actix-web",
  "annonars",

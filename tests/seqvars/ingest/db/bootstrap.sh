@@ -31,15 +31,15 @@ mehari \
 
 # clinvar
 
-wget -O /tmp/annonars-clinvar-minimal-grch37-20230910+0.18.0.tar.gz \
-    https://github.com/bihealth/annonars-data-clinvar/releases/download/clinvar-weekly-20230910/annonars-clinvar-minimal-grch37-20230910+0.18.0.tar.gz
-tar --strip-components 2 -C /tmp -xvf /tmp/annonars-clinvar-minimal-grch37-20230910+0.18.0.tar.gz
+wget -O /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1.tar.gz \
+    https://github.com/bihealth/annonars-data-clinvar/releases/download/annonars-data-clinvar-20231015/annonars-clinvar-minimal-grch37-20231015+0.24.1.tar.gz
+tar -C /tmp -xvf /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1.tar.gz
 
 mkdir -p $SCRIPT_DIR/grch37/seqvars/clinvar
-cp /tmp/annonars-clinvar-minimal-grch37-20230910+0.18.0/spec.yaml \
+cp /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1/spec.yaml \
     $SCRIPT_DIR/grch37/seqvars/clinvar
 annonars db-utils copy \
-    --path-in /tmp/annonars-clinvar-minimal-grch37-20230910+0.18.0/rocksdb \
+    --path-in /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1/rocksdb \
     --path-out $SCRIPT_DIR/grch37/seqvars/clinvar/rocksdb \
     --range 17:41183866:41337086
 

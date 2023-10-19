@@ -34,8 +34,7 @@ hgvs = "0.11"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
 log = "0.4"
-#mehari = "0.14"
-mehari = { path = "../mehari" }
+mehari = "0.14"
 multimap = "0.9"
 noodles-bgzf = "0.25"
 noodles-vcf = "0.41"
