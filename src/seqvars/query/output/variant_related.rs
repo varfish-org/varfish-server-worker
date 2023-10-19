@@ -290,6 +290,8 @@ impl DbIds {
 /// ClinVar-related information.
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
 pub struct Clinvar {
+    /// The VCV accession.
+    pub vcv: String,
     /// The RCV accession.
     pub rcv: String,
     /// The clinical significance.
@@ -308,38 +310,43 @@ impl Clinvar {
             .query_clinvar_minimal(seqvar)
             .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
             .map(|record| {
-                let annonars::clinvar_minimal::pbs::Record {
-                    rcv,
-                    clinical_significance,
-                    review_status,
-                    ..
-                } = record;
-                Ok(Self {
-                    rcv,
-                    significance: match clinical_significance {
-                        0 => "Pathogenic",
-                        1 => "Likely pathogenic",
-                        2 => "Uncertain significance",
-                        3 => "Likely benign",
-                        4 => "Benign",
-                        _ => anyhow::bail!(
-                            "invalid clinical significance enum: {}",
-                            clinical_significance
-                        ),
-                    }
-                    .into(),
-                    review_status: match review_status {
-                        0 => "no assertion provided",
-                        1 => "no assertion criteria provided",
-                        2 => "criteria provided, conflicting interpretations",
-                        3 => "criteria provided, single submitter",
-                        4 => "criteria provided, multiple submitters, no conflicts",
-                        5 => "reviewed by expert panel",
-                        6 => "practice guideline",
-                        _ => anyhow::bail!("invalid review status enum: {}", review_status),
-                    }
-                    .into(),
-                })
+                if let Some(assertion) = record.reference_assertions.first() {
+                    let annonars::clinvar_minimal::pbs::ReferenceAssertion {
+                        rcv,
+                        clinical_significance,
+                        review_status,
+                        ..
+                    } = assertion;
+                    Ok(Self {
+                        vcv: record.vcv.clone(),
+                        rcv: rcv.clone(),
+                        significance: match clinical_significance {
+                            0 => "Pathogenic",
+                            1 => "Likely pathogenic",
+                            2 => "Uncertain significance",
+                            3 => "Likely benign",
+                            4 => "Benign",
+                            _ => anyhow::bail!(
+                                "invalid clinical significance enum: {}",
+                                clinical_significance
+                            ),
+                        }
+                        .into(),
+                        review_status: match review_status {
+                            0 => "practice guideline",
+                            1 => "reviewed by expert panel",
+                            2 => "criteria provided, multiple submitters, no conflicts",
+                            3 => "criteria provided, single submitter",
+                            4 => "criteria provided, conflicting interpretations",
+                            5 => "no assertion criteria provided",
+                            6 => "no assertion provided",
+                            _ => anyhow::bail!("invalid review status enum: {}", review_status),
+                        }
+                        .into(),
+                    })
+                } else {
+                    unreachable!("no reference clinvar assertion")
+                }
             })
             .transpose()
     }
