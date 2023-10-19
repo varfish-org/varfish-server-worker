@@ -10,7 +10,6 @@ use std::{
 
 use bio::data_structures::interval_tree::IntervalTree;
 use clap::{command, Parser};
-use mehari::common::open_read_maybe_gz;
 use noodles_vcf as vcf;
 use serde_json::to_writer;
 use strum::IntoEnumIterator;
@@ -18,8 +17,10 @@ use thousands::Separable;
 
 use crate::{
     common::{
-        build_chrom_map, io::open_write_maybe_gz, io::read_lines, trace_rss_now, GenomeRelease,
-        CHROMS,
+        build_chrom_map,
+        io::read_lines,
+        io::{open_read_maybe_gz, open_write_maybe_gz},
+        trace_rss_now, GenomeRelease, CHROMS,
     },
     strucvars::query::schema::SvType,
 };

@@ -2,12 +2,14 @@
 
 use std::{collections::HashSet, path::Path, time::Instant};
 
-use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use serde::Deserialize;
 use tracing::info;
 
-use crate::{common::GenomeRelease, strucvars::pbs};
+use crate::{
+    common::{io::open_read_maybe_gz, GenomeRelease},
+    strucvars::pbs,
+};
 
 /// Information to store for the interlink table.
 #[derive(Default, Debug)]

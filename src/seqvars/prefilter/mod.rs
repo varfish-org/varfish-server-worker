@@ -6,7 +6,7 @@ use mehari::annotate::seqvars::ann::AnnField;
 use noodles_vcf as vcf;
 use thousands::Separable;
 
-use crate::common;
+use crate::common::{self, io::open_read_maybe_gz};
 
 /// Arguments for the `seqvars prefilter` subcommand.
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -194,7 +194,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("loading prefilter params...");
     let params = load_params(&args.params)?;
     tracing::info!("opening input file...");
-    let reader = mehari::common::open_read_maybe_gz(&args.path_in)
+    let reader = open_read_maybe_gz(&args.path_in)
         .map_err(|e| anyhow::anyhow!("could not open input file: {}", e))?;
     let mut reader = vcf::Reader::new(reader);
     let header = reader

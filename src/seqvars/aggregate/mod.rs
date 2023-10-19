@@ -2,12 +2,11 @@
 
 pub mod ds;
 
-use mehari::common::open_read_maybe_gz;
 use noodles_vcf as vcf;
 use rayon::prelude::*;
 use std::sync::Arc;
 
-use crate::common::{self, Chrom, Genotype};
+use crate::common::{self, io::open_read_maybe_gz, Chrom, Genotype};
 
 /// Command line arguments for `seqvars aggregate` subcommand.
 #[derive(Debug, clap::Parser)]

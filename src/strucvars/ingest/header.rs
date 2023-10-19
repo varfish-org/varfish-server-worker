@@ -300,7 +300,7 @@ mod test {
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {
-            let reader = mehari::common::open_read_maybe_gz(path)?;
+            let reader = crate::common::io::open_read_maybe_gz(path)?;
             vec![mehari::annotate::strucvars::guess_sv_caller(reader)?]
         };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
@@ -344,7 +344,7 @@ mod test {
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {
-            let reader = mehari::common::open_read_maybe_gz(path)?;
+            let reader = crate::common::io::open_read_maybe_gz(path)?;
             vec![mehari::annotate::strucvars::guess_sv_caller(reader)?]
         };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();

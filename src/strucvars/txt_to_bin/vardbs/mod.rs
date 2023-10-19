@@ -6,10 +6,10 @@ use std::path::Path;
 use std::time::Instant;
 
 use anyhow::anyhow;
-use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use thousands::Separable;
 
+use crate::common::io::open_read_maybe_gz;
 use crate::common::{build_chrom_map, trace_rss_now};
 use crate::strucvars;
 use crate::strucvars::aggregate::output::Record as InhouseDbRecord;

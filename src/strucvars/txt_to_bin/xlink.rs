@@ -2,12 +2,11 @@
 
 use std::{fs::File, io::Write, path::Path, time::Instant};
 
-use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use thousands::Separable;
 
 use crate::{
-    common::{numeric_gene_id, trace_rss_now},
+    common::{io::open_read_maybe_gz, numeric_gene_id, trace_rss_now},
     strucvars::pbs::{XlinkDatabase, XlinkRecord},
 };
 

@@ -4,13 +4,12 @@ use std::path::Path;
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use indexmap::IndexMap;
-use mehari::common::open_read_maybe_gz;
 use serde::Serialize;
 use tracing::{info, warn};
 
 use crate::{
     common::GenomeRelease,
-    common::{build_chrom_map, CHROMS},
+    common::{build_chrom_map, io::open_read_maybe_gz, CHROMS},
 };
 
 use super::{

@@ -2,13 +2,31 @@
 
 use std::{
     fs::File,
-    io::{BufRead, BufWriter, Write},
+    io::{BufRead, BufReader, BufWriter, Write},
     path::Path,
 };
 
-use flate2::{write::GzEncoder, Compression};
+use flate2::{bufread::MultiGzDecoder, write::GzEncoder, Compression};
 
-/// Transparently opena  file with gzip encoder.
+/// Transparently open a file with gzip decoder.
+pub fn open_read_maybe_gz<P>(path: P) -> Result<Box<dyn BufRead>, anyhow::Error>
+where
+    P: AsRef<Path>,
+{
+    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
+        tracing::trace!("Opening {:?} as gzip for reading", path.as_ref());
+        let file = File::open(path)?;
+        let bufreader = BufReader::new(file);
+        let decoder = MultiGzDecoder::new(bufreader);
+        Ok(Box::new(BufReader::new(decoder)))
+    } else {
+        tracing::trace!("Opening {:?} as plain text for reading", path.as_ref());
+        let file = File::open(path).map(BufReader::new)?;
+        Ok(Box::new(BufReader::new(file)))
+    }
+}
+
+/// Transparently open afile with gzip encoder.
 pub fn open_write_maybe_gz<P>(path: P) -> Result<Box<dyn Write>, anyhow::Error>
 where
     P: AsRef<Path>,
