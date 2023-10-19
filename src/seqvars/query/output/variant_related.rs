@@ -91,10 +91,8 @@ pub mod score_collection {
         }
 
         fn register(&mut self, column_name: &str, value: &serde_json::Value) {
-            if self.column_names.iter().any(|s| s.as_str() == column_name) {
-                if !value.is_null() {
-                    self.values.insert(column_name.to_string(), value.clone());
-                }
+            if self.column_names.iter().any(|s| s.as_str() == column_name) && !value.is_null() {
+                self.values.insert(column_name.to_string(), value.clone());
             }
         }
 
@@ -107,11 +105,10 @@ pub mod score_collection {
                     continue;
                 }
 
-                if sel_value.is_null() {
-                    sel_name = Some(name.clone());
-                    sel_value = value.clone();
-                } else if (self.is_max
-                    && value.as_f64().unwrap_or_default() > sel_value.as_f64().unwrap_or_default())
+                if sel_value.is_null()
+                    || (self.is_max
+                        && value.as_f64().unwrap_or_default()
+                            > sel_value.as_f64().unwrap_or_default())
                     || (!self.is_max
                         && value.as_f64().unwrap_or_default()
                             < sel_value.as_f64().unwrap_or_default())

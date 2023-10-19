@@ -49,21 +49,15 @@ impl Record {
                         ann.hgvs_p.clone(),
                         ann.consequences.clone(),
                     ),
-                    phenotype: gene_record
-                        .as_ref()
-                        .map(|gene_record| Phenotype::with_gene_record(gene_record)),
-                    constraints: gene_record
-                        .as_ref()
-                        .map(|gene_record| {
-                            gene_record
-                                .gnomad_constraints
-                                .as_ref()
-                                .map(|gnomad_constraints| {
-                                    Constraints::with_constraints_record(gnomad_constraints)
-                                })
-                        })
-                        .flatten(),
-                    ..Default::default()
+                    phenotype: gene_record.as_ref().map(Phenotype::with_gene_record),
+                    constraints: gene_record.as_ref().and_then(|gene_record| {
+                        gene_record
+                            .gnomad_constraints
+                            .as_ref()
+                            .map(|gnomad_constraints| {
+                                Constraints::with_constraints_record(gnomad_constraints)
+                            })
+                    }),
                 }));
             }
         }

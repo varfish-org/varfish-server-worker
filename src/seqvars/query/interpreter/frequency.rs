@@ -412,6 +412,7 @@ mod test {
     #[case(1000, 0, 2, true, None, None, Some(1), false)]
     // hom. count: pass (fail but filter is disabled)
     #[case(1000, 0, 2, false, None, None, Some(1), true)]
+    #[allow(clippy::too_many_arguments)]
     fn passes_frequency_gnomad_genomes_chrmt(
         #[case] seqvar_gnomad_genomes_an: i32,
         #[case] seqvar_gnomad_genomes_het: i32,
