@@ -255,13 +255,14 @@ dependencies = [
 
 [[package]]
 name = "annonars"
-version = "0.24.1"
+version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0058c9550498950a103798c6976abfae6016762c1ac355dd46c9792c533ac50c"
+checksum = "264ef5bcefef042e0c4e39fa5b6a30aebaceca9876917915974823a54668d426"
 dependencies = [
  "actix-web",
  "anyhow",
  "bgzip",
+ "biocommons-bioutils",
  "boolvec",
  "byteorder",
  "chrono",
@@ -271,7 +272,6 @@ dependencies = [
  "enum-map 2.6.3",
  "env_logger",
  "flate2",
- "hgvs",
  "indexmap 2.0.2",
  "indicatif",
  "log",
@@ -279,8 +279,8 @@ dependencies = [
  "noodles-bgzf 0.25.0",
  "noodles-core",
  "noodles-csi",
- "noodles-tabix",
- "noodles-vcf",
+ "noodles-tabix 0.30.0",
+ "noodles-vcf 0.41.0",
  "prost",
  "prost-build",
  "rayon",
@@ -489,6 +489,20 @@ dependencies = [
  "regex",
  "strum_macros",
  "thiserror",
+]
+
+[[package]]
+name = "biocommons-bioutils"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82c91bd0b62cec4b6317445506ed4947a53c320942a681c5a086f4d576aa4c99"
+dependencies = [
+ "enum-map 2.6.3",
+ "flate2",
+ "indexmap 2.0.2",
+ "lazy_static",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1482,12 +1496,13 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hgvs"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2c8237412c585364c6d56a985ea67f550a2e8fd55c6b8f949e732a89d2274a7"
+checksum = "bd1c9bcd21975b12b0d6f4db48882cb3668dffc3dbe2820b9ae9d642f1a9e273"
 dependencies = [
  "base16ct",
  "bio",
+ "biocommons-bioutils",
  "chrono",
  "enum-map 2.6.3",
  "flate2",
@@ -1901,15 +1916,16 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.14.1"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f7d28d45b0c27d227b832b059ef52e2f8a30d03087369b21b734216f3710197"
+checksum = "31257df04dfa22b9090ec2d1fc43e08dfb36eb2ac957e86931f4813957708ee7"
 dependencies = [
  "actix-web",
  "annonars",
  "anyhow",
  "bgzip",
  "bio",
+ "biocommons-bioutils",
  "byte-unit",
  "byteorder",
  "chrono",
@@ -1930,8 +1946,8 @@ dependencies = [
  "noodles-core",
  "noodles-csi",
  "noodles-fasta 0.30.0",
- "noodles-tabix",
- "noodles-vcf",
+ "noodles-tabix 0.30.0",
+ "noodles-vcf 0.41.0",
  "parse-display",
  "procfs",
  "prost",
@@ -1946,7 +1962,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "strum",
- "tempdir",
+ "tempfile",
  "thousands",
  "tracing",
  "tracing-subscriber",
@@ -2122,9 +2138,9 @@ checksum = "94fbe3192fe33acacabaedd387657f39b0fc606f1996d546db0dfe14703b843a"
 
 [[package]]
 name = "noodles-csi"
-version = "0.25.0"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f327250086b20edade50756b6aee1851d656a3a5967cf94cbe4d4e10a5ef85d7"
+checksum = "39d86e55b4784ba7c38b4ffbfc24e122bc05ce971b0a664e8e1a15ffd9de68a7"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2171,6 +2187,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "noodles-tabix"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d12d6981ba752798cb03abc9604324ff6cbc1e5354252f95c372545d967a6daf"
+dependencies = [
+ "bit-vec",
+ "byteorder",
+ "noodles-bgzf 0.25.0",
+ "noodles-core",
+ "noodles-csi",
+]
+
+[[package]]
 name = "noodles-vcf"
 version = "0.41.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2181,7 +2210,22 @@ dependencies = [
  "noodles-bgzf 0.25.0",
  "noodles-core",
  "noodles-csi",
- "noodles-tabix",
+ "noodles-tabix 0.30.0",
+ "percent-encoding",
+]
+
+[[package]]
+name = "noodles-vcf"
+version = "0.42.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3400ba59844268d1f3e842ca4dd999c08cd04180db1b413d689bb7ea92ece08"
+dependencies = [
+ "indexmap 2.0.2",
+ "memchr",
+ "noodles-bgzf 0.25.0",
+ "noodles-core",
+ "noodles-csi",
+ "noodles-tabix 0.31.0",
  "percent-encoding",
 ]
 
@@ -3660,7 +3704,7 @@ dependencies = [
  "mehari",
  "multimap 0.9.0",
  "noodles-bgzf 0.25.0",
- "noodles-vcf",
+ "noodles-vcf 0.42.0",
  "pretty_assertions",
  "procfs",
  "prost",

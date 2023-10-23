@@ -30,14 +30,14 @@ enum-map = { version = "2.6", features = ["serde"] }
 ext-sort = { version = "0.1", features = ["memory-limit", "bytesize"] }
 fastrand = "2.0"
 flate2 = "1.0"
-hgvs = "0.11"
+hgvs = "0.12"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
 log = "0.4"
 mehari = "0.14"
 multimap = "0.9"
 noodles-bgzf = "0.25"
-noodles-vcf = "0.41"
+noodles-vcf = "0.42"
 procfs = "0.15"
 prost = "0.12"
 rand = "0.8"
