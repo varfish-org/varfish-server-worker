@@ -1,6 +1,6 @@
 //! Implementation of `strucvars ingest` subcommand.
 
-use std::io::{BufRead, Write};
+use std::io::Write;
 
 use crate::common::{self, worker_version, GenomeRelease};
 use futures::future::join_all;
@@ -15,7 +15,6 @@ use rand_core::SeedableRng;
 
 use mehari::annotate::strucvars::guess_sv_caller;
 use noodles_vcf as vcf;
-use tokio::io::AsyncBufRead;
 
 pub mod header;
 

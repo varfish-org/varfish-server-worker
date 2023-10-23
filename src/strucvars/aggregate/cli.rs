@@ -12,14 +12,13 @@ use bio::data_structures::interval_tree::IntervalTree;
 use clap::{command, Parser};
 use futures::TryStreamExt;
 use mehari::common::{
-    io::std::{open_read_maybe_gz, open_write_maybe_gz, read_lines},
+    io::std::{open_write_maybe_gz, read_lines},
     noodles::open_vcf_reader,
 };
-use noodles_vcf as vcf;
+
 use serde_json::to_writer;
 use strum::IntoEnumIterator;
 use thousands::Separable;
-use tokio::io::AsyncBufRead;
 
 use crate::{
     common::{build_chrom_map, trace_rss_now, GenomeRelease, CHROMS},
