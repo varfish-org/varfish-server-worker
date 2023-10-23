@@ -14,7 +14,7 @@ use tokio::io::AsyncWriteExt;
 use crate::common;
 
 /// Arguments for the `seqvars prefilter` subcommand.
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct PrefilterParams {
     /// Path to output file.
     pub path_out: String,
@@ -214,13 +214,17 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         tracing::info!("opening output files...");
         let mut output_writers = Vec::new();
         for params in params_list.iter() {
+            let header_params = PrefilterParams {
+                path_out: "<stripped>".into(),
+                ..params.clone()
+            };
             let mut header = header.clone();
             header.insert(
                 "x-varfish-prefilter-params"
                     .parse()
                     .map_err(|e| anyhow::anyhow!("{}", e))?,
                 vcf::header::record::Value::from(
-                    serde_json::to_string(&params)
+                    serde_json::to_string(&header_params)
                         .map_err(|e| anyhow::anyhow!("failed to serialize params: {}", e))?,
                 ),
             )?;
