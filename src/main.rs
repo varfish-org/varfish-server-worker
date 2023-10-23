@@ -97,16 +97,18 @@ async fn main() -> Result<(), anyhow::Error> {
     match &cli.command {
         Commands::Seqvars(seqvars) => match &seqvars.command {
             SeqvarsCommands::Aggregate(args) => {
+                // Note that aggregate is not async as it uses Rayon and will
+                // block internally for the read files.
                 seqvars::aggregate::run(&cli.common, args)?;
             }
             SeqvarsCommands::Ingest(args) => {
-                seqvars::ingest::run(&cli.common, args)?;
+                seqvars::ingest::run(&cli.common, args).await?;
             }
             SeqvarsCommands::Prefilter(args) => {
-                seqvars::prefilter::run(&cli.common, args)?;
+                seqvars::prefilter::run(&cli.common, args).await?;
             }
             SeqvarsCommands::Query(args) => {
-                seqvars::query::run(&cli.common, args)?;
+                seqvars::query::run(&cli.common, args).await?;
             }
         },
         Commands::Strucvars(strucvars) => match &strucvars.command {

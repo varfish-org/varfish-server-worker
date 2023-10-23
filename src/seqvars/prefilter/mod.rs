@@ -2,7 +2,11 @@
 
 use std::io::BufRead;
 
-use mehari::{annotate::seqvars::ann::AnnField, common::io::std::open_read_maybe_gz};
+use futures::TryStreamExt;
+use mehari::{
+    annotate::seqvars::ann::AnnField,
+    common::noodles::{open_vcf_reader, AsyncVcfReader},
+};
 use noodles_vcf as vcf;
 use thousands::Separable;
 
@@ -141,19 +145,21 @@ fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>
 }
 
 /// Perform the actual prefiltration.
-fn run_filtration(
-    input_reader: &mut vcf::Reader<Box<dyn std::io::BufRead>>,
+async fn run_filtration(
+    input_reader: &mut AsyncVcfReader,
     input_header: &vcf::Header,
     output_writers: &mut [vcf::Writer<Box<dyn std::io::Write>>],
     params: &[PrefilterParams],
 ) -> Result<(), anyhow::Error> {
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
-    let records = input_reader.records(input_header);
+    let mut records = input_reader.records(input_header);
     let mut total_written = 0usize;
-    for input_record in records {
-        let input_record = input_record?;
-
+    while let Some(input_record) = records
+        .try_next()
+        .await
+        .map_err(|e| anyhow::anyhow!("problem reading VCF record {}", e))?
+    {
         let (frequency, exon_distance) = get_freq_and_distance(&input_record)?;
         if let Some(exon_distance) = exon_distance {
             for (writer_params, output_writer) in params.iter().zip(output_writers.iter_mut()) {
@@ -186,7 +192,7 @@ fn run_filtration(
 }
 
 /// Main entry point for `seqvars prefilter` sub command.
-pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = std::time::Instant::now();
     tracing::info!("args_common = {:#?}", &args_common);
     tracing::info!("args = {:#?}", &args);
@@ -194,11 +200,12 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("loading prefilter params...");
     let params = load_params(&args.params)?;
     tracing::info!("opening input file...");
-    let reader = open_read_maybe_gz(&args.path_in)
+    let mut reader = open_vcf_reader(&args.path_in)
+        .await
         .map_err(|e| anyhow::anyhow!("could not open input file: {}", e))?;
-    let mut reader = vcf::Reader::new(reader);
     let header = reader
         .read_header()
+        .await
         .map_err(|e| anyhow::anyhow!("problem reading header: {}", e))?;
 
     tracing::info!("opening output files...");
@@ -229,7 +236,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     common::trace_rss_now();
 
     tracing::info!("starting filtration...");
-    run_filtration(&mut reader, &header, &mut output_files, &params)?;
+    run_filtration(&mut reader, &header, &mut output_files, &params).await?;
     tracing::info!("... done with filtration");
 
     tracing::info!(
@@ -241,8 +248,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 
 #[cfg(test)]
 mod test {
-    #[test]
-    fn single_output_arg() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn single_output_arg() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let args = super::Args {
@@ -257,7 +264,7 @@ mod test {
             )],
         };
 
-        super::run(&crate::common::Args::default(), &args)?;
+        super::run(&crate::common::Args::default(), &args).await?;
 
         assert!(std::path::Path::new(&format!(
             "{}/out-1.vcf",
@@ -273,8 +280,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn single_output_file() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn single_output_file() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let params_json = format!(
@@ -290,7 +297,7 @@ mod test {
             params: vec![format!("@{}", params_file.to_str().unwrap())],
         };
 
-        super::run(&crate::common::Args::default(), &args)?;
+        super::run(&crate::common::Args::default(), &args).await?;
 
         assert!(std::path::Path::new(&format!(
             "{}/out-1.vcf",
@@ -306,8 +313,8 @@ mod test {
         Ok(())
     }
 
-    #[test]
-    fn two_output_arg() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn two_output_arg() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let args = super::Args {
@@ -332,7 +339,7 @@ mod test {
             ],
         };
 
-        super::run(&crate::common::Args::default(), &args)?;
+        super::run(&crate::common::Args::default(), &args).await?;
 
         assert!(std::path::Path::new(&format!(
             "{}/out-1.vcf",

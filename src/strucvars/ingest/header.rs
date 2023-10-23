@@ -289,7 +289,6 @@ mod test {
     #[case("tests/strucvars/ingest/manta-min.vcf")]
     #[case("tests/strucvars/ingest/melt-min.vcf")]
     #[case("tests/strucvars/ingest/popdel-min.vcf")]
-
     #[tokio::test]
     async fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
