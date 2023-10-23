@@ -282,7 +282,6 @@ mod test {
     use rstest::rstest;
 
     #[rstest]
-    #[tokio::test]
     #[case("tests/strucvars/ingest/delly2-min.vcf")]
     #[case("tests/strucvars/ingest/dragen-cnv-min.vcf")]
     #[case("tests/strucvars/ingest/dragen-sv-min.vcf")]
@@ -291,6 +290,7 @@ mod test {
     #[case("tests/strucvars/ingest/melt-min.vcf")]
     #[case("tests/strucvars/ingest/popdel-min.vcf")]
 
+    #[tokio::test]
     async fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
@@ -328,7 +328,6 @@ mod test {
     }
 
     #[rstest]
-    #[tokio::test]
     #[case("tests/strucvars/ingest/delly2-min.vcf")]
     #[case("tests/strucvars/ingest/dragen-cnv-min.vcf")]
     #[case("tests/strucvars/ingest/dragen-sv-min.vcf")]
@@ -336,6 +335,7 @@ mod test {
     #[case("tests/strucvars/ingest/manta-min.vcf")]
     #[case("tests/strucvars/ingest/melt-min.vcf")]
     #[case("tests/strucvars/ingest/popdel-min.vcf")]
+    #[tokio::test]
     async fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
