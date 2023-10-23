@@ -54,7 +54,7 @@ expression: "std::fs::read_to_string(&format!(\"{}/out-2.vcf\",\n               
 ##PEDIGREE=<ID=Case_1_mother-N1-DNA1-WGS1>
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="GatkHaplotypeCaller",Version="3.7-0-gcfedb67">
-##x-varfish-prefilter-params=
+##x-varfish-prefilter-params={"path_out":"/tmp/rstest.13/out-2.vcf","max_freq":0.0,"max_exon_dist":20}
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Case_1_father-N1-DNA1-WGS1	Case_1_index-N1-DNA1-WGS1	Case_1_mother-N1-DNA1-WGS1
 MT	750	.	A	G	.	.	.	GT:AD:DP:GQ	1/1:0:2757:99	1/1:0:2392:99	1/1:0:1621:99
 

@@ -4,17 +4,12 @@ use std::io::Write;
 
 use crate::common::{self, worker_version, GenomeRelease};
 use futures::future::join_all;
-use mehari::{
-    annotate::seqvars::AnnotatedVcfWriter,
-    common::{
-        io::std::open_write_maybe_gz,
-        noodles::{open_vcf_readers, AsyncVcfReader},
-    },
-};
+use mehari::common::noodles::{open_vcf_readers, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
 use rand_core::SeedableRng;
 
 use mehari::annotate::strucvars::guess_sv_caller;
 use noodles_vcf as vcf;
+use tokio::io::AsyncWriteExt;
 
 pub mod header;
 
@@ -303,9 +298,8 @@ impl mehari::annotate::seqvars::AnnotatedVcfWriter for WriterWrapper {
 /// Write out variants from input files.
 async fn process_variants(
     pedigree: &mehari::ped::PedigreeByName,
-    output_writer: &mut dyn mehari::annotate::seqvars::AnnotatedVcfWriter,
+    output_writer: &mut AsyncVcfWriter,
     input_readers: &mut [AsyncVcfReader],
-    output_header: &vcf::Header,
     input_header: &[vcf::Header],
     input_sv_callers: &[mehari::annotate::strucvars::SvCaller],
     args: &Args,
@@ -357,7 +351,7 @@ async fn process_variants(
             args.min_overlap,
         )?;
         for record in clusters {
-            output_writer.write_record(output_header, &record.try_into()?)?;
+            output_writer.write_record(&record.try_into()?).await?;
         }
     }
     tracing::info!("... done clustering SVs to output");
@@ -424,23 +418,28 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
-    let mut output_writer = WriterWrapper::new(vcf::writer::Writer::new(open_write_maybe_gz(
-        &args.path_out,
-    )?));
-    output_writer
-        .write_header(&output_header)
-        .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
+    {
+        let mut output_writer = open_vcf_writer(&args.path_out).await?;
+        output_writer
+            .write_header(&output_header)
+            .await
+            .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
 
-    process_variants(
-        &pedigree,
-        &mut output_writer,
-        &mut input_readers,
-        &output_header,
-        &input_headers,
-        &input_sv_callers,
-        args,
-    )
-    .await?;
+        process_variants(
+            &pedigree,
+            &mut output_writer,
+            &mut input_readers,
+            &input_headers,
+            &input_sv_callers,
+            args,
+        )
+        .await?;
+
+        output_writer.into_inner().shutdown().await?;
+    }
+
+    // use shutdown on writer after resolving https://github.com/zaeleus/noodles/discussions/210
+    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     tracing::info!(
         "All of `strucvars ingest` completed in {:?}",

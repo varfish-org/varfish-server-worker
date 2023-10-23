@@ -5,10 +5,11 @@ use std::io::BufRead;
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::ann::AnnField,
-    common::noodles::{open_vcf_reader, AsyncVcfReader},
+    common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
 };
 use noodles_vcf as vcf;
 use thousands::Separable;
+use tokio::io::AsyncWriteExt;
 
 use crate::common;
 
@@ -148,7 +149,7 @@ fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>
 async fn run_filtration(
     input_reader: &mut AsyncVcfReader,
     input_header: &vcf::Header,
-    output_writers: &mut [vcf::Writer<Box<dyn std::io::Write>>],
+    output_writers: &mut [AsyncVcfWriter],
     params: &[PrefilterParams],
 ) -> Result<(), anyhow::Error> {
     let start = std::time::Instant::now();
@@ -167,7 +168,8 @@ async fn run_filtration(
                     && exon_distance <= writer_params.max_exon_dist
                 {
                     output_writer
-                        .write_record(input_header, &input_record)
+                        .write_record(&input_record)
+                        .await
                         .map_err(|e| anyhow::anyhow!("failed to write record: {}", e))?;
                 }
             }
@@ -198,7 +200,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     tracing::info!("args = {:#?}", &args);
 
     tracing::info!("loading prefilter params...");
-    let params = load_params(&args.params)?;
+    let params_list = load_params(&args.params)?;
     tracing::info!("opening input file...");
     let mut reader = open_vcf_reader(&args.path_in)
         .await
@@ -208,36 +210,41 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         .await
         .map_err(|e| anyhow::anyhow!("problem reading header: {}", e))?;
 
-    tracing::info!("opening output files...");
-    let mut output_files = params
-        .iter()
-        .map(|params| {
+    {
+        tracing::info!("opening output files...");
+        let mut output_writers = Vec::new();
+        for params in params_list.iter() {
             let mut header = header.clone();
             header.insert(
                 "x-varfish-prefilter-params"
                     .parse()
                     .map_err(|e| anyhow::anyhow!("{}", e))?,
-                vcf::header::record::Value::from(""),
+                vcf::header::record::Value::from(
+                    serde_json::to_string(&params)
+                        .map_err(|e| anyhow::anyhow!("failed to serialize params: {}", e))?,
+                ),
             )?;
 
-            let mut writer = vcf::Writer::new(
-                mehari::common::io::std::open_write_maybe_gz(&params.path_out).map_err(|e| {
-                    anyhow::anyhow!("could not open output file {}: {}", &params.path_out, e)
-                })?,
-            );
-            writer.write_header(&header).map_err(|e| {
+            let mut writer = open_vcf_writer(&params.path_out).await?;
+            writer.write_header(&header).await.map_err(|e| {
                 anyhow::anyhow!("could not write header to {}: {}", &params.path_out, e)
             })?;
+            output_writers.push(writer);
+        }
 
-            Ok(writer)
-        })
-        .collect::<Result<Vec<_>, anyhow::Error>>()?;
+        common::trace_rss_now();
 
-    common::trace_rss_now();
+        tracing::info!("starting filtration...");
+        run_filtration(&mut reader, &header, &mut output_writers, &params_list).await?;
+        tracing::info!("... done with filtration");
 
-    tracing::info!("starting filtration...");
-    run_filtration(&mut reader, &header, &mut output_files, &params).await?;
-    tracing::info!("... done with filtration");
+        for output_writer in output_writers.drain(..) {
+            output_writer.into_inner().shutdown().await?;
+        }
+    }
+
+    // use shutdown on writer after resolving https://github.com/zaeleus/noodles/discussions/210
+    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     tracing::info!(
         "All of `seqvars ingest` completed in {:?}",

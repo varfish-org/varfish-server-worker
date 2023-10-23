@@ -6,13 +6,11 @@ use crate::common::{self, worker_version, GenomeRelease};
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::provider::MehariProvider,
-    common::{
-        io::std::open_write_maybe_gz,
-        noodles::{open_vcf_reader, AsyncVcfReader},
-    },
+    common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
 };
 use noodles_vcf as vcf;
 use thousands::Separable;
+use tokio::io::AsyncWriteExt;
 
 pub mod header;
 
@@ -275,16 +273,13 @@ fn copy_format(
 }
 
 /// Process the variants from `input_reader` to `output_writer`.
-async fn process_variants<W>(
-    output_writer: &mut vcf::Writer<W>,
+async fn process_variants(
+    output_writer: &mut AsyncVcfWriter,
     input_reader: &mut AsyncVcfReader,
     output_header: &vcf::Header,
     input_header: &vcf::Header,
     args: &Args,
-) -> Result<(), anyhow::Error>
-where
-    W: std::io::Write,
-{
+) -> Result<(), anyhow::Error> {
     // Open the frequency RocksDB database in read only mode.
     tracing::info!("Opening frequency database");
     let rocksdb_path = format!(
@@ -467,7 +462,7 @@ where
             }
 
             // Write out the record.
-            output_writer.write_record(output_header, &output_record)?;
+            output_writer.write_record(&output_record).await?;
             total_written += 1;
         }
         if let Some(max_var_count) = args.max_var_count {
@@ -522,19 +517,27 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
-    let mut output_writer = { vcf::writer::Writer::new(open_write_maybe_gz(&args.path_out)?) };
-    output_writer
-        .write_header(&output_header)
-        .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
+    {
+        let mut output_writer = open_vcf_writer(&args.path_out).await?;
+        output_writer
+            .write_header(&output_header)
+            .await
+            .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
 
-    process_variants(
-        &mut output_writer,
-        &mut input_reader,
-        &output_header,
-        &input_header,
-        args,
-    )
-    .await?;
+        process_variants(
+            &mut output_writer,
+            &mut input_reader,
+            &output_header,
+            &input_header,
+            args,
+        )
+        .await?;
+
+        output_writer.into_inner().shutdown().await?;
+    }
+
+    // use shutdown on writer after resolving https://github.com/zaeleus/noodles/discussions/210
+    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     tracing::info!(
         "All of `seqvars ingest` completed in {:?}",

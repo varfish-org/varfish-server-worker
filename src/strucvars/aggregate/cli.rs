@@ -12,7 +12,7 @@ use bio::data_structures::interval_tree::IntervalTree;
 use clap::{command, Parser};
 use futures::TryStreamExt;
 use mehari::common::{
-    io::std::{open_write_maybe_gz, read_lines},
+    io::std::{open_write_maybe_bgzf, read_lines},
     noodles::open_vcf_reader,
 };
 
@@ -230,7 +230,7 @@ fn merge_split_files(
     let mut writer = csv::WriterBuilder::new()
         .delimiter(b'\t')
         .has_headers(false)
-        .from_writer(open_write_maybe_gz(path_output_tsv).map_err(|e| {
+        .from_writer(open_write_maybe_bgzf(path_output_tsv).map_err(|e| {
             anyhow::anyhow!("Cannot open {:?} for writing: {:?}", &path_output_tsv, e)
         })?);
 
