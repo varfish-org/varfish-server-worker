@@ -260,7 +260,9 @@ fn merge_split_files(
     }
     tracing::info!("wrote a total of {} records", out_records);
 
+    // writer.sync_all()?;
     writer.flush()?;
+    std::thread::sleep(std::time::Duration::from_millis(100));
 
     Ok(())
 }

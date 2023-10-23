@@ -250,7 +250,7 @@ async fn run_query(
                 .map_err(|e| anyhow::anyhow!("could not write record to unsorted: {}", e))?;
             }
         }
-        tmp_unsorted.flush().map_err(|e| {
+        tmp_unsorted.into_inner()?.sync_all().map_err(|e| {
             anyhow::anyhow!("could not flush temporary output file unsorted: {}", e)
         })?;
     }

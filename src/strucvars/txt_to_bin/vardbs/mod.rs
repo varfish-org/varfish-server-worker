@@ -118,7 +118,7 @@ where
     let before_writing = Instant::now();
     let mut output_file = File::create(&path_output)?;
     output_file.write_all(&bg_db.encode_to_vec())?;
-    output_file.flush()?;
+    output_file.sync_all()?;
     tracing::debug!(
         "total time spent writing {} records: {:?}",
         bg_db.records.len().separate_with_commas(),

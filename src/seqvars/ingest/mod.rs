@@ -533,10 +533,11 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         )
         .await?;
 
-        output_writer.into_inner().shutdown().await?;
+        let mut output_writer = output_writer.into_inner();
+        output_writer.flush().await?;
+        // output_writer.sync_all().await?;
+        output_writer.shutdown().await?;
     }
-
-    // use shutdown on writer after resolving https://github.com/zaeleus/noodles/discussions/210
     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     tracing::info!(
