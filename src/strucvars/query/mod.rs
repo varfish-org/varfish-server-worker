@@ -15,8 +15,8 @@ use std::{
     time::Instant,
 };
 
+use biocommons_bioutils::assemblies::ASSEMBLY_INFOS;
 use clap::{command, Parser};
-use hgvs::static_data::ASSEMBLY_INFOS;
 use indexmap::IndexMap;
 use log::warn;
 use mehari::{

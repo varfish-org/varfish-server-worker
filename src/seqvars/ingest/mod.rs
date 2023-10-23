@@ -326,9 +326,9 @@ where
     ))?;
     tracing::info!("Building transcript interval trees ...");
     let assembly = if args.genomebuild == GenomeRelease::Grch37 {
-        hgvs::static_data::Assembly::Grch37p10
+        biocommons_bioutils::assemblies::Assembly::Grch37p10
     } else {
-        hgvs::static_data::Assembly::Grch38
+        biocommons_bioutils::assemblies::Assembly::Grch38
     };
     let provider = Arc::new(MehariProvider::new(tx_db, assembly));
     let predictor = mehari::annotate::seqvars::csq::ConsequencePredictor::new(provider, assembly);

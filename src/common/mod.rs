@@ -2,10 +2,10 @@
 
 use std::ops::Range;
 
+use biocommons_bioutils::assemblies::Assembly;
 use byte_unit::Byte;
 use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
-use hgvs::static_data::Assembly;
 use indexmap::IndexMap;
 use noodles_vcf as vcf;
 
@@ -551,17 +551,17 @@ mod test {
     #[rstest::rstest]
     #[case(
         crate::common::GenomeRelease::Grch37,
-        hgvs::static_data::Assembly::Grch37p10
+        biocommons_bioutils::assemblies::Assembly::Grch37p10
     )]
     #[case(
         crate::common::GenomeRelease::Grch38,
-        hgvs::static_data::Assembly::Grch38
+        biocommons_bioutils::assemblies::Assembly::Grch38
     )]
     fn assembly_from_genome_release(
         #[case] release: super::GenomeRelease,
-        #[case] assembly: hgvs::static_data::Assembly,
+        #[case] assembly: biocommons_bioutils::assemblies::Assembly,
     ) -> Result<(), anyhow::Error> {
-        let res: hgvs::static_data::Assembly = release.into();
+        let res: biocommons_bioutils::assemblies::Assembly = release.into();
 
         assert_eq!(res, assembly);
 
@@ -571,19 +571,19 @@ mod test {
     #[rstest::rstest]
     #[case(
         crate::common::GenomeRelease::Grch37,
-        hgvs::static_data::Assembly::Grch37
+        biocommons_bioutils::assemblies::Assembly::Grch37
     )]
     #[case(
         crate::common::GenomeRelease::Grch37,
-        hgvs::static_data::Assembly::Grch37p10
+        biocommons_bioutils::assemblies::Assembly::Grch37p10
     )]
     #[case(
         crate::common::GenomeRelease::Grch38,
-        hgvs::static_data::Assembly::Grch38
+        biocommons_bioutils::assemblies::Assembly::Grch38
     )]
     fn genome_release_from_assembly(
         #[case] release: super::GenomeRelease,
-        #[case] assembly: hgvs::static_data::Assembly,
+        #[case] assembly: biocommons_bioutils::assemblies::Assembly,
     ) -> Result<(), anyhow::Error> {
         let res: super::GenomeRelease = assembly.into();
 

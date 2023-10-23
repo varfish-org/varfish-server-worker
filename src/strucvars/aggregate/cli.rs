@@ -27,7 +27,7 @@ use crate::{
 
 /// Create one file with records for each chromosome and SV type.
 fn create_tmp_files(
-    tmp_dir: &tempdir::TempDir,
+    tmp_dir: &tempfile::TempDir,
 ) -> Result<HashMap<(usize, SvType), BufWriter<File>>, anyhow::Error> {
     let mut files = HashMap::new();
 
@@ -45,7 +45,7 @@ fn create_tmp_files(
 
 /// Split the input into one file in `tmp_dir` for each chromosome and SV type.
 fn split_input_by_chrom_and_sv_type(
-    tmp_dir: &tempdir::TempDir,
+    tmp_dir: &tempfile::TempDir,
     input_vcf_paths: Vec<String>,
     genome_release: GenomeRelease,
 ) -> Result<(), anyhow::Error> {
@@ -223,7 +223,7 @@ fn merge_to_out(
 
 /// Perform (chrom, sv_type) wise merging of records in temporary files.
 fn merge_split_files(
-    tmp_dir: &tempdir::TempDir,
+    tmp_dir: &tempfile::TempDir,
     args: &Args,
     path_output_tsv: &Path,
 ) -> Result<(), anyhow::Error> {
@@ -321,7 +321,7 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     trace_rss_now();
 
     // Read all input files and write all records by chromosome and SV type
-    let tmp_dir = tempdir::TempDir::new("vfw")?;
+    let tmp_dir = tempfile::TempDir::new()?;
     tracing::debug!("using tmpdir={:?}", &tmp_dir);
     split_input_by_chrom_and_sv_type(&tmp_dir, input_vcf_paths, args.genome_release)?;
 

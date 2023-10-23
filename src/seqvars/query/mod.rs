@@ -193,7 +193,7 @@ fn run_query(
     annotator: &annonars::Annotator,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
-    let tmp_dir = tempdir::TempDir::new("vfw")?;
+    let tmp_dir = tempfile::TempDir::new()?;
 
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
     let mut stats = QueryStats::default();

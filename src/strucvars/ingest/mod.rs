@@ -313,7 +313,7 @@ fn process_variants(
 
     // Create temporary directory.  We will create one temporary file (containing `jsonl`
     // seriealized `VarFishStrucvarTsvRecord`s) for each SV type and contig.
-    let tmp_dir = tempdir::TempDir::new("vfw")?;
+    let tmp_dir = tempfile::TempDir::new()?;
 
     // Read through input VCF files and write out to temporary files.
     tracing::info!("converting input VCF files to temporary files...");
