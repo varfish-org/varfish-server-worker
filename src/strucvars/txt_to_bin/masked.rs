@@ -2,11 +2,12 @@
 
 use std::{fs::File, io::Write, path::Path, time::Instant};
 
+use mehari::common::io::std::open_read_maybe_gz;
 use prost::Message;
 use thousands::Separable;
 
 use crate::{
-    common::{build_chrom_map, io::std::open_read_maybe_gz, trace_rss_now},
+    common::{build_chrom_map, trace_rss_now},
     strucvars::pbs::{MaskedDatabase, MaskedDbRecord},
 };
 

@@ -4,11 +4,12 @@ use std::path::Path;
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use indexmap::IndexMap;
+use mehari::common::io::std::open_read_maybe_gz;
 use tracing::info;
 
 use crate::{
     common::{build_chrom_map, CHROMS},
-    common::{io::std::open_read_maybe_gz, GenomeRelease, TadSet as TadSetChoice},
+    common::{GenomeRelease, TadSet as TadSetChoice},
 };
 
 use super::{

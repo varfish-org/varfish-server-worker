@@ -2,11 +2,11 @@
 
 use std::io::BufRead;
 
-use mehari::annotate::seqvars::ann::AnnField;
+use mehari::{annotate::seqvars::ann::AnnField, common::io::std::open_read_maybe_gz};
 use noodles_vcf as vcf;
 use thousands::Separable;
 
-use crate::common::{self, io::std::open_read_maybe_gz};
+use crate::common;
 
 /// Arguments for the `seqvars prefilter` subcommand.
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -214,7 +214,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
             )?;
 
             let mut writer = vcf::Writer::new(
-                common::io::std::open_write_maybe_gz(&params.path_out).map_err(|e| {
+                mehari::common::io::std::open_write_maybe_gz(&params.path_out).map_err(|e| {
                     anyhow::anyhow!("could not open output file {}: {}", &params.path_out, e)
                 })?,
             );

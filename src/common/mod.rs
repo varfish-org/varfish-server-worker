@@ -9,8 +9,6 @@ use clap_verbosity_flag::{InfoLevel, Verbosity};
 use indexmap::IndexMap;
 use noodles_vcf as vcf;
 
-pub mod io;
-
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
 pub struct Args {

@@ -10,18 +10,19 @@ use std::{
 
 use bio::data_structures::interval_tree::IntervalTree;
 use clap::{command, Parser};
+use futures::TryStreamExt;
+use mehari::common::{
+    io::std::{open_read_maybe_gz, open_write_maybe_gz, read_lines},
+    noodles::open_vcf_reader,
+};
 use noodles_vcf as vcf;
 use serde_json::to_writer;
 use strum::IntoEnumIterator;
 use thousands::Separable;
+use tokio::io::AsyncBufRead;
 
 use crate::{
-    common::{
-        build_chrom_map,
-        io::std::read_lines,
-        io::std::{open_read_maybe_gz, open_write_maybe_gz},
-        trace_rss_now, GenomeRelease, CHROMS,
-    },
+    common::{build_chrom_map, trace_rss_now, GenomeRelease, CHROMS},
     strucvars::query::schema::SvType,
 };
 
@@ -44,7 +45,9 @@ fn create_tmp_files(
 }
 
 /// Split the input into one file in `tmp_dir` for each chromosome and SV type.
-fn split_input_by_chrom_and_sv_type(
+///
+/// Async I/O is used here because we support reading from S3.
+async fn split_input_by_chrom_and_sv_type(
     tmp_dir: &tempfile::TempDir,
     input_vcf_paths: Vec<String>,
     genome_release: GenomeRelease,
@@ -56,20 +59,17 @@ fn split_input_by_chrom_and_sv_type(
     let mut count_files = 0;
     for path_input in &input_vcf_paths {
         tracing::debug!("parsing {:?}", &path_input);
-        let mut input_reader = open_read_maybe_gz(path_input).map_err(|e| {
-            anyhow::anyhow!("could not open file {} for reading: {}", path_input, e)
-        })?;
-        let mut input_reader = vcf::Reader::new(&mut input_reader);
-        let input_header = input_reader.read_header()?;
+        let mut input_reader = open_vcf_reader(path_input).await?;
+        let input_header = input_reader.read_header().await?;
 
         let (pedigree, _) = crate::common::extract_pedigree_and_case_uuid(&input_header)?;
         let mut prev = std::time::Instant::now();
-        let records = input_reader.records(&input_header);
+        let mut records = input_reader.records(&input_header);
         let before_parsing = Instant::now();
         let mut count_records = 0;
-        for input_record in records {
+        while let Some(input_record) = records.try_next().await? {
             let input_record = super::output::Record::from_vcf(
-                &input_record?,
+                &input_record,
                 &input_header,
                 genome_release,
                 &pedigree,
@@ -293,7 +293,7 @@ pub struct Args {
 }
 
 /// Main entry point for the `strucvars txt-to-bin` command.
-pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     tracing::info!("Starting `strucvars aggregate`");
     tracing::info!("  common_args = {:?}", &common_args);
     tracing::info!("  args = {:?}", &args);
@@ -323,7 +323,7 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     // Read all input files and write all records by chromosome and SV type
     let tmp_dir = tempfile::TempDir::new()?;
     tracing::debug!("using tmpdir={:?}", &tmp_dir);
-    split_input_by_chrom_and_sv_type(&tmp_dir, input_vcf_paths, args.genome_release)?;
+    split_input_by_chrom_and_sv_type(&tmp_dir, input_vcf_paths, args.genome_release).await?;
 
     // Read the output of the previous step by chromosome and SV type, perform
     // overlapping and merge such "compressed" data set to the final output
@@ -342,8 +342,8 @@ mod tests {
     use clap_verbosity_flag::Verbosity;
     use temp_testdir::TempDir;
 
-    #[test]
-    fn run_smoke_gts_path() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn run_smoke_gts_path() -> Result<(), anyhow::Error> {
         let tmp_dir = TempDir::default();
         let common_args = CommonArgs {
             verbose: Verbosity::new(0, 0),
@@ -357,7 +357,7 @@ mod tests {
             slack_ins: 50,
         };
 
-        run(&common_args, &args)?;
+        run(&common_args, &args).await?;
 
         let output = std::fs::read_to_string(tmp_dir.join("out.tsv"))?;
         insta::assert_snapshot!(output);
@@ -365,8 +365,8 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn run_smoke_gts_twice() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn run_smoke_gts_twice() -> Result<(), anyhow::Error> {
         let tmp_dir = TempDir::default();
         let common_args = CommonArgs {
             verbose: Verbosity::new(0, 0),
@@ -383,7 +383,7 @@ mod tests {
             slack_ins: 50,
         };
 
-        run(&common_args, &args)?;
+        run(&common_args, &args).await?;
 
         let output = std::fs::read_to_string(tmp_dir.join("out.tsv"))?;
         insta::assert_snapshot!(output);
@@ -391,8 +391,8 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn run_smoke_at_path() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn run_smoke_at_path() -> Result<(), anyhow::Error> {
         let tmp_dir = TempDir::default();
         let common_args = CommonArgs {
             verbose: Verbosity::new(0, 0),
@@ -406,7 +406,7 @@ mod tests {
             slack_ins: 50,
         };
 
-        run(&common_args, &args)?;
+        run(&common_args, &args).await?;
 
         let output = std::fs::read_to_string(tmp_dir.join("out.tsv"))?;
         insta::assert_snapshot!(output);

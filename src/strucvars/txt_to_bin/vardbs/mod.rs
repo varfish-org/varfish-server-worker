@@ -9,7 +9,6 @@ use anyhow::anyhow;
 use prost::Message;
 use thousands::Separable;
 
-use crate::common::io::std::open_read_maybe_gz;
 use crate::common::{build_chrom_map, trace_rss_now};
 use crate::strucvars;
 use crate::strucvars::aggregate::output::Record as InhouseDbRecord;
@@ -93,7 +92,9 @@ where
         .has_headers(false)
         .comment(Some(b'#'))
         .delimiter(b'\t')
-        .from_reader(open_read_maybe_gz(path_input_tsv.as_ref())?);
+        .from_reader(mehari::common::io::std::open_read_maybe_gz(
+            path_input_tsv.as_ref(),
+        )?);
     let before_parsing = Instant::now();
 
     let records = match input_type {

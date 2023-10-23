@@ -2,12 +2,11 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::{
-    self,
-    io::std::{open_read_maybe_gz, open_write_maybe_gz},
-    worker_version, GenomeRelease,
+use crate::common::{self, worker_version, GenomeRelease};
+use mehari::{
+    annotate::seqvars::provider::MehariProvider,
+    common::io::std::{open_read_maybe_gz, open_write_maybe_gz},
 };
-use mehari::annotate::seqvars::provider::MehariProvider;
 use noodles_vcf as vcf;
 use thousands::Separable;
 

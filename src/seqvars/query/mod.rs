@@ -13,9 +13,10 @@ use clap::{command, Parser};
 use ext_sort::LimitedBufferBuilder;
 use ext_sort::{ExternalSorter, ExternalSorterBuilder};
 use itertools::Itertools;
+use mehari::common::io::std::open_read_maybe_gz;
 use noodles_vcf as vcf;
 
-use mehari::{annotate::seqvars::CHROM_TO_CHROM_NO, common::open_read_maybe_gz};
+use mehari::annotate::seqvars::CHROM_TO_CHROM_NO;
 use rand_core::{RngCore, SeedableRng};
 use thousands::Separable;
 use uuid::Uuid;

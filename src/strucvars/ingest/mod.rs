@@ -2,12 +2,20 @@
 
 use std::io::{BufRead, Write};
 
-use crate::common::{self, io::std::open_write_maybe_gz, worker_version, GenomeRelease};
-use mehari::{annotate::seqvars::AnnotatedVcfWriter, common::open_read_maybe_gz};
+use crate::common::{self, worker_version, GenomeRelease};
+use futures::future::join_all;
+use mehari::{
+    annotate::seqvars::AnnotatedVcfWriter,
+    common::{
+        io::std::open_write_maybe_gz,
+        noodles::{open_vcf_readers, AsyncVcfReader},
+    },
+};
 use rand_core::SeedableRng;
 
 use mehari::annotate::strucvars::guess_sv_caller;
 use noodles_vcf as vcf;
+use tokio::io::AsyncBufRead;
 
 pub mod header;
 
@@ -294,10 +302,10 @@ impl mehari::annotate::seqvars::AnnotatedVcfWriter for WriterWrapper {
 }
 
 /// Write out variants from input files.
-fn process_variants(
+async fn process_variants(
     pedigree: &mehari::ped::PedigreeByName,
     output_writer: &mut dyn mehari::annotate::seqvars::AnnotatedVcfWriter,
-    input_readers: &mut [vcf::Reader<Box<dyn BufRead>>],
+    input_readers: &mut [AsyncVcfReader],
     output_header: &vcf::Header,
     input_header: &[vcf::Header],
     input_sv_callers: &[mehari::annotate::strucvars::SvCaller],
@@ -330,7 +338,8 @@ fn process_variants(
             &tmp_dir,
             &mut std::collections::HashMap::new(),
             &mut rng,
-        )?;
+        )
+        .await?;
     }
     tracing::info!("... done converting input files");
 
@@ -358,7 +367,7 @@ fn process_variants(
 }
 
 /// Main entry point for `strucvars ingest` sub command.
-pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = std::time::Instant::now();
     tracing::info!("args_common = {:#?}", &args_common);
     tracing::info!("args = {:#?}", &args);
@@ -371,35 +380,27 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("pedigre = {:#?}", &pedigree);
 
     tracing::info!("opening input file...");
-    let mut input_readers = args
-        .path_in
-        .iter()
-        .map(|path_in| {
-            vcf::reader::Builder
-                .build_from_reader(open_read_maybe_gz(path_in)?)
-                .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut input_readers = open_vcf_readers(&args.path_in).await?;
 
     tracing::info!("guessing SV callers...");
-    let input_sv_callers = args
-        .path_in
-        .iter()
-        .map(|path| {
-            let reader = open_read_maybe_gz(path)?;
-            guess_sv_caller(reader)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let input_sv_callers = {
+        let mut sv_callers = Vec::new();
+        for mut reader in open_vcf_readers(&args.path_in).await? {
+            sv_callers.push(guess_sv_caller(&mut reader).await?);
+        }
+        sv_callers
+    };
 
     tracing::info!("processing header...");
-    let input_headers = input_readers
-        .iter_mut()
-        .map(|input_reader| {
-            input_reader
-                .read_header()
-                .map_err(|e| anyhow::anyhow!("problem reading VCF header: {}", e))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let input_headers = join_all(
+        input_readers
+            .iter_mut()
+            .map(|input_reader| input_reader.read_header()),
+    )
+    .await
+    .into_iter()
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| anyhow::anyhow!("problem reading header: {}", e))?;
     let sample_names = input_headers
         .first()
         .expect("must have at least one input file")
@@ -439,7 +440,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &input_headers,
         &input_sv_callers,
         args,
-    )?;
+    )
+    .await?;
 
     tracing::info!(
         "All of `strucvars ingest` completed in {:?}",
@@ -453,8 +455,8 @@ mod test {
     use crate::common::GenomeRelease;
 
     #[tracing_test::traced_test]
-    #[test]
-    fn smoke_test_trio() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn smoke_test_trio() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let args_common = Default::default();
@@ -479,15 +481,15 @@ mod test {
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
 
         Ok(())
     }
     #[tracing_test::traced_test]
-    #[test]
-    fn smoke_test_singleton() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn smoke_test_singleton() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let args_common = Default::default();
@@ -515,7 +517,7 @@ mod test {
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
 
@@ -523,8 +525,8 @@ mod test {
     }
 
     #[tracing_test::traced_test]
-    #[test]
-    fn smoke_test_trio_gz() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn smoke_test_trio_gz() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let args_common = Default::default();
@@ -549,7 +551,7 @@ mod test {
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         let mut buffer: Vec<u8> = Vec::new();
         hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
@@ -558,8 +560,8 @@ mod test {
     }
 
     #[tracing_test::traced_test]
-    #[test]
-    fn smoke_test_singleton_gz() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn smoke_test_singleton_gz() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let args_common = Default::default();
@@ -587,7 +589,7 @@ mod test {
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         let mut buffer: Vec<u8> = Vec::new();
         hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
