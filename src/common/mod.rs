@@ -10,6 +10,7 @@ use indexmap::IndexMap;
 use noodles_vcf as vcf;
 
 pub mod noodles;
+pub mod s3;
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
