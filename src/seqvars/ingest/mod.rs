@@ -10,7 +10,6 @@ use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::provider::MehariProvider,
     common::{
-        io::std::is_gz,
         noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
     },
 };
@@ -525,27 +524,11 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
-    // Create temporary directory to use in case of going to S3.
-    let tmpdir = tempfile::tempdir()?;
-    let path_out = if common::s3::s3_mode() {
-        tracing::debug!(
-            "S3 mode, using temporary directory: {}",
-            tmpdir.path().display()
-        );
-        let p = std::path::Path::new(&args.path_out);
-        format!(
-            "{}",
-            tmpdir
-                .path()
-                .join(p.file_name().expect("no file name"))
-                .display()
-        )
-    } else {
-        args.path_out.clone()
-    };
+    // Use output file helper.
+    let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_out)?;
 
     {
-        let mut output_writer = open_vcf_writer(&path_out).await?;
+        let mut output_writer = open_vcf_writer(out_path_helper.path_out()).await?;
         output_writer
             .write_header(&output_header)
             .await
@@ -563,21 +546,8 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         flush_and_shutdown!(output_writer);
     }
 
-    if is_gz(&args.path_out) {
-        tracing::info!("Creating TBI index for BGZF VCF file...");
-        crate::common::noodles::build_tbi(&args.path_out, &format!("{}.tbi", &args.path_out))
-            .await
-            .map_err(|e| anyhow::anyhow!("problem building TBI: {}", e))?;
-        tracing::info!("... done writing TBI index");
-    } else {
-        tracing::info!("(not building TBI index for plain text VCF file");
-    }
-
-    if common::s3::s3_mode() {
-        tracing::info!("Uploading to S3...");
-        common::s3::upload_file(&path_out, &args.path_out).await?;
-        tracing::info!("... done uploading to S3");
-    }
+    out_path_helper.create_tbi_for_bgzf().await?;
+    out_path_helper.upload_for_s3().await?;
 
     tracing::info!(
         "All of `seqvars ingest` completed in {:?}",
