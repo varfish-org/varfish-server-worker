@@ -31,7 +31,7 @@ pub async fn config_from_env() -> Result<aws_sdk_s3::config::Config, anyhow::Err
 pub async fn upload_file(src: &str, dst: &str) -> Result<(), anyhow::Error> {
     let client = aws_sdk_s3::Client::from_conf(config_from_env().await?);
 
-    let (bucket, key) = if let Some((bucket, key)) = dst.split_once("/") {
+    let (bucket, key) = if let Some((bucket, key)) = dst.split_once('/') {
         (bucket.to_string(), key.to_string())
     } else {
         anyhow::bail!("invalid S3 path: {}", dst);

@@ -102,7 +102,7 @@ where
     P: AsRef<Path>,
 {
     let path_string = format!("{}", path.as_ref().display());
-    let (bucket, key) = if let Some((bucket, key)) = path_string.split_once("/") {
+    let (bucket, key) = if let Some((bucket, key)) = path_string.split_once('/') {
         (bucket.to_string(), key.to_string())
     } else {
         anyhow::bail!("invalid S3 path: {}", path.as_ref().display());
@@ -140,7 +140,7 @@ where
 pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<AsyncVcfReader>, anyhow::Error> {
     let mut result = Vec::new();
     for path in paths.iter() {
-        let buf_read = if super::s3::s3_mode() && !path.starts_with("/") {
+        let buf_read = if super::s3::s3_mode() && !path.starts_with('/') {
             s3_open_read_maybe_gz(path).await?
         } else {
             open_read_maybe_gz(path).await?
@@ -163,7 +163,7 @@ pub async fn open_vcf_reader(path_in: &str) -> Result<AsyncVcfReader, anyhow::Er
         Ok(s) => s == "varfish-s3",
         _ => false,
     };
-    if s3_mode && !path_in.starts_with("/") {
+    if s3_mode && !path_in.starts_with('/') {
         Ok(vcf::AsyncReader::new(
             s3_open_read_maybe_gz(path_in)
                 .await
