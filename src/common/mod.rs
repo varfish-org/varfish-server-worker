@@ -500,6 +500,26 @@ pub enum TadSet {
     Hesc,
 }
 
+#[macro_export]
+macro_rules! flush_and_shutdown {
+    ($output_writer:expr) => {
+        let mut write = $output_writer.into_inner();
+        // Flush all buffers.
+        write
+            .as_mut()
+            .flush()
+            .await
+            .map_err(|e| anyhow::anyhow!("problem flushing output VCF file: {}", e))?;
+        // Shutdown the writer.
+        write
+            .shutdown()
+            .await
+            .map_err(|e| anyhow::anyhow!("problem shutting down output VCF file: {}", e))?;
+        // Give the OS some time to actually close the file.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    };
+}
+
 #[cfg(test)]
 mod test {
     use noodles_vcf as vcf;

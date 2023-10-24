@@ -11,7 +11,7 @@ use noodles_vcf as vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
 
-use crate::common;
+use crate::{common, flush_and_shutdown};
 
 /// Arguments for the `seqvars prefilter` subcommand.
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
@@ -243,13 +243,9 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         tracing::info!("... done with filtration");
 
         for output_writer in output_writers.drain(..) {
-            let mut output_writer = output_writer.into_inner();
-            output_writer.flush().await?;
-            // output_writer.sync_all().await?;
-            output_writer.shutdown().await?;
+            flush_and_shutdown!(output_writer);
         }
     }
-    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     tracing::info!(
         "All of `seqvars ingest` completed in {:?}",

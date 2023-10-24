@@ -1,12 +1,12 @@
 //! Implementation of `strucvars ingest` subcommand.
 
 use crate::common::{self, worker_version, GenomeRelease};
+use crate::flush_and_shutdown;
 use futures::future::join_all;
-use mehari::common::noodles::{open_vcf_readers, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
-use rand_core::SeedableRng;
-
 use mehari::annotate::strucvars::guess_sv_caller;
+use mehari::common::noodles::{open_vcf_readers, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
 use noodles_vcf as vcf;
+use rand_core::SeedableRng;
 use tokio::io::AsyncWriteExt;
 
 pub mod header;
@@ -414,12 +414,8 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         )
         .await?;
 
-        let mut output_writer = output_writer.into_inner();
-        output_writer.flush().await?;
-        // output_writer.sync_all().await?;
-        output_writer.shutdown().await?;
+        flush_and_shutdown!(output_writer);
     }
-    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     tracing::info!(
         "All of `strucvars ingest` completed in {:?}",

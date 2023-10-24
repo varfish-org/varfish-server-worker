@@ -2,7 +2,10 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::{self, worker_version, GenomeRelease};
+use crate::{
+    common::{self, worker_version, GenomeRelease},
+    flush_and_shutdown,
+};
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::provider::MehariProvider,
@@ -533,12 +536,8 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         )
         .await?;
 
-        let mut output_writer = output_writer.into_inner();
-        output_writer.flush().await?;
-        // output_writer.sync_all().await?;
-        output_writer.shutdown().await?;
+        flush_and_shutdown!(output_writer);
     }
-    tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
 
     tracing::info!(
         "All of `seqvars ingest` completed in {:?}",
