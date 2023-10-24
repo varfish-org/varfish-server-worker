@@ -4,6 +4,7 @@ use crate::common::{self, worker_version, GenomeRelease};
 use crate::flush_and_shutdown;
 use futures::future::join_all;
 use mehari::annotate::strucvars::guess_sv_caller;
+use mehari::common::io::std::is_gz;
 use mehari::common::noodles::{open_vcf_readers, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
 use noodles_vcf as vcf;
 use rand_core::SeedableRng;
@@ -415,6 +416,16 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         .await?;
 
         flush_and_shutdown!(output_writer);
+    }
+
+    if is_gz(&args.path_out) {
+        tracing::info!("Creating TBI index for BGZF VCF file...");
+        crate::common::noodles::build_tbi(&args.path_out, &format!("{}.tbi", &args.path_out))
+            .await
+            .map_err(|e| anyhow::anyhow!("problem building TBI: {}", e))?;
+        tracing::info!("... done writing TBI index");
+    } else {
+        tracing::info!("(not building TBI index for plain text VCF file");
     }
 
     tracing::info!(

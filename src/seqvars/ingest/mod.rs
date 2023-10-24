@@ -9,7 +9,10 @@ use crate::{
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::provider::MehariProvider,
-    common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+    common::{
+        io::std::is_gz,
+        noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+    },
 };
 use noodles_vcf as vcf;
 use thousands::Separable;
@@ -205,8 +208,10 @@ fn transform_format_value(
                     }
                     vcf::record::genotypes::sample::Value::Array(
                         vcf::record::genotypes::sample::value::Array::Float(sq_values),
-                    ) => vcf::record::genotypes::sample::Value::Float(
-                        sq_values[allele_no - 1].expect("SQ should be float value"),
+                    ) => vcf::record::genotypes::sample::Value::Integer(
+                        sq_values[allele_no - 1]
+                            .expect("SQ should be float value")
+                            .round() as i32,
                     ),
                     _ => return None, // unreachable!("FORMAT/PS must be integer"),
                 }
@@ -537,6 +542,16 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         .await?;
 
         flush_and_shutdown!(output_writer);
+    }
+
+    if is_gz(&args.path_out) {
+        tracing::info!("Creating TBI index for BGZF VCF file...");
+        crate::common::noodles::build_tbi(&args.path_out, &format!("{}.tbi", &args.path_out))
+            .await
+            .map_err(|e| anyhow::anyhow!("problem building TBI: {}", e))?;
+        tracing::info!("... done writing TBI index");
+    } else {
+        tracing::info!("(not building TBI index for plain text VCF file");
     }
 
     tracing::info!(

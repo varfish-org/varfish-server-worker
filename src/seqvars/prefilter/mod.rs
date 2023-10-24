@@ -5,7 +5,10 @@ use std::io::BufRead;
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::ann::AnnField,
-    common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+    common::{
+        io::std::is_gz,
+        noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+    },
 };
 use noodles_vcf as vcf;
 use thousands::Separable;
@@ -244,6 +247,24 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
 
         for output_writer in output_writers.drain(..) {
             flush_and_shutdown!(output_writer);
+        }
+    }
+
+    for params in params_list.iter() {
+        if is_gz(&params.path_out) {
+            tracing::info!("writing TBI index for {}...", &params.path_out);
+            crate::common::noodles::build_tbi(
+                &params.path_out,
+                &format!("{}.tbi", &params.path_out),
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!("problem building TBI: {}", e))?;
+            tracing::info!("... done writing TBI index");
+        } else {
+            tracing::info!(
+                "(not building TBI index for plain text VCF file {}",
+                &params.path_out
+            );
         }
     }
 
