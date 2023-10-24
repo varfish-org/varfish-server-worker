@@ -9,6 +9,8 @@ use clap_verbosity_flag::{InfoLevel, Verbosity};
 use indexmap::IndexMap;
 use noodles_vcf as vcf;
 
+pub mod noodles;
+
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]
 pub struct Args {
@@ -516,7 +518,7 @@ macro_rules! flush_and_shutdown {
             .await
             .map_err(|e| anyhow::anyhow!("problem shutting down output VCF file: {}", e))?;
         // Give the OS some time to actually close the file.
-        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
     };
 }
 

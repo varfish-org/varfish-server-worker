@@ -2365,6 +2365,7 @@ dependencies = [
  "indexmap 2.0.2",
  "noodles-bgzf 0.25.0",
  "noodles-core",
+ "tokio",
 ]
 
 [[package]]
@@ -3931,6 +3932,9 @@ dependencies = [
  "mehari",
  "multimap 0.9.1",
  "noodles-bgzf 0.25.0",
+ "noodles-core",
+ "noodles-csi",
+ "noodles-tabix",
  "noodles-vcf",
  "pretty_assertions",
  "procfs",
