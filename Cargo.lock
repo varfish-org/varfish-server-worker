@@ -2127,9 +2127,9 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.15.0"
+version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1d76c040a31612e37eaecafa50ef2225aae7548c57b6851a633d422a57684d9"
+checksum = "76f6509ba0adfc9edf41a55598c6155841d88b8c801860693994154dea410dcb"
 dependencies = [
  "actix-web",
  "annonars",
@@ -2330,10 +2330,6 @@ dependencies = [
  "bytes",
  "crossbeam-channel",
  "flate2",
- "futures",
- "pin-project-lite",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]
@@ -3934,7 +3930,7 @@ dependencies = [
  "log",
  "mehari",
  "multimap 0.9.1",
- "noodles-bgzf 0.24.0",
+ "noodles-bgzf 0.25.0",
  "noodles-vcf",
  "pretty_assertions",
  "procfs",
