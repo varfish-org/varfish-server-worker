@@ -1,17 +1,11 @@
 //! Common functionality.
 
-use std::{
-    fs::File,
-    io::{BufRead, BufWriter, Write},
-    ops::Range,
-    path::Path,
-};
+use std::ops::Range;
 
+use biocommons_bioutils::assemblies::Assembly;
 use byte_unit::Byte;
 use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
-use flate2::{write::GzEncoder, Compression};
-use hgvs::static_data::Assembly;
 use indexmap::IndexMap;
 use noodles_vcf as vcf;
 
@@ -67,24 +61,6 @@ pub fn build_chrom_map() -> IndexMap<String, usize> {
     result
 }
 
-/// Transparently opena  file with gzip encoder.
-pub fn open_write_maybe_gz<P>(path: P) -> Result<Box<dyn Write>, anyhow::Error>
-where
-    P: AsRef<Path>,
-{
-    if path.as_ref().extension().map(|s| s.to_str()) == Some(Some("gz")) {
-        tracing::trace!("Opening {:?} as gzip for writing", path.as_ref());
-        let file = File::create(path)?;
-        let bufwriter = BufWriter::new(file);
-        let encoder = GzEncoder::new(bufwriter, Compression::default());
-        Ok(Box::new(encoder))
-    } else {
-        tracing::trace!("Opening {:?} as plain text for writing", path.as_ref());
-        let file = File::create(path)?;
-        Ok(Box::new(file))
-    }
-}
-
 // Compute reciprocal overlap between two ranges.
 pub fn reciprocal_overlap(lhs: Range<i32>, rhs: Range<i32>) -> f32 {
     let lhs_b = lhs.start;
@@ -119,18 +95,6 @@ pub fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
     clean_id
         .parse::<u32>()
         .map_err(|e| anyhow::anyhow!("could not parse gene id {:?}: {}", &clean_id, &e))
-}
-
-// The output is wrapped in a Result to allow matching on errors
-// Returns an Iterator to the Reader of the lines of the file.
-pub fn read_lines<P: AsRef<Path>>(
-    filename: P,
-) -> std::io::Result<std::io::Lines<std::io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(std::io::BufReader::new(file).lines())
 }
 
 /// Select the genome release to use.
@@ -536,10 +500,29 @@ pub enum TadSet {
     Hesc,
 }
 
+#[macro_export]
+macro_rules! flush_and_shutdown {
+    ($output_writer:expr) => {
+        let mut write = $output_writer.into_inner();
+        // Flush all buffers.
+        write
+            .as_mut()
+            .flush()
+            .await
+            .map_err(|e| anyhow::anyhow!("problem flushing output VCF file: {}", e))?;
+        // Shutdown the writer.
+        write
+            .shutdown()
+            .await
+            .map_err(|e| anyhow::anyhow!("problem shutting down output VCF file: {}", e))?;
+        // Give the OS some time to actually close the file.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    };
+}
+
 #[cfg(test)]
 mod test {
     use noodles_vcf as vcf;
-    use std::io::Read;
 
     #[test]
     fn trace_rss_now_smoke() {
@@ -550,29 +533,6 @@ mod test {
     fn build_chrom_map_snapshot() {
         let map = super::build_chrom_map();
         insta::assert_yaml_snapshot!(map);
-    }
-
-    #[rstest::rstest]
-    #[case(true)]
-    #[case(false)]
-    fn open_write_maybe_gz(#[case] is_gzip: bool) -> Result<(), anyhow::Error> {
-        mehari::common::set_snapshot_suffix!("{:?}", is_gzip);
-
-        let filename = if is_gzip { "test.txt" } else { "test.txt.gz" };
-        let tmp_dir = temp_testdir::TempDir::default();
-
-        {
-            let mut f = super::open_write_maybe_gz(tmp_dir.join(filename))?;
-            f.flush()?;
-        }
-
-        let mut f = std::fs::File::open(tmp_dir.join(filename)).map(std::io::BufReader::new)?;
-        let mut buf = Vec::new();
-        f.read_to_end(&mut buf)?;
-
-        insta::assert_snapshot!(format!("{:x?}", &buf));
-
-        Ok(())
     }
 
     #[rstest::rstest]
@@ -599,15 +559,6 @@ mod test {
         assert_eq!(expected, actual);
     }
 
-    #[test]
-    fn read_lines() -> Result<(), anyhow::Error> {
-        let lines = super::read_lines("tests/common/lines.txt")?.collect::<Result<Vec<_>, _>>()?;
-
-        insta::assert_yaml_snapshot!(lines);
-
-        Ok(())
-    }
-
     #[rstest::rstest]
     #[case(crate::common::GenomeRelease::Grch37, "GRCh37")]
     #[case(crate::common::GenomeRelease::Grch38, "GRCh38")]
@@ -618,17 +569,17 @@ mod test {
     #[rstest::rstest]
     #[case(
         crate::common::GenomeRelease::Grch37,
-        hgvs::static_data::Assembly::Grch37p10
+        biocommons_bioutils::assemblies::Assembly::Grch37p10
     )]
     #[case(
         crate::common::GenomeRelease::Grch38,
-        hgvs::static_data::Assembly::Grch38
+        biocommons_bioutils::assemblies::Assembly::Grch38
     )]
     fn assembly_from_genome_release(
         #[case] release: super::GenomeRelease,
-        #[case] assembly: hgvs::static_data::Assembly,
+        #[case] assembly: biocommons_bioutils::assemblies::Assembly,
     ) -> Result<(), anyhow::Error> {
-        let res: hgvs::static_data::Assembly = release.into();
+        let res: biocommons_bioutils::assemblies::Assembly = release.into();
 
         assert_eq!(res, assembly);
 
@@ -638,19 +589,19 @@ mod test {
     #[rstest::rstest]
     #[case(
         crate::common::GenomeRelease::Grch37,
-        hgvs::static_data::Assembly::Grch37
+        biocommons_bioutils::assemblies::Assembly::Grch37
     )]
     #[case(
         crate::common::GenomeRelease::Grch37,
-        hgvs::static_data::Assembly::Grch37p10
+        biocommons_bioutils::assemblies::Assembly::Grch37p10
     )]
     #[case(
         crate::common::GenomeRelease::Grch38,
-        hgvs::static_data::Assembly::Grch38
+        biocommons_bioutils::assemblies::Assembly::Grch38
     )]
     fn genome_release_from_assembly(
         #[case] release: super::GenomeRelease,
-        #[case] assembly: hgvs::static_data::Assembly,
+        #[case] assembly: biocommons_bioutils::assemblies::Assembly,
     ) -> Result<(), anyhow::Error> {
         let res: super::GenomeRelease = assembly.into();
 

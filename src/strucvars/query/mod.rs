@@ -15,8 +15,10 @@ use std::{
     time::Instant,
 };
 
+use anyhow::anyhow;
+use biocommons_bioutils::assemblies::ASSEMBLY_INFOS;
 use clap::{command, Parser};
-use hgvs::static_data::ASSEMBLY_INFOS;
+use futures::TryStreamExt;
 use indexmap::IndexMap;
 use log::warn;
 use mehari::{
@@ -24,10 +26,10 @@ use mehari::{
         seqvars::{provider::TxIntervalTrees, CHROM_TO_CHROM_NO},
         strucvars::csq::interface::StrandOrientation,
     },
-    common::open_read_maybe_gz,
+    common::noodles::open_vcf_reader,
     db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
 };
-use noodles_vcf as vcf;
+
 use rand_core::{RngCore, SeedableRng};
 use serde::Serialize;
 use thousands::Separable;
@@ -212,7 +214,7 @@ struct QueryStats {
 
 /// Run the `args.path_input` VCF file and run through the given `interpreter` writing to
 /// `args.path_output`.
-fn run_query(
+async fn run_query(
     interpreter: &QueryInterpreter,
     args: &Args,
     dbs: &InMemoryDbs,
@@ -226,11 +228,8 @@ fn run_query(
     let mut stats = QueryStats::default();
 
     // Open VCF file, create reader, and read header.
-    let mut input_reader = open_read_maybe_gz(&args.path_input).map_err(|e| {
-        anyhow::anyhow!("could not open file {} for reading: {}", args.path_input, e)
-    })?;
-    let mut input_reader = vcf::Reader::new(&mut input_reader);
-    let input_header = input_reader.read_header()?;
+    let mut input_reader = open_vcf_reader(&args.path_input).await?;
+    let input_header = input_reader.read_header().await?;
 
     // Create output TSV writer.
     let mut csv_writer = csv::WriterBuilder::new()
@@ -240,9 +239,14 @@ fn run_query(
         .from_path(&args.path_output)?;
 
     // Read through input records using the query interpreter as a filter
-    for input_record in input_reader.records(&input_header) {
+    let mut records = input_reader.records(&input_header);
+    while let Some(input_record) = records
+        .try_next()
+        .await
+        .map_err(|e| anyhow!("problem reading VCF: {}", e))?
+    {
         stats.count_total += 1;
-        let record_sv = StructuralVariant::from_vcf(&input_record?, &input_header)
+        let record_sv = StructuralVariant::from_vcf(&input_record, &input_header)
             .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
 
         tracing::debug!("processing record {:?}", record_sv);
@@ -918,7 +922,7 @@ pub fn load_databases(
 }
 
 /// Main entry point for `sv query` sub command.
-pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = Instant::now();
     tracing::info!("args_common = {:?}", &args_common);
     tracing::info!("args = {:?}", &args);
@@ -1003,7 +1007,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         &mehari_tx_idx,
         &chrom_to_acc,
         &mut rng,
-    )?;
+    )
+    .await?;
     tracing::info!("... done running query in {:?}", before_query.elapsed());
     tracing::info!(
         "summary: {} records passed out of {}",
@@ -1027,8 +1032,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 #[cfg(test)]
 mod test {
     #[tracing_test::traced_test]
-    #[test]
-    fn smoke_test() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn smoke_test() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
         let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());
 
@@ -1046,7 +1051,7 @@ mod test {
             max_tad_distance: 10_000,
             rng_seed: Some(42),
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         insta::assert_snapshot!(std::fs::read_to_string(args.path_output.as_str())?);
 

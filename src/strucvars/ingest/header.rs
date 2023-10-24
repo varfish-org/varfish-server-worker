@@ -289,8 +289,8 @@ mod test {
     #[case("tests/strucvars/ingest/manta-min.vcf")]
     #[case("tests/strucvars/ingest/melt-min.vcf")]
     #[case("tests/strucvars/ingest/popdel-min.vcf")]
-
-    fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
@@ -300,8 +300,8 @@ mod test {
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {
-            let reader = mehari::common::open_read_maybe_gz(path)?;
-            vec![mehari::annotate::strucvars::guess_sv_caller(reader)?]
+            let mut reader = mehari::common::noodles::open_vcf_reader(path).await?;
+            vec![mehari::annotate::strucvars::guess_sv_caller(&mut reader).await?]
         };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
         let output_vcf_header = super::build_output_header(
@@ -334,7 +334,8 @@ mod test {
     #[case("tests/strucvars/ingest/manta-min.vcf")]
     #[case("tests/strucvars/ingest/melt-min.vcf")]
     #[case("tests/strucvars/ingest/popdel-min.vcf")]
-    fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
@@ -344,8 +345,8 @@ mod test {
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {
-            let reader = mehari::common::open_read_maybe_gz(path)?;
-            vec![mehari::annotate::strucvars::guess_sv_caller(reader)?]
+            let mut reader = mehari::common::noodles::open_vcf_reader(path).await?;
+            vec![mehari::annotate::strucvars::guess_sv_caller(&mut reader).await?]
         };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
         let output_vcf_header = super::build_output_header(

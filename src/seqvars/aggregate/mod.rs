@@ -2,7 +2,8 @@
 
 pub mod ds;
 
-use mehari::common::open_read_maybe_gz;
+use futures::TryStreamExt;
+use mehari::common::noodles::open_vcf_reader;
 use noodles_vcf as vcf;
 use rayon::prelude::*;
 use std::sync::Arc;
@@ -144,26 +145,30 @@ fn handle_record(
 }
 
 /// Import one VCF file into the database.
-fn import_vcf(
+///
+/// This function is `async` because we potentially need to read from S3.
+async fn import_vcf(
     db: &Arc<rocksdb::TransactionDB<rocksdb::MultiThreaded>>,
     path_input: &str,
     cf_counts: &str,
     cf_carriers: &str,
 ) -> Result<(), anyhow::Error> {
-    let mut input_reader = open_read_maybe_gz(path_input)
+    let mut input_reader = open_vcf_reader(path_input)
+        .await
         .map_err(|e| anyhow::anyhow!("could not open file {} for reading: {}", path_input, e))?;
-    let mut input_reader = vcf::Reader::new(&mut input_reader);
-    let input_header = input_reader.read_header()?;
+    let input_header = input_reader.read_header().await?;
 
     let cf_counts = db.cf_handle(cf_counts).expect("checked earlier");
     let cf_carriers = db.cf_handle(cf_carriers).expect("checked earlier");
 
     let (pedigree, case_uuid) = common::extract_pedigree_and_case_uuid(&input_header)?;
     let mut prev = std::time::Instant::now();
-    let records = input_reader.records(&input_header);
-    for input_record in records {
-        let input_record = input_record?;
-
+    let mut records = input_reader.records(&input_header);
+    while let Some(input_record) = records
+        .try_next()
+        .await
+        .map_err(|e| anyhow::anyhow!("problem reading VCF file {}: {}", path_input, e))?
+    {
         // Obtain counts from the current variant.
         let (this_counts_data, this_carrier_data) =
             handle_record(&input_record, &input_header, &pedigree, &case_uuid)?;
@@ -263,7 +268,19 @@ fn vcf_import(
     path_input
         .par_iter()
         .map(|path_input| {
-            import_vcf(db, path_input, cf_counts, cf_carriers)
+            // We create a Tokio scheduler for the current file as we need it
+            // to wait / block for the VCF import running in the current Rayon
+            // thread.
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "building Tokio runtime for VCF file {} failed: {}",
+                        path_input,
+                        e
+                    )
+                })?
+                .block_on(import_vcf(db, path_input, cf_counts, cf_carriers))
                 .map_err(|e| anyhow::anyhow!("processing VCF file {} failed: {}", path_input, e))
         })
         .collect::<Result<Vec<_>, _>>()
@@ -341,7 +358,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         );
     }
 
-    // scope for cleanup
+    // scope for compaction
     {
         let db = Arc::new(rocksdb::DB::open_cf_with_opts(
             &options,

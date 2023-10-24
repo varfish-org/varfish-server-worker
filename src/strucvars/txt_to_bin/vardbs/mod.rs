@@ -6,7 +6,6 @@ use std::path::Path;
 use std::time::Instant;
 
 use anyhow::anyhow;
-use mehari::common::open_read_maybe_gz;
 use prost::Message;
 use thousands::Separable;
 
@@ -93,7 +92,9 @@ where
         .has_headers(false)
         .comment(Some(b'#'))
         .delimiter(b'\t')
-        .from_reader(open_read_maybe_gz(path_input_tsv.as_ref())?);
+        .from_reader(mehari::common::io::std::open_read_maybe_gz(
+            path_input_tsv.as_ref(),
+        )?);
     let before_parsing = Instant::now();
 
     let records = match input_type {
@@ -117,7 +118,7 @@ where
     let before_writing = Instant::now();
     let mut output_file = File::create(&path_output)?;
     output_file.write_all(&bg_db.encode_to_vec())?;
-    output_file.flush()?;
+    output_file.sync_all()?;
     tracing::debug!(
         "total time spent writing {} records: {:?}",
         bg_db.records.len().separate_with_commas(),

@@ -2,11 +2,18 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::{self, open_write_maybe_gz, worker_version, GenomeRelease};
-use mehari::annotate::seqvars::provider::MehariProvider;
-use mehari::common::open_read_maybe_gz;
+use crate::{
+    common::{self, worker_version, GenomeRelease},
+    flush_and_shutdown,
+};
+use futures::TryStreamExt;
+use mehari::{
+    annotate::seqvars::provider::MehariProvider,
+    common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+};
 use noodles_vcf as vcf;
 use thousands::Separable;
+use tokio::io::AsyncWriteExt;
 
 pub mod header;
 
@@ -269,17 +276,13 @@ fn copy_format(
 }
 
 /// Process the variants from `input_reader` to `output_writer`.
-fn process_variants<R, W>(
-    output_writer: &mut vcf::Writer<W>,
-    input_reader: &mut vcf::Reader<R>,
+async fn process_variants(
+    output_writer: &mut AsyncVcfWriter,
+    input_reader: &mut AsyncVcfReader,
     output_header: &vcf::Header,
     input_header: &vcf::Header,
     args: &Args,
-) -> Result<(), anyhow::Error>
-where
-    R: std::io::BufRead,
-    W: std::io::Write,
-{
+) -> Result<(), anyhow::Error> {
     // Open the frequency RocksDB database in read only mode.
     tracing::info!("Opening frequency database");
     let rocksdb_path = format!(
@@ -323,9 +326,9 @@ where
     ))?;
     tracing::info!("Building transcript interval trees ...");
     let assembly = if args.genomebuild == GenomeRelease::Grch37 {
-        hgvs::static_data::Assembly::Grch37p10
+        biocommons_bioutils::assemblies::Assembly::Grch37p10
     } else {
-        hgvs::static_data::Assembly::Grch38
+        biocommons_bioutils::assemblies::Assembly::Grch38
     };
     let provider = Arc::new(MehariProvider::new(tx_db, assembly));
     let predictor = mehari::annotate::seqvars::csq::ConsequencePredictor::new(provider, assembly);
@@ -352,124 +355,119 @@ where
     let mut total_written = 0usize;
     let mut records = input_reader.records(input_header);
     let known_format_keys = KNOWN_FORMAT_KEYS.get_or_init(Default::default);
-    loop {
-        if let Some(input_record) = records.next() {
-            let input_record = input_record?;
+    while let Some(input_record) = records
+        .try_next()
+        .await
+        .map_err(|e| anyhow::anyhow!("problem reading input VCF file: {}", e))?
+    {
+        for (allele_no, alt_allele) in input_record.alternate_bases().iter().enumerate() {
+            let allele_no = allele_no + 1;
+            // Construct record with first few fields describing one variant allele.
+            let builder = vcf::Record::builder()
+                .set_chromosome(input_record.chromosome().clone())
+                .set_position(input_record.position())
+                .set_reference_bases(input_record.reference_bases().clone())
+                .set_alternate_bases(vcf::record::AlternateBases::from(vec![alt_allele.clone()]));
 
-            for (allele_no, alt_allele) in input_record.alternate_bases().iter().enumerate() {
-                let allele_no = allele_no + 1;
-                // Construct record with first few fields describing one variant allele.
-                let builder = vcf::Record::builder()
-                    .set_chromosome(input_record.chromosome().clone())
-                    .set_position(input_record.position())
-                    .set_reference_bases(input_record.reference_bases().clone())
-                    .set_alternate_bases(vcf::record::AlternateBases::from(vec![
-                        alt_allele.clone()
-                    ]));
+            // Copy over the well-known FORMAT fields and construct output record.
+            let builder = copy_format(
+                &input_record,
+                builder,
+                &idx_output_to_input,
+                allele_no,
+                known_format_keys,
+            )?;
 
-                // Copy over the well-known FORMAT fields and construct output record.
-                let builder = copy_format(
-                    &input_record,
-                    builder,
-                    &idx_output_to_input,
-                    allele_no,
-                    known_format_keys,
-                )?;
+            let mut output_record = builder.build()?;
 
-                let mut output_record = builder.build()?;
+            // Obtain annonars variant key from current allele for RocksDB lookup.
+            let vcf_var = annonars::common::keys::Var::from_vcf_allele(&output_record, 0);
 
-                // Obtain annonars variant key from current allele for RocksDB lookup.
-                let vcf_var = annonars::common::keys::Var::from_vcf_allele(&output_record, 0);
+            // Skip records with a deletion as alternative allele.
+            if vcf_var.alternative == "*" {
+                continue;
+            }
 
-                // Skip records with a deletion as alternative allele.
-                if vcf_var.alternative == "*" {
-                    continue;
-                }
+            if prev.elapsed().as_secs() >= 60 {
+                tracing::info!("at {:?}", &vcf_var);
+                prev = std::time::Instant::now();
+            }
 
-                if prev.elapsed().as_secs() >= 60 {
-                    tracing::info!("at {:?}", &vcf_var);
-                    prev = std::time::Instant::now();
-                }
+            // Only attempt lookups into RocksDB for canonical contigs.
+            if annonars::common::cli::is_canonical(vcf_var.chrom.as_str()) {
+                // Build key for RocksDB database from `vcf_var`.
+                let key: Vec<u8> = vcf_var.clone().into();
 
-                // Only attempt lookups into RocksDB for canonical contigs.
-                if annonars::common::cli::is_canonical(vcf_var.chrom.as_str()) {
-                    // Build key for RocksDB database from `vcf_var`.
-                    let key: Vec<u8> = vcf_var.clone().into();
-
-                    // Annotate with frequency.
-                    if mehari::annotate::seqvars::CHROM_AUTO.contains(vcf_var.chrom.as_str()) {
-                        mehari::annotate::seqvars::annotate_record_auto(
-                            &db_freq,
-                            &cf_autosomal,
-                            &key,
-                            &mut output_record,
-                        )?;
-                    } else if mehari::annotate::seqvars::CHROM_XY.contains(vcf_var.chrom.as_str()) {
-                        mehari::annotate::seqvars::annotate_record_xy(
-                            &db_freq,
-                            &cf_gonosomal,
-                            &key,
-                            &mut output_record,
-                        )?;
-                    } else if mehari::annotate::seqvars::CHROM_MT.contains(vcf_var.chrom.as_str()) {
-                        mehari::annotate::seqvars::annotate_record_mt(
-                            &db_freq,
-                            &cf_mtdna,
-                            &key,
-                            &mut output_record,
-                        )?;
-                    } else {
-                        tracing::trace!(
-                            "Record @{:?} on non-canonical chromosome, skipping.",
-                            &vcf_var
-                        );
-                    }
-
-                    // Annotate with ClinVar information.
-                    mehari::annotate::seqvars::annotate_record_clinvar(
-                        &db_clinvar,
-                        &cf_clinvar,
+                // Annotate with frequency.
+                if mehari::annotate::seqvars::CHROM_AUTO.contains(vcf_var.chrom.as_str()) {
+                    mehari::annotate::seqvars::annotate_record_auto(
+                        &db_freq,
+                        &cf_autosomal,
                         &key,
                         &mut output_record,
                     )?;
+                } else if mehari::annotate::seqvars::CHROM_XY.contains(vcf_var.chrom.as_str()) {
+                    mehari::annotate::seqvars::annotate_record_xy(
+                        &db_freq,
+                        &cf_gonosomal,
+                        &key,
+                        &mut output_record,
+                    )?;
+                } else if mehari::annotate::seqvars::CHROM_MT.contains(vcf_var.chrom.as_str()) {
+                    mehari::annotate::seqvars::annotate_record_mt(
+                        &db_freq,
+                        &cf_mtdna,
+                        &key,
+                        &mut output_record,
+                    )?;
+                } else {
+                    tracing::trace!(
+                        "Record @{:?} on non-canonical chromosome, skipping.",
+                        &vcf_var
+                    );
                 }
 
-                let annonars::common::keys::Var {
-                    chrom,
-                    pos,
+                // Annotate with ClinVar information.
+                mehari::annotate::seqvars::annotate_record_clinvar(
+                    &db_clinvar,
+                    &cf_clinvar,
+                    &key,
+                    &mut output_record,
+                )?;
+            }
+
+            let annonars::common::keys::Var {
+                chrom,
+                pos,
+                reference,
+                alternative,
+            } = vcf_var;
+
+            // Annotate with variant effect.
+            if let Some(ann_fields) =
+                predictor.predict(&mehari::annotate::seqvars::csq::VcfVariant {
+                    chromosome: chrom,
+                    position: pos,
                     reference,
                     alternative,
-                } = vcf_var;
-
-                // Annotate with variant effect.
-                if let Some(ann_fields) =
-                    predictor.predict(&mehari::annotate::seqvars::csq::VcfVariant {
-                        chromosome: chrom,
-                        position: pos,
-                        reference,
-                        alternative,
-                    })?
-                {
-                    if !ann_fields.is_empty() {
-                        output_record.info_mut().insert(
-                            "ANN".parse()?,
-                            Some(vcf::record::info::field::Value::Array(
-                                vcf::record::info::field::value::Array::String(
-                                    ann_fields.iter().map(|ann| Some(ann.to_string())).collect(),
-                                ),
-                            )),
-                        );
-                    }
+                })?
+            {
+                if !ann_fields.is_empty() {
+                    output_record.info_mut().insert(
+                        "ANN".parse()?,
+                        Some(vcf::record::info::field::Value::Array(
+                            vcf::record::info::field::value::Array::String(
+                                ann_fields.iter().map(|ann| Some(ann.to_string())).collect(),
+                            ),
+                        )),
+                    );
                 }
-
-                // Write out the record.
-                output_writer.write_record(output_header, &output_record)?;
-                total_written += 1;
             }
-        } else {
-            break; // all done
-        }
 
+            // Write out the record.
+            output_writer.write_record(&output_record).await?;
+            total_written += 1;
+        }
         if let Some(max_var_count) = args.max_var_count {
             if total_written >= max_var_count {
                 tracing::warn!(
@@ -490,7 +488,7 @@ where
 }
 
 /// Main entry point for `seqvars ingest` sub command.
-pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = std::time::Instant::now();
     tracing::info!("args_common = {:#?}", &args_common);
     tracing::info!("args = {:#?}", &args);
@@ -503,15 +501,14 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("pedigre = {:#?}", &pedigree);
 
     tracing::info!("opening input file...");
-    let mut input_reader = {
-        vcf::reader::Builder
-            .build_from_reader(open_read_maybe_gz(&args.path_in)?)
-            .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?
-    };
+    let mut input_reader = open_vcf_reader(&args.path_in)
+        .await
+        .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?;
 
     tracing::info!("processing header...");
     let input_header = input_reader
         .read_header()
+        .await
         .map_err(|e| anyhow::anyhow!("problem reading VCF header: {}", e))?;
     let output_header = header::build_output_header(
         &input_header,
@@ -523,18 +520,24 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
-    let mut output_writer = { vcf::writer::Writer::new(open_write_maybe_gz(&args.path_out)?) };
-    output_writer
-        .write_header(&output_header)
-        .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
+    {
+        let mut output_writer = open_vcf_writer(&args.path_out).await?;
+        output_writer
+            .write_header(&output_header)
+            .await
+            .map_err(|e| anyhow::anyhow!("problem writing header: {}", e))?;
 
-    process_variants(
-        &mut output_writer,
-        &mut input_reader,
-        &output_header,
-        &input_header,
-        args,
-    )?;
+        process_variants(
+            &mut output_writer,
+            &mut input_reader,
+            &output_header,
+            &input_header,
+            args,
+        )
+        .await?;
+
+        flush_and_shutdown!(output_writer);
+    }
 
     tracing::info!(
         "All of `seqvars ingest` completed in {:?}",
@@ -557,7 +560,8 @@ mod test {
     #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
     #[case("tests/seqvars/ingest/NA12878_dragen.vcf")]
     #[case("tests/seqvars/ingest/Case_1.vcf")]
-    fn result_snapshot_test(#[case] path: &str) -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn result_snapshot_test(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!(
             "{}",
             path.split('/').last().unwrap().replace('.', "_")
@@ -580,15 +584,15 @@ mod test {
                 .expect("invalid path")
                 .into(),
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
 
         Ok(())
     }
 
-    #[test]
-    fn result_snapshot_test_gz() -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn result_snapshot_test_gz() -> Result<(), anyhow::Error> {
         let tmpdir = temp_testdir::TempDir::default();
 
         let path_in: String = "tests/seqvars/ingest/NA12878_dragen.vcf.gz".into();
@@ -609,7 +613,7 @@ mod test {
             path_in,
             path_out,
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         let mut buffer: Vec<u8> = Vec::new();
         hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;

@@ -54,7 +54,7 @@ expression: "std::fs::read_to_string(&format!(\"{}/out-1.vcf\",\n               
 ##PEDIGREE=<ID=Case_1_mother-N1-DNA1-WGS1>
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="GatkHaplotypeCaller",Version="3.7-0-gcfedb67">
-##x-varfish-prefilter-params=
+##x-varfish-prefilter-params={"path_out":"<stripped>","max_freq":0.01,"max_exon_dist":200}
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Case_1_father-N1-DNA1-WGS1	Case_1_index-N1-DNA1-WGS1	Case_1_mother-N1-DNA1-WGS1
 17	41210126	.	C	CTAGCACTT	.	.	gnomad_exomes_an=31272;gnomad_exomes_hom=0;gnomad_exomes_het=85;gnomad_genomes_an=0;gnomad_genomes_hom=0;gnomad_genomes_het=0;ANN=CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007294.4|Coding|18/22|c.5194-975_5194-974insAAGTGCTA|p.?|5307/7088|5194/5592||-974|,CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007297.4|Coding|17/21|c.5053-975_5053-974insAAGTGCTA|p.?|5247/7028|5053/5451||-974|,CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007299.4|Coding|18/21|c.1882-975_1882-974insAAGTGCTA|p.?|1989/3696|1882/2100||-974|,CTAGCACTT|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007300.4|Coding|19/23|c.5257-975_5257-974insAAGTGCTA|p.?|5370/7151|5257/5655||-974|	GT:AD:DP:GQ	0/0:29:29:87	0/1:23:36:99	0/1:15:32:99
 MT	750	.	A	G	.	.	.	GT:AD:DP:GQ	1/1:0:2757:99	1/1:0:2392:99	1/1:0:1621:99

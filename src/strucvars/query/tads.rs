@@ -4,7 +4,7 @@ use std::path::Path;
 
 use bio::data_structures::interval_tree::ArrayBackedIntervalTree;
 use indexmap::IndexMap;
-use mehari::common::open_read_maybe_gz;
+use mehari::common::io::std::open_read_maybe_gz;
 use tracing::info;
 
 use crate::{

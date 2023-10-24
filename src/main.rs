@@ -71,7 +71,8 @@ enum SeqvarsCommands {
     Query(seqvars::query::Args),
 }
 
-fn main() -> Result<(), anyhow::Error> {
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
     let cli = Cli::parse();
 
     // Build a tracing subscriber according to the configuration in `cli.common`.
@@ -89,43 +90,42 @@ fn main() -> Result<(), anyhow::Error> {
         })
         .compact()
         .finish();
+    tracing::subscriber::set_global_default(collector)?;
 
     // Install collector and go into sub commands.
     let term = Term::stderr();
-    tracing::subscriber::with_default(collector, || {
-        match &cli.command {
-            Commands::Seqvars(seqvars) => match &seqvars.command {
-                SeqvarsCommands::Aggregate(args) => {
-                    seqvars::aggregate::run(&cli.common, args)?;
-                }
-                SeqvarsCommands::Ingest(args) => {
-                    seqvars::ingest::run(&cli.common, args)?;
-                }
-                SeqvarsCommands::Prefilter(args) => {
-                    seqvars::prefilter::run(&cli.common, args)?;
-                }
-                SeqvarsCommands::Query(args) => {
-                    seqvars::query::run(&cli.common, args)?;
-                }
-            },
-            Commands::Strucvars(strucvars) => match &strucvars.command {
-                StrucvarsCommands::Aggregate(args) => {
-                    strucvars::aggregate::cli::run(&cli.common, args)?;
-                }
-                StrucvarsCommands::Ingest(args) => {
-                    strucvars::ingest::run(&cli.common, args)?;
-                }
-                StrucvarsCommands::Query(args) => {
-                    strucvars::query::run(&cli.common, args)?;
-                }
-                StrucvarsCommands::TxtToBin(args) => {
-                    strucvars::txt_to_bin::cli::run(&cli.common, args)?;
-                }
-            },
-        }
-
-        Ok::<(), anyhow::Error>(())
-    })?;
+    match &cli.command {
+        Commands::Seqvars(seqvars) => match &seqvars.command {
+            SeqvarsCommands::Aggregate(args) => {
+                // Note that aggregate is not async as it uses Rayon and will
+                // block internally for the read files.
+                seqvars::aggregate::run(&cli.common, args)?;
+            }
+            SeqvarsCommands::Ingest(args) => {
+                seqvars::ingest::run(&cli.common, args).await?;
+            }
+            SeqvarsCommands::Prefilter(args) => {
+                seqvars::prefilter::run(&cli.common, args).await?;
+            }
+            SeqvarsCommands::Query(args) => {
+                seqvars::query::run(&cli.common, args).await?;
+            }
+        },
+        Commands::Strucvars(strucvars) => match &strucvars.command {
+            StrucvarsCommands::Aggregate(args) => {
+                strucvars::aggregate::cli::run(&cli.common, args).await?;
+            }
+            StrucvarsCommands::Ingest(args) => {
+                strucvars::ingest::run(&cli.common, args).await?;
+            }
+            StrucvarsCommands::Query(args) => {
+                strucvars::query::run(&cli.common, args).await?;
+            }
+            StrucvarsCommands::TxtToBin(args) => {
+                strucvars::txt_to_bin::cli::run(&cli.common, args)?;
+            }
+        },
+    }
     term.write_line(&format!("All done. Have a nice day!{}", Emoji(" 😃", "")))?;
 
     Ok(())

@@ -12,10 +12,11 @@ use std::time::Instant;
 use clap::{command, Parser};
 use ext_sort::LimitedBufferBuilder;
 use ext_sort::{ExternalSorter, ExternalSorterBuilder};
+use futures::TryStreamExt;
 use itertools::Itertools;
-use noodles_vcf as vcf;
+use mehari::common::noodles::open_vcf_reader;
 
-use mehari::{annotate::seqvars::CHROM_TO_CHROM_NO, common::open_read_maybe_gz};
+use mehari::annotate::seqvars::CHROM_TO_CHROM_NO;
 use rand_core::{RngCore, SeedableRng};
 use thousands::Separable;
 use uuid::Uuid;
@@ -187,13 +188,13 @@ fn passes_for_gene(
 
 /// Run the `args.path_input` VCF file and run through the given `interpreter` writing to
 /// `args.path_output`.
-fn run_query(
+async fn run_query(
     interpreter: &interpreter::QueryInterpreter,
     args: &Args,
     annotator: &annonars::Annotator,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
-    let tmp_dir = tempdir::TempDir::new("vfw")?;
+    let tmp_dir = tempfile::TempDir::new()?;
 
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
     let mut stats = QueryStats::default();
@@ -202,11 +203,10 @@ fn run_query(
     let mut uuid_buf = [0u8; 16];
 
     // Open VCF file, create reader, and read header.
-    let mut input_reader = open_read_maybe_gz(&args.path_input).map_err(|e| {
+    let mut input_reader = open_vcf_reader(&args.path_input).await.map_err(|e| {
         anyhow::anyhow!("could not open file {} for reading: {}", args.path_input, e)
     })?;
-    let mut input_reader = vcf::Reader::new(&mut input_reader);
-    let input_header = input_reader.read_header()?;
+    let input_header = input_reader.read_header().await?;
 
     let path_unsorted = tmp_dir.path().join("unsorted.jsonl");
     let path_by_hgnc = tmp_dir.path().join("by_hgnc_filtered.jsonl");
@@ -220,9 +220,14 @@ fn run_query(
             .map(std::io::BufWriter::new)
             .map_err(|e| anyhow::anyhow!("could not create temporary unsorted file: {}", e))?;
 
-        for input_record in input_reader.records(&input_header) {
+        let mut records = input_reader.records(&input_header);
+        while let Some(input_record) = records
+            .try_next()
+            .await
+            .map_err(|e| anyhow::anyhow!("could not read VCF record: {}", e))?
+        {
             stats.count_total += 1;
-            let record_seqvar = SequenceVariant::from_vcf(&input_record?, &input_header)
+            let record_seqvar = SequenceVariant::from_vcf(&input_record, &input_header)
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
             tracing::debug!("processing record {:?}", record_seqvar);
 
@@ -245,7 +250,7 @@ fn run_query(
                 .map_err(|e| anyhow::anyhow!("could not write record to unsorted: {}", e))?;
             }
         }
-        tmp_unsorted.flush().map_err(|e| {
+        tmp_unsorted.into_inner()?.sync_all().map_err(|e| {
             anyhow::anyhow!("could not flush temporary output file unsorted: {}", e)
         })?;
     }
@@ -464,7 +469,7 @@ fn create_payload_and_write_record(
 }
 
 /// Main entry point for `seqvars query` sub command.
-pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = Instant::now();
     tracing::info!("args_common = {:?}", &args_common);
     tracing::info!("args = {:?}", &args);
@@ -529,7 +534,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         args,
         &annotator,
         &mut rng,
-    )?;
+    )
+    .await?;
     tracing::info!("... done running query in {:?}", before_query.elapsed());
     tracing::info!(
         "summary: {} records passed out of {}",
@@ -647,7 +653,8 @@ mod test {
     #[rstest::rstest]
     #[case("tests/seqvars/query/Case_1.ingested.vcf")]
     #[case("tests/seqvars/query/dragen.ingested.vcf")]
-    fn smoke_test(#[case] path_input: &str) -> Result<(), anyhow::Error> {
+    #[tokio::test]
+    async fn smoke_test(#[case] path_input: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
 
         let tmpdir = temp_testdir::TempDir::default();
@@ -668,7 +675,7 @@ mod test {
             result_set_id: None,
             case_uuid_id: None,
         };
-        super::run(&args_common, &args)?;
+        super::run(&args_common, &args).await?;
 
         insta::assert_snapshot!(std::fs::read_to_string(args.path_output.as_str())?);
 

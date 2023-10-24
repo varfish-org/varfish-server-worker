@@ -2,7 +2,7 @@
 
 use std::{fs::File, io::Write, path::Path, time::Instant};
 
-use mehari::common::open_read_maybe_gz;
+use mehari::common::io::std::open_read_maybe_gz;
 use prost::Message;
 use thousands::Separable;
 
@@ -75,7 +75,7 @@ where
     let before_writing = Instant::now();
     let mut output_file = File::create(&path_output)?;
     output_file.write_all(&masked_region_db.encode_to_vec())?;
-    output_file.flush()?;
+    output_file.sync_all()?;
     tracing::debug!(
         "total time spent writing {} records: {:?}",
         masked_region_db.records.len().separate_with_commas(),

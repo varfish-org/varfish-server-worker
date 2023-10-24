@@ -2,7 +2,7 @@
 
 use std::{collections::HashSet, path::Path, time::Instant};
 
-use mehari::common::open_read_maybe_gz;
+use mehari::common::io::std::open_read_maybe_gz;
 use prost::Message;
 use serde::Deserialize;
 use tracing::info;
