@@ -525,8 +525,27 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
+    // Create temporary directory to use in case of going to S3.
+    let tmpdir = tempfile::tempdir()?;
+    let path_out = if common::s3::s3_mode() {
+        tracing::debug!(
+            "S3 mode, using temporary directory: {}",
+            tmpdir.path().display()
+        );
+        let p = std::path::Path::new(&args.path_out);
+        format!(
+            "{}",
+            tmpdir
+                .path()
+                .join(p.file_name().expect("no file name"))
+                .display()
+        )
+    } else {
+        args.path_out.clone()
+    };
+
     {
-        let mut output_writer = open_vcf_writer(&args.path_out).await?;
+        let mut output_writer = open_vcf_writer(&path_out).await?;
         output_writer
             .write_header(&output_header)
             .await
@@ -552,6 +571,12 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         tracing::info!("... done writing TBI index");
     } else {
         tracing::info!("(not building TBI index for plain text VCF file");
+    }
+
+    if common::s3::s3_mode() {
+        tracing::info!("Uploading to S3...");
+        common::s3::upload_file(&path_out, &args.path_out).await?;
+        tracing::info!("... done uploading to S3");
     }
 
     tracing::info!(
