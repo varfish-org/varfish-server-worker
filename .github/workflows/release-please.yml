@@ -1,14 +1,26 @@
+# Run `release-please` and build and release Docker image.
+#
+# This builds the containers with version tags.  The `main` and `latest` tags are
+# pushed in `docker-build.yml`.
+name: Release
+
 on:
   push:
     branches:
       - main
 
-name: release-please
+env:
+  REGISTRY: ghcr.io
+  PACKAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   release-please:
     if: github.repository_owner == 'bihealth'
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      release_name: ${{ steps.release.outputs.major }}.${{ steps.release.outputs.minor }}.${{ steps.release.outputs.patch }}
     steps:
       - uses: GoogleCloudPlatform/release-please-action@v2
         id: release
@@ -17,12 +29,17 @@ jobs:
           package-name: varfish-server-worker
           token: ${{ secrets.BOT_TOKEN }}
 
-      - uses: actions/checkout@v2
-        if: ${{ steps.release.outputs.release_created }}
+  cargo-release:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      - uses: actions/checkout@v4
+        if: ${{ needs.release-please.outputs.release_created }}
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ needs.release-please.outputs.release_created }}
         with:
           toolchain: stable
           override: true
@@ -32,12 +49,51 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: Swatinem/rust-cache@v1.3.0
-        if: ${{ steps.release.outputs.release_created }}
+      - uses: Swatinem/rust-cache@v2
+        if: ${{ needs.release-please.outputs.release_created }}
+        with:
+          cache-directories: |
+            ~/.cargo/registry/src/**/librocksdb-sys-*
 
       - name: Publish crate
-        if: ${{ steps.release.outputs.release_created }}
+        if: ${{ needs.release-please.outputs.release_created }}
         uses: actions-rs/cargo@v1
         with:
           command: publish
           args: --token ${{ secrets.CRATES_IO_TOKEN }}
+
+  container-release:
+    needs: release-please
+    runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.release_created }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=semver,pattern={{version}},value=${{ needs.release-please.outputs.release_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs.release_name }}
+            type=semver,pattern={{major}},value=${{ needs.release-please.outputs.release_name }}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: utils/docker/Dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          push: true
