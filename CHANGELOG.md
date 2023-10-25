@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.11.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.10.2...v0.11.0) (2023-10-25)
+
+
+### Features
+
+* add build of docker containers ([#243](https://www.github.com/bihealth/varfish-server-worker/issues/243)) ([c455e25](https://www.github.com/bihealth/varfish-server-worker/commit/c455e257af57b6d100c2f96c1c5633b39910e1a2))
+* adding "seqvars aggregate" command ([#211](https://www.github.com/bihealth/varfish-server-worker/issues/211)) ([#214](https://www.github.com/bihealth/varfish-server-worker/issues/214)) ([d6db0b7](https://www.github.com/bihealth/varfish-server-worker/commit/d6db0b7ab2fb17987d1052c0c7bba1113d34d025))
+* adjust "strucvars query" to read ingested VCFs ([#202](https://www.github.com/bihealth/varfish-server-worker/issues/202)) ([#220](https://www.github.com/bihealth/varfish-server-worker/issues/220)) ([1fb3c58](https://www.github.com/bihealth/varfish-server-worker/commit/1fb3c581e58d017923b1f8261f9e12515e0a648a))
+* create .tbi for written .vcf.gz files ([#233](https://www.github.com/bihealth/varfish-server-worker/issues/233)) ([#241](https://www.github.com/bihealth/varfish-server-worker/issues/241)) ([be99642](https://www.github.com/bihealth/varfish-server-worker/commit/be99642d88946c5c45666aa4dc6716b5267796ce))
+* implement "seqvars ingest" command ([#199](https://www.github.com/bihealth/varfish-server-worker/issues/199)) ([#206](https://www.github.com/bihealth/varfish-server-worker/issues/206)) ([21b965c](https://www.github.com/bihealth/varfish-server-worker/commit/21b965c7bf9d0d54fcbc3d91ee8d9c007ec6ca60))
+* implement "seqvars query" command ([#201](https://www.github.com/bihealth/varfish-server-worker/issues/201)) ([#223](https://www.github.com/bihealth/varfish-server-worker/issues/223)) ([a7cb0bd](https://www.github.com/bihealth/varfish-server-worker/commit/a7cb0bdf96ad61ce2b044535b2f1e5657875240b))
+* implement "strucvars ingest" command ([#200](https://www.github.com/bihealth/varfish-server-worker/issues/200)) ([#208](https://www.github.com/bihealth/varfish-server-worker/issues/208)) ([a783ef3](https://www.github.com/bihealth/varfish-server-worker/commit/a783ef3ab08f103435799345d738ae723bf9997f))
+* implement I/O from/to S3 ([#234](https://www.github.com/bihealth/varfish-server-worker/issues/234)) ([#242](https://www.github.com/bihealth/varfish-server-worker/issues/242)) ([414bb5d](https://www.github.com/bihealth/varfish-server-worker/commit/414bb5d468eacda8ca68b3cb778ae8bf5f5dd0c2))
+* implement parsing of clinvar-data-jsonl data ([#198](https://www.github.com/bihealth/varfish-server-worker/issues/198)) ([#204](https://www.github.com/bihealth/varfish-server-worker/issues/204)) ([e0ea7ac](https://www.github.com/bihealth/varfish-server-worker/commit/e0ea7ac1b959c035691d957ea619739dc3e7d619))
+* implementing "seqvars prefilter" ([#209](https://www.github.com/bihealth/varfish-server-worker/issues/209)) ([#213](https://www.github.com/bihealth/varfish-server-worker/issues/213)) ([984dc8b](https://www.github.com/bihealth/varfish-server-worker/commit/984dc8b01fa552ee8972a170fd7b431c3424a522))
+* remove gene regions from "strucvars query" database enhancement ([#221](https://www.github.com/bihealth/varfish-server-worker/issues/221)) ([#222](https://www.github.com/bihealth/varfish-server-worker/issues/222)) ([28663b6](https://www.github.com/bihealth/varfish-server-worker/commit/28663b6feca424514dd422d3ce0ac2e61d573d75))
+* transform "db mk-inhouse" to "strucvars aggregate" ([#212](https://www.github.com/bihealth/varfish-server-worker/issues/212)) ([#217](https://www.github.com/bihealth/varfish-server-worker/issues/217)) ([b51f027](https://www.github.com/bihealth/varfish-server-worker/commit/b51f027918a57e1402e825a00487bb53d1440fd8))
+* transform "db to-bin" to "strucvars txt-to-bin" ([#218](https://www.github.com/bihealth/varfish-server-worker/issues/218)) ([#219](https://www.github.com/bihealth/varfish-server-worker/issues/219)) ([ea6e387](https://www.github.com/bihealth/varfish-server-worker/commit/ea6e387b87e51b38b49a93ce2a90e52109f71df5))
+* write out fileDate on ingest ([#210](https://www.github.com/bihealth/varfish-server-worker/issues/210)) ([#215](https://www.github.com/bihealth/varfish-server-worker/issues/215)) ([7731958](https://www.github.com/bihealth/varfish-server-worker/commit/7731958a4b274db604bb7d88c5a5d501bd8b7390))
+
 ### [0.10.2](https://www.github.com/bihealth/varfish-server-worker/compare/v0.10.1...v0.10.2) (2023-10-04)
 
 

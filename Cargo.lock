@@ -4606,7 +4606,7 @@ checksum = "4a72e1902dde2bd6441347de2b70b7f5d59bf157c6c62f0c44572607a1d55bbe"
 
 [[package]]
 name = "varfish-server-worker"
-version = "0.10.2"
+version = "0.11.0"
 dependencies = [
  "annonars",
  "anyhow",
