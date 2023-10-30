@@ -34,7 +34,7 @@ enum-map = { version = "2.6", features = ["serde"] }
 ext-sort = { version = "0.1", features = ["memory-limit", "bytesize"] }
 fastrand = "2.0"
 flate2 = "1.0"
-futures = "0.3.28"
+futures = "0.3.29"
 hgvs = "0.12"
 indexmap = { version = "2.0", features = ["serde"] }
 itertools = "0.11"
