@@ -2142,6 +2142,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "hgvs"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87482326c27e244841df05d4aff8478987a9838200d7bbf696e4d0290caa7a99"
+dependencies = [
+ "base16ct",
+ "bio",
+ "biocommons-bioutils",
+ "chrono",
+ "enum-map 2.7.0",
+ "flate2",
+ "indexmap 2.1.0",
+ "lazy_static",
+ "log",
+ "md-5",
+ "nom",
+ "postgres",
+ "quick_cache",
+ "regex",
+ "rustc-hash",
+ "seqrepo",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "hmac"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2626,7 +2653,7 @@ dependencies = [
  "env_logger",
  "flate2",
  "futures",
- "hgvs",
+ "hgvs 0.12.0",
  "indexmap 2.1.0",
  "indicatif",
  "jsonl",
@@ -4651,7 +4678,7 @@ dependencies = [
  "flate2",
  "float-cmp",
  "futures",
- "hgvs",
+ "hgvs 0.13.2",
  "hxdmp",
  "indexmap 2.1.0",
  "insta",
