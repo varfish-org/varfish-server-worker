@@ -270,7 +270,7 @@ dependencies = [
  "clap",
  "clap-verbosity-flag",
  "csv",
- "enum-map 2.7.0",
+ "enum-map 2.7.3",
  "env_logger",
  "flate2",
  "indexmap 2.1.0",
@@ -1027,7 +1027,7 @@ version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "82c91bd0b62cec4b6317445506ed4947a53c320942a681c5a086f4d576aa4c99"
 dependencies = [
- "enum-map 2.7.0",
+ "enum-map 2.7.3",
  "flate2",
  "indexmap 2.1.0",
  "lazy_static",
@@ -1711,11 +1711,11 @@ dependencies = [
 
 [[package]]
 name = "enum-map"
-version = "2.7.0"
+version = "2.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53337c2dbf26a3c31eccc73a37b10c1614e8d4ae99b6a50d553e8936423c1f16"
+checksum = "6866f3bfdf8207509a033af1a75a7b08abda06bbaaeae6669323fd5a097df2e9"
 dependencies = [
- "enum-map-derive 0.14.0",
+ "enum-map-derive 0.17.0",
  "serde",
 ]
 
@@ -1732,9 +1732,9 @@ dependencies = [
 
 [[package]]
 name = "enum-map-derive"
-version = "0.14.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04d0b288e3bb1d861c4403c1774a6f7a798781dfc519b3647df2a3dd4ae95f25"
+checksum = "f282cfdfe92516eb26c2af8589c274c7c17681f5ecc03c18255fe741c6aa64eb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2124,7 +2124,7 @@ dependencies = [
  "bio",
  "biocommons-bioutils",
  "chrono",
- "enum-map 2.7.0",
+ "enum-map 2.7.3",
  "flate2",
  "indexmap 2.1.0",
  "lazy_static",
@@ -4644,7 +4644,7 @@ dependencies = [
  "csv",
  "derive-new",
  "derive_builder",
- "enum-map 2.7.0",
+ "enum-map 2.7.3",
  "ext-sort",
  "fastrand 2.0.1",
  "file_diff",
