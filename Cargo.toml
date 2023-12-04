@@ -29,7 +29,7 @@ clap = { version = "4.4", features = ["derive", "help"] }
 console = "0.15"
 csv = "1.1"
 derive_builder = { version = "0.12", features = ["clippy"] }
-derive-new = "0.5.9"
+derive-new = "0.6.0"
 enum-map = { version = "2.7", features = ["serde"] }
 ext-sort = { version = "0.1", features = ["memory-limit", "bytesize"] }
 fastrand = "2.0"
