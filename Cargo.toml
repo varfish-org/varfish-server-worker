@@ -16,7 +16,7 @@ annonars = "0.24"
 anyhow = { version = "1.0", features = ["backtrace"] }
 async-compression = { version = "0.4", features = ["tokio", "gzip"] }
 aws-sdk-s3 = "0.34"
-aws-config = "0.56"
+aws-config = "1.0"
 base16ct = "0.2"
 bio = "1.4"
 biocommons-bioutils = "0.1"
