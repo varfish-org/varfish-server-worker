@@ -83,7 +83,7 @@ jobs:
           args: "--skip-clean -- --test-threads 1"
 
       - name: Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           verbose: true
           fail_ci_if_error: true
