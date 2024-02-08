@@ -49,7 +49,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.7.3
         if: ${{ needs.release-please.outputs.release_created }}
         with:
           cache-directories: |
