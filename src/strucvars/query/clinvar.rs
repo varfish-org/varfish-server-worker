@@ -104,7 +104,7 @@ pub fn load_clinvar_sv(
     }
 
     let path =
-        std::path::Path::new(path_db).join(&format!("{}/strucvars/clinvar.bin", genome_release));
+        std::path::Path::new(path_db).join(format!("{}/strucvars/clinvar.bin", genome_release));
     let fcontents =
         std::fs::read(&path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
     let bg_db = pbs::SvDatabase::decode(std::io::Cursor::new(fcontents))

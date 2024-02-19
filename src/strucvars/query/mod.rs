@@ -27,7 +27,7 @@ use mehari::{
         strucvars::csq::interface::StrandOrientation,
     },
     common::noodles::open_vcf_reader,
-    db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
+    pbs::txs::{Strand, Transcript, TxSeqDatabase},
 };
 
 use rand_core::{RngCore, SeedableRng};

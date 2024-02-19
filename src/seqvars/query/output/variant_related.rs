@@ -308,7 +308,7 @@ impl Clinvar {
             .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
             .map(|record| {
                 if let Some(assertion) = record.reference_assertions.first() {
-                    let annonars::clinvar_minimal::pbs::ReferenceAssertion {
+                    let annonars::pbs::clinvar::minimal::ReferenceAssertion {
                         rcv,
                         clinical_significance,
                         review_status,

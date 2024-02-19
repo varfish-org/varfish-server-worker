@@ -3,7 +3,7 @@ use crate::seqvars::query::{
     schema::{CaseQuery, SequenceVariant},
 };
 
-use annonars::clinvar_minimal::pbs::{self, ClinicalSignificance::*};
+use annonars::pbs::clinvar::minimal::{ClinicalSignificance, ClinicalSignificance::*};
 
 /// Determine whether the `SequenceVariant` passes the clinvar filter.
 pub fn passes(
@@ -20,7 +20,7 @@ pub fn passes(
         .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
     {
         if let Some(assertion) = record.reference_assertions.first() {
-            let clinical_significance: pbs::ClinicalSignificance = assertion
+            let clinical_significance: ClinicalSignificance = assertion
                 .clinical_significance
                 .try_into()
                 .map_err(|e| anyhow::anyhow!("could not convert clinical significance: {}", e))?;
@@ -30,6 +30,7 @@ pub fn passes(
                 UncertainSignificance => query.clinvar_include_uncertain_significance,
                 LikelyPathogenic => query.clinvar_include_likely_pathogenic,
                 Pathogenic => query.clinvar_include_pathogenic,
+                Unknown => false,
             };
             if !result {
                 tracing::trace!(

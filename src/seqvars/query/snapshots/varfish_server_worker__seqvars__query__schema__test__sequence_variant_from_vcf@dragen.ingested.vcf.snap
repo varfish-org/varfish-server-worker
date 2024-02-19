@@ -19,7 +19,8 @@ ann_fields:
       SoTerm:
         term: Transcript
     feature_id: NM_007294.4
-    feature_biotype: Coding
+    feature_biotype:
+      - Coding
     rank:
       ord: 6
       total: 22
@@ -46,7 +47,8 @@ ann_fields:
       SoTerm:
         term: Transcript
     feature_id: NM_007297.4
-    feature_biotype: Coding
+    feature_biotype:
+      - Coding
     rank:
       ord: 5
       total: 21
@@ -73,7 +75,8 @@ ann_fields:
       SoTerm:
         term: Transcript
     feature_id: NM_007299.4
-    feature_biotype: Coding
+    feature_biotype:
+      - Coding
     rank:
       ord: 6
       total: 21
@@ -100,7 +103,8 @@ ann_fields:
       SoTerm:
         term: Transcript
     feature_id: NM_007300.4
-    feature_biotype: Coding
+    feature_biotype:
+      - Coding
     rank:
       ord: 6
       total: 23
@@ -137,4 +141,3 @@ call_info:
     dp: 80
     ad: 80
     phasing_id: 41256074
-

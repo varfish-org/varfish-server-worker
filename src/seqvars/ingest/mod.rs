@@ -8,7 +8,7 @@ use crate::{
 };
 use futures::TryStreamExt;
 use mehari::{
-    annotate::seqvars::provider::MehariProvider,
+    annotate::seqvars::provider::Provider as MehariProvider,
     common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
 };
 use noodles_vcf as vcf;
@@ -332,8 +332,12 @@ async fn process_variants(
     } else {
         biocommons_bioutils::assemblies::Assembly::Grch38
     };
-    let provider = Arc::new(MehariProvider::new(tx_db, assembly));
-    let predictor = mehari::annotate::seqvars::csq::ConsequencePredictor::new(provider, assembly);
+    let provider = Arc::new(MehariProvider::new(tx_db, assembly, Default::default()));
+    let predictor = mehari::annotate::seqvars::csq::ConsequencePredictor::new(
+        provider,
+        assembly,
+        Default::default(),
+    );
     tracing::info!("... done building transcript interval trees");
 
     // Build mapping from output sample index to input sample index.

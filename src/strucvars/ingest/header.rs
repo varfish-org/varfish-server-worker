@@ -15,6 +15,8 @@ fn caller_name(sv_caller: &mehari::annotate::strucvars::SvCaller) -> &'static st
         mehari::annotate::strucvars::SvCaller::Manta { .. } => "Manta",
         mehari::annotate::strucvars::SvCaller::Melt { .. } => "Melt",
         mehari::annotate::strucvars::SvCaller::Popdel { .. } => "Popdel",
+        mehari::annotate::strucvars::SvCaller::ClinCnv { .. } => "ClinCnv",
+        mehari::annotate::strucvars::SvCaller::Sniffles2 { .. } => "Sniffles2",
     }
 }
 
@@ -27,7 +29,9 @@ fn caller_version(sv_caller: &mehari::annotate::strucvars::SvCaller) -> String {
         | mehari::annotate::strucvars::SvCaller::Gcnv { version }
         | mehari::annotate::strucvars::SvCaller::Manta { version }
         | mehari::annotate::strucvars::SvCaller::Melt { version }
-        | mehari::annotate::strucvars::SvCaller::Popdel { version } => version.clone(),
+        | mehari::annotate::strucvars::SvCaller::Popdel { version }
+        | mehari::annotate::strucvars::SvCaller::ClinCnv { version }
+        | mehari::annotate::strucvars::SvCaller::Sniffles2 { version } => version.clone(),
     }
 }
 
@@ -296,7 +300,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder
+        let input_vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {
@@ -341,7 +345,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder
+        let input_vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {

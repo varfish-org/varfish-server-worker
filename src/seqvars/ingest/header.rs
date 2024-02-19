@@ -444,7 +444,7 @@ mod test {
     fn variant_caller_guess(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
 
-        let vcf_header = noodles_vcf::reader::Builder
+        let vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
 
@@ -464,7 +464,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder
+        let input_vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
@@ -499,7 +499,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder
+        let input_vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
