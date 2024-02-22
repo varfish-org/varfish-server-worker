@@ -1014,7 +1014,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d45749b87f21808051025e9bf714d14ff4627f9d8ca967eade6946ea769aa4a"
 dependencies = [
- "derive-new",
+ "derive-new 0.5.9",
  "lazy_static",
  "regex",
  "strum_macros",
@@ -1589,6 +1589,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "derive-new"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d150dea618e920167e5973d70ae6ece4385b7164e0d799fe7c122dd0a5d912ad"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]
@@ -4651,7 +4662,7 @@ dependencies = [
  "clap-verbosity-flag",
  "console",
  "csv",
- "derive-new",
+ "derive-new 0.6.0",
  "derive_builder",
  "enum-map 2.7.3",
  "ext-sort",
