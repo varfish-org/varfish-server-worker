@@ -8,48 +8,60 @@ set -x
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-mkdir -p $SCRIPT_DIR/{grch37,grch38}
+export TMPDIR=$(mktemp -d)
 
-# transcripts
+echo -e "17\t41176014\t41297797" > $TMPDIR/brca1.grch37.bed
+echo -e "chr17\t43024028\t43145632" > $TMPDIR/brca1.grch38.bed
 
-wget -O /tmp/cdot-0.2.12.refseq.grch37_grch38.json.gz \
-    https://github.com/SACGF/cdot/releases/download/v0.2.12/cdot-0.2.12.refseq.grch37_grch38.json.gz
+CLINVAR_DATE=20231231
+CLINVAR_ANNONARS=0.31.0
+MEHARI_TXS=0.4.4
+S5CMD="s5cmd --endpoint-url=https://ceph-s3-public.cubi.bihealth.org --no-sign-request --no-verify-ssl"
+MEHARI_FREQS_VERSION=2.1.1+2.1.1+3.1+20200327+0.33.0
+GENES="BRCA1 OPA1 AKR1C3 TTN"
 
-mehari \
-    db \
-    create \
-    txs \
-    --path-out \
-    $SCRIPT_DIR/grch37/txs.bin.zst \
-    --path-cdot-json \
-    /tmp/cdot-0.2.12.refseq.grch37_grch38.json.gz \
-    --path-seqrepo-instance \
-    ~/Data/mehari/db-workspace/b37/seqrepo-data/master \
-    --genome-release \
-    grch37 \
-    --gene-symbols BRCA1
+for release in grch37 grch38; do
+    # mehari clinvar
+    if [[ -e $SCRIPT_DIR/$release/seqvars/clinvar/rocksdb ]]; then
+        >&2 echo "WARNING: $SCRIPT_DIR/$release/seqvars/clinvar already exists"
+    else
+        mkdir -p $release/seqvars/clinvar
+        wget -O $TMPDIR/annonars-clinvar-minimal-$release-$CLINVAR_DATE+$CLINVAR_ANNONARS.tar.gz \
+            https://github.com/varfish-org/annonars-data-clinvar/releases/download/annonars-data-clinvar-$CLINVAR_DATE/annonars-clinvar-minimal-$release-$CLINVAR_DATE+$CLINVAR_ANNONARS.tar.gz
+        tar -C $TMPDIR -xf $TMPDIR/annonars-clinvar-minimal-$release-$CLINVAR_DATE+$CLINVAR_ANNONARS.tar.gz
 
-# clinvar
+        annonars db-utils copy \
+            --path-in $TMPDIR/annonars-clinvar-minimal-$release-$CLINVAR_DATE+$CLINVAR_ANNONARS/rocksdb \
+            --path-out $SCRIPT_DIR/$release/seqvars/clinvar/rocksdb \
+            --path-beds $TMPDIR/brca1.$release.bed
+    fi
 
-wget -O /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1.tar.gz \
-    https://github.com/bihealth/annonars-data-clinvar/releases/download/annonars-data-clinvar-20231015/annonars-clinvar-minimal-grch37-20231015+0.24.1.tar.gz
-tar -C /tmp -xvf /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1.tar.gz
+    # mehari freqs
+    if [[ -e $SCRIPT_DIR/$release/seqvars/freqs/rocksdb ]]; then
+        >&2 echo "WARNING: $SCRIPT_DIR/$release/seqvars/freqs already exists"
+    else
+        mkdir -p $SCRIPT_DIR/$release/seqvars/freqs/rocksdb
+        if [[ $release == "grch37" ]]; then
+            $S5CMD sync \
+                "s3://varfish-public/reduced-dev/mehari/freqs-grch37-2.1.1+2.1.1+3.1+20200327+0.33.0/rocksdb/*" \
+                $SCRIPT_DIR/$release/seqvars/freqs/rocksdb
+        else
+            $S5CMD sync \
+                "s3://varfish-public/reduced-dev/mehari/freqs-grch38-4.0+4.0+3.1+20200327+0.33.0/rocksdb/*" \
+                $SCRIPT_DIR/$release/seqvars/freqs/rocksdb
+        fi
+    fi
 
-mkdir -p $SCRIPT_DIR/grch37/seqvars/clinvar
-cp /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1/spec.yaml \
-    $SCRIPT_DIR/grch37/seqvars/clinvar
-annonars db-utils copy \
-    --path-in /tmp/annonars-clinvar-minimal-grch37-20231015+0.24.1/rocksdb \
-    --path-out $SCRIPT_DIR/grch37/seqvars/clinvar/rocksdb \
-    --range 17:41183866:41337086
-
-# frequencies
-
-DOWNLOADER=/data/sshfs/data/cephfs-1/work/projects/cubi_varfish_data/2023-06-05_varfish-db-downloader/varfish-db-downloader
-mkdir -p mkdir -p $SCRIPT_DIR/grch37/seqvars/freqs
-cp $DOWNLOADER/output/full/mehari/freqs-grch37-2.1.1+2.1.1+3.1+20200327+0.19.0/spec.yaml \
-    $SCRIPT_DIR/grch37/seqvars/freqs
-annonars db-utils copy \
-    --path-in $DOWNLOADER/output/full/mehari/freqs-grch37-2.1.1+2.1.1+3.1+20200327+0.19.0/rocksdb \
-    --path-out $SCRIPT_DIR/grch37/seqvars/freqs/rocksdb \
-    --range 17:41183866:41337086
+    # tx database
+    if [[ -e $SCRIPT_DIR/$release/txs.bin.zst ]]; then
+        >&2 echo "WARNING: $SCRIPT_DIR/$release/txs.bin.zst already exists"
+    else
+        mkdir -p $SCRIPT_DIR/$release
+        wget -O $TMPDIR/mehari-data-txs-$release-$MEHARI_TXS.bin.zst \
+            https://github.com/bihealth/mehari-data-tx/releases/download/v$MEHARI_TXS/mehari-data-txs-$release-$MEHARI_TXS.bin.zst
+        mehari db subset \
+            --path-in $TMPDIR/mehari-data-txs-$release-$MEHARI_TXS.bin.zst \
+            --path-out $SCRIPT_DIR/$release/txs.bin.zst \
+            $(for gene in $GENES; do echo --gene-symbols $gene; done)
+    fi
+done
