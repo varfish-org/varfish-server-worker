@@ -59,7 +59,7 @@ serde = { version = "1.0", features = ["serde_derive"] }
 serde_with = { version = "3.3", features = ["indexmap_2"] }
 shellexpand = "3.0"
 strum_macros = "0.25"
-strum = { version = "0.25", features = ["derive"] }
+strum = { version = "0.26", features = ["derive"] }
 tempfile = "3.8.1"
 thiserror = "1.0"
 thousands = "0.2"
