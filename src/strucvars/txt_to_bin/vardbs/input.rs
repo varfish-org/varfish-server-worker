@@ -113,10 +113,26 @@ pub struct GnomadSv4Record {
     pub end: i32,
     /// The structural vairant type
     pub svtype: String,
-    /// Number of homozygous alternative carriers
-    pub n_homalt: u32,
-    /// Number of heterozygous carriers
-    pub n_het: u32,
+    /// Number of male homozygous reference allele carriers.
+    pub male_n_homref: u32,
+    /// Number of male heterozygous alternate allele carriers.
+    pub male_n_het: u32,
+    /// Number of male homozygous alternate allele carriers.
+    pub male_n_homalt: u32,
+    /// Number of male hemizygous alternate allele carriers.
+    pub male_n_hemiref: u32,
+    /// Number of male hemizygous reference allele carriers.
+    pub male_n_hemialt: u32,
+    /// Number of female homozygous reference allele carriers.
+    pub female_n_homref: u32,
+    /// Number of female heterozygous alternate allele carriers.
+    pub female_n_het: u32,
+    /// Number of female homozygous alternate allele carriers.
+    pub female_n_homalt: u32,
+    /// Number of samples at this site (CNV only).
+    pub cnv_n_total: u32,
+    /// Number of samples with a CNV at this site (CNV only).
+    pub cnv_n_var: u32,
 }
 
 /// gnomAD CNV v$ database record as read from TSV file.
@@ -130,10 +146,10 @@ pub struct GnomadCnv4Record {
     pub end: i32,
     /// The structural vairant type
     pub svtype: String,
-    /// Number of homozygous alternative carriers
-    pub n_homalt: u32,
-    /// Number of heterozygous carriers
-    pub n_het: u32,
+    /// Number of samples at this site (passing QC).
+    pub n_total: u32,
+    /// Number of samples with a CNV at this site (passing QC).
+    pub n_var: u32,
 }
 
 /// Common type to convert input data to.
@@ -317,7 +333,21 @@ impl TryInto<Option<InputRecord>> for GnomadCnv4Record {
     type Error = &'static str;
 
     fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
-        todo!()
+        Ok(Some(InputRecord {
+            chromosome: self.chromosome.clone(),
+            chromosome2: self.chromosome,
+            begin: self.begin,
+            end: self.end,
+            sv_type: match self.svtype.as_str() {
+                "DEL" => SvType::Del,
+                "DUP" => SvType::Dup,
+                _ => {
+                    error!("sv_type = {}", &self.svtype);
+                    return Err("unknown SV type");
+                }
+            },
+            count: self.n_var,
+        }))
     }
 }
 
@@ -325,7 +355,30 @@ impl TryInto<Option<InputRecord>> for GnomadSv4Record {
     type Error = &'static str;
 
     fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
-        todo!()
+        Ok(Some(InputRecord {
+            chromosome: self.chromosome.clone(),
+            chromosome2: self.chromosome,
+            begin: self.begin,
+            end: self.end,
+            sv_type: match self.svtype.as_str() {
+                "BND" => SvType::Bnd,
+                "CNV" => SvType::Cnv,
+                "DEL" => SvType::Del,
+                "DUP" => SvType::Dup,
+                "INS" => SvType::Ins,
+                "INV" => SvType::Inv,
+                _ => {
+                    error!("sv_type = {}", &self.svtype);
+                    return Err("unknown SV type");
+                }
+            },
+            count: self.male_n_het
+                + self.male_n_homalt
+                + self.male_n_hemialt
+                + self.female_n_het
+                + self.female_n_homalt
+                + self.cnv_n_var,
+        }))
     }
 }
 

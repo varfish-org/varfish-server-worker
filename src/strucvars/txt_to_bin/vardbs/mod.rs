@@ -145,39 +145,39 @@ mod test {
     use super::InputFileType;
 
     #[rstest::rstest]
-    #[case(
+    #[case::dbvar(
         InputFileType::Dbvar,
         "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dbvar.bed.gz"
     )]
-    #[case(
+    #[case::dgv(
         InputFileType::Dgv,
         "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv.bed.gz"
     )]
-    #[case(
+    #[case::dgv_gs(
         InputFileType::DgvGs,
         "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv_gs.bed.gz"
     )]
-    #[case(
+    #[case::exac(
         InputFileType::Exac,
         "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/exac.bed.gz"
     )]
-    #[case(
+    #[case::g1k(
         InputFileType::G1k,
         "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/g1k.bed.gz"
     )]
-    #[case(
+    #[case::gnomad_sv2(
         InputFileType::GnomadSv2,
         "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz"
     )]
-    // #[case(
-    //     InputFileType::GnomadCnv4,
-    //     "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_cnv4.bed.gz",
-    // )]
-    // #[case(
-    //     InputFileType::GnomadSv4,
-    //     "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv4.bed.gz",
-    // )]
-    #[case(
+    #[case::gnomad_cnv4(
+        InputFileType::GnomadCnv4,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch38/strucvar/gnomad-cnv.bed.gz"
+    )]
+    #[case::gnomad_sv4(
+        InputFileType::GnomadSv4,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch38/strucvar/gnomad-sv.bed.gz"
+    )]
+    #[case::inhouse_db(
         InputFileType::InhouseDb,
         "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/inhouse.tsv"
     )]
