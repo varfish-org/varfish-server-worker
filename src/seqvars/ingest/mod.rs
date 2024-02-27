@@ -512,7 +512,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?;
 
     tracing::info!("processing header...");
-    let input_header = input_reader
+    let mut input_header = input_reader
         .read_header()
         .await
         .map_err(|e| anyhow::anyhow!("problem reading VCF header: {}", e))?;
@@ -525,6 +525,12 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         worker_version(),
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
+
+    // Work around glnexus issue with RNC.
+    if let Some(format) = input_header.formats_mut().get_mut("RNC") {
+        *format.number_mut() = vcf::header::Number::Count(1);
+        *format.type_mut() = vcf::header::record::value::map::format::Type::String;
+    }
 
     // Use output file helper.
     let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_out)?;
@@ -566,12 +572,13 @@ mod test {
     use crate::common::GenomeRelease;
 
     #[rstest]
-    #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
-    #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
-    #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
-    #[case("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
-    #[case("tests/seqvars/ingest/NA12878_dragen.vcf")]
-    #[case("tests/seqvars/ingest/Case_1.vcf")]
+    #[case::clair3_glnexus("tests/seqvars/ingest/clair3_glnexus.vcf")]
+    #[case::dragen_07_021_624_3_10_4("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
+    #[case::dragen_07_021_624_3_10_9("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
+    #[case::gatk_hc_3_7("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
+    #[case::gatk_hc_4_4_0_0("tests/seqvars/ingest/example_gatk_hc.4.4.0.0.vcf")]
+    #[case::dragen_na12787("tests/seqvars/ingest/NA12878_dragen.vcf")]
+    #[case::gatk_hc_case_1("tests/seqvars/ingest/Case_1.vcf")]
     #[tokio::test]
     async fn result_snapshot_test(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!(
