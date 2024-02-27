@@ -293,6 +293,7 @@ mod test {
     #[case("tests/strucvars/ingest/manta-min.vcf")]
     #[case("tests/strucvars/ingest/melt-min.vcf")]
     #[case("tests/strucvars/ingest/popdel-min.vcf")]
+    #[case("tests/strucvars/ingest/sniffles2-min.vcf")]
     #[tokio::test]
     async fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
@@ -338,6 +339,7 @@ mod test {
     #[case("tests/strucvars/ingest/manta-min.vcf")]
     #[case("tests/strucvars/ingest/melt-min.vcf")]
     #[case("tests/strucvars/ingest/popdel-min.vcf")]
+    #[case("tests/strucvars/ingest/sniffles2-min.vcf")]
     #[tokio::test]
     async fn build_output_header_38(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
