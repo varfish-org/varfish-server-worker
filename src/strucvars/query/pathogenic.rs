@@ -178,7 +178,7 @@ pub fn load_patho_dbs(
     let result = PathoDbBundle {
         mms: load_patho_db_records(
             Path::new(path_db)
-                .join(format!("{}/strucvars/patho-mms.bed", genome_release))
+                .join(format!("{}/strucvars/patho_mms.bed", genome_release))
                 .as_path(),
         )?,
     };
