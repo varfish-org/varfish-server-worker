@@ -1091,18 +1091,18 @@ pub struct CaseQuery {
     pub svdb_dgv_gs_min_overlap: Option<f32>,
     /// The maximal number of carriers for querying DGV gold standard.
     pub svdb_dgv_gs_max_count: Option<u32>,
-    /// Whether to enable SVDB overlap queries with gnomAD.
-    pub svdb_gnomad_enabled: bool,
-    /// The minimal reciprocal overlap for querying gnomAD.
-    pub svdb_gnomad_min_overlap: Option<f32>,
-    /// The maximal number of carriers for querying gnomAD.
-    pub svdb_gnomad_max_count: Option<u32>,
-    /// Whether to enable SVDB overlap queries with ExAC.
-    pub svdb_exac_enabled: bool,
-    /// The minimal reciprocal overlap for querying ExAC.
-    pub svdb_exac_min_overlap: Option<f32>,
-    /// The maximal number of carriers for querying ExAC.
-    pub svdb_exac_max_count: Option<u32>,
+    /// Whether to enable SVDB overlap queries with gnomAD SV.
+    pub svdb_gnomad_genomes_enabled: bool,
+    /// The minimal reciprocal overlap for querying gnomAD SV.
+    pub svdb_gnomad_genomes_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying gnomAD SV.
+    pub svdb_gnomad_genomes_max_count: Option<u32>,
+    /// Whether to enable SVDB overlap queries with gnomAD exomes/ExAC.
+    pub svdb_gnomad_exomes_enabled: bool,
+    /// The minimal reciprocal overlap for querying gnomAD exomes/ExAC.
+    pub svdb_gnomad_exomes_min_overlap: Option<f32>,
+    /// The maximal number of carriers for querying gnomAD exomes/ExAC.
+    pub svdb_gnomad_exomes_max_count: Option<u32>,
     /// Whether to enable SVDB overlap queries with dbVar.
     pub svdb_dbvar_enabled: bool,
     /// The minimal reciprocal overlap for querying dbVar.
@@ -1226,12 +1226,12 @@ impl Default for CaseQuery {
             svdb_dgv_gs_enabled: false,
             svdb_dgv_gs_min_overlap: None,
             svdb_dgv_gs_max_count: None,
-            svdb_gnomad_enabled: false,
-            svdb_gnomad_min_overlap: None,
-            svdb_gnomad_max_count: None,
-            svdb_exac_enabled: false,
-            svdb_exac_min_overlap: None,
-            svdb_exac_max_count: None,
+            svdb_gnomad_genomes_enabled: false,
+            svdb_gnomad_genomes_min_overlap: None,
+            svdb_gnomad_genomes_max_count: None,
+            svdb_gnomad_exomes_enabled: false,
+            svdb_gnomad_exomes_min_overlap: None,
+            svdb_gnomad_exomes_max_count: None,
             svdb_dbvar_enabled: false,
             svdb_dbvar_min_overlap: None,
             svdb_dbvar_max_count: None,

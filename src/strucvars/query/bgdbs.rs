@@ -199,35 +199,35 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
 #[serde(rename_all = "kebab-case")]
 #[strum(serialize_all = "kebab-case")]
 pub enum BgDbType {
-    GnomadSv,
     Dgv,
     DgvGs,
-    Exac,
     G1k,
+    GnomadExomes,
+    GnomadGenomes,
     Inhouse,
 }
 
 /// Bundle of all background databases (including in-house).
 #[derive(Default, Debug)]
 pub struct BgDbBundle {
-    pub gnomad: BgDb,
-    pub dbvar: BgDb,
-    pub dgv: BgDb,
-    pub dgv_gs: BgDb,
-    pub exac: Option<BgDb>,
+    pub dbvar: Option<BgDb>,
+    pub dgv: Option<BgDb>,
+    pub dgv_gs: Option<BgDb>,
     pub g1k: Option<BgDb>,
+    pub gnomad_genomes: Option<BgDb>,
+    pub gnomad_exomes: Option<BgDb>,
     pub inhouse: Option<BgDb>,
 }
 
 /// Store background database counts for a structural variant.
 #[derive(Serialize, Clone, Debug, PartialEq, Default)]
 pub struct BgDbOverlaps {
-    pub gnomad: u32,
     pub dbvar: u32,
     pub dgv: u32,
     pub dgv_gs: u32,
-    pub exac: u32,
     pub g1k: u32,
+    pub gnomad_genomes: u32,
+    pub gnomad_exomes: u32,
     pub inhouse: u32,
 }
 
@@ -239,18 +239,30 @@ impl BgDbBundle {
         db_type: BgDbType,
     ) -> Vec<BgDbRecord> {
         match db_type {
-            BgDbType::GnomadSv => self.gnomad.fetch_records(genome_range, chrom_map),
-            BgDbType::Dgv => self.dgv.fetch_records(genome_range, chrom_map),
-            BgDbType::DgvGs => self.dgv_gs.fetch_records(genome_range, chrom_map),
-            BgDbType::Exac => self
-                .exac
+            BgDbType::Dgv => self
+                .dgv
                 .as_ref()
-                .map(|exac| exac.fetch_records(genome_range, chrom_map))
+                .map(|dgv| dgv.fetch_records(genome_range, chrom_map))
+                .unwrap_or_default(),
+            BgDbType::DgvGs => self
+                .dgv_gs
+                .as_ref()
+                .map(|dgv_gs| dgv_gs.fetch_records(genome_range, chrom_map))
                 .unwrap_or_default(),
             BgDbType::G1k => self
                 .g1k
                 .as_ref()
                 .map(|g1k| g1k.fetch_records(genome_range, chrom_map))
+                .unwrap_or_default(),
+            BgDbType::GnomadExomes => self
+                .gnomad_exomes
+                .as_ref()
+                .map(|gnomad_exomes| gnomad_exomes.fetch_records(genome_range, chrom_map))
+                .unwrap_or_default(),
+            BgDbType::GnomadGenomes => self
+                .gnomad_genomes
+                .as_ref()
+                .map(|gnomad_genomes| gnomad_genomes.fetch_records(genome_range, chrom_map))
                 .unwrap_or_default(),
             BgDbType::Inhouse => self
                 .inhouse
@@ -269,43 +281,31 @@ impl BgDbBundle {
         slack_bnd: i32,
     ) -> BgDbOverlaps {
         BgDbOverlaps {
-            gnomad: self.gnomad.count_overlaps(
-                chrom_map,
-                query.svdb_gnomad_enabled,
-                query.svdb_gnomad_min_overlap,
-                slack_ins,
-                slack_bnd,
-                sv,
-            ),
-            dbvar: self.dbvar.count_overlaps(
-                chrom_map,
-                query.svdb_dbvar_enabled,
-                query.svdb_dbvar_min_overlap,
-                slack_ins,
-                slack_bnd,
-                sv,
-            ),
-            dgv: self.dgv.count_overlaps(
-                chrom_map,
-                query.svdb_dgv_enabled,
-                query.svdb_dgv_min_overlap,
-                slack_ins,
-                slack_bnd,
-                sv,
-            ),
-            dgv_gs: self.dgv_gs.count_overlaps(
-                chrom_map,
-                query.svdb_dgv_gs_enabled,
-                query.svdb_dgv_gs_min_overlap,
-                slack_ins,
-                slack_bnd,
-                sv,
-            ),
-            exac: self.exac.as_ref().map_or(0, |exac| {
-                exac.count_overlaps(
+            dbvar: self.dbvar.as_ref().map_or(0, |dbvar| {
+                dbvar.count_overlaps(
                     chrom_map,
-                    query.svdb_exac_enabled,
-                    query.svdb_exac_min_overlap,
+                    query.svdb_dbvar_enabled,
+                    query.svdb_dbvar_min_overlap,
+                    slack_ins,
+                    slack_bnd,
+                    sv,
+                )
+            }),
+            dgv: self.dgv.as_ref().map_or(0, |dgv| {
+                dgv.count_overlaps(
+                    chrom_map,
+                    query.svdb_dgv_enabled,
+                    query.svdb_dgv_min_overlap,
+                    slack_ins,
+                    slack_bnd,
+                    sv,
+                )
+            }),
+            dgv_gs: self.dgv_gs.as_ref().map_or(0, |dgv_gs| {
+                dgv_gs.count_overlaps(
+                    chrom_map,
+                    query.svdb_dgv_gs_enabled,
+                    query.svdb_dgv_gs_min_overlap,
                     slack_ins,
                     slack_bnd,
                     sv,
@@ -316,6 +316,26 @@ impl BgDbBundle {
                     chrom_map,
                     query.svdb_g1k_enabled,
                     query.svdb_g1k_min_overlap,
+                    slack_ins,
+                    slack_bnd,
+                    sv,
+                )
+            }),
+            gnomad_exomes: self.gnomad_exomes.as_ref().map_or(0, |gnomad_exomes| {
+                gnomad_exomes.count_overlaps(
+                    chrom_map,
+                    query.svdb_gnomad_exomes_enabled,
+                    query.svdb_gnomad_exomes_min_overlap,
+                    slack_ins,
+                    slack_bnd,
+                    sv,
+                )
+            }),
+            gnomad_genomes: self.gnomad_genomes.as_ref().map_or(0, |gnomad_genomes| {
+                gnomad_genomes.count_overlaps(
+                    chrom_map,
+                    query.svdb_gnomad_genomes_enabled,
+                    query.svdb_gnomad_genomes_min_overlap,
                     slack_ins,
                     slack_bnd,
                     sv,
@@ -343,38 +363,46 @@ pub fn load_bg_dbs(
 ) -> Result<BgDbBundle, anyhow::Error> {
     info!("Loading background dbs");
 
-    let path_exac = Path::new(path_db).join(format!("{}/strucvars/bgdbs/exac.bin", genome_release));
+    let path_dbvar =
+        Path::new(path_db).join(format!("{}/strucvars/bgdbs/dbvar.bin", genome_release));
+    let path_dgv = Path::new(path_db).join(format!("{}/strucvars/bgdbs/dgv.bin", genome_release));
+    let path_dgv_gs =
+        Path::new(path_db).join(format!("{}/strucvars/bgdbs/dgv_gs.bin", genome_release));
     let path_g1k = Path::new(path_db).join(format!("{}/strucvars/bgdbs/g1k.bin", genome_release));
+    let path_gnomad_exomes = Path::new(path_db).join(format!(
+        "{}/strucvars/bgdbs/gnomad_exomes.bin",
+        genome_release
+    ));
+    let path_gnomad_genomes = Path::new(path_db).join(format!(
+        "{}/strucvars/bgdbs/gnomad_genomes.bin",
+        genome_release
+    ));
     let path_inhouse = Path::new(path_db).join(format!("{}/strucvars/inhouse.bin", genome_release));
 
     let result = BgDbBundle {
-        gnomad: load_bg_db_records(
-            Path::new(path_db)
-                .join(format!("{}/strucvars/bgdbs/gnomad.bin", genome_release))
-                .as_path(),
-        )?,
-        dbvar: load_bg_db_records(
-            Path::new(path_db)
-                .join(format!("{}/strucvars/bgdbs/dbvar.bin", genome_release))
-                .as_path(),
-        )?,
-        dgv: load_bg_db_records(
-            Path::new(path_db)
-                .join(format!("{}/strucvars/bgdbs/dgv.bin", genome_release))
-                .as_path(),
-        )?,
-        dgv_gs: load_bg_db_records(
-            Path::new(path_db)
-                .join(format!("{}/strucvars/bgdbs/dgv-gs.bin", genome_release))
-                .as_path(),
-        )?,
-        exac: path_exac
+        dbvar: path_dbvar
             .exists()
-            .then(|| load_bg_db_records(path_exac.as_path()))
+            .then(|| load_bg_db_records(path_dbvar.as_path()))
+            .transpose()?,
+        dgv: path_dgv
+            .exists()
+            .then(|| load_bg_db_records(path_dgv.as_path()))
+            .transpose()?,
+        dgv_gs: path_dgv_gs
+            .exists()
+            .then(|| load_bg_db_records(path_dgv_gs.as_path()))
             .transpose()?,
         g1k: path_g1k
             .exists()
             .then(|| load_bg_db_records(path_g1k.as_path()))
+            .transpose()?,
+        gnomad_exomes: path_gnomad_exomes
+            .exists()
+            .then(|| load_bg_db_records(path_gnomad_exomes.as_path()))
+            .transpose()?,
+        gnomad_genomes: path_gnomad_genomes
+            .exists()
+            .then(|| load_bg_db_records(path_gnomad_genomes.as_path()))
             .transpose()?,
         inhouse: path_inhouse
             .exists()

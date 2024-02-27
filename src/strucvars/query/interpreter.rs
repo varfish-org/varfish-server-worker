@@ -269,10 +269,18 @@ impl QueryInterpreter {
             || counts.dgv <= self.query.svdb_dgv_max_count.unwrap_or(counts.dgv);
         let passes_dgv_gs = !self.query.svdb_dgv_gs_enabled
             || counts.dgv_gs <= self.query.svdb_dgv_gs_max_count.unwrap_or(counts.dgv_gs);
-        let passes_gnomad = !self.query.svdb_gnomad_enabled
-            || counts.gnomad <= self.query.svdb_gnomad_max_count.unwrap_or(counts.gnomad);
-        let passes_exac = !self.query.svdb_exac_enabled
-            || counts.exac <= self.query.svdb_exac_max_count.unwrap_or(counts.exac);
+        let passes_gnomad_genomes = !self.query.svdb_gnomad_genomes_enabled
+            || counts.gnomad_genomes
+                <= self
+                    .query
+                    .svdb_gnomad_genomes_max_count
+                    .unwrap_or(counts.gnomad_genomes);
+        let passes_gnomad_exomes = !self.query.svdb_gnomad_exomes_enabled
+            || counts.gnomad_exomes
+                <= self
+                    .query
+                    .svdb_gnomad_exomes_max_count
+                    .unwrap_or(counts.gnomad_exomes);
         let passes_dbvar = !self.query.svdb_dbvar_enabled
             || counts.dbvar <= self.query.svdb_dbvar_max_count.unwrap_or(counts.dbvar);
         let passes_g1k = !self.query.svdb_g1k_enabled
@@ -281,12 +289,12 @@ impl QueryInterpreter {
             || counts.inhouse <= self.query.svdb_inhouse_max_count.unwrap_or(counts.inhouse);
 
         trace!(
-            "does SV pass counts? passes_dgv={}, passes_dgv_gs={}, passes_gnomad={}, \
-            passes_exac={}, passes_dbvar={}, passes_g1k={}, passes_inhouse={}",
+            "does SV pass counts? passes_dgv={}, passes_dgv_gs={}, passes_gnomad_genomes={}, \
+            passes_gnomad_exomes={}, passes_dbvar={}, passes_g1k={}, passes_inhouse={}",
             passes_dgv,
             passes_dgv_gs,
-            passes_gnomad,
-            passes_exac,
+            passes_gnomad_genomes,
+            passes_gnomad_exomes,
             passes_dbvar,
             passes_g1k,
             passes_inhouse
@@ -294,8 +302,8 @@ impl QueryInterpreter {
 
         passes_dgv
             && passes_dgv_gs
-            && passes_gnomad
-            && passes_exac
+            && passes_gnomad_genomes
+            && passes_gnomad_exomes
             && passes_dbvar
             && passes_g1k
             && passes_inhouse
@@ -866,10 +874,10 @@ mod tests {
             svdb_dgv_max_count: Some(10),
             svdb_dgv_gs_enabled: true,
             svdb_dgv_gs_max_count: Some(10),
-            svdb_gnomad_enabled: true,
-            svdb_gnomad_max_count: Some(10),
-            svdb_exac_enabled: true,
-            svdb_exac_max_count: Some(10),
+            svdb_gnomad_genomes_enabled: true,
+            svdb_gnomad_genomes_max_count: Some(10),
+            svdb_gnomad_exomes_enabled: true,
+            svdb_gnomad_exomes_max_count: Some(10),
             svdb_dbvar_enabled: true,
             svdb_dbvar_max_count: Some(10),
             svdb_g1k_enabled: true,
@@ -883,8 +891,8 @@ mod tests {
         let counts_pass = BgDbOverlaps {
             dgv: 5,
             dgv_gs: 5,
-            gnomad: 5,
-            exac: 5,
+            gnomad_genomes: 5,
+            gnomad_exomes: 5,
             g1k: 5,
             inhouse: 5,
             dbvar: 5,
@@ -900,10 +908,10 @@ mod tests {
             svdb_dgv_max_count: Some(10),
             svdb_dgv_gs_enabled: true,
             svdb_dgv_gs_max_count: Some(10),
-            svdb_gnomad_enabled: true,
-            svdb_gnomad_max_count: Some(10),
-            svdb_exac_enabled: true,
-            svdb_exac_max_count: Some(10),
+            svdb_gnomad_genomes_enabled: true,
+            svdb_gnomad_genomes_max_count: Some(10),
+            svdb_gnomad_exomes_enabled: true,
+            svdb_gnomad_exomes_max_count: Some(10),
             svdb_dbvar_enabled: true,
             svdb_dbvar_max_count: Some(10),
             svdb_g1k_enabled: true,
@@ -917,8 +925,8 @@ mod tests {
         let counts_fail = BgDbOverlaps {
             dgv: 11,
             dgv_gs: 11,
-            gnomad: 11,
-            exac: 11,
+            gnomad_genomes: 11,
+            gnomad_exomes: 11,
             g1k: 11,
             inhouse: 11,
             dbvar: 11,
@@ -1216,8 +1224,8 @@ mod tests {
         let counts_pass = BgDbOverlaps {
             dgv: 5,
             dgv_gs: 5,
-            gnomad: 5,
-            exac: 5,
+            gnomad_genomes: 5,
+            gnomad_exomes: 5,
             g1k: 5,
             inhouse: 5,
             dbvar: 5,

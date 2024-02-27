@@ -261,7 +261,7 @@ mod test {
     }
 
     #[test]
-    fn run_strucvar_exac_smoke() -> Result<(), anyhow::Error> {
+    fn run_strucvar_gnomad_exomes_smoke() -> Result<(), anyhow::Error> {
         let tmp_dir = temp_testdir::TempDir::default();
         let common_args = common::Args {
             verbose: Verbosity::new(0, 0),
