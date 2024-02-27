@@ -27,7 +27,9 @@ pub enum InputFileType {
     DgvGs,
     Exac,
     G1k,
-    Gnomad,
+    GnomadSv2,
+    GnomadCnv4,
+    GnomadSv4,
     InhouseDb,
 }
 /// Deserialize from CSV reader to an `Option<records::InputRecord>`
@@ -76,6 +78,24 @@ where
     Ok(result)
 }
 
+/// Branch around `deserialize_loop`.
+pub fn deserialize_branch(
+    input_type: InputFileType,
+    reader: &mut csv::Reader<Box<dyn std::io::BufRead>>,
+) -> Result<Vec<BgDbRecord>, anyhow::Error> {
+    match input_type {
+        InputFileType::Dbvar => deserialize_loop::<input::DbVarRecord>(reader),
+        InputFileType::Dgv => deserialize_loop::<input::DgvRecord>(reader),
+        InputFileType::DgvGs => deserialize_loop::<input::DgvGsRecord>(reader),
+        InputFileType::Exac => deserialize_loop::<input::ExacRecord>(reader),
+        InputFileType::G1k => deserialize_loop::<input::G1kRecord>(reader),
+        InputFileType::InhouseDb => deserialize_loop::<InhouseDbRecord>(reader),
+        InputFileType::GnomadSv2 => deserialize_loop::<input::GnomadSv2Record>(reader),
+        InputFileType::GnomadCnv4 => deserialize_loop::<input::GnomadCnv4Record>(reader),
+        InputFileType::GnomadSv4 => deserialize_loop::<input::GnomadSv4Record>(reader),
+    }
+}
+
 /// Perform conversion to protobuf `.bin` file.
 pub fn convert_to_bin<P, Q>(
     path_input_tsv: P,
@@ -97,15 +117,7 @@ where
         )?);
     let before_parsing = Instant::now();
 
-    let records = match input_type {
-        InputFileType::Dbvar => deserialize_loop::<input::DbVarRecord>(&mut reader)?,
-        InputFileType::Dgv => deserialize_loop::<input::DgvRecord>(&mut reader)?,
-        InputFileType::DgvGs => deserialize_loop::<input::DgvGsRecord>(&mut reader)?,
-        InputFileType::Exac => deserialize_loop::<input::ExacRecord>(&mut reader)?,
-        InputFileType::G1k => deserialize_loop::<input::G1kRecord>(&mut reader)?,
-        InputFileType::Gnomad => deserialize_loop::<input::GnomadRecord>(&mut reader)?,
-        InputFileType::InhouseDb => deserialize_loop::<InhouseDbRecord>(&mut reader)?,
-    };
+    let records = deserialize_branch(input_type, &mut reader)?;
     let bg_db = BackgroundDatabase { records };
 
     tracing::debug!(
@@ -126,4 +138,74 @@ where
     );
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::InputFileType;
+
+    #[rstest::rstest]
+    #[case::dbvar(
+        InputFileType::Dbvar,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dbvar.bed.gz"
+    )]
+    #[case::dgv(
+        InputFileType::Dgv,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv.bed.gz"
+    )]
+    #[case::dgv_gs(
+        InputFileType::DgvGs,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/dgv_gs.bed.gz"
+    )]
+    #[case::exac(
+        InputFileType::Exac,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/exac.bed.gz"
+    )]
+    #[case::g1k(
+        InputFileType::G1k,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/g1k.bed.gz"
+    )]
+    #[case::gnomad_sv2(
+        InputFileType::GnomadSv2,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz"
+    )]
+    #[case::gnomad_cnv4(
+        InputFileType::GnomadCnv4,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch38/strucvar/gnomad-cnv.bed.gz"
+    )]
+    #[case::gnomad_sv4(
+        InputFileType::GnomadSv4,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch38/strucvar/gnomad-sv.bed.gz"
+    )]
+    #[case::inhouse_db(
+        InputFileType::InhouseDb,
+        "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/inhouse.tsv"
+    )]
+    fn test_deserialize_branch(
+        #[case] input_type: InputFileType,
+        #[case] path_input: &str,
+    ) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!(
+            "{:?}-{}",
+            input_type,
+            path_input
+                .split('/')
+                .last()
+                .unwrap()
+                .split('.')
+                .next()
+                .unwrap()
+        );
+
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .comment(Some(b'#'))
+            .delimiter(b'\t')
+            .from_reader(mehari::common::io::std::open_read_maybe_gz(path_input)?);
+
+        let records = super::deserialize_branch(input_type, &mut reader)?;
+        insta::assert_yaml_snapshot!(records);
+
+        Ok(())
+    }
 }

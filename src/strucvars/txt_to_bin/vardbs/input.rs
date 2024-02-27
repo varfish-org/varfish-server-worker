@@ -85,9 +85,9 @@ pub struct G1kRecord {
     pub n_het: u32,
 }
 
-/// gnomAD SV database record as read from TSV file.
+/// gnomAD SV v2 database record as read from TSV file.
 #[derive(Debug, Deserialize)]
-pub struct GnomadRecord {
+pub struct GnomadSv2Record {
     /// chromosome name
     pub chromosome: String,
     /// begin position, 0-based
@@ -100,6 +100,56 @@ pub struct GnomadRecord {
     pub n_homalt: u32,
     /// Number of heterozygous carriers
     pub n_het: u32,
+}
+
+/// gnomAD SV v4 database record as read from TSV file.
+#[derive(Debug, Deserialize)]
+pub struct GnomadSv4Record {
+    /// chromosome name
+    pub chromosome: String,
+    /// begin position, 0-based
+    pub begin: i32,
+    /// end position, 0-based
+    pub end: i32,
+    /// The structural vairant type
+    pub svtype: String,
+    /// Number of male homozygous reference allele carriers.
+    pub male_n_homref: u32,
+    /// Number of male heterozygous alternate allele carriers.
+    pub male_n_het: u32,
+    /// Number of male homozygous alternate allele carriers.
+    pub male_n_homalt: u32,
+    /// Number of male hemizygous alternate allele carriers.
+    pub male_n_hemiref: u32,
+    /// Number of male hemizygous reference allele carriers.
+    pub male_n_hemialt: u32,
+    /// Number of female homozygous reference allele carriers.
+    pub female_n_homref: u32,
+    /// Number of female heterozygous alternate allele carriers.
+    pub female_n_het: u32,
+    /// Number of female homozygous alternate allele carriers.
+    pub female_n_homalt: u32,
+    /// Number of samples at this site (CNV only).
+    pub cnv_n_total: u32,
+    /// Number of samples with a CNV at this site (CNV only).
+    pub cnv_n_var: u32,
+}
+
+/// gnomAD CNV v$ database record as read from TSV file.
+#[derive(Debug, Deserialize)]
+pub struct GnomadCnv4Record {
+    /// chromosome name
+    pub chromosome: String,
+    /// begin position, 0-based
+    pub begin: i32,
+    /// end position, 0-based
+    pub end: i32,
+    /// The structural vairant type
+    pub svtype: String,
+    /// Number of samples at this site (passing QC).
+    pub n_total: u32,
+    /// Number of samples with a CNV at this site (passing QC).
+    pub n_var: u32,
 }
 
 /// Common type to convert input data to.
@@ -251,7 +301,7 @@ impl TryInto<Option<InputRecord>> for ExacRecord {
     }
 }
 
-impl TryInto<Option<InputRecord>> for GnomadRecord {
+impl TryInto<Option<InputRecord>> for GnomadSv2Record {
     type Error = &'static str;
 
     fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
@@ -275,6 +325,59 @@ impl TryInto<Option<InputRecord>> for GnomadRecord {
             end: self.end,
             sv_type,
             count: self.n_homalt + self.n_het,
+        }))
+    }
+}
+
+impl TryInto<Option<InputRecord>> for GnomadCnv4Record {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
+        Ok(Some(InputRecord {
+            chromosome: self.chromosome.clone(),
+            chromosome2: self.chromosome,
+            begin: self.begin,
+            end: self.end,
+            sv_type: match self.svtype.as_str() {
+                "DEL" => SvType::Del,
+                "DUP" => SvType::Dup,
+                _ => {
+                    error!("sv_type = {}", &self.svtype);
+                    return Err("unknown SV type");
+                }
+            },
+            count: self.n_var,
+        }))
+    }
+}
+
+impl TryInto<Option<InputRecord>> for GnomadSv4Record {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
+        Ok(Some(InputRecord {
+            chromosome: self.chromosome.clone(),
+            chromosome2: self.chromosome,
+            begin: self.begin,
+            end: self.end,
+            sv_type: match self.svtype.as_str() {
+                "BND" => SvType::Bnd,
+                "CNV" => SvType::Cnv,
+                "DEL" => SvType::Del,
+                "DUP" => SvType::Dup,
+                "INS" => SvType::Ins,
+                "INV" => SvType::Inv,
+                _ => {
+                    error!("sv_type = {}", &self.svtype);
+                    return Err("unknown SV type");
+                }
+            },
+            count: self.male_n_het
+                + self.male_n_homalt
+                + self.male_n_hemialt
+                + self.female_n_het
+                + self.female_n_homalt
+                + self.cnv_n_var,
         }))
     }
 }

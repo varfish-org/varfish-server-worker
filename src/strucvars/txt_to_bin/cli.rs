@@ -72,8 +72,12 @@ pub enum InputType {
     StrucvarExacCnv,
     /// Convert Thousand Genomes to binary.
     StrucvarG1k,
-    /// Convert gnomAD SV to binary.
-    StrucvarGnomadSv,
+    /// Convert gnomAD SV v2 to binary.
+    StrucvarGnomadSv2,
+    /// Convert gnomAD CNV v4 to binary.
+    StrucvarGnomadCnv4,
+    /// Convert gnomAD SV v4 to binary.
+    StrucvarGnomadSv4,
     /// Convert masked region to binary.
     MaskedRegion,
     /// Convert cross-link to binary.
@@ -100,7 +104,7 @@ pub struct Args {
 
 /// Main entry point for the `strucvars txt-to-bin` command.
 pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
-    tracing::info!("Starting `db to-bin`");
+    tracing::info!("Starting `strucvars txt-to-bin`");
     tracing::info!("  common_args = {:?}", &common_args);
     tracing::info!("  args = {:?}", &args);
 
@@ -135,9 +139,21 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         InputType::StrucvarG1k => {
             vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::G1k)?
         }
-        InputType::StrucvarGnomadSv => {
-            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Gnomad)?
-        }
+        InputType::StrucvarGnomadSv2 => vardbs::convert_to_bin(
+            &args.path_input,
+            &args.path_output,
+            InputFileType::GnomadSv2,
+        )?,
+        InputType::StrucvarGnomadCnv4 => vardbs::convert_to_bin(
+            &args.path_input,
+            &args.path_output,
+            InputFileType::GnomadCnv4,
+        )?,
+        InputType::StrucvarGnomadSv4 => vardbs::convert_to_bin(
+            &args.path_input,
+            &args.path_output,
+            InputFileType::GnomadSv4,
+        )?,
         InputType::MaskedRegion => masked::convert_to_bin(&args.path_input, &args.path_output)?,
         InputType::Xlink => xlink::convert_to_bin(&args.path_input, &args.path_output)?,
     }
@@ -301,18 +317,58 @@ mod test {
     }
 
     #[test]
-    fn run_strucvar_gnomad_smoke() -> Result<(), anyhow::Error> {
+    fn run_strucvar_gnomad_sv2_smoke() -> Result<(), anyhow::Error> {
         let tmp_dir = temp_testdir::TempDir::default();
         let common_args = common::Args {
             verbose: Verbosity::new(0, 0),
         };
         let args = Args {
             assembly: None,
-            input_type: InputType::StrucvarGnomadSv,
+            input_type: InputType::StrucvarGnomadSv2,
             path_input: String::from(
                 "tests/db/to-bin/varfish-db-downloader/vardbs/grch37/strucvar/gnomad_sv.bed.gz",
             ),
             path_output: tmp_dir.join("gnomad.bin"),
+        };
+
+        super::run(&common_args, &args)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn run_strucvar_gnomad_cnv4_smoke() -> Result<(), anyhow::Error> {
+        let tmp_dir = temp_testdir::TempDir::default();
+        let common_args = common::Args {
+            verbose: Verbosity::new(0, 0),
+        };
+        let args = Args {
+            assembly: None,
+            input_type: InputType::StrucvarGnomadCnv4,
+            path_input: String::from(
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch38/strucvar/gnomad-cnv.bed.gz",
+            ),
+            path_output: tmp_dir.join("gnomad-cnv.bin"),
+        };
+
+        super::run(&common_args, &args)?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn run_strucvar_gnomad_sv4_smoke() -> Result<(), anyhow::Error> {
+        let tmp_dir = temp_testdir::TempDir::default();
+        let common_args = common::Args {
+            verbose: Verbosity::new(0, 0),
+        };
+        let args = Args {
+            assembly: None,
+            input_type: InputType::StrucvarGnomadSv4,
+            path_input: String::from(
+                "tests/db/to-bin/varfish-db-downloader/vardbs/grch38/strucvar/gnomad-sv.bed.gz",
+            ),
+            path_output: tmp_dir.join("gnomad-sv.bin"),
         };
 
         super::run(&common_args, &args)?;
