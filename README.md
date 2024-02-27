@@ -305,10 +305,14 @@ $ varfish-server-worker strucvars query \
     --path-output OUT.jsonl
 ```
 
-The worker database has the following structure:
+The worker database has the following structure.
+Note that also mehari transcripts are read, thus the `mehari/` directory is included.
 
 ```
-$ROOT/
+mehari/
+    {genome_release}/
+        txs.bin.zst
+worker/
     noref/
         genes/
             acmg.tsv                -- ACMG SF list genes
