@@ -44,6 +44,19 @@ impl AnnonarsDbs {
         let path_genome_release = path_annonars.join(path_component(genome_release));
 
         macro_rules! open_rocksdb {
+            ($path_token:expr, $module:ident, $db_name:expr, $meta_name:expr, $by_acc:expr) => {{
+                let path: std::path::PathBuf =
+                    path_genome_release.join($path_token).join("rocksdb");
+                annonars::$module::cli::query::open_rocksdb(&path, $db_name, $meta_name, $by_acc)
+                    .map_err(|e| {
+                        anyhow::anyhow!(
+                            "problem opening {} metadata at {}: {}",
+                            $db_name,
+                            path.as_os_str().to_string_lossy(),
+                            e
+                        )
+                    })?
+            }};
             ($path_token:expr, $module:ident, $db_name:expr, $meta_name:expr) => {{
                 let path: std::path::PathBuf =
                     path_genome_release.join($path_token).join("rocksdb");
@@ -60,11 +73,17 @@ impl AnnonarsDbs {
             }};
         }
 
-        let (clinvar_db, clinvar_meta) =
-            open_rocksdb!("clinvar-minimal", clinvar_minimal, "clinvar", "meta");
+        let (clinvar_db, clinvar_meta) = open_rocksdb!(
+            "clinvar-minimal",
+            clinvar_minimal,
+            "clinvar",
+            "meta",
+            "clinvar_by_accession"
+        );
         let (cadd_db, cadd_meta) = open_rocksdb!("cadd", tsv, "tsv_data", "meta");
         let (dbnsfp_db, dbnsfp_meta) = open_rocksdb!("dbnsfp", tsv, "tsv_data", "meta");
-        let (dbsnp_db, dbsnp_meta) = open_rocksdb!("dbsnp", dbsnp, "dbsnp_data", "meta");
+        let (dbsnp_db, dbsnp_meta) =
+            open_rocksdb!("dbsnp", dbsnp, "dbsnp_data", "meta", "dbsnp_by_rsid");
 
         let dbnsfp_ctx = annonars::tsv::coding::Context::new(
             dbnsfp_meta.db_infer_config.clone(),
@@ -135,7 +154,7 @@ impl Annotator {
     pub fn query_genes(
         &self,
         hgnc_id: &str,
-    ) -> Result<Option<annonars::genes::pbs::Record>, anyhow::Error> {
+    ) -> Result<Option<annonars::pbs::genes::base::Record>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .genes_db
@@ -156,15 +175,14 @@ impl Annotator {
 
         raw_value
             .map(|raw_value| {
-                annonars::genes::pbs::Record::decode(&mut std::io::Cursor::new(&raw_value)).map_err(
-                    |e| {
+                annonars::pbs::genes::base::Record::decode(&mut std::io::Cursor::new(&raw_value))
+                    .map_err(|e| {
                         anyhow::anyhow!(
                             "problem decoding record from genes database for HGNC ID {}: {}",
                             hgnc_id,
                             e
                         )
-                    },
-                )
+                    })
             })
             .transpose()
     }
@@ -177,7 +195,7 @@ impl Annotator {
     pub fn query_clinvar_minimal(
         &self,
         seqvar: &SequenceVariant,
-    ) -> Result<Option<annonars::clinvar_minimal::pbs::Record>, anyhow::Error> {
+    ) -> Result<Option<annonars::pbs::clinvar::minimal::Record>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .clinvar_db

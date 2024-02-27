@@ -34,7 +34,9 @@ pub fn trace_rss_now() {
     let page_size = procfs::page_size();
     tracing::debug!(
         "RSS now: {}",
-        Byte::from_bytes((me.stat().unwrap().rss * page_size) as u128).get_appropriate_unit(true)
+        Byte::from_u128((me.stat().unwrap().rss * page_size) as u128)
+            .expect("invalid RSS?!")
+            .get_appropriate_unit(byte_unit::UnitType::Decimal)
     );
 }
 
@@ -630,7 +632,9 @@ mod test {
     #[test]
     fn extract_pedigree_snapshot() {
         let path = "tests/seqvars/aggregate/ingest.vcf";
-        let mut vcf_reader = vcf::reader::Builder.build_from_path(path).unwrap();
+        let mut vcf_reader = vcf::reader::Builder::default()
+            .build_from_path(path)
+            .unwrap();
         let header = vcf_reader.read_header().unwrap();
 
         let (pedigree, case_uuid) = super::extract_pedigree_and_case_uuid(&header).unwrap();

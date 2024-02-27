@@ -85,7 +85,7 @@ pub struct Phenotype {
 
 impl Phenotype {
     /// Construct given a `genes` database record.
-    pub fn with_gene_record(gene_record: &annonars::genes::pbs::Record) -> Self {
+    pub fn with_gene_record(gene_record: &annonars::pbs::genes::base::Record) -> Self {
         Self {
             is_acmg_sf: gene_record.acmg_sf.is_some(),
             is_disease_gene: gene_record.omim.is_some() || gene_record.orpha.is_some(),
@@ -134,7 +134,7 @@ pub struct Constraints {
 impl Constraints {
     /// Construct given a `genes` database record.
     pub fn with_constraints_record(
-        constraints: &annonars::genes::pbs::GnomadConstraintsRecord,
+        constraints: &annonars::pbs::genes::base::GnomadConstraintsRecord,
     ) -> Self {
         Self {
             gnomad_mis_z: constraints.mis_z.unwrap_or_default() as f32,

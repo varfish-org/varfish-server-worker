@@ -391,7 +391,9 @@ mod test {
     #[test]
     fn handle_record_snapshot() {
         let path = "tests/seqvars/aggregate/ingest.vcf";
-        let mut vcf_reader = vcf::reader::Builder.build_from_path(path).unwrap();
+        let mut vcf_reader = vcf::reader::Builder::default()
+            .build_from_path(path)
+            .unwrap();
         let header = vcf_reader.read_header().unwrap();
 
         for record in vcf_reader.records(&header) {

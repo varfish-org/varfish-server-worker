@@ -228,7 +228,7 @@ pub fn load_masked_dbs(
         )?,
         segdup: load_masked_db_records(
             Path::new(path_db)
-                .join(format!("{}/features/masked_seqdup.bin", genome_release))
+                .join(format!("{}/features/masked_segdup.bin", genome_release))
                 .as_path(),
         )?,
     };

@@ -27,7 +27,7 @@ use mehari::{
         strucvars::csq::interface::StrandOrientation,
     },
     common::noodles::open_vcf_reader,
-    db::create::txs::data::{Strand, Transcript, TxSeqDatabase},
+    pbs::txs::{Strand, Transcript, TxSeqDatabase},
 };
 
 use rand_core::{RngCore, SeedableRng};
@@ -688,11 +688,7 @@ fn compute_tx_effects_for_breakpoint(
         let tree = &mehari_tx_idx.trees[*idx];
         for it in tree.find(query) {
             let tx = &tx_db.transcripts[*it.data() as usize];
-            if let Some(&idx) = gene_db
-                .xlink
-                .from_hgnc
-                .get(&format!("HGNC:{}", &tx.gene_id))
-            {
+            if let Some(&idx) = gene_db.xlink.from_hgnc.get(&tx.gene_id) {
                 let entrez_id = gene_db.xlink.records[idx as usize].entrez_id;
                 effects_by_gene
                     .entry(entrez_id)
@@ -753,11 +749,7 @@ fn compute_tx_effects_for_linear(
         let tree = &mehari_tx_idx.trees[*idx];
         for it in tree.find(query) {
             let tx = &tx_db.transcripts[*it.data() as usize];
-            if let Some(&idx) = gene_db
-                .xlink
-                .from_hgnc
-                .get(&format!("HGNC:{}", &tx.gene_id))
-            {
+            if let Some(&idx) = gene_db.xlink.from_hgnc.get(&tx.gene_id) {
                 let entrez_id = gene_db.xlink.records[idx as usize].entrez_id;
                 effects_by_gene
                     .entry(entrez_id)
@@ -824,7 +816,7 @@ pub fn overlapping_hgnc_ids(
     let tree = &tx_idx.trees[chrom_idx];
     tree.find(query.clone())
         .iter()
-        .map(|it| format!("HGNC:{}", tx_db.transcripts[*it.data() as usize].gene_id))
+        .map(|it| tx_db.transcripts[*it.data() as usize].gene_id.clone())
         .collect::<Vec<_>>()
 }
 

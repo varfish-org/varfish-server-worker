@@ -130,7 +130,7 @@ fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>
         ) = ann
         {
             let ann = anns
-                .get(0)
+                .first()
                 .expect("ANN field is empty")
                 .as_ref()
                 .expect("ANN field entry is empty");

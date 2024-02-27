@@ -14,7 +14,7 @@ use mehari::common::{
 };
 use noodles_bgzf as bgzf;
 use noodles_core::Position;
-use noodles_csi::{self as csi, index::reference_sequence::bin::Chunk};
+use noodles_csi::{self as csi, binning_index::index::reference_sequence::bin::Chunk};
 use noodles_tabix as tabix;
 use noodles_vcf as vcf;
 use std::{path::Path, pin::Pin};
@@ -40,7 +40,7 @@ where
     let mut record = vcf::Record::default();
 
     let mut indexer = tabix::index::Indexer::default();
-    indexer.set_header(csi::index::header::Builder::vcf().build());
+    indexer.set_header(csi::binning_index::index::header::Builder::vcf().build());
 
     let mut start_position = reader.get_ref().virtual_position();
 

@@ -649,7 +649,9 @@ pub mod test {
     pub fn sequence_variant_from_vcf(#[case] path_input: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
 
-        let mut vcf_reader = vcf::reader::Builder.build_from_path(path_input).unwrap();
+        let mut vcf_reader = vcf::reader::Builder::default()
+            .build_from_path(path_input)
+            .unwrap();
         let header = vcf_reader.read_header()?;
 
         for record in vcf_reader.records(&header) {

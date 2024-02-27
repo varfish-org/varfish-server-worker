@@ -1,5 +1,7 @@
 //! Variant-related information.
 
+use annonars::pbs::clinvar::minimal::{ClinicalSignificance, ReviewStatus};
+
 use crate::seqvars::query::{
     annonars::Annotator,
     output::variant_related::score_collection::{
@@ -308,7 +310,7 @@ impl Clinvar {
             .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
             .map(|record| {
                 if let Some(assertion) = record.reference_assertions.first() {
-                    let annonars::clinvar_minimal::pbs::ReferenceAssertion {
+                    let annonars::pbs::clinvar::minimal::ReferenceAssertion {
                         rcv,
                         clinical_significance,
                         review_status,
@@ -317,27 +319,41 @@ impl Clinvar {
                     Ok(Self {
                         vcv: record.vcv.clone(),
                         rcv: rcv.clone(),
-                        significance: match clinical_significance {
-                            0 => "Pathogenic",
-                            1 => "Likely pathogenic",
-                            2 => "Uncertain significance",
-                            3 => "Likely benign",
-                            4 => "Benign",
-                            _ => anyhow::bail!(
-                                "invalid clinical significance enum: {}",
-                                clinical_significance
-                            ),
+                        significance: match ClinicalSignificance::try_from(*clinical_significance)
+                            .map_err(|e| {
+                            anyhow::anyhow!("could not convert clinical significance: {}", e)
+                        })? {
+                            ClinicalSignificance::Unknown => "UNKNOWN",
+                            ClinicalSignificance::Pathogenic => "Pathogenic",
+                            ClinicalSignificance::LikelyPathogenic => "Likely pathogenic",
+                            ClinicalSignificance::UncertainSignificance => "Uncertain significance",
+                            ClinicalSignificance::LikelyBenign => "Likely benign",
+                            ClinicalSignificance::Benign => "Benign",
                         }
                         .into(),
-                        review_status: match review_status {
-                            0 => "practice guideline",
-                            1 => "reviewed by expert panel",
-                            2 => "criteria provided, multiple submitters, no conflicts",
-                            3 => "criteria provided, single submitter",
-                            4 => "criteria provided, conflicting interpretations",
-                            5 => "no assertion criteria provided",
-                            6 => "no assertion provided",
-                            _ => anyhow::bail!("invalid review status enum: {}", review_status),
+                        review_status: match ReviewStatus::try_from(*review_status).map_err(
+                            |e| anyhow::anyhow!("could not convert review status: {}", e),
+                        )? {
+                            ReviewStatus::PracticeUnknown => "UNKNOWN",
+                            ReviewStatus::PracticeGuideline => "practice guideline",
+                            ReviewStatus::ReviewedByExpertPanel => "reviewed by expert panel",
+                            ReviewStatus::CriteriaProvidedMultipleSubmittersNoConflicts => {
+                                "criteria provided, multiple submitters, no conflicts"
+                            }
+                            ReviewStatus::CriteriaProvidedSingleSubmitter => {
+                                "criteria provided, single submitter"
+                            }
+                            ReviewStatus::CriteriaProvidedConflictingInterpretations => {
+                                "criteria provided, conflicting interpretations"
+                            }
+                            ReviewStatus::NoAssertionCriteriaProvided => {
+                                "no assertion criteria provided"
+                            }
+                            ReviewStatus::NoAssertionProvided => "no assertion provided",
+                            ReviewStatus::FlaggedSubmission => "flagged submission",
+                            ReviewStatus::NoClassificationsFromUnflaggedRecords => {
+                                "no classifications from unflagged records"
+                            }
                         }
                         .into(),
                     })
