@@ -85,9 +85,43 @@ pub struct G1kRecord {
     pub n_het: u32,
 }
 
-/// gnomAD SV database record as read from TSV file.
+/// gnomAD SV v2 database record as read from TSV file.
 #[derive(Debug, Deserialize)]
-pub struct GnomadRecord {
+pub struct GnomadSv2Record {
+    /// chromosome name
+    pub chromosome: String,
+    /// begin position, 0-based
+    pub begin: i32,
+    /// end position, 0-based
+    pub end: i32,
+    /// The structural vairant type
+    pub svtype: String,
+    /// Number of homozygous alternative carriers
+    pub n_homalt: u32,
+    /// Number of heterozygous carriers
+    pub n_het: u32,
+}
+
+/// gnomAD SV v4 database record as read from TSV file.
+#[derive(Debug, Deserialize)]
+pub struct GnomadSv4Record {
+    /// chromosome name
+    pub chromosome: String,
+    /// begin position, 0-based
+    pub begin: i32,
+    /// end position, 0-based
+    pub end: i32,
+    /// The structural vairant type
+    pub svtype: String,
+    /// Number of homozygous alternative carriers
+    pub n_homalt: u32,
+    /// Number of heterozygous carriers
+    pub n_het: u32,
+}
+
+/// gnomAD CNV v$ database record as read from TSV file.
+#[derive(Debug, Deserialize)]
+pub struct GnomadCnv4Record {
     /// chromosome name
     pub chromosome: String,
     /// begin position, 0-based
@@ -251,7 +285,7 @@ impl TryInto<Option<InputRecord>> for ExacRecord {
     }
 }
 
-impl TryInto<Option<InputRecord>> for GnomadRecord {
+impl TryInto<Option<InputRecord>> for GnomadSv2Record {
     type Error = &'static str;
 
     fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
@@ -276,6 +310,22 @@ impl TryInto<Option<InputRecord>> for GnomadRecord {
             sv_type,
             count: self.n_homalt + self.n_het,
         }))
+    }
+}
+
+impl TryInto<Option<InputRecord>> for GnomadCnv4Record {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
+        todo!()
+    }
+}
+
+impl TryInto<Option<InputRecord>> for GnomadSv4Record {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<Option<InputRecord>, Self::Error> {
+        todo!()
     }
 }
 

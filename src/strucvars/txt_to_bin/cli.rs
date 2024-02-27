@@ -135,9 +135,11 @@ pub fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         InputType::StrucvarG1k => {
             vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::G1k)?
         }
-        InputType::StrucvarGnomadSv => {
-            vardbs::convert_to_bin(&args.path_input, &args.path_output, InputFileType::Gnomad)?
-        }
+        InputType::StrucvarGnomadSv => vardbs::convert_to_bin(
+            &args.path_input,
+            &args.path_output,
+            InputFileType::GnomadSv2,
+        )?,
         InputType::MaskedRegion => masked::convert_to_bin(&args.path_input, &args.path_output)?,
         InputType::Xlink => xlink::convert_to_bin(&args.path_input, &args.path_output)?,
     }
