@@ -230,6 +230,8 @@ async fn write_ingest_record(
             Ok(Some("Popdel".to_string()))
         } else if caller.starts_with("MELTv") {
             Ok(Some("Melt".to_string()))
+        } else if caller.starts_with("SNIFFLESv") {
+            Ok(Some("Sniffles".to_string()))
         } else {
             anyhow::bail!("unknown caller: {}", caller)
         }
@@ -486,6 +488,7 @@ mod test {
                 String::from("tests/strucvars/ingest/gcnv-min.vcf"),
                 String::from("tests/strucvars/ingest/manta-min.vcf"),
                 String::from("tests/strucvars/ingest/melt-min.vcf"),
+                String::from("tests/strucvars/ingest/sniffles2-min.vcf"),
             ],
             path_cov_vcf: vec![],
             path_ped: "tests/strucvars/ingest/dragen-cnv-min.ped".into(),
@@ -558,6 +561,7 @@ mod test {
                 String::from("tests/strucvars/ingest/gcnv-min.vcf.gz"),
                 String::from("tests/strucvars/ingest/manta-min.vcf.gz"),
                 String::from("tests/strucvars/ingest/melt-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/sniffles2-min.vcf.gz"),
             ],
             path_cov_vcf: vec![],
             path_ped: "tests/strucvars/ingest/dragen-cnv-min.ped".into(),

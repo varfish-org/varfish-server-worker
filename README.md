@@ -162,6 +162,7 @@ The command supports the following variant callers and can guess the caller from
 - Manta
 - MELT
 - PopDel
+- Sniffles2
 
 One record will be written out for each variant, each with a single alternate allele.
 
