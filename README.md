@@ -305,34 +305,36 @@ $ varfish-server-worker strucvars query \
     --path-output OUT.jsonl
 ```
 
-The worker database has the following structure:
+The worker database has the following structure.
+Note that also mehari transcripts are read, thus the `mehari/` directory is included.
 
 ```
-$ROOT/
+mehari/
+    {genome_release}/
+        txs.bin.zst
+worker/
     noref/
         genes/
-            acmg.tsv              -- ACMG SF list genes
-            mim2gene.tsv          -- OMIM to NCBI mapping from clingen
-            xlink.bin             -- gene crosslinks
-    {genome_release}/             -- one per genome release
-        mehari/
-            txs.bin.zstd          -- mehari transcripts
-        features/                 -- features important for annotation
-            masked_repeat.bin     -- masked repeats
-            masked_seqdup.bin     -- masked segmental duplications
-        strucvars/                -- structural variant specific
-            bgdbs/                -- background databases
-                dbvar.bin         -- dbVar
-                dgv.bin           -- DGV
-                dgv-gs.bin        -- DGV gold standard
-                exac.bin          -- ExAC CNVs
-                g1k.bin           -- 1000 genomes CNVs
-                gnomad.bin        -- gnomAD-SVs
-            clinvar.bin           -- ClinVar SVs
-            inhouse.bin           -- inhouse SV database
-            patho-mms.bed         -- well-known pathogenic DELs/DUPs
+            acmg.tsv                -- ACMG SF list genes
+            mim2gene.tsv            -- OMIM to NCBI mapping from clingen
+            xlink.bin               -- gene crosslinks
+    {genome_release}/               -- one per genome release
+        features/                   -- features important for annotation
+            masked_repeat.bin       -- masked repeats
+            masked_seqdup.bin       -- masked segmental duplications
+        strucvars/                  -- structural variant specific
+            bgdbs/                  -- background databases
+                dbvar.bin           -- dbVar
+                dgv.bin             -- DGV
+                dgv_gs.bin          -- DGV gold standard
+                g1k.bin             -- 1000 genomes CNVs
+                gnomad_exomes.bin   -- gnomAD-exomes/ExAC SVs
+                gnomad_genomes.bin  -- gnomAD-genomes SVs
+            clinvar.bin             -- ClinVar SVs
+            inhouse.bin             -- inhouse SV database
+            patho_mms.bed           -- well-known pathogenic DELs/DUPs
         tads/
-            hesc.bed              -- hESC TAD definitions
+            hesc.bed                -- hESC TAD definitions
 ```
 
 # Developer Information
