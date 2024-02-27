@@ -7,9 +7,19 @@ use crate::common::GenomeRelease;
 /// Enumeration for the known variant callers.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub enum VariantCaller {
-    GatkHaplotypeCaller { version: String },
-    GatkUnifiedGenotyper { version: String },
-    Dragen { version: String },
+    GatkHaplotypeCaller {
+        version: String,
+    },
+    GatkUnifiedGenotyper {
+        version: String,
+    },
+    Glnexus {
+        version: String,
+        config_name: Option<String>,
+    },
+    Dragen {
+        version: String,
+    },
     Other,
 }
 
@@ -20,6 +30,7 @@ impl VariantCaller {
             VariantCaller::GatkHaplotypeCaller { .. } => "GatkHaplotypeCaller",
             VariantCaller::GatkUnifiedGenotyper { .. } => "GatkUnifiedGenotyper",
             VariantCaller::Dragen { .. } => "Dragen",
+            VariantCaller::Glnexus { .. } => "Glnexus",
             VariantCaller::Other => "Other",
         }
     }
@@ -27,12 +38,16 @@ impl VariantCaller {
 
 impl VariantCaller {
     pub fn guess(header: &vcf::Header) -> Option<Self> {
+        use vcf::header::record::value::collection::Collection;
+
+        let mut glnexus_version: Option<String> = None;
+        let mut glnexus_config_name: Option<String> = None;
+
         for (other, collection) in header.other_records() {
             if ["GATKCommandLine", "DRAGENCommandLine"]
                 .iter()
                 .any(|k| other.as_ref().starts_with(k))
             {
-                use vcf::header::record::value::collection::Collection;
                 if let Collection::Structured(map) = collection {
                     for (key, values) in map.iter() {
                         match (key.as_str(), values.other_fields().get("Version").cloned()) {
@@ -49,8 +64,24 @@ impl VariantCaller {
                         }
                     }
                 }
+            } else if other.as_ref().starts_with("GLnexusVersion") {
+                if let Collection::Unstructured(values) = collection {
+                    glnexus_version = Some(values[0].clone());
+                }
+            } else if other.as_ref().starts_with("GLnexusConfigName") {
+                if let Collection::Unstructured(values) = collection {
+                    glnexus_config_name = Some(values[0].clone());
+                }
             }
         }
+
+        if let Some(version) = glnexus_version {
+            return Some(VariantCaller::Glnexus {
+                version,
+                config_name: glnexus_config_name,
+            });
+        }
+
         None
     }
 }
@@ -415,6 +446,23 @@ pub fn build_output_header(
                     .build()?,
             ),
         )?,
+        VariantCaller::Glnexus {
+            version,
+            config_name,
+        } => builder.insert(
+            "x-varfish-version".parse()?,
+            vcf::header::record::Value::Map(
+                String::from("orig-caller"),
+                Map::<Other>::builder()
+                    .insert("Name".parse()?, orig_caller.name())
+                    .insert("Version".parse()?, version)
+                    .insert(
+                        "ConfigName".parse()?,
+                        config_name.clone().unwrap_or_default(),
+                    )
+                    .build()?,
+            ),
+        )?,
         VariantCaller::Other => builder.insert(
             "x-varfish-version".parse()?,
             vcf::header::record::Value::Map(
@@ -432,11 +480,13 @@ pub fn build_output_header(
 #[cfg(test)]
 mod test {
     use mehari::ped::PedigreeByName;
+    use noodles_vcf as vcf;
     use rstest::rstest;
 
     use super::VariantCaller;
 
     #[rstest]
+    #[case("tests/seqvars/ingest/clair3_glnexus.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
@@ -454,6 +504,7 @@ mod test {
     }
 
     #[rstest]
+    #[case("tests/seqvars/ingest/clair3_glnexus.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
@@ -464,7 +515,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder::default()
+        let mut input_vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
@@ -475,6 +526,12 @@ mod test {
             &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             "x.y.z",
         )?;
+
+        // Work around glnexus issue with RNC.
+        if let Some(format) = input_vcf_header.formats_mut().get_mut("RNC") {
+            *format.number_mut() = vcf::header::Number::Count(1);
+            *format.type_mut() = vcf::header::record::value::map::format::Type::String;
+        }
 
         let out_path = tmpdir.join("out.vcf");
         let out_path_str = out_path.to_str().expect("invalid path");
@@ -489,6 +546,7 @@ mod test {
     }
 
     #[rstest]
+    #[case("tests/seqvars/ingest/clair3_glnexus.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.4.vcf")]
     #[case("tests/seqvars/ingest/example_dragen.07.021.624.3.10.9.vcf")]
     #[case("tests/seqvars/ingest/example_gatk_hc.3.7-0.vcf")]
@@ -499,7 +557,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder::default()
+        let mut input_vcf_header = noodles_vcf::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
@@ -510,6 +568,12 @@ mod test {
             &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
             "x.y.z",
         )?;
+
+        // Work around glnexus issue with RNC.
+        if let Some(format) = input_vcf_header.formats_mut().get_mut("RNC") {
+            *format.number_mut() = vcf::header::Number::Count(1);
+            *format.type_mut() = vcf::header::record::value::map::format::Type::String;
+        }
 
         let out_path = tmpdir.join("out.vcf");
         let out_path_str = out_path.to_str().expect("invalid path");

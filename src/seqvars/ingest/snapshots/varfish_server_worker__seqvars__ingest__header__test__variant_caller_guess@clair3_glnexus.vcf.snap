@@ -1,0 +1,7 @@
+---
+source: src/seqvars/ingest/header.rs
+expression: "VariantCaller::guess(&vcf_header)"
+---
+Glnexus:
+  version: v1.4.1-0-g68e25e5
+  config_name: /tmp/clair3.yml
