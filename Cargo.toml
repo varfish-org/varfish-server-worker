@@ -12,7 +12,7 @@ rust-version = "1.64.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-annonars = "0.35"
+annonars = "0.36"
 anyhow = "1.0"
 async-compression = { version = "0.4", features = ["tokio", "gzip"] }
 aws-sdk-s3 = "0.34"
@@ -39,7 +39,7 @@ hgvs = "0.15"
 indexmap = { version = "2.2", features = ["serde"] }
 itertools = "0.12"
 log = "0.4"
-mehari = "0.23"
+mehari = "0.24"
 multimap = "0.10"
 noodles-bgzf = { version = "0.26", features = ["async"] }
 noodles-core = "0.14.0"
