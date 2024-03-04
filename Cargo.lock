@@ -315,6 +315,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "annonars"
+version = "0.36.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1be5c8ae15c7a3bd4d89af452104d7a026806434490d2b201dca043485c3f468"
+dependencies = [
+ "actix-web",
+ "anyhow",
+ "bgzip",
+ "bio",
+ "biocommons-bioutils",
+ "boolvec",
+ "byteorder",
+ "chrono",
+ "clap",
+ "clap-verbosity-flag",
+ "csv",
+ "enum-map",
+ "env_logger",
+ "erased-serde",
+ "flate2",
+ "indexmap 2.2.3",
+ "indicatif",
+ "log",
+ "noodles-bed",
+ "noodles-bgzf",
+ "noodles-core",
+ "noodles-csi",
+ "noodles-gff",
+ "noodles-tabix",
+ "noodles-vcf",
+ "pbjson",
+ "pbjson-build",
+ "pbjson-types",
+ "prost",
+ "prost-build",
+ "rayon",
+ "rocksdb",
+ "rocksdb-utils-lookup",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "strum 0.26.1",
+ "thiserror",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "anstream"
 version = "0.6.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2829,12 +2878,12 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.23.2"
+version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65a31a66c91b8499d898a192315f7067d528f2c61037bd41680f2d96e68d565c"
+checksum = "91b1335b7544cb5298a8975e5a195b8122a65187a8ea97a927a47983e37805c1"
 dependencies = [
  "actix-web",
- "annonars",
+ "annonars 0.35.0",
  "anyhow",
  "async-compression",
  "bgzip",
@@ -5026,7 +5075,7 @@ checksum = "126e423afe2dd9ac52142e7e9d5ce4135d7e13776c529d27fd6bc49f19e3280b"
 name = "varfish-server-worker"
 version = "0.11.0"
 dependencies = [
- "annonars",
+ "annonars 0.36.1",
  "anyhow",
  "async-compression",
  "async-std",
