@@ -76,7 +76,7 @@ async-std = { version = "1.12", features = ["attributes"] }
 file_diff = "1.0"
 float-cmp = "0.9"
 hxdmp = "0.2.1"
-insta = { version = "1.34", features = ["yaml"] }
+insta = { version = "1.36", features = ["yaml"] }
 pretty_assertions = "1.4"
 rstest = "0.18.2"
 serde_test = "1.0"
