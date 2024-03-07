@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.7.0...v0.7.1) (2024-03-07)
+
+
+### Bug Fixes
+
+* make "db mk-inhouse" work with BNS/INS ([#322](https://github.com/varfish-org/varfish-server-worker/issues/322)) ([816de4d](https://github.com/varfish-org/varfish-server-worker/commit/816de4d6bd6952482b88a94427266fc8d52fdf95))
+
 ## [0.7.0](https://www.github.com/bihealth/varfish-server-worker/compare/v0.6.1...v0.7.0) (2023-06-09)
 
 
