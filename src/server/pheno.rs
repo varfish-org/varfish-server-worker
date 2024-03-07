@@ -494,20 +494,18 @@ pub mod actix_server {
             ) -> Self {
                 let hpo_terms = if hpo_terms {
                     Some(
-                        HpoGroup::from_iter(
-                            omim_disease.to_hpo_set(ontology).child_nodes().into_iter(),
-                        )
-                        .into_iter()
-                        .map(|term_id| ontology.hpo(term_id))
-                        .filter(|term| term.is_some())
-                        .map(|term| {
-                            let term = term.expect("filtered above");
-                            ResultHpoTerm {
-                                term_id: term.id().to_string(),
-                                name: term.name().to_string(),
-                            }
-                        })
-                        .collect(),
+                        HpoGroup::from_iter(&omim_disease.to_hpo_set(ontology).child_nodes())
+                            .into_iter()
+                            .map(|term_id| ontology.hpo(term_id))
+                            .filter(|term| term.is_some())
+                            .map(|term| {
+                                let term = term.expect("filtered above");
+                                ResultHpoTerm {
+                                    term_id: term.id().to_string(),
+                                    name: term.name().to_string(),
+                                }
+                            })
+                            .collect(),
                     )
                 } else {
                     None

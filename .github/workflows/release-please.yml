@@ -2,7 +2,7 @@ on:
   push:
     branches:
       - main
-      - releases/*
+      - release/*
 
 name: release-please
 

@@ -38,10 +38,10 @@ fn copy_db_def(
 
     debug!("Compute and verify MD5 checksum");
     // First create path to `.md5` file, then read in the MD5 string.
-    let md5_path = base_path.join(&format!("{file_name}{file_ext}.md5"));
-    let md5_str = read_md5_file(&md5_path)?.to_lowercase();
+    let md5_path = base_path.join(format!("{file_name}{file_ext}.md5"));
+    let md5_str = read_md5_file(md5_path)?.to_lowercase();
 
-    let file_path = base_path.join(&format!("{file_name}{file_ext}"));
+    let file_path = base_path.join(format!("{file_name}{file_ext}"));
     let chk_md5 = md5sum(&file_path)?.to_lowercase();
     if md5_str != chk_md5 {
         return Err(anyhow::anyhow!(
