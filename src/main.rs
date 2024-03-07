@@ -142,11 +142,6 @@ fn main() -> Result<(), anyhow::Error> {
         .compact()
         .finish();
 
-    // Common variables for CLI commands from annonars.
-    let annonars_common = annonars::common::cli::Args {
-        verbose: cli.common.verbose.clone(),
-    };
-
     // Install collector and go into sub commands.
     let term = Term::stderr();
     tracing::subscriber::with_default(collector, || {

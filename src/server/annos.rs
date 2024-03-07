@@ -552,6 +552,7 @@ pub mod actix_server {
         #[serde_with::serde_as]
         #[derive(Deserialize, Debug, Clone)]
         #[serde(rename_all = "kebab-case")]
+        #[allow(dead_code)]
         struct Request {
             /// Genome release version.
             pub genome_release: String,
