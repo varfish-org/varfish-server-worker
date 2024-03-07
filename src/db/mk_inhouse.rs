@@ -58,6 +58,8 @@ pub mod input {
         /// SV type of the record
         #[serde(deserialize_with = "from_varfish_sv_type")]
         pub sv_type: SvType,
+        /// Field with postgres-serialized JSON.
+        pub info: String,
         /// number of hom. alt. carriers
         pub num_hom_alt: u32,
         /// number of hom. ref. carriers
@@ -276,22 +278,30 @@ fn merge_to_out(
     // Read in all records and perform the "merge compression"
     let mut reader = JsonLinesReader::new(reader);
     while let Ok(Some(record)) = reader.read::<input::Record>() {
+        let info = record.info.replace("\"\"\"", "\"");
         let record = {
             let mut record = output::Record::from_db_record(record);
             record.begin -= 1; // need to get 0-based coordinates for DB
             record
         };
-        let begin = match record.sv_type {
-            SvType::Bnd => record.begin - 1 - args.slack_bnd,
-            SvType::Ins => record.begin - 1 - args.slack_ins,
-            _ => record.begin,
-        };
+        let begin = record.begin;
         let end = match record.sv_type {
-            SvType::Bnd => record.begin + args.slack_bnd,
-            SvType::Ins => record.begin + args.slack_ins,
+            SvType::Bnd => {
+                // Obtain "pos2" from JSON-encoded info field.
+                let info = serde_json::from_str::<serde_json::Value>(&info)?;
+                info.as_object()
+                    .and_then(|o| o.get("pos2"))
+                    .and_then(|v| v.as_i64())
+                    .ok_or_else(|| anyhow::anyhow!("Cannot find 'pos2' in info field"))?
+                    as i32
+            }
+            SvType::Ins => record.begin + 1,
             _ => record.end,
         };
-        let query = begin..end;
+        let query = match record.sv_type {
+            SvType::Bnd | SvType::Ins => begin..(begin + 1),
+            _ => begin..end,
+        };
         let mut found_any_cluster = false;
         for mut it_tree in tree.find_mut(&query) {
             let cluster_idx = *it_tree.data();
@@ -317,13 +327,7 @@ fn merge_to_out(
         }
         if !found_any_cluster {
             // create new cluster
-            tree.insert(
-                match record.sv_type {
-                    SvType::Bnd | SvType::Ins => (record.begin - 1)..record.begin,
-                    _ => (record.begin - 1)..record.end,
-                },
-                clusters.len(),
-            );
+            tree.insert(query, clusters.len());
             clusters.push(vec![records.len()]);
         }
         // always register the record
