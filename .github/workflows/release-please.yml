@@ -2,19 +2,22 @@ on:
   push:
     branches:
       - main
+      - releases/*
 
 name: release-please
 
 jobs:
   release-please:
-    if: github.repository_owner == 'bihealth'
+    if: github.repository_owner == 'varfish-org'
     runs-on: ubuntu-latest
     steps:
-      - uses: GoogleCloudPlatform/release-please-action@v2
+      - uses: GoogleCloudPlatform/release-please-action@v4
         id: release
         with:
           release-type: rust
           package-name: varfish-server-worker
+          target-branch: release/v0.7.x
+          token: ${{ secrets.BOT_TOKEN }}
 
       - uses: actions/checkout@v2
         if: ${{ steps.release.outputs.release_created }}
