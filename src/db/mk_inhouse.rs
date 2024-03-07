@@ -289,8 +289,7 @@ fn merge_to_out(
                     info.as_object()
                         .and_then(|o| o.get("pos2"))
                         .and_then(|v| v.as_i64())
-                        .unwrap_or(record.end as i64)
-                        as i32
+                        .unwrap_or(record.end as i64) as i32
                 }
                 SvType::Ins => record.begin + 1,
                 _ => record.end,
