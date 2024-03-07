@@ -356,7 +356,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         } else {
             PathBuf::from_str(&args.path_db)?.join("conf.toml")
         };
-        let toml_str = std::fs::read_to_string(&path_conf)?;
+        let toml_str = std::fs::read_to_string(path_conf)?;
         toml::from_str(&toml_str)?
     };
 

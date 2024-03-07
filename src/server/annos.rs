@@ -731,7 +731,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     tracing::info!("Opening databases...");
     let before_opening = Instant::now();
     // Argument lists from the command line with the corresponding database enum value.
-    let paths_db_pairs = vec![
+    let paths_db_pairs = [
         (&args.path_cadd, AnnoDb::Cadd),
         (&args.path_dbnsfp, AnnoDb::Dbnsfp),
         (&args.path_dbsnp, AnnoDb::Dbsnp),

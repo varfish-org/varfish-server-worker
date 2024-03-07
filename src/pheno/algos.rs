@@ -70,11 +70,10 @@ mod test {
             .omim_disease(&OmimDiseaseId::from(154700))
             .expect("marfan symdrome must be in HPO");
         let hpo_marfan = HpoGroup::from_iter(
-            omim_marfan
+            &omim_marfan
                 .to_hpo_set(&hpo)
                 .child_nodes()
-                .without_modifier()
-                .into_iter(),
+                .without_modifier(),
         );
 
         let score = phenomizer::score(&prepare(query), &hpo_marfan, &hpo);

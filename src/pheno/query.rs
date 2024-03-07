@@ -248,7 +248,7 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
     let path_rocksdb = format!("{}/resnik", args.path_hpo_dir);
     let db = rocksdb::DB::open_cf_for_read_only(
         &rocksdb::Options::default(),
-        &path_rocksdb,
+        path_rocksdb,
         ["meta", "resnik_pvalues"],
         true,
     )?;

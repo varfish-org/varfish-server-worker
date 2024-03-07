@@ -100,7 +100,7 @@ fn run_simulation(
                 let path = std::path::Path::new(path_gene_logs).join(num_terms.to_string());
                 std::fs::create_dir_all(&path).expect("cannot create logs directory");
                 Some(
-                    std::fs::File::create(&format!("{}/{}.txt", path.display(), gene.symbol()))
+                    std::fs::File::create(format!("{}/{}.txt", path.display(), gene.symbol()))
                         .expect("could not open file"),
                 )
             } else {
@@ -130,10 +130,7 @@ fn run_simulation(
                     let s = phenomizer::score(
                         &ts,
                         &HpoGroup::from_iter(
-                            gene.to_hpo_set(ontology)
-                                .child_nodes()
-                                .without_modifier()
-                                .into_iter(),
+                            &gene.to_hpo_set(ontology).child_nodes().without_modifier(),
                         ),
                         ontology,
                     );
@@ -147,11 +144,7 @@ fn run_simulation(
                             s,
                             gene.symbol(),
                             ts.iter()
-                                .map(|t| format!(
-                                    "{} ({})",
-                                    t.to_string(),
-                                    ontology.hpo(t).unwrap().name()
-                                ))
+                                .map(|t| format!("{} ({})", t, ontology.hpo(t).unwrap().name()))
                                 .collect::<Vec<_>>()
                                 .join(", ")
                         )
