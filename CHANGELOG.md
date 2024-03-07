@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/varfish-org/varfish-server-worker/compare/v0.7.1...v0.7.2) (2024-03-07)
+
+
+### Bug Fixes
+
+* use record.end if info/pos2 unset ([#325](https://github.com/varfish-org/varfish-server-worker/issues/325)) ([fd3e50c](https://github.com/varfish-org/varfish-server-worker/commit/fd3e50c6b058c1b477554a3fe3c2d9c5db9e87d2))
+
 ## [0.7.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.7.0...v0.7.1) (2024-03-07)
 
 
