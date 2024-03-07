@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.11.0](https://www.github.com/varfish-org/varfish-server-worker/compare/v0.10.2...v0.11.0) (2024-03-07)
+
+
+### Features
+
+* add build of docker containers ([#243](https://www.github.com/varfish-org/varfish-server-worker/issues/243)) ([c455e25](https://www.github.com/varfish-org/varfish-server-worker/commit/c455e257af57b6d100c2f96c1c5633b39910e1a2))
+* adding "seqvars aggregate" command ([#211](https://www.github.com/varfish-org/varfish-server-worker/issues/211)) ([#214](https://www.github.com/varfish-org/varfish-server-worker/issues/214)) ([d6db0b7](https://www.github.com/varfish-org/varfish-server-worker/commit/d6db0b7ab2fb17987d1052c0c7bba1113d34d025))
+* adjust "strucvars query" to read ingested VCFs ([#202](https://www.github.com/varfish-org/varfish-server-worker/issues/202)) ([#220](https://www.github.com/varfish-org/varfish-server-worker/issues/220)) ([1fb3c58](https://www.github.com/varfish-org/varfish-server-worker/commit/1fb3c581e58d017923b1f8261f9e12515e0a648a))
+* allow importing gnomAD SV/CNV v4 as background db ([#295](https://www.github.com/varfish-org/varfish-server-worker/issues/295)) ([#310](https://www.github.com/varfish-org/varfish-server-worker/issues/310)) ([ce9b391](https://www.github.com/varfish-org/varfish-server-worker/commit/ce9b39149e68c005b4a4abf250a9671a141a17a5))
+* create .tbi for written .vcf.gz files ([#233](https://www.github.com/varfish-org/varfish-server-worker/issues/233)) ([#241](https://www.github.com/varfish-org/varfish-server-worker/issues/241)) ([be99642](https://www.github.com/varfish-org/varfish-server-worker/commit/be99642d88946c5c45666aa4dc6716b5267796ce))
+* implement "seqvars ingest" command ([#199](https://www.github.com/varfish-org/varfish-server-worker/issues/199)) ([#206](https://www.github.com/varfish-org/varfish-server-worker/issues/206)) ([21b965c](https://www.github.com/varfish-org/varfish-server-worker/commit/21b965c7bf9d0d54fcbc3d91ee8d9c007ec6ca60))
+* implement "seqvars query" command ([#201](https://www.github.com/varfish-org/varfish-server-worker/issues/201)) ([#223](https://www.github.com/varfish-org/varfish-server-worker/issues/223)) ([a7cb0bd](https://www.github.com/varfish-org/varfish-server-worker/commit/a7cb0bdf96ad61ce2b044535b2f1e5657875240b))
+* implement "strucvars ingest" command ([#200](https://www.github.com/varfish-org/varfish-server-worker/issues/200)) ([#208](https://www.github.com/varfish-org/varfish-server-worker/issues/208)) ([a783ef3](https://www.github.com/varfish-org/varfish-server-worker/commit/a783ef3ab08f103435799345d738ae723bf9997f))
+* implement I/O from/to S3 ([#234](https://www.github.com/varfish-org/varfish-server-worker/issues/234)) ([#242](https://www.github.com/varfish-org/varfish-server-worker/issues/242)) ([414bb5d](https://www.github.com/varfish-org/varfish-server-worker/commit/414bb5d468eacda8ca68b3cb778ae8bf5f5dd0c2))
+* implement ingest and aggregate for sniffles2 ([#296](https://www.github.com/varfish-org/varfish-server-worker/issues/296)) ([#312](https://www.github.com/varfish-org/varfish-server-worker/issues/312)) ([6432365](https://www.github.com/varfish-org/varfish-server-worker/commit/6432365727b87e51b5fd7b803a5c700ac2cb3167))
+* implement ingest for Clair3+GLNexus ([#297](https://www.github.com/varfish-org/varfish-server-worker/issues/297)) ([#311](https://www.github.com/varfish-org/varfish-server-worker/issues/311)) ([4144003](https://www.github.com/varfish-org/varfish-server-worker/commit/4144003726a0dd73d9b87294cf178666383382b0))
+* implement parsing of clinvar-data-jsonl data ([#198](https://www.github.com/varfish-org/varfish-server-worker/issues/198)) ([#204](https://www.github.com/varfish-org/varfish-server-worker/issues/204)) ([e0ea7ac](https://www.github.com/varfish-org/varfish-server-worker/commit/e0ea7ac1b959c035691d957ea619739dc3e7d619))
+* implementing "seqvars prefilter" ([#209](https://www.github.com/varfish-org/varfish-server-worker/issues/209)) ([#213](https://www.github.com/varfish-org/varfish-server-worker/issues/213)) ([984dc8b](https://www.github.com/varfish-org/varfish-server-worker/commit/984dc8b01fa552ee8972a170fd7b431c3424a522))
+* remove gene regions from "strucvars query" database enhancement ([#221](https://www.github.com/varfish-org/varfish-server-worker/issues/221)) ([#222](https://www.github.com/varfish-org/varfish-server-worker/issues/222)) ([28663b6](https://www.github.com/varfish-org/varfish-server-worker/commit/28663b6feca424514dd422d3ce0ac2e61d573d75))
+* transform "db mk-inhouse" to "strucvars aggregate" ([#212](https://www.github.com/varfish-org/varfish-server-worker/issues/212)) ([#217](https://www.github.com/varfish-org/varfish-server-worker/issues/217)) ([b51f027](https://www.github.com/varfish-org/varfish-server-worker/commit/b51f027918a57e1402e825a00487bb53d1440fd8))
+* transform "db to-bin" to "strucvars txt-to-bin" ([#218](https://www.github.com/varfish-org/varfish-server-worker/issues/218)) ([#219](https://www.github.com/varfish-org/varfish-server-worker/issues/219)) ([ea6e387](https://www.github.com/varfish-org/varfish-server-worker/commit/ea6e387b87e51b38b49a93ce2a90e52109f71df5))
+* unify database names in strucvar filtration ([#307](https://www.github.com/varfish-org/varfish-server-worker/issues/307)) ([#308](https://www.github.com/varfish-org/varfish-server-worker/issues/308)) ([43413d4](https://www.github.com/varfish-org/varfish-server-worker/commit/43413d4e5bc7f548756a7f5e064dd7bccd12593f))
+* write out fileDate on ingest ([#210](https://www.github.com/varfish-org/varfish-server-worker/issues/210)) ([#215](https://www.github.com/varfish-org/varfish-server-worker/issues/215)) ([7731958](https://www.github.com/varfish-org/varfish-server-worker/commit/7731958a4b274db604bb7d88c5a5d501bd8b7390))
+
+
+### Bug Fixes
+
+* normalize patho-mms.bed => patho_mms.bed ([#315](https://www.github.com/varfish-org/varfish-server-worker/issues/315)) ([48afb7d](https://www.github.com/varfish-org/varfish-server-worker/commit/48afb7df19810699d95457778ac87cae8764e27e))
+
 ## [0.11.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.10.2...v0.11.0) (2024-02-27)
 
 
