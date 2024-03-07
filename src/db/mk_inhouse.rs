@@ -282,25 +282,24 @@ fn merge_to_out(
         let record = {
             let mut record = output::Record::from_db_record(record);
             record.begin -= 1; // need to get 0-based coordinates for DB
+            record.end = match record.sv_type {
+                SvType::Bnd => {
+                    // Obtain "pos2" from JSON-encoded info field.
+                    let info = serde_json::from_str::<serde_json::Value>(&info)?;
+                    info.as_object()
+                        .and_then(|o| o.get("pos2"))
+                        .and_then(|v| v.as_i64())
+                        .ok_or_else(|| anyhow::anyhow!("Cannot find 'pos2' in info field"))?
+                        as i32
+                }
+                SvType::Ins => record.begin + 1,
+                _ => record.end,
+            };
             record
         };
-        let begin = record.begin;
-        let end = match record.sv_type {
-            SvType::Bnd => {
-                // Obtain "pos2" from JSON-encoded info field.
-                let info = serde_json::from_str::<serde_json::Value>(&info)?;
-                info.as_object()
-                    .and_then(|o| o.get("pos2"))
-                    .and_then(|v| v.as_i64())
-                    .ok_or_else(|| anyhow::anyhow!("Cannot find 'pos2' in info field"))?
-                    as i32
-            }
-            SvType::Ins => record.begin + 1,
-            _ => record.end,
-        };
         let query = match record.sv_type {
-            SvType::Bnd | SvType::Ins => begin..(begin + 1),
-            _ => begin..end,
+            SvType::Bnd => record.begin..(record.begin + 1),
+            _ => record.begin..record.end,
         };
         let mut found_any_cluster = false;
         for mut it_tree in tree.find_mut(&query) {
