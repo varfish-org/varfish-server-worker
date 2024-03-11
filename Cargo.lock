@@ -267,55 +267,6 @@ dependencies = [
 
 [[package]]
 name = "annonars"
-version = "0.35.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "416b073dbcbd14a2b552288cc1a1cf10fdac357886c9bc671e47cb634b218649"
-dependencies = [
- "actix-web",
- "anyhow",
- "bgzip",
- "bio",
- "biocommons-bioutils",
- "boolvec",
- "byteorder",
- "chrono",
- "clap",
- "clap-verbosity-flag",
- "csv",
- "enum-map",
- "env_logger",
- "erased-serde",
- "flate2",
- "indexmap 2.2.5",
- "indicatif",
- "log",
- "noodles-bed",
- "noodles-bgzf",
- "noodles-core",
- "noodles-csi",
- "noodles-gff",
- "noodles-tabix",
- "noodles-vcf",
- "pbjson",
- "pbjson-build",
- "pbjson-types",
- "prost",
- "prost-build",
- "rayon",
- "rocksdb",
- "rocksdb-utils-lookup",
- "rustc-hash",
- "serde",
- "serde_json",
- "serde_with",
- "strum 0.26.1",
- "thiserror",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "annonars"
 version = "0.36.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1be5c8ae15c7a3bd4d89af452104d7a026806434490d2b201dca043485c3f468"
@@ -335,7 +286,7 @@ dependencies = [
  "env_logger",
  "erased-serde",
  "flate2",
- "indexmap 2.2.3",
+ "indexmap 2.2.5",
  "indicatif",
  "log",
  "noodles-bed",
@@ -2395,9 +2346,9 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hgvs"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdaf50d3b103c2ef84777dbc5e3796f335edc1ca7ebece6c2ac1c0f3e023d643"
+checksum = "2dbe0946a5ab6cec23e35e8b485f64b239beb93cf4d098e5d76ebc3fcc2b8a54"
 dependencies = [
  "base16ct",
  "bio",
@@ -2878,12 +2829,12 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.24.2"
+version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91b1335b7544cb5298a8975e5a195b8122a65187a8ea97a927a47983e37805c1"
+checksum = "b1dfc6c2a062e7fc11233cc14a5b08f949b118e04e27ca3ded791a190c9373b9"
 dependencies = [
  "actix-web",
- "annonars 0.35.0",
+ "annonars",
  "anyhow",
  "async-compression",
  "bgzip",
@@ -2910,7 +2861,7 @@ dependencies = [
  "noodles-bgzf",
  "noodles-core",
  "noodles-csi",
- "noodles-fasta",
+ "noodles-fasta 0.33.0",
  "noodles-tabix",
  "noodles-vcf",
  "parse-display",
@@ -3114,6 +3065,18 @@ name = "noodles-fasta"
 version = "0.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebb3e83e0f112d3482f5234a1eb219081f12cc3aab38a9eba00ef1846b43b63b"
+dependencies = [
+ "bytes",
+ "memchr",
+ "noodles-bgzf",
+ "noodles-core",
+]
+
+[[package]]
+name = "noodles-fasta"
+version = "0.33.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e9e953e4e90e6c96e6a384598ebf2ab6d2f5add259ff05a194cf635e892c980"
 dependencies = [
  "bytes",
  "memchr",
@@ -4254,7 +4217,7 @@ dependencies = [
  "chrono",
  "noodles-bgzf",
  "noodles-core",
- "noodles-fasta",
+ "noodles-fasta 0.32.0",
  "rusqlite",
  "thiserror",
  "tracing",
@@ -5075,7 +5038,7 @@ checksum = "126e423afe2dd9ac52142e7e9d5ce4135d7e13776c529d27fd6bc49f19e3280b"
 name = "varfish-server-worker"
 version = "0.11.0"
 dependencies = [
- "annonars 0.36.1",
+ "annonars",
  "anyhow",
  "async-compression",
  "async-std",
