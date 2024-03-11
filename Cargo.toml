@@ -35,11 +35,11 @@ ext-sort = { version = "0.1", features = ["memory-limit", "bytesize"] }
 fastrand = "2.0"
 flate2 = "1.0"
 futures = "0.3.30"
-hgvs = "0.15"
+hgvs = "0.16"
 indexmap = { version = "2.2", features = ["serde"] }
 itertools = "0.12"
 log = "0.4"
-mehari = "0.24"
+mehari = "0.25"
 multimap = "0.10"
 noodles-bgzf = { version = "0.26", features = ["async"] }
 noodles-core = "0.14.0"
