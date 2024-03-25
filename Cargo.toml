@@ -15,7 +15,7 @@ rust-version = "1.64.0"
 annonars = "0.36"
 anyhow = "1.0"
 async-compression = { version = "0.4", features = ["tokio", "gzip"] }
-aws-sdk-s3 = "0.34"
+aws-sdk-s3 = "1.17"
 aws-config = "0.56"
 base16ct = "0.2"
 bio = "1.4"
