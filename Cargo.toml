@@ -50,7 +50,7 @@ procfs = "0.16"
 prost = "0.12"
 rand = "0.8"
 rand_core = "0.6"
-rayon = "1.9"
+rayon = "1.10"
 regex = "1.10"
 rocksdb-utils-lookup = "0.3"
 rocksdb = { version = "0.21", features = ["multi-threaded-cf"] }
