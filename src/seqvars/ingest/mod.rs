@@ -428,7 +428,7 @@ async fn process_variants(
                         &mut output_record,
                     )?;
                 } else {
-                    tracing::trace!(
+                    tracing::debug!(
                         "Record @{:?} on non-canonical chromosome, skipping.",
                         &vcf_var
                     );

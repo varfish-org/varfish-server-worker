@@ -145,7 +145,7 @@ where
     let object = client.get_object().bucket(&bucket).key(&key).send().await?;
 
     let path_is_gzip = is_gz(path.as_ref());
-    tracing::trace!(
+    tracing::debug!(
         "Opening S3 object {} as {} for reading (async)",
         path.as_ref().display(),
         if path_is_gzip {
@@ -192,14 +192,14 @@ pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<AsyncVcfReader>, a
 /// - Otherwise, attempt to open `path_in` as S3 object.
 pub async fn open_vcf_reader(path_in: &str) -> Result<AsyncVcfReader, anyhow::Error> {
     if super::s3::s3_mode() && path_in != "-" && !path_in.starts_with('/') {
-        tracing::trace!("Opening S3 object {} for reading (async)", path_in);
+        tracing::debug!("Opening S3 object {} for reading (async)", path_in);
         Ok(vcf::AsyncReader::new(
             s3_open_read_maybe_gz(path_in)
                 .await
                 .map_err(|e| anyhow::anyhow!("could not build VCF reader from S3 file: {}", e))?,
         ))
     } else {
-        tracing::trace!("Opening local file {} for reading (async)", path_in);
+        tracing::debug!("Opening local file {} for reading (async)", path_in);
         Ok(vcf::AsyncReader::new(
             open_read_maybe_gz(path_in).await.map_err(|e| {
                 anyhow::anyhow!("could not build VCF reader from local file: {}", e)
