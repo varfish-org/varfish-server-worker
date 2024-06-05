@@ -9,8 +9,9 @@ use crate::{
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::provider::Provider as MehariProvider,
-    common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+    common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
 };
+use crate::common::noodles::open_vcf_reader;
 use noodles_vcf as vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;

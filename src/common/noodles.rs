@@ -108,7 +108,13 @@ where
         anyhow::bail!("invalid S3 path: {}", path.as_ref().display());
     };
 
-    let config = aws_config::load_from_env().await;
+    let config = if let Ok(endpoint_url) = std::env::var("AWS_ENDPOINT_URL") {
+        tracing::trace!("will use endpoint url {:?}", &endpoint_url);
+        aws_config::from_env().endpoint_url(endpoint_url).load().await
+    } else {
+        aws_config::from_env().load().await
+    };
+    tracing::warn!("\n\n\nconfig is {:?}\n\n\n", &config);
     let client = aws_sdk_s3::Client::new(&config);
     let object = client.get_object().bucket(&bucket).key(&key).send().await?;
 
@@ -155,21 +161,19 @@ pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<AsyncVcfReader>, a
 /// The behaviour is as follows:
 ///
 /// - If `path_in` is "-" then open stdin and read as plain text.
-/// - If environment variable `AWS_PROFILE` is set to "varfish-s3" then enable S3 mode.
+/// - If environment variable `AWS_ACCESS_KEY_ID` is set then enable S3 mode.
 /// - If `path_in` is absolute or S3 mode is disabled then open `path_in` as local file
 /// - Otherwise, attempt to open `path_in` as S3 object.
 pub async fn open_vcf_reader(path_in: &str) -> Result<AsyncVcfReader, anyhow::Error> {
-    let s3_mode = match std::env::var("AWS_PROFILE") {
-        Ok(s) => s == "varfish-s3",
-        _ => false,
-    };
-    if s3_mode && !path_in.starts_with('/') {
+    if super::s3::s3_mode() && path_in != "-" && !path_in.starts_with('/') {
+        tracing::trace!("Opening S3 object {} for reading (async)", path_in);
         Ok(vcf::AsyncReader::new(
             s3_open_read_maybe_gz(path_in)
                 .await
                 .map_err(|e| anyhow::anyhow!("could not build VCF reader from S3 file: {}", e))?,
         ))
     } else {
+        tracing::trace!("Opening local file {} for reading (async)", path_in);
         Ok(vcf::AsyncReader::new(
             open_read_maybe_gz(path_in).await.map_err(|e| {
                 anyhow::anyhow!("could not build VCF reader from local file: {}", e)
