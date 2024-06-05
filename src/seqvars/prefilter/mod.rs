@@ -301,7 +301,7 @@ mod test {
         ))
         .exists());
 
-        insta::assert_snapshot!(std::fs::read_to_string(&format!(
+        insta::assert_snapshot!(std::fs::read_to_string(format!(
             "{}/out-1.vcf",
             tmpdir.to_path_buf().to_str().unwrap()
         ))?);
@@ -334,7 +334,7 @@ mod test {
         ))
         .exists());
 
-        insta::assert_snapshot!(std::fs::read_to_string(&format!(
+        insta::assert_snapshot!(std::fs::read_to_string(format!(
             "{}/out-1.vcf",
             tmpdir.to_path_buf().to_str().unwrap()
         ))?);
@@ -381,11 +381,11 @@ mod test {
         ))
         .exists());
 
-        insta::assert_snapshot!(std::fs::read_to_string(&format!(
+        insta::assert_snapshot!(std::fs::read_to_string(format!(
             "{}/out-1.vcf",
             tmpdir.to_path_buf().to_str().unwrap()
         ))?);
-        insta::assert_snapshot!(std::fs::read_to_string(&format!(
+        insta::assert_snapshot!(std::fs::read_to_string(format!(
             "{}/out-2.vcf",
             tmpdir.to_path_buf().to_str().unwrap()
         ))?);
