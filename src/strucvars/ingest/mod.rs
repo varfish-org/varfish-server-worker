@@ -1,12 +1,12 @@
 //! Implementation of `strucvars ingest` subcommand.
 
+use crate::common::noodles::open_vcf_readers;
 use crate::common::{self, worker_version, GenomeRelease};
 use crate::flush_and_shutdown;
 use futures::future::join_all;
 use mehari::annotate::strucvars::guess_sv_caller;
 use mehari::common::io::std::is_gz;
 use mehari::common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
-use crate::common::noodles::open_vcf_readers;
 use noodles_vcf as vcf;
 use rand_core::SeedableRng;
 use tokio::io::AsyncWriteExt;

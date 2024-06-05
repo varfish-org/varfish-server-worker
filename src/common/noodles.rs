@@ -101,6 +101,38 @@ pub async fn s3_open_read_maybe_gz<P>(path: P) -> Result<Pin<Box<dyn AsyncBufRea
 where
     P: AsRef<Path>,
 {
+    // Get configuration from environment variables.
+    let access_key = if let Ok(access_key) = std::env::var("AWS_ACCESS_KEY_ID") {
+        access_key
+    } else {
+        anyhow::bail!("could not access key from env AWS_ACCESS_KEY_ID")
+    };
+    let secret_key = if let Ok(secret_key) = std::env::var("AWS_SECRET_ACCESS_KEY") {
+        secret_key
+    } else {
+        anyhow::bail!("could not get secret key from env AWS_SECRET_ACCESS_KEY")
+    };
+    let endpoint_url = if let Ok(endpoint_url) = std::env::var("AWS_ENDPOINT_URL") {
+        endpoint_url
+    } else {
+        anyhow::bail!("could not get endpoint url from env AWS_ENDPOINT_URL")
+    };
+    let region = if let Ok(region) = std::env::var("AWS_REGION") {
+        region
+    } else {
+        anyhow::bail!("could not get endpoint url from env AWS_REGION")
+    };
+
+    let cred =
+        aws_sdk_s3::config::Credentials::new(access_key, secret_key, None, None, "loaded-from-env");
+    let s3_config = aws_sdk_s3::config::Builder::new()
+        .endpoint_url(&endpoint_url)
+        .credentials_provider(cred)
+        .region(aws_config::Region::new(region))
+        .force_path_style(true) // apply bucketname as path param instead of pre-domain
+        .build();
+
+    // Split bucket and path from input path.
     let path_string = format!("{}", path.as_ref().display());
     let (bucket, key) = if let Some((bucket, key)) = path_string.split_once('/') {
         (bucket.to_string(), key.to_string())
@@ -108,14 +140,8 @@ where
         anyhow::bail!("invalid S3 path: {}", path.as_ref().display());
     };
 
-    let config = if let Ok(endpoint_url) = std::env::var("AWS_ENDPOINT_URL") {
-        tracing::trace!("will use endpoint url {:?}", &endpoint_url);
-        aws_config::from_env().endpoint_url(endpoint_url).load().await
-    } else {
-        aws_config::from_env().load().await
-    };
-    tracing::warn!("\n\n\nconfig is {:?}\n\n\n", &config);
-    let client = aws_sdk_s3::Client::new(&config);
+    // Setup S3 client and access object.
+    let client = aws_sdk_s3::Client::from_conf(s3_config);
     let object = client.get_object().bucket(&bucket).key(&key).send().await?;
 
     let path_is_gzip = is_gz(path.as_ref());

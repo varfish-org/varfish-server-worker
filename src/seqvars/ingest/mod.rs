@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, OnceLock};
 
+use crate::common::noodles::open_vcf_reader;
 use crate::{
     common::{self, worker_version, GenomeRelease},
     flush_and_shutdown,
@@ -11,7 +12,6 @@ use mehari::{
     annotate::seqvars::provider::Provider as MehariProvider,
     common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
 };
-use crate::common::noodles::open_vcf_reader;
 use noodles_vcf as vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
