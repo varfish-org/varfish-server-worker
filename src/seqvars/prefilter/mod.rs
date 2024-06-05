@@ -2,15 +2,12 @@
 
 use std::io::BufRead;
 
+use crate::common::noodles::open_vcf_reader;
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::ann::AnnField,
-    common::{
-        io::std::is_gz,
-        noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
-    },
+    common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
 };
-use crate::common::noodles::open_vcf_reader;
 use noodles_vcf as vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
@@ -217,6 +214,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     {
         tracing::info!("opening output files...");
         let mut output_writers = Vec::new();
+        let mut out_path_helpers = Vec::new();
         for params in params_list.iter() {
             let header_params = PrefilterParams {
                 prefilter_path: "<stripped>".into(),
@@ -233,7 +231,11 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
                 ),
             )?;
 
-            let mut writer = open_vcf_writer(&params.prefilter_path).await?;
+            out_path_helpers.push(crate::common::s3::OutputPathHelper::new(
+                &params.prefilter_path,
+            )?);
+            let mut writer =
+                open_vcf_writer(&out_path_helpers.last().expect("just pushed").path_out()).await?;
             writer.write_header(&header).await.map_err(|e| {
                 anyhow::anyhow!(
                     "could not write header to {}: {}",
@@ -253,28 +255,14 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         for output_writer in output_writers.drain(..) {
             flush_and_shutdown!(output_writer);
         }
-    }
-
-    for params in params_list.iter() {
-        if is_gz(&params.prefilter_path) {
-            tracing::info!("writing TBI index for {}...", &params.prefilter_path);
-            crate::common::noodles::build_tbi(
-                &params.prefilter_path,
-                &format!("{}.tbi", &params.prefilter_path),
-            )
-            .await
-            .map_err(|e| anyhow::anyhow!("problem building TBI: {}", e))?;
-            tracing::info!("... done writing TBI index");
-        } else {
-            tracing::info!(
-                "(not building TBI index for plain text VCF file {}",
-                &params.prefilter_path
-            );
+        for out_path_helper in out_path_helpers.drain(..) {
+            out_path_helper.create_tbi_for_bgzf().await?;
+            out_path_helper.upload_for_s3().await?;
         }
     }
 
     tracing::info!(
-        "All of `seqvars ingest` completed in {:?}",
+        "All of `seqvars prefilter` completed in {:?}",
         before_anything.elapsed()
     );
     Ok(())
@@ -290,7 +278,7 @@ mod test {
             path_in: "tests/seqvars/prefilter/ingest.vcf".into(),
             params: vec![format!(
                 r#"{{
-                    "path_out": "{}/out-1.vcf",
+                    "prefilter_path": "{}/out-1.vcf",
                     "max_freq": 0.01,
                     "max_exon_dist": 200
                 }}"#,
@@ -319,7 +307,7 @@ mod test {
         let tmpdir = temp_testdir::TempDir::default();
 
         let params_json = format!(
-            r#"{{"path_out": "{}/out-1.vcf", "max_freq": 0.01, "max_exon_dist": 200}}"#,
+            r#"{{"prefilter_path": "{}/out-1.vcf", "max_freq": 0.01, "max_exon_dist": 200}}"#,
             tmpdir.to_path_buf().to_str().unwrap()
         );
 
@@ -356,7 +344,7 @@ mod test {
             params: vec![
                 format!(
                     r#"{{
-                        "path_out": "{}/out-1.vcf",
+                        "prefilter_path": "{}/out-1.vcf",
                         "max_freq": 0.01,
                         "max_exon_dist": 200
                     }}"#,
@@ -364,7 +352,7 @@ mod test {
                 ),
                 format!(
                     r#"{{
-                        "path_out": "{}/out-2.vcf",
+                        "prefilter_path": "{}/out-2.vcf",
                         "max_freq": 0,
                         "max_exon_dist": 20
                     }}"#,
