@@ -120,7 +120,7 @@ where
     let region = if let Ok(region) = std::env::var("AWS_REGION") {
         region
     } else {
-        anyhow::bail!("could not get endpoint url from env AWS_REGION")
+        anyhow::bail!("could not AWS region from env AWS_REGION")
     };
 
     let cred =
