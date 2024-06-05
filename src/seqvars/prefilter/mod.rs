@@ -7,9 +7,10 @@ use mehari::{
     annotate::seqvars::ann::AnnField,
     common::{
         io::std::is_gz,
-        noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+        noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
     },
 };
+use crate::common::noodles::open_vcf_reader;
 use noodles_vcf as vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
