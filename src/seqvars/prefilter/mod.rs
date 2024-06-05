@@ -20,7 +20,7 @@ use crate::{common, flush_and_shutdown};
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct PrefilterParams {
     /// Path to output file.
-    pub path_out: String,
+    pub prefilter_path: String,
     /// Maximal allele population frequency.
     pub max_freq: f64,
     /// Maximal distance to exon.
@@ -218,7 +218,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         let mut output_writers = Vec::new();
         for params in params_list.iter() {
             let header_params = PrefilterParams {
-                path_out: "<stripped>".into(),
+                prefilter_path: "<stripped>".into(),
                 ..params.clone()
             };
             let mut header = header.clone();
@@ -232,9 +232,13 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
                 ),
             )?;
 
-            let mut writer = open_vcf_writer(&params.path_out).await?;
+            let mut writer = open_vcf_writer(&params.prefilter_path).await?;
             writer.write_header(&header).await.map_err(|e| {
-                anyhow::anyhow!("could not write header to {}: {}", &params.path_out, e)
+                anyhow::anyhow!(
+                    "could not write header to {}: {}",
+                    &params.prefilter_path,
+                    e
+                )
             })?;
             output_writers.push(writer);
         }
@@ -251,11 +255,11 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     }
 
     for params in params_list.iter() {
-        if is_gz(&params.path_out) {
-            tracing::info!("writing TBI index for {}...", &params.path_out);
+        if is_gz(&params.prefilter_path) {
+            tracing::info!("writing TBI index for {}...", &params.prefilter_path);
             crate::common::noodles::build_tbi(
-                &params.path_out,
-                &format!("{}.tbi", &params.path_out),
+                &params.prefilter_path,
+                &format!("{}.tbi", &params.prefilter_path),
             )
             .await
             .map_err(|e| anyhow::anyhow!("problem building TBI: {}", e))?;
@@ -263,7 +267,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         } else {
             tracing::info!(
                 "(not building TBI index for plain text VCF file {}",
-                &params.path_out
+                &params.prefilter_path
             );
         }
     }
