@@ -5,7 +5,6 @@ use crate::common::{self, worker_version, GenomeRelease};
 use crate::flush_and_shutdown;
 use futures::future::join_all;
 use mehari::annotate::strucvars::guess_sv_caller;
-use mehari::common::io::std::is_gz;
 use mehari::common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
 use noodles_vcf as vcf;
 use rand_core::SeedableRng;
@@ -56,6 +55,9 @@ pub struct Args {
     /// Maximal number of variants to write out; optional.
     #[clap(long)]
     pub max_var_count: Option<usize>,
+    /// Per-file identifier mapping, either a JSON or @-prefixed path to JSON.
+    #[clap(long)]
+    pub id_mapping: Option<String>,
 }
 
 async fn write_ingest_record(
@@ -358,6 +360,50 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     tracing::info!("opening input file...");
     let mut input_readers = open_vcf_readers(&args.path_in).await?;
 
+    tracing::info!("loading file identifier mappings...");
+    let id_mappings = args
+        .id_mapping
+        .as_ref()
+        .map(
+            |id_mapping| -> Result<crate::common::id_mapping::FileIdentifierMappings, anyhow::Error> {
+                let id_mappings = if id_mapping.starts_with('@') {
+                    crate::common::id_mapping::FileIdentifierMappings::load_from_path(
+                        id_mapping.trim_start_matches('@'),
+                    )
+                    .map_err(|e| {
+                        anyhow::anyhow!(
+                            "could not load ID mapping from file {:?}: {}",
+                            id_mapping.trim_start_matches('@'),
+                            e
+                        )
+                    })
+                } else {
+                    crate::common::id_mapping::FileIdentifierMappings::load_from_json(id_mapping)
+                        .map_err(|e| {
+                            anyhow::anyhow!(
+                                "could not load ID mapping from JSON string {:?}: {}",
+                                &id_mapping,
+                                &e,
+                            )
+                        })
+                }?;
+
+                let paths_in = args.path_in.iter().cloned().collect::<indexmap::IndexSet<_>>();
+                let paths_mapped = id_mappings.file_names().iter().cloned().collect::<indexmap::IndexSet<_>>();
+
+                if paths_in != paths_mapped {
+                    return Err(anyhow::anyhow!(
+                        "input files and ID mappings do not match: {:?} != {:?}",
+                        paths_in,
+                        paths_mapped
+                    ));
+                }
+
+                Ok(id_mappings)
+            },
+        )
+        .transpose()?;
+
     tracing::info!("guessing SV callers...");
     let input_sv_callers = {
         let mut sv_callers = Vec::new();
@@ -377,12 +423,52 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     .into_iter()
     .collect::<Result<Vec<_>, _>>()
     .map_err(|e| anyhow::anyhow!("problem reading header: {}", e))?;
-    let sample_names = input_headers
+    let orig_sample_names = input_headers
         .first()
         .expect("must have at least one input file")
         .sample_names();
+    let sample_names = orig_sample_names
+        .iter()
+        .map(|name| {
+            if let Some(id_mappings) = &id_mappings {
+                let mapping = id_mappings
+                    .mapping_for_file(args.path_in.first().expect("count checked above"))
+                    .expect("checked above");
+                mapping
+                    .get(name)
+                    .cloned()
+                    .ok_or_else(|| anyhow::anyhow!("no mapping for sample name: {}", name))
+            } else {
+                Ok(name.clone())
+            }
+        })
+        .collect::<Result<indexmap::IndexSet<_>, _>>()?;
     for (indexno, other_input_header) in input_headers.iter().enumerate().skip(1) {
-        if other_input_header.sample_names() != sample_names {
+        let other_sample_names = if let Some(id_mappings) = &id_mappings {
+            let mapping = id_mappings
+                .mapping_for_file(&args.path_in[indexno])
+                .expect("checked above");
+            other_input_header
+                .sample_names()
+                .iter()
+                .map(|s| {
+                    mapping.get(s).cloned().ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "no mapping for sample name: {} in file: {}",
+                            s,
+                            &args.path_in[indexno]
+                        )
+                    })
+                })
+                .collect::<Result<indexmap::IndexSet<_>, _>>()?
+        } else {
+            other_input_header
+                .sample_names()
+                .iter()
+                .cloned()
+                .collect::<indexmap::IndexSet<_>>()
+        };
+        if other_sample_names != sample_names {
             return Err(anyhow::anyhow!(
                 "input file #{} has different sample names than first one: {}",
                 indexno,
@@ -391,8 +477,13 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         }
     }
     let output_header = header::build_output_header(
-        sample_names,
+        &orig_sample_names,
         &input_sv_callers.iter().collect::<Vec<_>>(),
+        id_mappings.as_ref().map(|id_mappings| {
+            id_mappings
+                .mapping_for_file(args.path_in.first().expect("count checked above"))
+                .expect("checked above")
+        }),
         Some(&pedigree),
         args.genomebuild,
         &args.file_date,
@@ -401,8 +492,36 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     )
     .map_err(|e| anyhow::anyhow!("problem building output header: {}", e))?;
 
+    // Use output file helper.
+    let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_out)?;
+
     {
-        let mut output_writer = open_vcf_writer(&args.path_out).await?;
+        // Map sample names in input headers.
+        let mapped_input_headers = if let Some(id_mappings) = &id_mappings {
+            let mut mapped_input_headers = Vec::new();
+            for i in 0..input_headers.len() {
+                let mapping = id_mappings
+                    .mapping_for_file(&args.path_in[i])
+                    .expect("checked above");
+                let mut input_header = input_headers[i].clone();
+                let orig_sample_names = input_header.sample_names().clone();
+                input_header.sample_names_mut().clear();
+                for sample_name in orig_sample_names {
+                    let mapped_sample_name =
+                        mapping.get(&sample_name).cloned().ok_or_else(|| {
+                            anyhow::anyhow!("no mapping for sample name: {}", sample_name)
+                        })?;
+                    input_header.sample_names_mut().insert(mapped_sample_name);
+                }
+                mapped_input_headers.push(input_header);
+            }
+            mapped_input_headers
+        } else {
+            input_headers.clone()
+        };
+
+        // Perform actual writing
+        let mut output_writer = open_vcf_writer(out_path_helper.path_out()).await?;
         output_writer
             .write_header(&output_header)
             .await
@@ -412,7 +531,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
             &pedigree,
             &mut output_writer,
             &mut input_readers,
-            &input_headers,
+            &mapped_input_headers,
             &input_sv_callers,
             args,
         )
@@ -421,15 +540,8 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         flush_and_shutdown!(output_writer);
     }
 
-    if is_gz(&args.path_out) {
-        tracing::info!("Creating TBI index for BGZF VCF file...");
-        crate::common::noodles::build_tbi(&args.path_out, &format!("{}.tbi", &args.path_out))
-            .await
-            .map_err(|e| anyhow::anyhow!("problem building TBI: {}", e))?;
-        tracing::info!("... done writing TBI index");
-    } else {
-        tracing::info!("(not building TBI index for plain text VCF file");
-    }
+    out_path_helper.create_tbi_for_bgzf().await?;
+    out_path_helper.upload_for_s3().await?;
 
     tracing::info!(
         "All of `strucvars ingest` completed in {:?}",
@@ -468,6 +580,7 @@ mod test {
             rng_seed: Some(42),
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
+            id_mapping: None,
         };
         super::run(&args_common, &args).await?;
 
@@ -505,6 +618,7 @@ mod test {
             rng_seed: Some(42),
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
+            id_mapping: None,
         };
         super::run(&args_common, &args).await?;
 
@@ -539,6 +653,7 @@ mod test {
             rng_seed: Some(42),
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
+            id_mapping: None,
         };
         super::run(&args_common, &args).await?;
 
@@ -578,11 +693,113 @@ mod test {
             rng_seed: Some(42),
             file_date: String::from("20230421"),
             case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
+            id_mapping: None,
         };
         super::run(&args_common, &args).await?;
 
         let mut buffer: Vec<u8> = Vec::new();
         hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
+
+        Ok(())
+    }
+
+    #[tracing_test::traced_test]
+    #[tokio::test]
+    async fn smoke_test_singleton_with_id_mapping() -> Result<(), anyhow::Error> {
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let args_common = Default::default();
+        let args = super::Args {
+            max_var_count: None,
+            path_in: vec![
+                String::from("tests/strucvars/ingest/dragen-cnv-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/dragen-sv-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/gcnv-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/manta-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/melt-min.vcf.gz"),
+                String::from("tests/strucvars/ingest/sniffles2-min.vcf.gz"),
+            ],
+            path_cov_vcf: vec![],
+            path_ped: "tests/strucvars/ingest/dragen-cnv-min.custom_id.ped".into(),
+            genomebuild: GenomeRelease::Grch37,
+            path_out: tmpdir
+                .join("out.vcf")
+                .to_str()
+                .expect("invalid path")
+                .into(),
+            min_overlap: 0.8,
+            slack_bnd: 50,
+            slack_ins: 50,
+            rng_seed: Some(42),
+            file_date: String::from("20230421"),
+            case_uuid: String::from("d2bad2ec-a75d-44b9-bd0a-83a3f1331b7c"),
+            id_mapping: Some(
+                r#"
+                {
+                    "mappings": [
+                        {
+                            "path": "tests/strucvars/ingest/dragen-cnv-min.vcf.gz",
+                            "entries": [
+                                {
+                                    "src": "SAMPLE",
+                                    "dst": "my-custom-id"
+                                }
+                            ]
+                        },
+                        {
+                            "path": "tests/strucvars/ingest/dragen-sv-min.vcf.gz",
+                            "entries": [
+                                {
+                                    "src": "SAMPLE",
+                                    "dst": "my-custom-id"
+                                }
+                            ]
+                        },
+                        {
+                            "path": "tests/strucvars/ingest/gcnv-min.vcf.gz",
+                            "entries": [
+                                {
+                                    "src": "SAMPLE",
+                                    "dst": "my-custom-id"
+                                }
+                            ]
+                        },
+                        {
+                            "path": "tests/strucvars/ingest/manta-min.vcf.gz",
+                            "entries": [
+                                {
+                                    "src": "SAMPLE",
+                                    "dst": "my-custom-id"
+                                }
+                            ]
+                        },
+                        {
+                            "path": "tests/strucvars/ingest/melt-min.vcf.gz",
+                            "entries": [
+                                {
+                                    "src": "SAMPLE",
+                                    "dst": "my-custom-id"
+                                }
+                            ]
+                        },
+                        {
+                            "path": "tests/strucvars/ingest/sniffles2-min.vcf.gz",
+                            "entries": [
+                                {
+                                    "src": "SAMPLE",
+                                    "dst": "my-custom-id"
+                                }
+                            ]
+                        }
+                    ]
+                }
+                "#
+                .into(),
+            ),
+        };
+        super::run(&args_common, &args).await?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
 
         Ok(())
     }

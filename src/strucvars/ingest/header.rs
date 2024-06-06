@@ -39,6 +39,7 @@ fn caller_version(sv_caller: &mehari::annotate::strucvars::SvCaller) -> String {
 pub fn build_output_header(
     input_sample_names: &SampleNames,
     input_sv_callers: &[&mehari::annotate::strucvars::SvCaller],
+    id_mapping: Option<&indexmap::IndexMap<String, String>>,
     pedigree: Option<&mehari::ped::PedigreeByName>,
     genomebuild: GenomeRelease,
     file_date: &str,
@@ -192,23 +193,37 @@ pub fn build_output_header(
             .iter()
             .map(|(name, _)| name.clone())
             .collect::<HashSet<_>>();
-        let input_idv = input_sample_names.iter().cloned().collect::<HashSet<_>>();
+        let input_idv = input_sample_names
+            .iter()
+            .map(|name| {
+                if let Some(id_mapping) = id_mapping {
+                    id_mapping.get(name).expect("checked earlier")
+                } else {
+                    name
+                }
+            })
+            .cloned()
+            .collect::<HashSet<_>>();
         if !ped_idv.eq(&input_idv) {
             anyhow::bail!(
-                "pedigree individuals = {:?} != input individuals: {:?}",
+                "pedigree individuals = {:?} != (mapped) input individuals: {:?}",
                 &ped_idv,
                 &input_idv
             )
         }
 
         for name in input_sample_names {
+            let name = if let Some(id_mapping) = id_mapping {
+                id_mapping.get(name).expect("checked earlier")
+            } else {
+                name
+            };
+
             let i = pedigree
                 .individuals
                 .get(name)
                 .expect("checked equality above");
-            if input_sample_names.contains(&i.name) {
-                builder = builder.add_sample_name(i.name.clone());
-            }
+            builder = builder.add_sample_name(i.name.clone());
 
             // Add SAMPLE entry.
             builder = builder.insert(
@@ -243,6 +258,11 @@ pub fn build_output_header(
         }
     } else {
         for name in input_sample_names {
+            let name = if let Some(id_mapping) = id_mapping {
+                id_mapping.get(name).expect("checked earlier")
+            } else {
+                name
+            };
             builder = builder.add_sample_name(name.clone());
         }
     }
@@ -312,6 +332,7 @@ mod test {
         let output_vcf_header = super::build_output_header(
             input_vcf_header.sample_names(),
             &sv_caller_refs,
+            None,
             Some(&pedigree),
             crate::common::GenomeRelease::Grch37,
             "20230421",
@@ -358,6 +379,7 @@ mod test {
         let output_vcf_header = super::build_output_header(
             input_vcf_header.sample_names(),
             &sv_caller_refs,
+            None,
             Some(&pedigree),
             crate::common::GenomeRelease::Grch38,
             "20230421",

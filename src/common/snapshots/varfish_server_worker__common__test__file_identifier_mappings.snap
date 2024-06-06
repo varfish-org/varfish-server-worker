@@ -1,0 +1,7 @@
+---
+source: src/common/mod.rs
+expression: "&mapping"
+---
+mappings:
+  path/to/file:
+    foo: bar
