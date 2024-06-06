@@ -4,7 +4,9 @@ use mehari::common::io::std::is_gz;
 
 /// Helper that returns whether S3 mode has been enabled via `AWS_ACCESS_KEY_ID`.
 pub fn s3_mode() -> bool {
-    std::env::var("AWS_ACCESS_KEY_ID").is_ok()
+    let result = std::env::var("AWS_ACCESS_KEY_ID").is_ok();
+    tracing::trace!("S3 mode is {}", if result { "enabled" } else { "disabled" });
+    result
 }
 
 /// Return the S3 configuration from environment variables.

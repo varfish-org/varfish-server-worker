@@ -97,11 +97,11 @@ fn passes_for_gene(
         .iter()
         .for_each(|(sample_name, genotype_choice)| match genotype_choice {
             Some(GenotypeChoice::ComphetIndex) => {
-                index_name = sample_name.clone();
+                index_name.clone_from(sample_name);
                 mode = Mode::ComphetRecessive;
             }
             Some(GenotypeChoice::RecessiveIndex) => {
-                index_name = sample_name.clone();
+                index_name.clone_from(sample_name);
                 mode = Mode::Recessive;
             }
             Some(GenotypeChoice::RecessiveParent) => {

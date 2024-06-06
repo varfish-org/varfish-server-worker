@@ -2,6 +2,7 @@
 
 use std::sync::{Arc, OnceLock};
 
+use crate::common::noodles::open_vcf_reader;
 use crate::{
     common::{self, worker_version, GenomeRelease},
     flush_and_shutdown,
@@ -9,7 +10,7 @@ use crate::{
 use futures::TryStreamExt;
 use mehari::{
     annotate::seqvars::provider::Provider as MehariProvider,
-    common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
+    common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
 };
 use noodles_vcf as vcf;
 use thousands::Separable;
@@ -427,7 +428,7 @@ async fn process_variants(
                         &mut output_record,
                     )?;
                 } else {
-                    tracing::trace!(
+                    tracing::debug!(
                         "Record @{:?} on non-canonical chromosome, skipping.",
                         &vcf_var
                     );

@@ -101,6 +101,38 @@ pub async fn s3_open_read_maybe_gz<P>(path: P) -> Result<Pin<Box<dyn AsyncBufRea
 where
     P: AsRef<Path>,
 {
+    // Get configuration from environment variables.
+    let access_key = if let Ok(access_key) = std::env::var("AWS_ACCESS_KEY_ID") {
+        access_key
+    } else {
+        anyhow::bail!("could not access key from env AWS_ACCESS_KEY_ID")
+    };
+    let secret_key = if let Ok(secret_key) = std::env::var("AWS_SECRET_ACCESS_KEY") {
+        secret_key
+    } else {
+        anyhow::bail!("could not get secret key from env AWS_SECRET_ACCESS_KEY")
+    };
+    let endpoint_url = if let Ok(endpoint_url) = std::env::var("AWS_ENDPOINT_URL") {
+        endpoint_url
+    } else {
+        anyhow::bail!("could not get endpoint url from env AWS_ENDPOINT_URL")
+    };
+    let region = if let Ok(region) = std::env::var("AWS_REGION") {
+        region
+    } else {
+        anyhow::bail!("could not AWS region from env AWS_REGION")
+    };
+
+    let cred =
+        aws_sdk_s3::config::Credentials::new(access_key, secret_key, None, None, "loaded-from-env");
+    let s3_config = aws_sdk_s3::config::Builder::new()
+        .endpoint_url(&endpoint_url)
+        .credentials_provider(cred)
+        .region(aws_config::Region::new(region))
+        .force_path_style(true) // apply bucketname as path param instead of pre-domain
+        .build();
+
+    // Split bucket and path from input path.
     let path_string = format!("{}", path.as_ref().display());
     let (bucket, key) = if let Some((bucket, key)) = path_string.split_once('/') {
         (bucket.to_string(), key.to_string())
@@ -108,12 +140,12 @@ where
         anyhow::bail!("invalid S3 path: {}", path.as_ref().display());
     };
 
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_s3::Client::new(&config);
+    // Setup S3 client and access object.
+    let client = aws_sdk_s3::Client::from_conf(s3_config);
     let object = client.get_object().bucket(&bucket).key(&key).send().await?;
 
     let path_is_gzip = is_gz(path.as_ref());
-    tracing::trace!(
+    tracing::debug!(
         "Opening S3 object {} as {} for reading (async)",
         path.as_ref().display(),
         if path_is_gzip {
@@ -155,21 +187,19 @@ pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<AsyncVcfReader>, a
 /// The behaviour is as follows:
 ///
 /// - If `path_in` is "-" then open stdin and read as plain text.
-/// - If environment variable `AWS_PROFILE` is set to "varfish-s3" then enable S3 mode.
+/// - If environment variable `AWS_ACCESS_KEY_ID` is set then enable S3 mode.
 /// - If `path_in` is absolute or S3 mode is disabled then open `path_in` as local file
 /// - Otherwise, attempt to open `path_in` as S3 object.
 pub async fn open_vcf_reader(path_in: &str) -> Result<AsyncVcfReader, anyhow::Error> {
-    let s3_mode = match std::env::var("AWS_PROFILE") {
-        Ok(s) => s == "varfish-s3",
-        _ => false,
-    };
-    if s3_mode && !path_in.starts_with('/') {
+    if super::s3::s3_mode() && path_in != "-" && !path_in.starts_with('/') {
+        tracing::debug!("Opening S3 object {} for reading (async)", path_in);
         Ok(vcf::AsyncReader::new(
             s3_open_read_maybe_gz(path_in)
                 .await
                 .map_err(|e| anyhow::anyhow!("could not build VCF reader from S3 file: {}", e))?,
         ))
     } else {
+        tracing::debug!("Opening local file {} for reading (async)", path_in);
         Ok(vcf::AsyncReader::new(
             open_read_maybe_gz(path_in).await.map_err(|e| {
                 anyhow::anyhow!("could not build VCF reader from local file: {}", e)
