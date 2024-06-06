@@ -48,6 +48,9 @@ pub struct Args {
     /// Maximal number of variants to write out; optional.
     #[clap(long)]
     pub max_var_count: Option<usize>,
+    /// Per-file identifier mapping, either a JSON or @-prefixed path to JSON.
+    #[clap(long)]
+    pub id_mapping: Option<String>,
 }
 
 /// Return path component fo rth egiven assembly.
@@ -284,6 +287,7 @@ async fn process_variants(
     input_reader: &mut AsyncVcfReader,
     output_header: &vcf::Header,
     input_header: &vcf::Header,
+    id_mapping: &Option<indexmap::IndexMap<String, String>>,
     args: &Args,
 ) -> Result<(), anyhow::Error> {
     // Open the frequency RocksDB database in read only mode.
@@ -351,6 +355,11 @@ async fn process_variants(
             .collect::<std::collections::HashMap<_, _>>();
         let mut res = vec![usize::MAX; output_header.sample_names().len()];
         for (input_idx, sample) in input_header.sample_names().iter().enumerate() {
+            let sample = if let Some(id_mapping) = id_mapping {
+                id_mapping.get(sample).expect("checked earlier")
+            } else {
+                sample
+            };
             res[output_sample_to_idx[sample]] = input_idx;
         }
         res
@@ -512,6 +521,51 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         .await
         .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?;
 
+    tracing::info!("loading file identifier mappings...");
+    let id_mapping = args
+        .id_mapping
+        .as_ref()
+        .map(
+            |id_mapping| -> Result<Option<indexmap::IndexMap<_, _>>, anyhow::Error> {
+                let id_mappings = if id_mapping.starts_with('@') {
+                    crate::common::id_mapping::FileIdentifierMappings::load_from_path(
+                        id_mapping.trim_start_matches('@'),
+                    )
+                    .map_err(|e| {
+                        anyhow::anyhow!(
+                            "could not load ID mapping from file {:?}: {}",
+                            id_mapping.trim_start_matches('@'),
+                            e
+                        )
+                    })
+                } else {
+                    crate::common::id_mapping::FileIdentifierMappings::load_from_json(&id_mapping)
+                        .map_err(|e| {
+                            anyhow::anyhow!(
+                                "could not load ID mapping from JSON string {:?}: {}",
+                                &id_mapping,
+                                &e,
+                            )
+                        })
+                }?;
+
+                if id_mappings.file_names().contains(&args.path_in) {
+                    tracing::debug!("- we have an ID mapping for {}", &args.path_in);
+                    Ok(Some(
+                        id_mappings
+                            .mapping_for_file(&args.path_in)
+                            .cloned()
+                            .expect("checked above"),
+                    ))
+                } else {
+                    tracing::debug!("- we have no ID mapping for {}", &args.path_in);
+                    Ok(None)
+                }
+            },
+        )
+        .transpose()?
+        .flatten();
+
     tracing::info!("processing header...");
     let mut input_header = input_reader
         .read_header()
@@ -520,6 +574,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     let output_header = header::build_output_header(
         &input_header,
         &Some(pedigree),
+        &id_mapping,
         args.genomebuild,
         &args.file_date,
         &args.case_uuid,
@@ -548,6 +603,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
             &mut input_reader,
             &output_header,
             &input_header,
+            &id_mapping,
             args,
         )
         .await?;
@@ -603,6 +659,7 @@ mod test {
                 .to_str()
                 .expect("invalid path")
                 .into(),
+            id_mapping: None,
         };
         super::run(&args_common, &args).await?;
 
@@ -632,12 +689,84 @@ mod test {
             genomebuild: GenomeRelease::Grch37,
             path_in,
             path_out,
+            id_mapping: None,
         };
         super::run(&args_common, &args).await?;
 
         let mut buffer: Vec<u8> = Vec::new();
         hxdmp::hexdump(&crate::common::read_to_bytes(&args.path_out)?, &mut buffer)?;
         insta::assert_snapshot!(String::from_utf8_lossy(&buffer));
+
+        Ok(())
+    }
+
+    #[rstest]
+    #[case::dragen_na12787("tests/seqvars/ingest/NA12878_dragen.vcf")]
+    #[case::gatk_hc_case_1("tests/seqvars/ingest/Case_1.vcf")]
+    #[tokio::test]
+    async fn result_snapshot_test_with_id_map(#[case] path: &str) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!(
+            "{}",
+            path.split('/').last().unwrap().replace('.', "_")
+        );
+
+        let tmpdir = temp_testdir::TempDir::default();
+
+        let path_ped = path.replace(".vcf", ".custom_id.ped");
+        let path_out = tmpdir
+            .join("out.vcf")
+            .to_str()
+            .expect("invalid path")
+            .into();
+        let args_common = Default::default();
+        let args = super::Args {
+            file_date: String::from("20230421"),
+            case_uuid: uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
+            max_var_count: None,
+            path_mehari_db: "tests/seqvars/ingest/db".into(),
+            path_ped,
+            genomebuild: GenomeRelease::Grch37,
+            path_in: path.into(),
+            path_out,
+            id_mapping: Some(
+                r#"
+                {
+                    "mappings": [
+                        {
+                            "path": "tests/seqvars/ingest/NA12878_dragen.vcf",
+                            "entries": [
+                                {
+                                    "src": "NA12878",
+                                    "dst": "my-custom-id"
+                                }
+                            ]
+                        },
+                        {
+                            "path": "tests/seqvars/ingest/Case_1.vcf",
+                            "entries": [
+                                {
+                                    "src": "Case_1_index-N1-DNA1-WGS1",
+                                    "dst": "Case_1_index"
+                                },
+                                {
+                                    "src": "Case_1_mother-N1-DNA1-WGS1",
+                                    "dst": "Case_1_mother"
+                                },
+                                {
+                                    "src": "Case_1_father-N1-DNA1-WGS1",
+                                    "dst": "Case_1_father"
+                                }
+                            ]
+                        }
+                    ]
+                }
+                "#
+                .to_string(),
+            ),
+        };
+        super::run(&args_common, &args).await?;
+
+        insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
 
         Ok(())
     }

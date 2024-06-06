@@ -2,597 +2,371 @@
 source: src/strucvars/txt_to_bin/vardbs/mod.rs
 expression: records
 ---
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 69089
   stop: 899565
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 69089
   stop: 949863
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 861409
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 861409
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 866474
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 871281
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 883988
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 892658
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 892658
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 900576
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 901999
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 901999
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 901999
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 909749
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
+- start: 861263
+  stop: 909960
+  count: 1
+- start: 861263
+  stop: 909960
+  count: 1
+- svType: Dup
   start: 861263
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
+- svType: Dup
   start: 861263
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
-  start: 861263
-  stop: 909960
-  count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
-  start: 861263
-  stop: 909960
-  count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 957847
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 970709
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 861263
+- start: 861263
   stop: 981650
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 985976
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 985976
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 985976
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 987200
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 861263
+- start: 861263
   stop: 1025811
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 861263
   stop: 1159353
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 871150
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 878631
   stop: 970709
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 879076
   stop: 907535
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 880896
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 883868
+- start: 883868
   stop: 889554
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 896671
+- start: 896671
   stop: 899565
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 898715
+- start: 898715
   stop: 900576
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 905655
+- start: 905655
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 905655
+- start: 905655
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 905655
+- start: 905655
   stop: 912007
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 905655
+- start: 905655
   stop: 912007
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 905655
   stop: 985976
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 908878
+- start: 908878
   stop: 909960
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 948952
   stop: 957847
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 976856
+- start: 976856
   stop: 985976
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 977334
   stop: 985976
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1018272
   stop: 1025811
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1102484
   stop: 1120527
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1111010
   stop: 1111779
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1117119
   stop: 1226079
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1117119
   stop: 1237431
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1117739
   stop: 1119476
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1117739
   stop: 1120527
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1117739
   stop: 1223221
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1117739
   stop: 1256479
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1117739
   stop: 1267323
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1117739
+- start: 1117739
   stop: 1451473
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1139412
   stop: 1342602
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1152890
   stop: 1164178
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1152890
   stop: 1164178
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1179569
+- start: 1179569
   stop: 1444692
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1190581
   stop: 1203377
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1190581
   stop: 1203377
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1198724
+- start: 1198724
   stop: 1203377
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1222146
+- start: 1222146
   stop: 1236077
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1222146
   stop: 1237431
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1225649
+- start: 1225649
   stop: 1226079
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1225855
+- start: 1225855
   stop: 1226525
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1225855
   stop: 1451473
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1233200
   stop: 1233498
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1233391
   stop: 1249750
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1237366
   stop: 1238664
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1245967
+- start: 1245967
   stop: 1260027
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1245967
   stop: 1278143
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1245967
   stop: 1278143
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1245967
   stop: 1463247
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1250202
   stop: 1251003
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1262289
+- start: 1262289
   stop: 1263148
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1262289
+- start: 1262289
   stop: 1289491
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1262289
+- start: 1262289
   stop: 1289491
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1262289
+- start: 1262289
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1267016
   stop: 1334056
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1293834
   stop: 1461916
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1309179
   stop: 1460676
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1322609
+- start: 1322609
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1323155
+- start: 1323155
   stop: 1389883
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1328160
+- start: 1328160
   stop: 1337641
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1328774
   stop: 1334691
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1328774
+- start: 1328774
   stop: 1337641
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1333611
   stop: 1337641
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1337461
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1337461
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1337461
   stop: 1342602
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1337461
   stop: 1342602
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1337461
   stop: 1342602
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1342287
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1342287
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1342287
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1342287
   stop: 1342404
   count: 1
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1342287
   stop: 1342404
   count: 1

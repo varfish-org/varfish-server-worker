@@ -212,6 +212,7 @@ fn add_contigs_38(builder: vcf::header::Builder) -> Result<vcf::header::Builder,
 pub fn build_output_header(
     input_header: &vcf::Header,
     pedigree: &Option<mehari::ped::PedigreeByName>,
+    id_mapping: &Option<indexmap::IndexMap<String, String>>,
     genomebuild: GenomeRelease,
     file_date: &str,
     case_uuid: &uuid::Uuid,
@@ -355,22 +356,52 @@ pub fn build_output_header(
             .iter()
             .cloned()
             .collect::<HashSet<_>>();
-        if !ped_idv.eq(&input_idv) {
-            anyhow::bail!(
-                "pedigree individuals = {:?} != input individuals: {:?}",
-                &ped_idv,
-                &input_idv
-            )
+        if let Some(id_mapping) = id_mapping {
+            let src_idv = id_mapping
+                .keys()
+                .into_iter()
+                .cloned()
+                .collect::<HashSet<_>>();
+            if !src_idv.eq(&input_idv) {
+                anyhow::bail!(
+                    "mapping source individuals = {:?} != input individuals: {:?}",
+                    &src_idv,
+                    &input_idv
+                )
+            }
+            let dst_idv = id_mapping
+                .values()
+                .into_iter()
+                .cloned()
+                .collect::<HashSet<_>>();
+            if !dst_idv.eq(&ped_idv) {
+                anyhow::bail!(
+                    "mapping destination individuals = {:?} != pedigree individuals: {:?}",
+                    &dst_idv,
+                    &ped_idv
+                )
+            }
+        } else {
+            if !ped_idv.eq(&input_idv) {
+                anyhow::bail!(
+                    "pedigree individuals = {:?} != input individuals: {:?}",
+                    &ped_idv,
+                    &input_idv
+                )
+            }
         }
 
         let mut sample_names = Vec::new();
-        for name in input_header.sample_names() {
-            let i = pedigree
-                .individuals
-                .get(name)
-                .expect("checked equality above");
-            if input_header.sample_names().contains(&i.name) {
-                sample_names.push(i.name.clone());
+        for src_name in input_header.sample_names() {
+            let dst_name = if let Some(id_mapping) = id_mapping {
+                id_mapping.get(src_name).expect("checked above")
+            } else {
+                src_name
+            };
+
+            let i = pedigree.individuals.get(dst_name).expect("checked above");
+            if input_header.sample_names().contains(src_name) {
+                sample_names.push(dst_name.clone());
             }
 
             // Add SAMPLE entry.
@@ -409,7 +440,15 @@ pub fn build_output_header(
         builder = builder.set_sample_names(sample_names.into_iter().collect());
     } else {
         for name in input_header.sample_names() {
-            builder = builder.add_sample_name(name.clone());
+            let name = if let Some(id_mapping) = id_mapping {
+                id_mapping
+                    .get(name)
+                    .ok_or_else(|| anyhow::anyhow!("mapping given but sample {} not found", name))?
+                    .clone()
+            } else {
+                name.clone()
+            };
+            builder = builder.add_sample_name(name);
         }
     }
 
@@ -521,6 +560,7 @@ mod test {
         let output_vcf_header = super::build_output_header(
             &input_vcf_header,
             &Some(pedigree),
+            &None,
             crate::common::GenomeRelease::Grch37,
             "20230421",
             &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
@@ -563,6 +603,7 @@ mod test {
         let output_vcf_header = super::build_output_header(
             &input_vcf_header,
             &Some(pedigree),
+            &None,
             crate::common::GenomeRelease::Grch38,
             "20230421",
             &uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
