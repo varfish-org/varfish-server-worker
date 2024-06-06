@@ -1,293 +1,271 @@
 ---
-source: src/db/to_bin/clinvar/mod.rs
+source: src/strucvars/txt_to_bin/clinvar/mod.rs
 expression: records
 ---
-- chrom_no: 6
+- chromNo: 6
   start: 101528
   stop: 227833
-  variation_type: 2
-  pathogenicity: 0
+  variationType: Dup
   rcv: 50292
-- chrom_no: 0
-  start: 147228867
+- start: 147228867
   stop: 147248577
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 50299
-- chrom_no: 6
+- chromNo: 6
   start: 70356011
   stop: 70537428
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 50317
-- chrom_no: 6
+- chromNo: 6
   start: 10649696
   stop: 11329787
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 50319
-- chrom_no: 20
+- chromNo: 20
   start: 35734654
   stop: 35879759
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 50337
-- chrom_no: 0
-  start: 149041013
+- start: 149041013
   stop: 149699420
-  variation_type: 2
-  pathogenicity: 0
+  variationType: Dup
   rcv: 50339
-- chrom_no: 1
+- chromNo: 1
   start: 242930600
   stop: 243007359
-  variation_type: 2
-  pathogenicity: 0
+  variationType: Dup
   rcv: 50458
-- chrom_no: 5
+- chromNo: 5
   start: 259528
   stop: 307998
-  variation_type: 2
-  pathogenicity: 0
+  variationType: Dup
   rcv: 50474
-- chrom_no: 5
+- chromNo: 5
   start: 259528
   stop: 293493
-  variation_type: 2
-  pathogenicity: 0
+  variationType: Dup
   rcv: 50518
-- chrom_no: 2
+- chromNo: 2
   start: 2342852
   stop: 2796629
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 50588
-- chrom_no: 10
+- chromNo: 10
   start: 196966
   stop: 244236
-  variation_type: 3
-  pathogenicity: 2
+  variationType: Del
+  pathogenicity: Uncertain
   rcv: 50265
-- chrom_no: 0
-  start: 148867551
+- start: 148867551
   stop: 149699420
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50266
-- chrom_no: 1
+- chromNo: 1
   start: 242930600
   stop: 243059659
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50281
-- chrom_no: 22
+- chromNo: 22
   start: 155231256
   stop: 155251871
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50305
-- chrom_no: 22
+- chromNo: 22
   start: 155231256
   stop: 155251871
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50306
-- chrom_no: 0
-  start: 149041013
+- start: 149041013
   stop: 149699420
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50340
-- chrom_no: 4
+- chromNo: 4
   start: 629455
   stop: 820475
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50363
-- chrom_no: 11
+- chromNo: 11
   start: 61091958
   stop: 61921447
-  variation_type: 3
-  pathogenicity: 2
+  variationType: Del
+  pathogenicity: Uncertain
   rcv: 50369
-- chrom_no: 1
+- chromNo: 1
   start: 242930600
   stop: 243007359
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50463
-- chrom_no: 5
+- chromNo: 5
   start: 259528
   stop: 307998
-  variation_type: 3
-  pathogenicity: 0
+  variationType: Del
   rcv: 50482
-- chrom_no: 15
+- chromNo: 15
   start: 89817659
   stop: 89861760
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 3614
-- chrom_no: 7
+- chromNo: 7
   start: 53536328
   stop: 53598019
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 4182
-- chrom_no: 7
+- chromNo: 7
   start: 53537321
   stop: 53574220
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 4183
-- chrom_no: 16
+- chromNo: 16
   start: 3543558
   stop: 3543559
-  variation_type: 1
-  pathogenicity: 4
+  variationType: Microsatellite
+  pathogenicity: Pathogenic
   rcv: 4692
-- chrom_no: 4
+- chromNo: 4
   start: 77436046
   stop: 77444215
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 6747
-- chrom_no: 8
+- chromNo: 8
   start: 139570503
   stop: 139571539
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 7011
-- chrom_no: 21
+- chromNo: 21
   start: 40742514
   stop: 40762546
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 536272
-- chrom_no: 22
+- chromNo: 22
   start: 69080668
   stop: 69177002
-  variation_type: 2
-  pathogenicity: 4
+  variationType: Dup
+  pathogenicity: Pathogenic
   rcv: 539041
-- chrom_no: 16
+- chromNo: 16
   start: 56769999
   stop: 56774226
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 554988
-- chrom_no: 22
+- chromNo: 22
   start: 68890034
   stop: 69177002
-  variation_type: 2
-  pathogenicity: 4
+  variationType: Dup
+  pathogenicity: Pathogenic
   rcv: 633513
-- chrom_no: 3
+- chromNo: 3
   start: 77116840
   stop: 77134716
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 638336
-- chrom_no: 1
+- chromNo: 1
   start: 233194517
   stop: 233198703
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 638545
-- chrom_no: 22
+- chromNo: 22
   start: 103031893
   stop: 103045546
-  variation_type: 2
-  pathogenicity: 4
+  variationType: Dup
+  pathogenicity: Pathogenic
   rcv: 640484
-- chrom_no: 1
+- chromNo: 1
   start: 32358735
   stop: 32358736
-  variation_type: 2
-  pathogenicity: 4
+  variationType: Dup
+  pathogenicity: Pathogenic
   rcv: 6031
-- chrom_no: 11
+- chromNo: 11
   start: 115120779
   stop: 115120779
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 8451
-- chrom_no: 11
+- chromNo: 11
   start: 114836472
   stop: 114836472
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 8460
-- chrom_no: 0
-  start: 228345537
+- start: 228345537
   stop: 228345537
-  variation_type: 3
-  pathogenicity: 3
+  variationType: Del
+  pathogenicity: LikelyPathogenic
   rcv: 256421
-- chrom_no: 13
+- chromNo: 13
   start: 21775989
   stop: 21776009
-  variation_type: 3
-  pathogenicity: 3
+  variationType: Del
+  pathogenicity: LikelyPathogenic
   rcv: 256440
-- chrom_no: 20
+- chromNo: 20
   start: 47545768
   stop: 47545769
-  variation_type: 2
-  pathogenicity: 3
+  variationType: Dup
+  pathogenicity: LikelyPathogenic
   rcv: 256480
-- chrom_no: 17
+- chromNo: 17
   start: 43479513
   stop: 43479513
-  variation_type: 3
-  pathogenicity: 3
+  variationType: Del
+  pathogenicity: LikelyPathogenic
   rcv: 416351
-- chrom_no: 1
+- chromNo: 1
   start: 179454322
   stop: 179454323
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 256437
-- chrom_no: 16
+- chromNo: 16
   start: 12899881
   stop: 12899882
-  variation_type: 2
-  pathogenicity: 4
+  variationType: Dup
+  pathogenicity: Pathogenic
   rcv: 5360
-- chrom_no: 2
+- chromNo: 2
   start: 33100045
   stop: 33100046
-  variation_type: 0
-  pathogenicity: 3
+  pathogenicity: LikelyPathogenic
   rcv: 1849900
-- chrom_no: 13
+- chromNo: 13
   start: 99641905
   stop: 99641906
-  variation_type: 2
-  pathogenicity: 2
+  variationType: Dup
+  pathogenicity: Uncertain
   rcv: 2265366
-- chrom_no: 22
+- chromNo: 22
   start: 154156796
   stop: 154227925
-  variation_type: 0
-  pathogenicity: 3
+  pathogenicity: LikelyPathogenic
   rcv: 852264
-- chrom_no: 14
+- chromNo: 14
   start: 38632006
   stop: 38632007
-  variation_type: 2
-  pathogenicity: 4
+  variationType: Dup
+  pathogenicity: Pathogenic
   rcv: 622432
-- chrom_no: 7
+- chromNo: 7
   start: 144900557
   stop: 144900557
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 622481
-- chrom_no: 0
-  start: 1718780
+- start: 1718780
   stop: 1718782
-  variation_type: 3
-  pathogenicity: 4
+  variationType: Del
+  pathogenicity: Pathogenic
   rcv: 623933
-

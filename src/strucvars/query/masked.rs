@@ -9,7 +9,7 @@ use tracing::info;
 
 use crate::{
     common::{trace_rss_now, GenomeRelease, CHROMS},
-    strucvars::pbs,
+    pbs,
 };
 
 use super::{
@@ -141,7 +141,7 @@ pub fn load_masked_db_records(path: &Path) -> Result<MaskedDb, anyhow::Error> {
 
     let fcontents =
         std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
-    let masked_db = pbs::MaskedDatabase::decode(std::io::Cursor::new(fcontents))
+    let masked_db = pbs::svs::MaskedDatabase::decode(std::io::Cursor::new(fcontents))
         .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
     for record in masked_db.records.into_iter() {
@@ -316,8 +316,8 @@ mod test {
         let tmpdir = temp_testdir::TempDir::default();
         let path_bin = tmpdir.join("masked_db.bin");
 
-        let data = super::pbs::MaskedDatabase {
-            records: vec![super::pbs::MaskedDbRecord {
+        let data = super::pbs::svs::MaskedDatabase {
+            records: vec![super::pbs::svs::MaskedDbRecord {
                 chrom_no: 0,
                 start: 1,
                 stop: 2,

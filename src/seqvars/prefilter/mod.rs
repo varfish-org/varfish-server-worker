@@ -235,7 +235,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
                 &params.prefilter_path,
             )?);
             let mut writer =
-                open_vcf_writer(&out_path_helpers.last().expect("just pushed").path_out()).await?;
+                open_vcf_writer(out_path_helpers.last().expect("just pushed").path_out()).await?;
             writer.write_header(&header).await.map_err(|e| {
                 anyhow::anyhow!(
                     "could not write header to {}: {}",

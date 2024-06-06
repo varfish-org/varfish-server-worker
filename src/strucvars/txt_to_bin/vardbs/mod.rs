@@ -10,9 +10,8 @@ use prost::Message;
 use thousands::Separable;
 
 use crate::common::{build_chrom_map, trace_rss_now};
-use crate::strucvars;
+use crate::pbs::svs::{BackgroundDatabase, BgDbRecord};
 use crate::strucvars::aggregate::output::Record as InhouseDbRecord;
-use crate::strucvars::pbs::{BackgroundDatabase, BgDbRecord};
 use crate::strucvars::query::schema::SvType;
 
 use self::input::InputRecord;
@@ -61,12 +60,12 @@ where
                     .unwrap_or_else(|| panic!("unknown chrom2: {:?}", &record.chromosome2))
                     as i32,
                 sv_type: match record.sv_type {
-                    SvType::Del => strucvars::pbs::SvType::Del,
-                    SvType::Dup => strucvars::pbs::SvType::Dup,
-                    SvType::Inv => strucvars::pbs::SvType::Inv,
-                    SvType::Ins => strucvars::pbs::SvType::Ins,
-                    SvType::Bnd => strucvars::pbs::SvType::Bnd,
-                    SvType::Cnv => strucvars::pbs::SvType::Cnv,
+                    SvType::Del => crate::pbs::svs::SvType::Del,
+                    SvType::Dup => crate::pbs::svs::SvType::Dup,
+                    SvType::Inv => crate::pbs::svs::SvType::Inv,
+                    SvType::Ins => crate::pbs::svs::SvType::Ins,
+                    SvType::Bnd => crate::pbs::svs::SvType::Bnd,
+                    SvType::Cnv => crate::pbs::svs::SvType::Cnv,
                 } as i32,
                 start: record.begin + 1,
                 stop: record.end,

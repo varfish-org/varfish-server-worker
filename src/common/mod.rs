@@ -525,6 +525,89 @@ macro_rules! flush_and_shutdown {
     };
 }
 
+// Per-file identifier mapping.
+pub mod id_mapping {
+    // Actual implementation.
+    #[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Clone, Debug, Default)]
+    pub struct FileIdentifierMappings {
+        // Per-file and per-identifier mapping.
+        pub mappings: indexmap::IndexMap<String, indexmap::IndexMap<String, String>>,
+    }
+
+    impl FileIdentifierMappings {
+        // Load from JSON - deserialize via serde_json.
+        pub fn load_from_json(json: &str) -> Result<Self, anyhow::Error> {
+            let buf: crate::pbs::worker::FileIdentifierMappings = serde_json::from_str(json)
+                .map_err(|e| {
+                    anyhow::anyhow!("could not deserialize FileIdentifierMappings: {}", e)
+                })?;
+            let mut mappings: indexmap::IndexMap<_, _> = Default::default();
+            for mapping in &buf.mappings {
+                let mut map: indexmap::IndexMap<_, _> = Default::default();
+                for entry in &mapping.entries {
+                    map.insert(entry.src.to_string(), entry.dst.to_string());
+                }
+                mappings.insert(mapping.path.to_string(), map);
+            }
+            Ok(FileIdentifierMappings { mappings })
+        }
+
+        // Load from path.
+        pub fn load_from_path<P: AsRef<std::path::Path> + ToString>(
+            path: P,
+        ) -> Result<Self, anyhow::Error> {
+            Self::load_from_json(
+                std::fs::read_to_string(path.as_ref())
+                    .map_err(|e| anyhow::anyhow!("could not read {}: {}", path.to_string(), e))?
+                    .as_str(),
+            )
+        }
+
+        // Obtain mapping.
+        pub fn mapping_for_file<'a>(
+            &'a self,
+            file_name: &str,
+        ) -> Result<&'a indexmap::IndexMap<String, String>, anyhow::Error> {
+            self.mappings
+                .get(file_name)
+                .ok_or_else(|| anyhow::anyhow!("file name not in mapping: {}", &file_name))
+        }
+
+        // Map from file name and identifier.
+        pub fn map_identifier(
+            &self,
+            file_name: &str,
+            identifier: &str,
+        ) -> Result<String, anyhow::Error> {
+            self.mapping_for_file(file_name)?
+                .get(identifier)
+                .map(|dst| dst.to_string())
+                .ok_or_else(|| {
+                    anyhow::anyhow!("identifier {} not in file {}", &identifier, &file_name)
+                })
+        }
+
+        // Get all file names in map.
+        pub fn file_names(&self) -> Vec<String> {
+            self.mappings.keys().cloned().collect()
+        }
+
+        // Get all source identifiers in file.
+        pub fn src_identifiers(&self, file_name: &str) -> Result<Vec<String>, anyhow::Error> {
+            Ok(self.mapping_for_file(file_name)?.keys().cloned().collect())
+        }
+
+        // Get all destination identifiers in file.
+        pub fn dst_identifiers(&self, file_name: &str) -> Result<Vec<String>, anyhow::Error> {
+            Ok(self
+                .mapping_for_file(file_name)?
+                .values()
+                .cloned()
+                .collect())
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use noodles_vcf as vcf;
@@ -640,5 +723,30 @@ mod test {
         let (pedigree, case_uuid) = super::extract_pedigree_and_case_uuid(&header).unwrap();
         insta::assert_debug_snapshot!(pedigree);
         insta::assert_debug_snapshot!(case_uuid);
+    }
+
+    #[test]
+    fn file_identifier_mappings() -> Result<(), anyhow::Error> {
+        let mapping = super::id_mapping::FileIdentifierMappings::load_from_json(
+            r#"
+            {
+                "mappings": [
+                    {
+                        "path": "path/to/file",
+                        "entries": [
+                            {
+                                "src": "foo",
+                                "dst": "bar"
+                            }
+                        ]
+                    }
+                ]
+            }
+            "#,
+        )?;
+
+        insta::assert_yaml_snapshot!(&mapping);
+
+        Ok(())
     }
 }

@@ -338,15 +338,13 @@ mod test {
                 .into_iter()
                 .collect();
         let seq_var = SequenceVariant {
-            call_info: vec![
-                ((
-                    INDEX_NAME.into(),
-                    CallInfo {
-                        genotype: Some(sample_gt.into()),
-                        ..Default::default()
-                    },
-                )),
-            ]
+            call_info: vec![(
+                INDEX_NAME.into(),
+                CallInfo {
+                    genotype: Some(sample_gt.into()),
+                    ..Default::default()
+                },
+            )]
             .into_iter()
             .collect(),
             ..Default::default()

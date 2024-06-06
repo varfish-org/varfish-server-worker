@@ -2,597 +2,347 @@
 source: src/strucvars/txt_to_bin/vardbs/mod.rs
 expression: records
 ---
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 10001
   stop: 82189
   count: 13
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 10001
   stop: 127330
   count: 30
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 10499
   stop: 235938
   count: 13
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 21064
   stop: 35983
   count: 12
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 46501
   stop: 71800
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 49298
   stop: 98602
   count: 16
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 49298
+- start: 49298
   stop: 98602
   count: 16
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 61723
+- start: 61723
   stop: 356542
   count: 37
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 70007
   stop: 88084
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 86778
   stop: 91967
   count: 13
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 87433
+- start: 87433
   stop: 89163
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 91317
   stop: 125400
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 121042
   stop: 176984
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 136181
+- start: 136181
   stop: 137811
   count: 5
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 227601
   stop: 267719
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 317720
   stop: 351915
   count: 12
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 317770
   stop: 471337
   count: 9
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 348092
+- start: 348092
   stop: 461014
   count: 3
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 350531
   stop: 435382
   count: 16
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 404112
+- start: 404112
   stop: 471337
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 437342
   stop: 468644
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 459944
   stop: 464929
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 460229
   stop: 471368
   count: 14
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 521413
+- start: 521413
   stop: 575095
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 521413
   stop: 706368
   count: 4
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 521413
   stop: 850675
   count: 6
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 521553
   stop: 546384
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 522577
+- start: 522577
   stop: 641599
   count: 3
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 544966
   stop: 569604
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 546384
   stop: 549347
   count: 13
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 563896
   stop: 570775
   count: 24
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 564452
+- start: 564452
   stop: 574333
   count: 4
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 564582
+- start: 564582
   stop: 570178
   count: 4
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 637238
   stop: 730328
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 668630
   stop: 851378
   count: 63
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 712111
   stop: 764840
   count: 202
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 713044
+- start: 713044
   stop: 755966
   count: 4
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 723901
   stop: 727245
   count: 25
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 724314
+- start: 724314
   stop: 727245
   count: 10
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 738914
   stop: 809773
   count: 20
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 751887
   stop: 762622
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 754201
+- start: 754201
   stop: 759100
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 766101
+- start: 766101
   stop: 809773
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 766408
+- start: 766408
   stop: 769112
   count: 195
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 769117
   stop: 852664
   count: 60
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 775292
+- start: 775292
   stop: 792588
   count: 16
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 812998
   stop: 1708649
   count: 3
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 834801
+- start: 834801
   stop: 1029900
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 850017
   stop: 1097335
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 869249
+- start: 869249
   stop: 870860
   count: 71
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 869310
   stop: 870645
   count: 130
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 869497
+- start: 869497
   stop: 870645
   count: 277
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 873391
+- start: 873391
   stop: 874049
   count: 8
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 947113
+- start: 947113
   stop: 948003
   count: 5
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 963659
+- start: 963659
   stop: 964567
   count: 242
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 964980
+- start: 964980
   stop: 965488
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1010973
   stop: 1014683
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1011188
+- start: 1011188
   stop: 1014828
   count: 15
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1034317
   stop: 1035340
   count: 30
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1058898
+- start: 1058898
   stop: 1058993
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1074379
   stop: 1076572
   count: 19
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1137003
   stop: 1138283
   count: 9
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1142700
+- start: 1142700
   stop: 1143161
   count: 939
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1183198
+- start: 1183198
   stop: 1183861
   count: 92
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1223189
+- start: 1223189
   stop: 1226049
   count: 49
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1223580
   stop: 1225633
   count: 5
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1226063
+- start: 1226063
   stop: 1314437
   count: 26
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1285180
+- start: 1285180
   stop: 1287127
   count: 9
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1285340
   stop: 1286900
   count: 24
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1302378
+- start: 1302378
   stop: 1302882
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1352531
+- start: 1352531
   stop: 1453590
   count: 19
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1385069
   stop: 1405538
   count: 11
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1387455
+- start: 1387455
   stop: 1443716
   count: 59
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1393861
   stop: 1431581
   count: 22
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1400225
+- start: 1400225
   stop: 1409107
   count: 34
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1414245
+- start: 1414245
   stop: 1416792
   count: 30
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1415099
+- start: 1415099
   stop: 1462190
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1432368
   stop: 1470064
   count: 12
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1443538
+- start: 1443538
   stop: 1445764
   count: 112
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1465911
+- start: 1465911
   stop: 1466268
   count: 346
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1500941
+- start: 1500941
   stop: 1672603
   count: 7
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1522874
+- start: 1522874
   stop: 1524674
   count: 30
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1540850
   stop: 1541970
   count: 8
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1540930
+- start: 1540930
   stop: 1541970
   count: 56
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1559466
   stop: 1683706
   count: 5
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1582548
+- start: 1582548
   stop: 1647400
   count: 5
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1584529
+- start: 1584529
   stop: 1685076
   count: 36
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1598413
+- start: 1598413
   stop: 1598601
   count: 450
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1616990
+- start: 1616990
   stop: 1653672
   count: 6
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1620684
+- start: 1620684
   stop: 1692321
   count: 322
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1627805
   stop: 1692321
   count: 80
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1634170
   stop: 1655791
   count: 2
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1635205
+- start: 1635205
   stop: 1680442
   count: 20
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 1
+- svType: Dup
   start: 1642103
   stop: 1672603
   count: 7
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1649047
+- start: 1649047
   stop: 1650677
   count: 69
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1658945
+- start: 1658945
   stop: 1691900
   count: 3
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1662938
+- start: 1662938
   stop: 1672603
   count: 3
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1866297
+- start: 1866297
   stop: 1867172
   count: 3
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 1910347
+- start: 1910347
   stop: 1911917
   count: 16

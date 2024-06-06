@@ -1,6 +1,7 @@
 //! VarFish Server Worker main executable
 
 pub mod common;
+pub mod pbs;
 pub mod seqvars;
 pub mod strucvars;
 

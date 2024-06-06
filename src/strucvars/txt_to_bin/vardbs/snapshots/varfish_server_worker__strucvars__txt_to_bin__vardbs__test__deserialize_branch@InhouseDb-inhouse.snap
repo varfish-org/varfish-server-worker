@@ -2,9 +2,6 @@
 source: src/strucvars/txt_to_bin/vardbs/mod.rs
 expression: records
 ---
-- chrom_no: 0
-  chrom_no2: 0
-  sv_type: 0
-  start: 849999
+- start: 849999
   stop: 860000
   count: 1
