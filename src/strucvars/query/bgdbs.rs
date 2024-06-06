@@ -9,10 +9,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use tracing::info;
 
-use crate::{
-    common::{trace_rss_now, GenomeRelease, CHROMS},
-    strucvars::pbs,
-};
+use crate::common::{trace_rss_now, GenomeRelease, CHROMS};
 
 use super::{
     schema::ChromRange,
@@ -147,18 +144,20 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
 
     let fcontents =
         std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
-    let bg_db = pbs::BackgroundDatabase::decode(std::io::Cursor::new(fcontents))
+    let bg_db = crate::pbs::svs::BackgroundDatabase::decode(std::io::Cursor::new(fcontents))
         .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
     let record_count = bg_db.records.len();
 
     for record in bg_db.records.into_iter() {
         let chrom_no = record.chrom_no as usize;
-        let begin = match pbs::SvType::try_from(record.sv_type).expect("invalid sv_type") {
-            pbs::SvType::Bnd | pbs::SvType::Ins => record.start - 2,
-            _ => record.start - 1,
-        };
-        let end = match pbs::SvType::try_from(record.sv_type).expect("invalid sv_type") {
-            pbs::SvType::Bnd | pbs::SvType::Ins => record.start - 1,
+        let begin =
+            match crate::pbs::svs::SvType::try_from(record.sv_type).expect("invalid sv_type") {
+                crate::pbs::svs::SvType::Bnd | crate::pbs::svs::SvType::Ins => record.start - 2,
+                _ => record.start - 1,
+            };
+        let end = match crate::pbs::svs::SvType::try_from(record.sv_type).expect("invalid sv_type")
+        {
+            crate::pbs::svs::SvType::Bnd | crate::pbs::svs::SvType::Ins => record.start - 1,
             _ => record.stop,
         };
         let key = begin..end;
@@ -167,13 +166,15 @@ pub fn load_bg_db_records(path: &Path) -> Result<BgDb, anyhow::Error> {
         result.records[chrom_no].push(BgDbRecord {
             begin: record.start - 1,
             end: record.stop,
-            sv_type: match pbs::SvType::try_from(record.sv_type).expect("invalid sv_type") {
-                pbs::SvType::Del => SvType::Del,
-                pbs::SvType::Dup => SvType::Dup,
-                pbs::SvType::Inv => SvType::Inv,
-                pbs::SvType::Ins => SvType::Ins,
-                pbs::SvType::Bnd => SvType::Bnd,
-                pbs::SvType::Cnv => SvType::Cnv,
+            sv_type: match crate::pbs::svs::SvType::try_from(record.sv_type)
+                .expect("invalid sv_type")
+            {
+                crate::pbs::svs::SvType::Del => SvType::Del,
+                crate::pbs::svs::SvType::Dup => SvType::Dup,
+                crate::pbs::svs::SvType::Inv => SvType::Inv,
+                crate::pbs::svs::SvType::Ins => SvType::Ins,
+                crate::pbs::svs::SvType::Bnd => SvType::Bnd,
+                crate::pbs::svs::SvType::Cnv => SvType::Cnv,
             },
             count: record.count,
         });

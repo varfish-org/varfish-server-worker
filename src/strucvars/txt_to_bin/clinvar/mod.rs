@@ -8,7 +8,7 @@ use thousands::Separable;
 
 use crate::{
     common::{build_chrom_map, trace_rss_now},
-    strucvars::query::clinvar::pbs::{Pathogenicity, SvDatabase, SvRecord},
+    pbs::clinvar::{Pathogenicity, SvDatabase, SvRecord},
 };
 
 pub mod input;
@@ -71,10 +71,8 @@ fn convert_jsonl_to_protobuf(
         // there can be multiple measures, we consider them all
         for measure in &record.reference_clinvar_assertion.measures.measures {
             // convert from JSONL to protocolbuffers: variation type
-            let variation_type: Result<
-                crate::strucvars::query::clinvar::pbs::VariationType,
-                anyhow::Error,
-            > = measure.r#type.try_into();
+            let variation_type: Result<crate::pbs::clinvar::VariationType, anyhow::Error> =
+                measure.r#type.try_into();
             let variation_type = if let Ok(variation_type) = variation_type {
                 variation_type as i32
             } else {

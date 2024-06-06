@@ -10,7 +10,7 @@ use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 
-use super::{clinvar, masked::MaskedBreakpointCount};
+use super::masked::MaskedBreakpointCount;
 
 /// Range with 1-based positions
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
@@ -1545,34 +1545,34 @@ impl StructuralVariant {
     }
 }
 
-impl From<VariationType> for clinvar::pbs::VariationType {
+impl From<VariationType> for crate::pbs::clinvar::VariationType {
     fn from(val: VariationType) -> Self {
         match val {
-            VariationType::Complex => clinvar::pbs::VariationType::Complex,
-            VariationType::Microsatellite => clinvar::pbs::VariationType::Microsatellite,
-            VariationType::Dup => clinvar::pbs::VariationType::Dup,
-            VariationType::Del => clinvar::pbs::VariationType::Del,
-            VariationType::Bnd => clinvar::pbs::VariationType::Bnd,
-            VariationType::Cnv => clinvar::pbs::VariationType::Cnv,
-            VariationType::Inv => clinvar::pbs::VariationType::Inv,
-            VariationType::Ins => clinvar::pbs::VariationType::Ins,
+            VariationType::Complex => crate::pbs::clinvar::VariationType::Complex,
+            VariationType::Microsatellite => crate::pbs::clinvar::VariationType::Microsatellite,
+            VariationType::Dup => crate::pbs::clinvar::VariationType::Dup,
+            VariationType::Del => crate::pbs::clinvar::VariationType::Del,
+            VariationType::Bnd => crate::pbs::clinvar::VariationType::Bnd,
+            VariationType::Cnv => crate::pbs::clinvar::VariationType::Cnv,
+            VariationType::Inv => crate::pbs::clinvar::VariationType::Inv,
+            VariationType::Ins => crate::pbs::clinvar::VariationType::Ins,
         }
     }
 }
 
-impl TryInto<VariationType> for clinvar::pbs::VariationType {
+impl TryInto<VariationType> for crate::pbs::clinvar::VariationType {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<VariationType, anyhow::Error> {
         Ok(match self {
-            clinvar::pbs::VariationType::Complex => VariationType::Complex,
-            clinvar::pbs::VariationType::Microsatellite => VariationType::Microsatellite,
-            clinvar::pbs::VariationType::Dup => VariationType::Dup,
-            clinvar::pbs::VariationType::Del => VariationType::Del,
-            clinvar::pbs::VariationType::Bnd => VariationType::Bnd,
-            clinvar::pbs::VariationType::Cnv => VariationType::Cnv,
-            clinvar::pbs::VariationType::Inv => VariationType::Inv,
-            clinvar::pbs::VariationType::Ins => VariationType::Ins,
+            crate::pbs::clinvar::VariationType::Complex => VariationType::Complex,
+            crate::pbs::clinvar::VariationType::Microsatellite => VariationType::Microsatellite,
+            crate::pbs::clinvar::VariationType::Dup => VariationType::Dup,
+            crate::pbs::clinvar::VariationType::Del => VariationType::Del,
+            crate::pbs::clinvar::VariationType::Bnd => VariationType::Bnd,
+            crate::pbs::clinvar::VariationType::Cnv => VariationType::Cnv,
+            crate::pbs::clinvar::VariationType::Inv => VariationType::Inv,
+            crate::pbs::clinvar::VariationType::Ins => VariationType::Ins,
         })
     }
 }
@@ -1621,28 +1621,28 @@ pub enum Pathogenicity {
     Pathogenic,
 }
 
-impl From<Pathogenicity> for clinvar::pbs::Pathogenicity {
+impl From<Pathogenicity> for crate::pbs::clinvar::Pathogenicity {
     fn from(val: Pathogenicity) -> Self {
         match val {
-            Pathogenicity::Benign => clinvar::pbs::Pathogenicity::Benign,
-            Pathogenicity::LikelyBenign => clinvar::pbs::Pathogenicity::LikelyBenign,
-            Pathogenicity::Uncertain => clinvar::pbs::Pathogenicity::Uncertain,
-            Pathogenicity::LikelyPathogenic => clinvar::pbs::Pathogenicity::LikelyPathogenic,
-            Pathogenicity::Pathogenic => clinvar::pbs::Pathogenicity::Pathogenic,
+            Pathogenicity::Benign => crate::pbs::clinvar::Pathogenicity::Benign,
+            Pathogenicity::LikelyBenign => crate::pbs::clinvar::Pathogenicity::LikelyBenign,
+            Pathogenicity::Uncertain => crate::pbs::clinvar::Pathogenicity::Uncertain,
+            Pathogenicity::LikelyPathogenic => crate::pbs::clinvar::Pathogenicity::LikelyPathogenic,
+            Pathogenicity::Pathogenic => crate::pbs::clinvar::Pathogenicity::Pathogenic,
         }
     }
 }
 
-impl TryInto<Pathogenicity> for clinvar::pbs::Pathogenicity {
+impl TryInto<Pathogenicity> for crate::pbs::clinvar::Pathogenicity {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Pathogenicity, anyhow::Error> {
         Ok(match self {
-            clinvar::pbs::Pathogenicity::Benign => Pathogenicity::Benign,
-            clinvar::pbs::Pathogenicity::LikelyBenign => Pathogenicity::LikelyBenign,
-            clinvar::pbs::Pathogenicity::Uncertain => Pathogenicity::Uncertain,
-            clinvar::pbs::Pathogenicity::LikelyPathogenic => Pathogenicity::LikelyPathogenic,
-            clinvar::pbs::Pathogenicity::Pathogenic => Pathogenicity::Pathogenic,
+            crate::pbs::clinvar::Pathogenicity::Benign => Pathogenicity::Benign,
+            crate::pbs::clinvar::Pathogenicity::LikelyBenign => Pathogenicity::LikelyBenign,
+            crate::pbs::clinvar::Pathogenicity::Uncertain => Pathogenicity::Uncertain,
+            crate::pbs::clinvar::Pathogenicity::LikelyPathogenic => Pathogenicity::LikelyPathogenic,
+            crate::pbs::clinvar::Pathogenicity::Pathogenic => Pathogenicity::Pathogenic,
         })
     }
 }

@@ -7,7 +7,7 @@ use prost::Message;
 use serde::Deserialize;
 use tracing::info;
 
-use crate::{common::GenomeRelease, strucvars::pbs};
+use crate::{common::GenomeRelease, pbs};
 
 /// Information to store for the interlink table.
 #[derive(Default, Debug)]
@@ -40,7 +40,7 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
 
     let fcontents =
         std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
-    let xlink_db = pbs::XlinkDatabase::decode(std::io::Cursor::new(fcontents))
+    let xlink_db = pbs::svs::XlinkDatabase::decode(std::io::Cursor::new(fcontents))
         .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
     let mut total_count = 0;
