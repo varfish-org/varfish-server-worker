@@ -589,16 +589,12 @@ pub mod id_mapping {
 
         // Get all file names in map.
         pub fn file_names(&self) -> Vec<String> {
-            self.mappings.keys().map(|key| key.clone()).collect()
+            self.mappings.keys().cloned().collect()
         }
 
         // Get all source identifiers in file.
         pub fn src_identifiers(&self, file_name: &str) -> Result<Vec<String>, anyhow::Error> {
-            Ok(self
-                .mapping_for_file(file_name)?
-                .keys()
-                .map(|key| key.clone())
-                .collect())
+            Ok(self.mapping_for_file(file_name)?.keys().cloned().collect())
         }
 
         // Get all destination identifiers in file.
@@ -606,7 +602,7 @@ pub mod id_mapping {
             Ok(self
                 .mapping_for_file(file_name)?
                 .values()
-                .map(|value| value.clone())
+                .cloned()
                 .collect())
         }
     }

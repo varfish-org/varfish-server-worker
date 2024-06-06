@@ -539,7 +539,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
                         )
                     })
                 } else {
-                    crate::common::id_mapping::FileIdentifierMappings::load_from_json(&id_mapping)
+                    crate::common::id_mapping::FileIdentifierMappings::load_from_json(id_mapping)
                         .map_err(|e| {
                             anyhow::anyhow!(
                                 "could not load ID mapping from JSON string {:?}: {}",

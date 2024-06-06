@@ -357,11 +357,7 @@ pub fn build_output_header(
             .cloned()
             .collect::<HashSet<_>>();
         if let Some(id_mapping) = id_mapping {
-            let src_idv = id_mapping
-                .keys()
-                .into_iter()
-                .cloned()
-                .collect::<HashSet<_>>();
+            let src_idv = id_mapping.keys().cloned().collect::<HashSet<_>>();
             if !src_idv.eq(&input_idv) {
                 anyhow::bail!(
                     "mapping source individuals = {:?} != input individuals: {:?}",
@@ -369,11 +365,7 @@ pub fn build_output_header(
                     &input_idv
                 )
             }
-            let dst_idv = id_mapping
-                .values()
-                .into_iter()
-                .cloned()
-                .collect::<HashSet<_>>();
+            let dst_idv = id_mapping.values().cloned().collect::<HashSet<_>>();
             if !dst_idv.eq(&ped_idv) {
                 anyhow::bail!(
                     "mapping destination individuals = {:?} != pedigree individuals: {:?}",
@@ -381,14 +373,12 @@ pub fn build_output_header(
                     &ped_idv
                 )
             }
-        } else {
-            if !ped_idv.eq(&input_idv) {
-                anyhow::bail!(
-                    "pedigree individuals = {:?} != input individuals: {:?}",
-                    &ped_idv,
-                    &input_idv
-                )
-            }
+        } else if !ped_idv.eq(&input_idv) {
+            anyhow::bail!(
+                "pedigree individuals = {:?} != input individuals: {:?}",
+                &ped_idv,
+                &input_idv
+            )
         }
 
         let mut sample_names = Vec::new();
