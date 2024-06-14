@@ -11,13 +11,13 @@ use crate::{
     pbs::clinvar::{Pathogenicity, SvDatabase, SvRecord},
 };
 
-pub mod input;
+// pub mod input;
 
 /// Helper to convert RCV IDs to numbers.
-fn numeric_rcv_id(raw_id: &str) -> Result<u32, anyhow::Error> {
+fn numeric_id(raw_id: &str, prefix: &str) -> Result<u32, anyhow::Error> {
     let clean_id: String = raw_id
         .chars()
-        .skip("RCV".len())
+        .skip(prefix.len())
         .skip_while(|c| *c == '0')
         .collect();
     clean_id
@@ -26,10 +26,7 @@ fn numeric_rcv_id(raw_id: &str) -> Result<u32, anyhow::Error> {
 }
 
 /// Read JSONL file and convert to protobuf records.
-fn convert_jsonl_to_protobuf(
-    reader: Box<dyn BufRead>,
-    assembly: input::Assembly,
-) -> Result<Vec<SvRecord>, anyhow::Error> {
+fn convert_jsonl_to_protobuf(reader: Box<dyn BufRead>) -> Result<Vec<SvRecord>, anyhow::Error> {
     let chrom_map = build_chrom_map();
 
     let mut records = Vec::new();
@@ -43,111 +40,159 @@ fn convert_jsonl_to_protobuf(
 
         // deserialize JSONL record from line
         let record = serde_json::from_str(&line);
-        let record = match record {
+        let record: annonars::pbs::clinvar_data::extracted_vars::ExtractedVcvRecord = match record {
             Err(e) => {
                 tracing::warn!("error deserializing JSONL record: \"{}\" in {}", e, &line);
                 continue;
             }
-            Ok(record) => {
-                let record: input::ClinVarSet = record;
-                record
+            Ok(record) => record,
+        };
+
+        // Extract VCV and RCV accessions as numeric.
+        let vcv = numeric_id(&record.accession.expect("no VCV?").accession, "VCV")?;
+        // TODO: drop RCV eventually as it is not so useful but VCV was not readily available earlier.
+        let rcv = if record.rcvs.is_empty() {
+            0
+        } else {
+            numeric_id(
+                &record.rcvs[0]
+                    .accession
+                    .as_ref()
+                    .expect("no RCV?")
+                    .accession,
+                "RCV",
+            )?
+        };
+
+        // Obtain germline classification and skip if not set.
+        // TODO: later also support somatic classification
+        let agc = if let Some(agc) = record
+            .classifications
+            .as_ref()
+            .expect("no classifications?")
+            .germline_classification
+            .as_ref()
+        {
+            agc
+        } else {
+            continue; // no germline classification, skip
+        };
+
+        // Convert pathogenicity from upstream to internal protocolbuffers
+        let pathogenicity = match agc
+            .description
+            .clone()
+            .unwrap_or_default()
+            .to_lowercase()
+            .as_str()
+        {
+            "benign" => Pathogenicity::Benign,
+            "benign/likely benign" => Pathogenicity::Benign,
+            "likely benign" => Pathogenicity::LikelyBenign,
+            "pathogenic" => Pathogenicity::Pathogenic,
+            "pathogenic/likely pathogenic" => Pathogenicity::LikelyPathogenic,
+            "likely pathogenic" => Pathogenicity::LikelyPathogenic,
+            "uncertain significance" => Pathogenicity::Uncertain,
+            // NB: we need to improve the protobuf enum
+            "conflicting classifications of pathogenicity" => Pathogenicity::Uncertain,
+            _ => {
+                continue;
             }
         };
 
-        let rcv = numeric_rcv_id(&record.reference_clinvar_assertion.clinvar_accession.acc)?;
+        // Convert variation type from upstream to internal protocolbuffers.
+        let variation_type = match annonars::pbs::clinvar_data::extracted_vars::VariationType::try_from(record.variation_type) {
+            Ok(variation_type) => match variation_type {
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Unspecified => continue,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Insertion => crate::pbs::clinvar::VariationType::Ins,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Deletion => crate::pbs::clinvar::VariationType::Del,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Snv => continue,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Indel => continue,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Duplication => crate::pbs::clinvar::VariationType::Dup,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::TandemDuplication => crate::pbs::clinvar::VariationType::Dup,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::StructuralVariant => crate::pbs::clinvar::VariationType::Complex,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::CopyNumberGain => crate::pbs::clinvar::VariationType::Dup,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::CopyNumberLoss => crate::pbs::clinvar::VariationType::Del,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::ProteinOnly => continue,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Microsatellite => crate::pbs::clinvar::VariationType::Microsatellite,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Inversion => crate::pbs::clinvar::VariationType::Inv,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Other => continue,
+            },
+            Err(_) => {
+                tracing::warn!("unknown variation type: {}", record.variation_type);
+                continue;
+            }
+        };
 
-        // convert from JSONL to protocolbuffers: pathogenicity
-        let pathogenicity: Result<Pathogenicity, anyhow::Error> = record
-            .reference_clinvar_assertion
-            .clinical_significance
-            .description
-            .try_into();
-        let pathogenicity = if let Ok(pathogenicity) = pathogenicity {
-            pathogenicity as i32
+        // Finally, extract sequence location and add record.
+        let sl = record
+            .sequence_location
+            .as_ref()
+            .expect("no sequence_location");
+        let chrom = annonars::pbs::clinvar_data::clinvar_public::Chromosome::try_from(sl.chr)
+            .map_err(|e| anyhow::anyhow!("invalid chromosome: {}: {}", sl.chr, e))?
+            .as_str_name()
+            .strip_prefix("CHROMOSOME_")
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+        let chrom_no = if let Some(chrom_no) = chrom_map.get(&chrom) {
+            *chrom_no as i32
         } else {
+            tracing::warn!("unknown chromosome {}", &sl.chr);
             continue;
         };
 
-        // there can be multiple measures, we consider them all
-        for measure in &record.reference_clinvar_assertion.measures.measures {
-            // convert from JSONL to protocolbuffers: variation type
-            let variation_type: Result<crate::pbs::clinvar::VariationType, anyhow::Error> =
-                measure.r#type.try_into();
-            let variation_type = if let Ok(variation_type) = variation_type {
-                variation_type as i32
-            } else {
-                continue;
-            };
-
-            // we process sequence locations on the selected assembly
-            for sl in &measure.sequence_locations {
-                if sl.assembly != assembly {
-                    continue;
-                }
-                let chrom_no = if let Some(chrom_no) = chrom_map.get(&sl.chr) {
-                    *chrom_no as i32
-                } else {
-                    tracing::warn!("unknown chromosome {}", &sl.chr);
-                    continue;
-                };
-
-                if let (Some(start), Some(stop)) = (sl.start, sl.stop) {
-                    records.push(SvRecord {
-                        chrom_no,
-                        start,
-                        stop,
-                        variation_type,
-                        pathogenicity,
-                        rcv,
-                    });
-                } else if let (Some(inner_start), Some(inner_stop)) =
-                    (sl.inner_start, sl.inner_stop)
-                {
-                    records.push(SvRecord {
-                        chrom_no,
-                        start: inner_start,
-                        stop: inner_stop,
-                        variation_type,
-                        pathogenicity,
-                        rcv,
-                    });
-                } else if let (Some(outer_start), Some(outer_stop)) =
-                    (sl.outer_start, sl.outer_stop)
-                {
-                    records.push(SvRecord {
-                        chrom_no,
-                        start: outer_start,
-                        stop: outer_stop,
-                        variation_type,
-                        pathogenicity,
-                        rcv,
-                    });
-                } else if let (Some(position_vcf), Some(reference_allele_vcf), Some(_)) = (
-                    sl.position_vcf,
-                    sl.reference_allele_vcf.as_ref(),
-                    sl.alternate_allele_vcf.as_ref(),
-                ) {
-                    records.push(SvRecord {
-                        chrom_no,
-                        start: position_vcf + 1,
-                        stop: position_vcf + reference_allele_vcf.len() as i32,
-                        variation_type,
-                        pathogenicity,
-                        rcv,
-                    });
-                }
-            }
+        if let (Some(start), Some(stop)) = (sl.start, sl.stop) {
+            records.push(SvRecord {
+                chrom_no,
+                start: start as i32,
+                stop: stop as i32,
+                variation_type: variation_type as i32,
+                pathogenicity: pathogenicity as i32,
+                rcv,
+                vcv,
+            });
+        } else if let (Some(inner_start), Some(inner_stop)) = (sl.inner_start, sl.inner_stop) {
+            records.push(SvRecord {
+                chrom_no,
+                start: inner_start as i32,
+                stop: inner_stop as i32,
+                variation_type: variation_type as i32,
+                pathogenicity: pathogenicity as i32,
+                rcv,
+                vcv,
+            });
+        } else if let (Some(outer_start), Some(outer_stop)) = (sl.outer_start, sl.outer_stop) {
+            records.push(SvRecord {
+                chrom_no,
+                start: outer_start as i32,
+                stop: outer_stop as i32,
+                variation_type: variation_type as i32,
+                pathogenicity: pathogenicity as i32,
+                rcv,
+                vcv,
+            });
+        } else if let (Some(position_vcf), Some(reference_allele_vcf), Some(_)) = (
+            sl.position_vcf,
+            sl.reference_allele_vcf.as_ref(),
+            sl.alternate_allele_vcf.as_ref(),
+        ) {
+            records.push(SvRecord {
+                chrom_no,
+                start: position_vcf as i32 + 1,
+                stop: position_vcf as i32 + reference_allele_vcf.len() as i32,
+                variation_type: variation_type as i32,
+                pathogenicity: pathogenicity as i32,
+                rcv,
+                vcv,
+            });
         }
     }
     Ok(records)
 }
 
 /// Perform conversion to protocolbuffers `.bin` file.
-pub fn convert_to_bin<P, Q>(
-    path_input_jsonl: P,
-    path_output: Q,
-    assembly: input::Assembly,
-) -> Result<(), anyhow::Error>
+pub fn convert_to_bin<P, Q>(path_input_jsonl: P, path_output: Q) -> Result<(), anyhow::Error>
 where
     P: AsRef<Path>,
     Q: AsRef<Path>,
@@ -155,7 +200,7 @@ where
     let reader = open_read_maybe_gz(path_input_jsonl)?;
     let before_parsing = Instant::now();
 
-    let records = convert_jsonl_to_protobuf(reader, assembly)?;
+    let records = convert_jsonl_to_protobuf(reader)?;
 
     let clinvar_db = SvDatabase { records };
 
@@ -181,17 +226,13 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::strucvars::txt_to_bin::clinvar::input::Assembly;
-
+    #[tracing_test::traced_test]
     #[rstest::rstest]
-    #[case(Assembly::Grch37)]
-    #[case(Assembly::Grch38)]
-    fn run_convert_jsonl_to_protobuf(#[case] assembly: Assembly) -> Result<(), anyhow::Error> {
-        mehari::common::set_snapshot_suffix!("{:?}", assembly);
+    fn run_convert_jsonl_to_protobuf() -> Result<(), anyhow::Error> {
         let reader = mehari::common::io::std::open_read_maybe_gz(
             "tests/db/to-bin/varfish-db-downloader/vardbs/clinvar/clinvar-svs.jsonl",
         )?;
-        let records = super::convert_jsonl_to_protobuf(reader, assembly)?;
+        let records = super::convert_jsonl_to_protobuf(reader)?;
 
         insta::assert_yaml_snapshot!(records);
 

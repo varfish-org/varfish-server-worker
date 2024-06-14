@@ -2,13 +2,12 @@
 
 pub mod ds;
 
-use futures::TryStreamExt;
 use mehari::common::noodles::open_vcf_reader;
-use noodles_vcf as vcf;
+use noodles::vcf;
 use rayon::prelude::*;
-use std::sync::Arc;
+use std::{str::FromStr as _, sync::Arc};
 
-use crate::common::{self, Chrom, Genotype};
+use crate::common::{self, genotype_to_string, Chrom, Genotype};
 
 /// Command line arguments for `seqvars aggregate` subcommand.
 #[derive(Debug, clap::Parser)]
@@ -41,15 +40,16 @@ pub struct Args {
 
 /// Extract counts and carrier data from a single VCF record.
 fn handle_record(
-    input_record: &vcf::Record,
+    input_record: &vcf::variant::RecordBuf,
     input_header: &vcf::Header,
     pedigree: &mehari::ped::PedigreeByName,
     case_uuid: &uuid::Uuid,
 ) -> Result<(ds::Counts, ds::CarrierList), anyhow::Error> {
-    let chrom: Chrom =
-        annonars::common::cli::canonicalize(input_record.chromosome().to_string().as_str())
-            .as_str()
-            .parse()?;
+    let chrom: Chrom = annonars::common::cli::canonicalize(
+        input_record.reference_sequence_name().to_string().as_str(),
+    )
+    .as_str()
+    .parse()?;
 
     let mut res_counts = ds::Counts::default();
     let mut res_carriers = ds::CarrierList::default();
@@ -57,23 +57,22 @@ fn handle_record(
     for (name, sample) in input_header
         .sample_names()
         .iter()
-        .zip(input_record.genotypes().values())
+        .zip(input_record.samples().values())
     {
         let individual = pedigree
             .individuals
             .get(name)
             .ok_or_else(|| anyhow::anyhow!("individual {} not found in pedigree", name))?;
 
-        let genotype =
-            if let Some(Some(gt)) = sample.get(&vcf::record::genotypes::keys::key::GENOTYPE) {
-                if let vcf::record::genotypes::sample::Value::String(gt) = gt {
-                    gt.as_str().parse()?
-                } else {
-                    anyhow::bail!("invalid genotype value: {:?}", gt);
-                }
-            } else {
-                continue; // skip, no-call or empty
-            };
+        use noodles::vcf::variant::record::samples::keys::key;
+        let genotype = if let Some(Some(
+            vcf::variant::record_buf::samples::sample::value::Value::Genotype(gt),
+        )) = sample.get(key::GENOTYPE)
+        {
+            Genotype::from_str(&genotype_to_string(&gt)?)?
+        } else {
+            anyhow::bail!("invalid genotype value in {:?}", &sample)
+        };
 
         let carrier_genotype = match (chrom, individual.sex, genotype) {
             (_, _, Genotype::WithNoCall) => continue,
@@ -163,17 +162,21 @@ async fn import_vcf(
 
     let (pedigree, case_uuid) = common::extract_pedigree_and_case_uuid(&input_header)?;
     let mut prev = std::time::Instant::now();
-    let mut records = input_reader.records(&input_header);
-    while let Some(input_record) = records
-        .try_next()
-        .await
-        .map_err(|e| anyhow::anyhow!("problem reading VCF file {}: {}", path_input, e))?
-    {
+    let mut record_buf = vcf::variant::RecordBuf::default();
+    loop {
+        let bytes_read = input_reader
+            .read_record_buf(&input_header, &mut record_buf)
+            .await
+            .map_err(|e| anyhow::anyhow!("problem reading VCF file {}: {}", path_input, e))?;
+        if bytes_read == 0 {
+            break; // EOF
+        }
+
         // Obtain counts from the current variant.
         let (this_counts_data, this_carrier_data) =
-            handle_record(&input_record, &input_header, &pedigree, &case_uuid)?;
+            handle_record(&record_buf, &input_header, &pedigree, &case_uuid)?;
         // Obtain annonars variant key from current allele for RocksDB lookup.
-        let vcf_var = annonars::common::keys::Var::from_vcf_allele(&input_record, 0);
+        let vcf_var = annonars::common::keys::Var::from_vcf_allele(&record_buf, 0);
         let key: Vec<u8> = vcf_var.clone().into();
 
         let max_retries = 10;
@@ -388,22 +391,32 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 mod test {
     use super::*;
 
+    #[tracing_test::traced_test]
     #[test]
-    fn handle_record_snapshot() {
+    fn handle_record_snapshot() -> Result<(), anyhow::Error> {
         let path = "tests/seqvars/aggregate/ingest.vcf";
-        let mut vcf_reader = vcf::reader::Builder::default()
+        let mut vcf_reader = vcf::io::reader::Builder::default()
             .build_from_path(path)
             .unwrap();
         let header = vcf_reader.read_header().unwrap();
 
-        for record in vcf_reader.records(&header) {
-            let record = record.unwrap();
-            let (pedigree, case_uuid) = common::extract_pedigree_and_case_uuid(&header).unwrap();
+        let mut record_buf = vcf::variant::RecordBuf::default();
+        loop {
+            let bytes_read = vcf_reader
+                .read_record_buf(&header, &mut record_buf)
+                .map_err(|e| anyhow::anyhow!("problem reading VCF file {}: {}", path, e))?;
+            if bytes_read == 0 {
+                break; // EOF
+            }
+
+            let (pedigree, case_uuid) = common::extract_pedigree_and_case_uuid(&header)?;
             let (counts, carriers) =
-                super::handle_record(&record, &header, &pedigree, &case_uuid).unwrap();
+                super::handle_record(&record_buf, &header, &pedigree, &case_uuid)?;
 
             insta::assert_debug_snapshot!(counts);
             insta::assert_debug_snapshot!(carriers);
         }
+
+        Ok(())
     }
 }

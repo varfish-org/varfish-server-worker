@@ -2,12 +2,12 @@
 
 use std::ops::Range;
 
+use ::noodles::vcf;
 use biocommons_bioutils::assemblies::Assembly;
 use byte_unit::Byte;
 use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
 use indexmap::IndexMap;
-use noodles_vcf as vcf;
 
 pub mod noodles;
 pub mod s3;
@@ -180,16 +180,26 @@ pub enum Genotype {
     WithNoCall,
 }
 
+/// Strip leading '/' or '|' from genotype string.
+pub fn strip_gt_leading_slash(gt_str: &str) -> &str {
+    if gt_str.starts_with('/') || gt_str.starts_with('|') {
+        &gt_str[1..]
+    } else {
+        gt_str
+    }
+}
+
 impl std::str::FromStr for Genotype {
     type Err = anyhow::Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
+    fn from_str(gt_str: &str) -> Result<Self, Self::Err> {
+        let gt_str = strip_gt_leading_slash(gt_str);
+        Ok(match gt_str {
             "0/0" | "0|0" | "0" => Genotype::HomRef,
             "0/1" | "1/0" | "0|1" | "1|0" => Genotype::Het,
             "1/1" | "1|1" | "1" => Genotype::HomAlt,
             "./." | "./0" | "./1" | "0/." | "1/." => Genotype::WithNoCall,
-            _ => anyhow::bail!("invalid genotype value: {:?}", s),
+            _ => anyhow::bail!("invalid genotype value: {:?}", gt_str),
         })
     }
 }
@@ -279,9 +289,7 @@ pub fn add_contigs_37(
 
     for (contig, length) in specs {
         builder = builder.add_contig(
-            contig
-                .parse()
-                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            *contig,
             Map::<Contig>::builder()
                 .set_length(*length)
                 .insert(
@@ -440,9 +448,7 @@ pub fn add_contigs_38(
 
     for (contig, length) in specs {
         builder = builder.add_contig(
-            contig
-                .parse()
-                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            *contig,
             Map::<Contig>::builder()
                 .set_length(*length)
                 .insert(
@@ -467,6 +473,31 @@ pub fn add_contigs_38(
     )?;
 
     Ok(builder)
+}
+
+/// Convert genotype to String value.
+pub fn genotype_to_string<G>(gt: &G) -> Result<String, anyhow::Error>
+where
+    G: vcf::variant::record::samples::series::value::Genotype + ?Sized,
+{
+    use vcf::variant::record::samples::series::value::genotype::Phasing;
+
+    let mut tmp = String::new();
+    for allele in gt.iter() {
+        let (position, phasing) =
+            allele.map_err(|e| anyhow::anyhow!("problem with Genotype {:?}: {}", gt, e))?;
+        // sic! VCF 4.4 has optional/implicit leading phasing indicator
+        match phasing {
+            Phasing::Phased => tmp.push('|'),
+            Phasing::Unphased => tmp.push('/'),
+        }
+        tmp.push_str(
+            &position
+                .map(|p| format!("{}", p))
+                .unwrap_or(String::from(".")),
+        )
+    }
+    Ok(tmp)
 }
 
 #[cfg(test)]
@@ -610,8 +641,6 @@ pub mod id_mapping {
 
 #[cfg(test)]
 mod test {
-    use noodles_vcf as vcf;
-
     #[test]
     fn trace_rss_now_smoke() {
         super::trace_rss_now();
@@ -715,7 +744,7 @@ mod test {
     #[test]
     fn extract_pedigree_snapshot() {
         let path = "tests/seqvars/aggregate/ingest.vcf";
-        let mut vcf_reader = vcf::reader::Builder::default()
+        let mut vcf_reader = noodles::vcf::io::reader::Builder::default()
             .build_from_path(path)
             .unwrap();
         let header = vcf_reader.read_header().unwrap();

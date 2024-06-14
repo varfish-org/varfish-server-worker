@@ -1,11 +1,11 @@
 //! Supporting code for SV query definition.
 
-use crate::common::TadSet;
+use crate::common::{genotype_to_string, TadSet};
 use indexmap::IndexMap;
 use mehari::annotate::strucvars::{
     bnd::Breakend, csq::interface::StrandOrientation, PeOrientation,
 };
-use noodles_vcf as vcf;
+use noodles::vcf::{self, variant::record::AlternateBases as _};
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
@@ -1338,20 +1338,25 @@ impl StructuralVariant {
     }
 
     /// Convert from VCF record.
-    pub fn from_vcf(record: &vcf::Record, header: &vcf::Header) -> Result<Self, anyhow::Error> {
-        let chrom = record.chromosome().to_string();
-        let pos: usize = record.position().into();
+    pub fn from_vcf(
+        record: &vcf::variant::RecordBuf,
+        header: &vcf::Header,
+    ) -> Result<Self, anyhow::Error> {
+        use noodles::vcf::variant::record::info::field::key;
+
+        let chrom = record.reference_sequence_name().to_string();
+        let pos: usize = record.variant_start().expect("no variant_start?").into();
         let pos = pos as i32;
-        let sv_type: SvType = if let Some(Some(vcf::record::info::field::Value::String(sv_type))) =
-            record.info().get(&vcf::record::info::field::key::SV_TYPE)
-        {
-            sv_type
-                .as_str()
-                .parse()
-                .map_err(|e| anyhow::anyhow!("could not parse SVTYPE {}: {}", &sv_type, e))?
-        } else {
-            anyhow::bail!("no INFO/SVTYPE in VCF record")
-        };
+        let sv_type: SvType =
+            if let Some(Some(vcf::variant::record_buf::info::field::Value::String(sv_type))) =
+                record.info().get(key::SV_TYPE)
+            {
+                sv_type
+                    .parse()
+                    .map_err(|e| anyhow::anyhow!("could not parse SVTYPE {}: {}", &sv_type, e))?
+            } else {
+                anyhow::bail!("no INFO/SVTYPE in VCF record")
+            };
         let sv_sub_type = match sv_type {
             SvType::Del => SvSubType::Del,
             SvType::Dup => SvSubType::Dup,
@@ -1360,24 +1365,21 @@ impl StructuralVariant {
             SvType::Bnd => SvSubType::Bnd,
             SvType::Cnv => SvSubType::Cnv,
         };
-        let end = if let Some(Some(vcf::record::info::field::Value::Integer(end))) = record
-            .info()
-            .get(&vcf::record::info::field::key::END_POSITION)
+        let end = if let Some(Some(vcf::variant::record_buf::info::field::Value::Integer(end))) =
+            record.info().get(key::END_POSITION)
         {
             *end
         } else {
             anyhow::bail!("no INFO/END in VCF record")
         };
-        let chrom2 = if let Some(Some(vcf::record::info::field::Value::String(chrom2))) =
-            record.info().get(
-                &"chr2"
-                    .parse::<vcf::record::info::field::Key>()
-                    .expect("chr2 invalid key?"),
-            ) {
-            Some(chrom2.clone())
-        } else {
-            None
-        };
+        let chrom2 =
+            if let Some(Some(vcf::variant::record_buf::info::field::Value::String(chrom2))) =
+                record.info().get("chr2")
+            {
+                Some(chrom2.clone())
+            } else {
+                None
+            };
 
         let strand_orientation = match sv_type {
             SvType::Del => StrandOrientation::ThreeToFive,
@@ -1385,12 +1387,12 @@ impl StructuralVariant {
             SvType::Inv => StrandOrientation::FiveToFive,
             SvType::Bnd => {
                 let pe_orientation = Breakend::from_ref_alt_str(
-                    &record.reference_bases().to_string(),
-                    &record
+                    record.reference_bases(),
+                    record
                         .alternate_bases()
-                        .first()
-                        .ok_or_else(|| anyhow::anyhow!("no alternate allele?"))?
-                        .to_string(),
+                        .iter()
+                        .next()
+                        .ok_or_else(|| anyhow::anyhow!("no alternate allele?"))??,
                 )?
                 .pe_orientation;
                 match pe_orientation {
@@ -1404,13 +1406,11 @@ impl StructuralVariant {
             SvType::Ins | SvType::Cnv => StrandOrientation::NotApplicable,
         };
 
-        let key_callers: vcf::record::info::field::Key =
-            "callers".parse().expect("callers invalid key?");
-        let callers = if let Some(Some(vcf::record::info::field::Value::Array(
-            vcf::record::info::field::value::Array::String(callers),
-        ))) = record.info().get(&key_callers)
+        let callers = if let Some(Some(vcf::variant::record_buf::info::field::Value::Array(
+            vcf::variant::record_buf::info::field::value::Array::String(callers),
+        ))) = record.info().get("callers")
         {
-            callers.iter().flatten().cloned().collect()
+            callers.iter().flatten().cloned().collect::<Vec<_>>()
         } else {
             anyhow::bail!("no INFO/callers in VCF record")
         };
@@ -1432,113 +1432,80 @@ impl StructuralVariant {
 
     /// Build call information.
     fn build_call_info(
-        record: &vcf::Record,
+        record: &vcf::variant::RecordBuf,
         header: &vcf::Header,
     ) -> Result<IndexMap<String, CallInfo>, anyhow::Error> {
         let mut result = IndexMap::new();
 
-        for (name, sample) in header
-            .sample_names()
-            .iter()
-            .zip(record.genotypes().values())
-        {
-            let genotype = if let Some(Some(vcf::record::genotypes::sample::Value::String(gt))) =
-                sample.get(&vcf::record::genotypes::keys::key::GENOTYPE)
-            {
-                Some(gt.clone())
-            } else {
-                None
-            };
-            let quality = if let Some(Some(vcf::record::genotypes::sample::Value::Float(quality))) =
-                sample.get(&vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY)
-            {
-                Some(*quality)
-            } else {
-                None
-            };
-            let paired_end_cov =
-                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(paired_end_cov))) =
-                    sample.get(&"pec".parse::<vcf::record::genotypes::keys::Key>()?)
-                {
-                    Some(*paired_end_cov as u32)
-                } else {
-                    None
-                };
-            let paired_end_var =
-                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(paired_end_var))) =
-                    sample.get(&"pev".parse::<vcf::record::genotypes::keys::Key>()?)
-                {
-                    Some(*paired_end_var as u32)
-                } else {
-                    None
-                };
-            let split_read_cov =
-                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(split_read_cov))) =
-                    sample.get(&"src".parse::<vcf::record::genotypes::keys::Key>()?)
-                {
-                    Some(*split_read_cov as u32)
-                } else {
-                    None
-                };
-            let split_read_var =
-                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(split_read_var))) =
-                    sample.get(&"srv".parse::<vcf::record::genotypes::keys::Key>()?)
-                {
-                    Some(*split_read_var as u32)
-                } else {
-                    None
-                };
-            let copy_number =
-                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(copy_number))) =
-                    sample.get(&"cn".parse::<vcf::record::genotypes::keys::Key>()?)
-                {
-                    Some(*copy_number as u32)
-                } else {
-                    None
-                };
-            let average_normalized_cov = if let Some(Some(
-                vcf::record::genotypes::sample::Value::Float(average_normalized_cov),
-            )) =
-                sample.get(&"anc".parse::<vcf::record::genotypes::keys::Key>()?)
-            {
-                Some(*average_normalized_cov)
-            } else {
-                None
-            };
-            let point_count =
-                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(point_count))) =
-                    sample.get(&"pc".parse::<vcf::record::genotypes::keys::Key>()?)
-                {
-                    Some(*point_count as u32)
-                } else {
-                    None
-                };
-            let average_mapping_quality = if let Some(Some(
-                vcf::record::genotypes::sample::Value::Float(average_mapping_quality),
-            )) =
-                sample.get(&"amq".parse::<vcf::record::genotypes::keys::Key>()?)
-            {
-                Some(*average_mapping_quality)
-            } else {
-                None
-            };
+        for (name, sample) in header.sample_names().iter().zip(record.samples().values()) {
+            let mut call_info = CallInfo::default();
 
-            result.insert(
-                name.clone(),
-                CallInfo {
-                    genotype,
-                    quality,
-                    paired_end_cov,
-                    paired_end_var,
-                    split_read_cov,
-                    split_read_var,
-                    copy_number,
-                    average_normalized_cov,
-                    point_count,
-                    average_mapping_quality,
-                    ..Default::default()
-                },
-            );
+            for (key, value) in record.samples().keys().as_ref().iter().zip(sample.values()) {
+                let value = if let Some(value) = value.as_ref() {
+                    value
+                } else {
+                    continue; // is empty
+                };
+                use noodles::vcf::variant::record::samples::keys::key;
+                match (key.as_str(), value) {
+                    (
+                        key::GENOTYPE,
+                        vcf::variant::record_buf::samples::sample::value::Value::Genotype(gt),
+                    ) => {
+                        call_info.genotype =
+                            Some((genotype_to_string(&gt)?.as_str()[1..]).to_string());
+                    }
+                    (
+                        key::CONDITIONAL_GENOTYPE_QUALITY,
+                        vcf::variant::record_buf::samples::sample::Value::Float(quality),
+                    ) => call_info.quality = Some(*quality),
+                    (
+                        key::CONDITIONAL_GENOTYPE_QUALITY,
+                        vcf::variant::record_buf::samples::sample::Value::Integer(quality),
+                    ) => call_info.quality = Some(*quality as f32),
+                    (
+                        "pec",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(paired_end_cov),
+                    ) => call_info.paired_end_cov = Some(*paired_end_cov as u32),
+                    (
+                        "pev",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(paired_end_var),
+                    ) => call_info.paired_end_var = Some(*paired_end_var as u32),
+                    (
+                        "src",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(split_read_cov),
+                    ) => call_info.split_read_cov = Some(*split_read_cov as u32),
+                    (
+                        "srv",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(split_read_var),
+                    ) => call_info.split_read_var = Some(*split_read_var as u32),
+                    (
+                        "cn",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(copy_number),
+                    ) => call_info.copy_number = Some(*copy_number as u32),
+                    (
+                        "anc",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(
+                            average_normalized_cov,
+                        ),
+                    ) => call_info.average_normalized_cov = Some(*average_normalized_cov as f32),
+                    (
+                        "pc",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(point_count),
+                    ) => call_info.point_count = Some(*point_count as u32),
+                    (
+                        "amq",
+                        vcf::variant::record_buf::samples::sample::Value::Integer(
+                            average_mapping_quality,
+                        ),
+                    ) => call_info.average_mapping_quality = Some(*average_mapping_quality as f32),
+                    _ => {
+                        panic!("unknown FORMAT key: {}", key);
+                    }
+                }
+            }
+
+            result.insert(name.clone(), call_info);
         }
 
         Ok(result)

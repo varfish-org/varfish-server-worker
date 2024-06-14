@@ -2,13 +2,9 @@
 
 use std::io::BufRead;
 
-use crate::common::noodles::open_vcf_reader;
-use futures::TryStreamExt;
-use mehari::{
-    annotate::seqvars::ann::AnnField,
-    common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
-};
-use noodles_vcf as vcf;
+use mehari::annotate::seqvars::ann::AnnField;
+use mehari::common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
+use noodles::vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
 
@@ -68,14 +64,9 @@ fn load_params(params: &[String]) -> Result<Vec<PrefilterParams>, anyhow::Error>
 }
 
 /// Extract an `i32` from a VCF record's `INFO`.
-fn get_info_i32(input_record: &vcf::Record, key: &str) -> Result<i32, anyhow::Error> {
-    use vcf::record::info::field::Key;
-
-    if let Some(Some(vcf::record::info::field::Value::Integer(gnomad_exomes_an))) =
-        input_record.info().get(
-            &key.parse::<Key>()
-                .map_err(|e| anyhow::anyhow!("invalid key {}: {}", key, e))?,
-        )
+fn get_info_i32(input_record: &vcf::variant::RecordBuf, key: &str) -> Result<i32, anyhow::Error> {
+    if let Some(Some(vcf::variant::record_buf::info::field::Value::Integer(gnomad_exomes_an))) =
+        input_record.info().get(key)
     {
         Ok(*gnomad_exomes_an)
     } else {
@@ -86,8 +77,10 @@ fn get_info_i32(input_record: &vcf::Record, key: &str) -> Result<i32, anyhow::Er
 /// Extract largest population frequency and exon distance from input_record.
 ///
 /// Note that all variants on chrMT will be returned.
-fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>), anyhow::Error> {
-    if annonars::common::cli::canonicalize(&input_record.chromosome().to_string()) == "MT" {
+fn get_freq_and_distance(
+    input_record: &vcf::variant::RecordBuf,
+) -> Result<(f64, Option<i32>), anyhow::Error> {
+    if annonars::common::cli::canonicalize(input_record.reference_sequence_name()) == "MT" {
         return Ok((0.0, Some(0))); // all variants on chrMT are returned
     }
 
@@ -121,10 +114,9 @@ fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>
         0f64
     };
 
-    let key_ann: vcf::record::info::field::Key = "ANN".parse()?;
-    let exon_dist = if let Some(Some(ann)) = input_record.info().get(&key_ann) {
-        if let vcf::record::info::field::Value::Array(
-            vcf::record::info::field::value::Array::String(anns),
+    let exon_dist = if let Some(Some(ann)) = input_record.info().get("ANN") {
+        if let vcf::variant::record_buf::info::field::Value::Array(
+            vcf::variant::record_buf::info::field::value::Array::String(anns),
         ) = ann
         {
             let ann = anns
@@ -137,7 +129,7 @@ fn get_freq_and_distance(input_record: &vcf::Record) -> Result<(f64, Option<i32>
                 .map_err(|e| anyhow::anyhow!("failed to parse ANN field from {}: {}", ann, e))?;
             record.distance
         } else {
-            anyhow::bail!("wrong data type for ANN in VCF record: {}", &input_record)
+            anyhow::bail!("wrong data type for ANN in VCF record: {:?}", &input_record)
         }
     } else {
         None
@@ -151,25 +143,35 @@ async fn run_filtration(
     input_reader: &mut AsyncVcfReader,
     input_header: &vcf::Header,
     output_writers: &mut [AsyncVcfWriter],
+    output_headers: &[vcf::Header],
     params: &[PrefilterParams],
 ) -> Result<(), anyhow::Error> {
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
-    let mut records = input_reader.records(input_header);
     let mut total_written = 0usize;
-    while let Some(input_record) = records
-        .try_next()
-        .await
-        .map_err(|e| anyhow::anyhow!("problem reading VCF record {}", e))?
-    {
+    let mut input_record = vcf::variant::RecordBuf::default();
+    loop {
+        let bytes_read = input_reader
+            .read_record_buf(input_header, &mut input_record)
+            .await
+            .map_err(|e| anyhow::anyhow!("problem reading VCF file: {}", e))?;
+        if bytes_read == 0 {
+            break; // EOF
+        }
+        dbg!(&input_record);
+
         let (frequency, exon_distance) = get_freq_and_distance(&input_record)?;
         if let Some(exon_distance) = exon_distance {
-            for (writer_params, output_writer) in params.iter().zip(output_writers.iter_mut()) {
+            for ((writer_params, output_writer), output_header) in params
+                .iter()
+                .zip(output_writers.iter_mut())
+                .zip(output_headers.iter())
+            {
                 if frequency <= writer_params.max_freq
                     && exon_distance <= writer_params.max_exon_dist
                 {
                     output_writer
-                        .write_record(&input_record)
+                        .write_variant_record(output_header, &input_record)
                         .await
                         .map_err(|e| anyhow::anyhow!("failed to write record: {}", e))?;
                 }
@@ -215,41 +217,54 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         tracing::info!("opening output files...");
         let mut output_writers = Vec::new();
         let mut out_path_helpers = Vec::new();
-        for params in params_list.iter() {
-            let header_params = PrefilterParams {
-                prefilter_path: "<stripped>".into(),
-                ..params.clone()
-            };
-            let mut header = header.clone();
-            header.insert(
-                "x-varfish-prefilter-params"
-                    .parse()
-                    .map_err(|e| anyhow::anyhow!("{}", e))?,
-                vcf::header::record::Value::from(
-                    serde_json::to_string(&header_params)
-                        .map_err(|e| anyhow::anyhow!("failed to serialize params: {}", e))?,
-                ),
-            )?;
+        let output_headers = {
+            let mut output_headers = Vec::new();
+            for params in params_list.iter() {
+                let header_params = PrefilterParams {
+                    prefilter_path: "<stripped>".into(),
+                    ..params.clone()
+                };
+                let mut header = header.clone();
+                header.insert(
+                    "x-varfish-prefilter-params"
+                        .parse()
+                        .map_err(|e| anyhow::anyhow!("{}", e))?,
+                    vcf::header::record::Value::from(
+                        serde_json::to_string(&header_params)
+                            .map_err(|e| anyhow::anyhow!("failed to serialize params: {}", e))?,
+                    ),
+                )?;
 
-            out_path_helpers.push(crate::common::s3::OutputPathHelper::new(
-                &params.prefilter_path,
-            )?);
-            let mut writer =
-                open_vcf_writer(out_path_helpers.last().expect("just pushed").path_out()).await?;
-            writer.write_header(&header).await.map_err(|e| {
-                anyhow::anyhow!(
-                    "could not write header to {}: {}",
+                out_path_helpers.push(crate::common::s3::OutputPathHelper::new(
                     &params.prefilter_path,
-                    e
-                )
-            })?;
-            output_writers.push(writer);
-        }
+                )?);
+                let mut writer =
+                    open_vcf_writer(out_path_helpers.last().expect("just pushed").path_out())
+                        .await?;
+                writer.write_header(&header).await.map_err(|e| {
+                    anyhow::anyhow!(
+                        "could not write header to {}: {}",
+                        &params.prefilter_path,
+                        e
+                    )
+                })?;
+                output_writers.push(writer);
+                output_headers.push(header);
+            }
+            output_headers
+        };
 
         common::trace_rss_now();
 
         tracing::info!("starting filtration...");
-        run_filtration(&mut reader, &header, &mut output_writers, &params_list).await?;
+        run_filtration(
+            &mut reader,
+            &header,
+            &mut output_writers,
+            &output_headers,
+            &params_list,
+        )
+        .await?;
         tracing::info!("... done with filtration");
 
         for output_writer in output_writers.drain(..) {
@@ -259,7 +274,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
             out_path_helper.create_tbi_for_bgzf().await?;
             out_path_helper.upload_for_s3().await?;
         }
-    }
+    };
 
     tracing::info!(
         "All of `seqvars prefilter` completed in {:?}",

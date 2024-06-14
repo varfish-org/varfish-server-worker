@@ -67,11 +67,11 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE
 1	1000	.	N	<INS>	.	.	SVCLAIM=J;SVTYPE=INS;END=1000;SVLEN=1;callers=Melt	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1/1:2:1:1:2:2:.:.:.:.
 1	1000	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=1049;SVLEN=50;callers=Sniffles	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1/1:60:.:.:33:33:.:.:.:.
-1	2000	.	N	<INS>	.	.	SVCLAIM=J;SVTYPE=INS;END=2000;SVLEN=1;callers=Melt	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/0:60:4:0:24:24:.:.:.:.
+1	2000	.	N	<INS>	.	.	SVCLAIM=J;SVTYPE=INS;END=2000;SVLEN=1;callers=Melt,Sniffles	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/0:60:4:0:24:24:.:.:.:.
 1	3000	.	N	<INS>	.	.	SVCLAIM=J;SVTYPE=INS;END=3000;SVLEN=1;callers=Melt	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/0:28:23:0:24:1:.:.:.:.
 1	3000	.	N	<INV>	.	.	SVCLAIM=J;SVTYPE=INV;END=3589;SVLEN=590;callers=Sniffles	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:24:.:.:37:10:.:.:.:.
 1	4000	.	N	<DUP>	.	.	SVCLAIM=DJ;SVTYPE=DUP;END=17584;SVLEN=13585;callers=Sniffles	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:60:.:.:61:18:.:.:.:.
 1	5000	.	N	N]chrUn_JTFH01000344v1_decoy:679]	.	.	SVCLAIM=J;SVTYPE=BND;END=679;chr2=chrUn_JTFH01000344v1_decoy;callers=Sniffles	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:15:.:.:31:8:.:.:.:.
 1	1283844	.	N	<CNV>	.	.	SVCLAIM=D;SVTYPE=CNV;END=1284844;SVLEN=1001;callers=DragenCnv	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:.:.:.:.:.:.:1:.:1
-1	1598413	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=1598580;SVLEN=168;callers=DragenSv	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1/1:53:2:2:20:20:.:.:.:.
+1	1598413	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=1598580;SVLEN=168;callers=DragenSv,Manta	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1/1:53:2:2:20:20:.:.:.:.
 1	4124001	.	N	<DEL>	.	.	SVCLAIM=D;SVTYPE=DEL;END=4125000;SVLEN=1000;callers=Gcnv	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	1:.:.:.:.:.:.:1:.:1

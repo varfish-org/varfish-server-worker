@@ -50,6 +50,8 @@ message SvRecord {
     Pathogenicity pathogenicity = 5;
     // The RCV ID.
     uint32 rcv = 6;
+    // The VCV ID.
+    uint32 vcv = 7;
 }
 
 // ClinVar structural variant database.

@@ -3,10 +3,13 @@
 use mehari::annotate::strucvars::{
     bnd::Breakend, csq::interface::StrandOrientation, PeOrientation,
 };
-use noodles_vcf as vcf;
+use noodles::vcf::{
+    self,
+    variant::record::{samples::Sample, AlternateBases as _},
+};
 
 use crate::{
-    common::{Chrom, Genotype},
+    common::{genotype_to_string, strip_gt_leading_slash, Chrom, Genotype},
     strucvars::query::schema::SvType,
 };
 
@@ -69,37 +72,40 @@ impl Record {
         _genome_release: crate::common::GenomeRelease,
         pedigree: &mehari::ped::PedigreeByName,
     ) -> Result<Self, anyhow::Error> {
-        let chromosome = record.chromosome().to_string();
+        let chromosome = record.reference_sequence_name().to_string();
         let begin = {
-            let position: usize = record.position().into();
+            let position: usize = record
+                .variant_start()
+                .expect("no variant_start?")
+                .map_err(|e| anyhow::anyhow!("error converting start position: {}", e))?
+                .into();
             position.saturating_sub(1) as i32
         };
-        let chromosome2 = if let Some(Some(vcf::record::info::field::Value::String(chromosome2))) =
-            record.info().get(
-                &"chr2"
-                    .parse::<vcf::record::info::field::Key>()
-                    .expect("invalid key chr2?"),
-            ) {
-            chromosome2.clone()
-        } else {
-            chromosome.clone()
-        };
-        let end = if let Some(Some(vcf::record::info::field::Value::Integer(end))) = record
-            .info()
-            .get(&vcf::record::info::field::key::END_POSITION)
+        let chromosome2 =
+            if let Some(Ok(Some(vcf::variant::record::info::field::Value::String(chromosome2)))) =
+                record.info().get(header, "chr2")
+            {
+                chromosome2.to_string()
+            } else {
+                chromosome.clone()
+            };
+        use noodles::vcf::variant::record::info::field::key;
+        let end = if let Some(Ok(Some(vcf::variant::record::info::field::Value::Integer(end)))) =
+            record.info().get(header, key::END_POSITION)
         {
-            *end
+            end
         } else {
             anyhow::bail!("missing INFO/END")
         };
 
-        let sv_type = if let Some(Some(vcf::record::info::field::Value::String(sv_type))) =
-            record.info().get(&vcf::record::info::field::key::SV_TYPE)
-        {
-            sv_type.parse()?
-        } else {
-            anyhow::bail!("missing INFO/SVTYPE")
-        };
+        let sv_type =
+            if let Some(Ok(Some(vcf::variant::record::info::field::Value::String(sv_type)))) =
+                record.info().get(header, key::SV_TYPE)
+            {
+                sv_type.parse()?
+            } else {
+                anyhow::bail!("missing INFO/SVTYPE")
+            };
 
         let pe_orientation = match sv_type {
             SvType::Del => StrandOrientation::ThreeToFive,
@@ -107,12 +113,13 @@ impl Record {
             SvType::Inv => StrandOrientation::FiveToFive,
             SvType::Bnd => {
                 let pe_orientation = Breakend::from_ref_alt_str(
-                    &record.reference_bases().to_string(),
-                    &record
+                    record.reference_bases(),
+                    record
                         .alternate_bases()
-                        .first()
-                        .ok_or_else(|| anyhow::anyhow!("no alternate allele?"))?
-                        .to_string(),
+                        .iter()
+                        .next()
+                        .transpose()?
+                        .ok_or_else(|| anyhow::anyhow!("no alternate allele?"))?,
                 )?
                 .pe_orientation;
                 match pe_orientation {
@@ -126,32 +133,33 @@ impl Record {
             SvType::Ins | SvType::Cnv => StrandOrientation::NotApplicable,
         };
 
-        let chrom: Chrom =
-            annonars::common::cli::canonicalize(record.chromosome().to_string().as_str())
-                .as_str()
-                .parse()?;
+        let chrom: Chrom = annonars::common::cli::canonicalize(
+            record.reference_sequence_name().to_string().as_str(),
+        )
+        .as_str()
+        .parse()?;
 
         let (mut carriers_het, mut carriers_hom, mut carriers_hemi) = (0, 0, 0);
-        for (name, sample) in header
-            .sample_names()
-            .iter()
-            .zip(record.genotypes().values())
-        {
+        for (name, sample) in header.sample_names().iter().zip(record.samples().iter()) {
             let individual = pedigree
                 .individuals
                 .get(name)
                 .ok_or_else(|| anyhow::anyhow!("individual {} not found in pedigree", name))?;
 
-            let genotype: Genotype =
-                if let Some(Some(gt)) = sample.get(&vcf::record::genotypes::keys::key::GENOTYPE) {
-                    if let vcf::record::genotypes::sample::Value::String(gt) = gt {
-                        gt.as_str().parse()?
-                    } else {
-                        anyhow::bail!("invalid genotype value: {:?}", gt);
-                    }
+            let genotype: Genotype = if let Some(Ok(Some(gt))) = sample.get(
+                header,
+                noodles::vcf::variant::record::samples::keys::key::GENOTYPE,
+            ) {
+                if let vcf::variant::record::samples::series::Value::Genotype(gt) = gt {
+                    let gt_string = genotype_to_string(&*gt)?;
+                    let gt_str = strip_gt_leading_slash(&gt_string);
+                    gt_str.parse()?
                 } else {
-                    continue; // skip, no-call or empty
-                };
+                    anyhow::bail!("invalid genotype value: {:?}", gt);
+                }
+            } else {
+                continue; // empty or invalid => skip
+            };
 
             match (chrom, individual.sex, genotype) {
                 (_, _, Genotype::WithNoCall) => continue,

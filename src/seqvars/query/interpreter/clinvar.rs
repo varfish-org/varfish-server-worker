@@ -3,8 +3,6 @@ use crate::seqvars::query::{
     schema::{CaseQuery, SequenceVariant},
 };
 
-use annonars::pbs::clinvar::minimal::{ClinicalSignificance, ClinicalSignificance::*};
-
 /// Determine whether the `SequenceVariant` passes the clinvar filter.
 pub fn passes(
     query: &CaseQuery,
@@ -19,33 +17,70 @@ pub fn passes(
         .query_clinvar_minimal(seqvar)
         .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
     {
-        if let Some(assertion) = record.reference_assertions.first() {
-            let clinical_significance: ClinicalSignificance = assertion
-                .clinical_significance
-                .try_into()
-                .map_err(|e| anyhow::anyhow!("could not convert clinical significance: {}", e))?;
-            let result = match clinical_significance {
-                Benign => query.clinvar_include_benign,
-                LikelyBenign => query.clinvar_include_likely_benign,
-                UncertainSignificance => query.clinvar_include_uncertain_significance,
-                LikelyPathogenic => query.clinvar_include_likely_pathogenic,
-                Pathogenic => query.clinvar_include_pathogenic,
-                Unknown => false,
-            };
-            if !result {
-                tracing::trace!(
-                    "variant {:?} fails clinvar filter from query {:?}",
-                    seqvar,
-                    query
-                );
-            }
-            Ok(result)
-        } else {
-            unreachable!("no reference clinvar assertion")
+        if record.records.is_empty() {
+            tracing::error!(
+                "variant {:?} found with empty list in ClinVar (should not happen",
+                seqvar
+            );
+            return Ok(false);
+        } else if record.records.len() > 1 {
+            tracing::warn!(
+                "variant {:?} found list with {} entries, using first",
+                seqvar,
+                record.records.len()
+            );
         }
+        let vcv_record = &record.records[0];
+
+        let description = vcv_record
+            .classifications
+            .as_ref()
+            .and_then(|c| c.germline_classification.as_ref())
+            .and_then(|c| c.description.as_ref())
+            .cloned()
+            .unwrap_or_default();
+
+        let result = match description.to_lowercase().as_str() {
+            "benign" => query.clinvar_include_benign,
+            "benign/likely benign" => {
+                query.clinvar_include_benign || query.clinvar_include_likely_benign
+            }
+            "likely benign" => query.clinvar_include_likely_benign,
+            "pathogenic" => query.clinvar_include_pathogenic,
+            "pathogenic/likely pathogenic" => {
+                query.clinvar_include_pathogenic || query.clinvar_include_likely_pathogenic
+            }
+            "likely pathogenic" => query.clinvar_include_likely_pathogenic,
+            "uncertain significance" => query.clinvar_include_uncertain_significance,
+            "conflicting classifications of pathogenicity" => {
+                query.clinvar_include_uncertain_significance
+            }
+            _ => {
+                // We could also downtone this to debug.
+                tracing::warn!(
+                    "variant {:?} has unknown classification: {}",
+                    seqvar,
+                    description
+                );
+                false
+            }
+        };
+
+        if !result {
+            tracing::trace!(
+                "variant {:?} present in ClinVar but fails clinvar filter from query {:?}",
+                seqvar,
+                query
+            );
+        }
+
+        Ok(result)
     } else {
-        // Because of the annonars API, we currently need to swallow any error,
-        // as "not found" currently maps to an error.
-        Ok(true)
+        tracing::trace!(
+            "variant {:?} not present in ClinVar and thus fails filter query {:?}",
+            seqvar,
+            query
+        );
+        Ok(false)
     }
 }

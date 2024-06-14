@@ -2,17 +2,13 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::common::noodles::open_vcf_reader;
 use crate::{
-    common::{self, worker_version, GenomeRelease},
+    common::{self, genotype_to_string, strip_gt_leading_slash, worker_version, GenomeRelease},
     flush_and_shutdown,
 };
-use futures::TryStreamExt;
-use mehari::{
-    annotate::seqvars::provider::Provider as MehariProvider,
-    common::noodles::{open_vcf_writer, AsyncVcfReader, AsyncVcfWriter},
-};
-use noodles_vcf as vcf;
+use mehari::annotate::seqvars::provider::Provider as MehariProvider;
+use mehari::common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
+use noodles::vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
 
@@ -65,38 +61,36 @@ pub fn path_component(genomebuild: GenomeRelease) -> &'static str {
 #[derive(Debug)]
 struct KnownFormatKeys {
     /// The keys that will be written to the output.
-    output_keys: Vec<vcf::record::genotypes::keys::Key>,
+    output_keys: Vec<String>,
     /// The keys that are known from the input keys.
-    known_keys: Vec<vcf::record::genotypes::keys::Key>,
+    known_keys: Vec<String>,
     /// Mapping from known to output keys where it is not identity
-    known_to_output_map: std::collections::HashMap<
-        vcf::record::genotypes::keys::Key,
-        vcf::record::genotypes::keys::Key,
-    >,
+    known_to_output_map: std::collections::HashMap<String, String>,
 }
 
 impl Default for KnownFormatKeys {
     /// Constructor.
     fn default() -> Self {
+        use noodles::vcf::variant::record::samples::keys::key;
         Self {
             output_keys: vec![
-                vcf::record::genotypes::keys::key::GENOTYPE, // GT
-                vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY, // GQ
-                vcf::record::genotypes::keys::key::READ_DEPTH, // DP
-                vcf::record::genotypes::keys::key::READ_DEPTHS, // AD
-                vcf::record::genotypes::keys::key::PHASE_SET, // PS
+                key::GENOTYPE.to_string(),                     // GT
+                key::CONDITIONAL_GENOTYPE_QUALITY.to_string(), // GQ
+                key::READ_DEPTH.to_string(),                   // DP
+                key::READ_DEPTHS.to_string(),                  // AD
+                key::PHASE_SET.to_string(),                    // PS
             ],
             known_keys: vec![
-                vcf::record::genotypes::keys::key::GENOTYPE,
-                vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY,
-                vcf::record::genotypes::keys::key::READ_DEPTH,
-                vcf::record::genotypes::keys::key::READ_DEPTHS,
-                vcf::record::genotypes::keys::key::PHASE_SET, // PS
-                "SQ".parse().expect("invalid key: SQ"),       // written as AD
+                key::GENOTYPE.to_string(),
+                key::CONDITIONAL_GENOTYPE_QUALITY.to_string(),
+                key::READ_DEPTH.to_string(),
+                key::READ_DEPTHS.to_string(),
+                key::PHASE_SET.to_string(), // PS
+                "SQ".to_string(),           // written as AD
             ],
             known_to_output_map: vec![(
-                "SQ".parse().expect("invalid key: SQ"),
-                vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY,
+                "SQ".to_string(),
+                key::CONDITIONAL_GENOTYPE_QUALITY.to_string(),
             )]
             .into_iter()
             .collect(),
@@ -106,11 +100,11 @@ impl Default for KnownFormatKeys {
 
 impl KnownFormatKeys {
     /// Map from known to output key.
-    pub fn known_to_output(
-        &self,
-        key: &vcf::record::genotypes::keys::Key,
-    ) -> vcf::record::genotypes::keys::Key {
-        self.known_to_output_map.get(key).unwrap_or(key).clone()
+    pub fn known_to_output(&self, key: &str) -> String {
+        self.known_to_output_map
+            .get(key)
+            .cloned()
+            .unwrap_or(key.to_string())
     }
 }
 
@@ -122,11 +116,11 @@ static GT_RE: OnceLock<regex::Regex> = OnceLock::new();
 
 /// Transform the ``FORMAT`` key if known.
 fn transform_format_value(
-    value: &Option<&vcf::record::genotypes::sample::Value>,
-    key: &vcf::record::genotypes::keys::Key,
+    value: &Option<&vcf::variant::record_buf::samples::sample::value::Value>,
+    key: &str,
     allele_no: usize,
-    sample: &vcf::record::genotypes::Sample<'_>,
-) -> Option<Option<vcf::record::genotypes::sample::Value>> {
+    sample: &vcf::variant::record_buf::samples::Sample<'_>,
+) -> Option<Option<vcf::variant::record_buf::samples::sample::value::Value>> {
     let gt_re = GT_RE
         .get_or_init(|| regex::Regex::new(r"([^\|]+)([/|])([^\|]+)").expect("could not parse RE"));
 
@@ -141,20 +135,24 @@ fn transform_format_value(
     }
 
     if let Some(value) = value {
-        Some(Some(match key.as_ref() {
+        Some(Some(match key {
             "GT" => {
-                let gt = match sample
-                    .get(&vcf::record::genotypes::keys::key::GENOTYPE)
-                    .expect("FORMAT/GT must be present")
-                    .cloned()
-                    .unwrap_or_else(|| unreachable!("FORMAT/GT must be present and not None"))
+                let gt = if let Some(Some(
+                    vcf::variant::record_buf::samples::sample::value::Value::Genotype(gt),
+                )) =
+                    sample.get(noodles::vcf::variant::record::samples::keys::key::GENOTYPE)
                 {
-                    vcf::record::genotypes::sample::Value::String(gt) => gt.clone(),
-                    _ => unreachable!("FORMAT/GT must be string"),
+                    strip_gt_leading_slash(
+                        &genotype_to_string(&gt)
+                            .unwrap_or_else(|_| panic!("invalid genotype: {:?}", &gt)),
+                    )
+                    .to_string()
+                } else {
+                    unreachable!("FORMAT/GT must be string")
                 };
                 if ["./.", ".|.", "."].contains(&gt.as_str()) {
                     // no need to transform no-call
-                    vcf::record::genotypes::sample::Value::String(gt)
+                    vcf::variant::record_buf::samples::sample::value::Value::String(gt)
                 } else {
                     // transform all others
                     let gt_captures = gt_re
@@ -171,28 +169,28 @@ fn transform_format_value(
                         transform_allele(gt_3, &curr_allele),
                     );
 
-                    vcf::record::genotypes::sample::Value::String(new_gt)
+                    vcf::variant::record_buf::samples::sample::value::Value::String(new_gt)
                 }
             }
             "AD" => {
                 let dp = match sample
-                    .get(&vcf::record::genotypes::keys::key::READ_DEPTH)
+                    .get(noodles::vcf::variant::record::samples::keys::key::READ_DEPTH)
                     .expect("FORMAT/DP must be present")
                     .cloned()
                     .unwrap_or_else(|| unreachable!("FORMAT/DP must be present and not None"))
                 {
-                    vcf::record::genotypes::sample::Value::Integer(dp) => dp,
+                    vcf::variant::record_buf::samples::sample::value::Value::Integer(dp) => dp,
                     _ => unreachable!("FORMAT/DP must be integer"),
                 };
 
                 // Only write out reference and current allele as AD.
                 match *value {
-                    vcf::record::genotypes::sample::Value::Array(
-                        vcf::record::genotypes::sample::value::Array::Integer(ad_values),
+                    vcf::variant::record_buf::samples::sample::value::Value::Array(
+                        vcf::variant::record_buf::samples::sample::value::Array::Integer(ad_values),
                     ) => {
                         let ad = ad_values[allele_no].expect("AD should be integer value");
-                        vcf::record::genotypes::sample::Value::Array(
-                            vcf::record::genotypes::sample::value::Array::Integer(vec![
+                        vcf::variant::record_buf::samples::sample::value::Value::Array(
+                            vcf::variant::record_buf::samples::sample::value::Array::Integer(vec![
                                 Some(dp - ad),
                                 Some(ad),
                             ]),
@@ -204,12 +202,12 @@ fn transform_format_value(
             "SQ" => {
                 // SQ is written as AD.
                 match *value {
-                    vcf::record::genotypes::sample::Value::Float(sq_value) => {
-                        vcf::record::genotypes::sample::Value::Float(*sq_value)
+                    vcf::variant::record_buf::samples::sample::value::Value::Float(sq_value) => {
+                        vcf::variant::record_buf::samples::sample::value::Value::Float(*sq_value)
                     }
-                    vcf::record::genotypes::sample::Value::Array(
-                        vcf::record::genotypes::sample::value::Array::Float(sq_values),
-                    ) => vcf::record::genotypes::sample::Value::Integer(
+                    vcf::variant::record_buf::samples::sample::value::Value::Array(
+                        vcf::variant::record_buf::samples::sample::value::Array::Float(sq_values),
+                    ) => vcf::variant::record_buf::samples::sample::value::Value::Integer(
                         sq_values[allele_no - 1]
                             .expect("SQ should be float value")
                             .round() as i32,
@@ -229,15 +227,16 @@ fn transform_format_value(
 /// The implementation assumes that there are no duplicates in the output keys when mapped
 /// from input keys.
 fn copy_format(
-    input_record: &vcf::Record,
-    builder: vcf::record::Builder,
+    record_buf: &vcf::variant::RecordBuf,
+    builder: vcf::variant::record_buf::builder::Builder,
     idx_output_to_input: &[usize],
     allele_no: usize,
     known_format_keys: &KnownFormatKeys,
-) -> Result<vcf::record::Builder, anyhow::Error> {
-    let keys_from_input_known = input_record
-        .genotypes()
+) -> Result<vcf::variant::record_buf::builder::Builder, anyhow::Error> {
+    let keys_from_input_known = record_buf
+        .samples()
         .keys()
+        .as_ref()
         .iter()
         .filter(|k| known_format_keys.known_keys.contains(*k))
         .cloned()
@@ -251,8 +250,8 @@ fn copy_format(
         .iter()
         .copied()
         .map(|input_idx| {
-            let sample = input_record
-                .genotypes()
+            let sample = record_buf
+                .samples()
                 .get_index(input_idx)
                 .expect("input_idx must be valid here");
             keys_from_input_known
@@ -273,12 +272,10 @@ fn copy_format(
         })
         .collect::<Vec<_>>();
 
-    let genotypes = vcf::record::Genotypes::new(
-        vcf::record::genotypes::Keys::try_from(output_keys).expect("invalid keys"),
-        values,
-    );
+    let genotypes =
+        vcf::variant::record_buf::samples::Samples::new(output_keys.into_iter().collect(), values);
 
-    Ok(builder.set_genotypes(genotypes))
+    Ok(builder.set_samples(genotypes))
 }
 
 /// Process the variants from `input_reader` to `output_writer`.
@@ -369,21 +366,31 @@ async fn process_variants(
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
     let mut total_written = 0usize;
-    let mut records = input_reader.records(input_header);
+    let mut input_record = vcf::variant::RecordBuf::default();
     let known_format_keys = KNOWN_FORMAT_KEYS.get_or_init(Default::default);
-    while let Some(input_record) = records
-        .try_next()
-        .await
-        .map_err(|e| anyhow::anyhow!("problem reading input VCF file: {}", e))?
-    {
-        for (allele_no, alt_allele) in input_record.alternate_bases().iter().enumerate() {
+    loop {
+        let bytes_read = input_reader
+            .read_record_buf(input_header, &mut input_record)
+            .await
+            .map_err(|e| anyhow::anyhow!("problem reading VCF file: {}", e))?;
+        if bytes_read == 0 {
+            break; // EOF
+        }
+
+        for (allele_no, alt_allele) in input_record.alternate_bases().as_ref().iter().enumerate() {
             let allele_no = allele_no + 1;
             // Construct record with first few fields describing one variant allele.
-            let builder = vcf::Record::builder()
-                .set_chromosome(input_record.chromosome().clone())
-                .set_position(input_record.position())
-                .set_reference_bases(input_record.reference_bases().clone())
-                .set_alternate_bases(vcf::record::AlternateBases::from(vec![alt_allele.clone()]));
+            let builder = noodles::vcf::variant::RecordBuf::builder()
+                .set_reference_sequence_name(input_record.reference_sequence_name())
+                .set_variant_start(
+                    input_record
+                        .variant_start()
+                        .ok_or_else(|| anyhow::anyhow!("missing start position"))?,
+                )
+                .set_reference_bases(input_record.reference_bases())
+                .set_alternate_bases(vcf::variant::record_buf::AlternateBases::from(vec![
+                    alt_allele.clone(),
+                ]));
 
             // Copy over the well-known FORMAT fields and construct output record.
             let builder = copy_format(
@@ -394,7 +401,8 @@ async fn process_variants(
                 known_format_keys,
             )?;
 
-            let mut output_record = builder.build()?;
+            // Build the output `RecordBuf`.
+            let mut output_record = builder.build();
 
             // Obtain annonars variant key from current allele for RocksDB lookup.
             let vcf_var = annonars::common::keys::Var::from_vcf_allele(&output_record, 0);
@@ -471,8 +479,8 @@ async fn process_variants(
                 if !ann_fields.is_empty() {
                     output_record.info_mut().insert(
                         "ANN".parse()?,
-                        Some(vcf::record::info::field::Value::Array(
-                            vcf::record::info::field::value::Array::String(
+                        Some(vcf::variant::record_buf::info::field::Value::Array(
+                            vcf::variant::record_buf::info::field::value::Array::String(
                                 ann_fields.iter().map(|ann| Some(ann.to_string())).collect(),
                             ),
                         )),
@@ -481,7 +489,9 @@ async fn process_variants(
             }
 
             // Write out the record.
-            output_writer.write_record(&output_record).await?;
+            output_writer
+                .write_variant_record(output_header, &output_record)
+                .await?;
             total_written += 1;
         }
         if let Some(max_var_count) = args.max_var_count {
@@ -584,7 +594,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
 
     // Work around glnexus issue with RNC.
     if let Some(format) = input_header.formats_mut().get_mut("RNC") {
-        *format.number_mut() = vcf::header::Number::Count(1);
+        *format.number_mut() = vcf::header::record::value::map::format::Number::Count(1);
         *format.type_mut() = vcf::header::record::value::map::format::Type::String;
     }
 

@@ -1,5 +1,6 @@
-use crate::seqvars::query::schema::{
-    CallInfo, CaseQuery, FailChoice, QualitySettings, SequenceVariant,
+use crate::{
+    common::strip_gt_leading_slash,
+    seqvars::query::schema::{CallInfo, CaseQuery, FailChoice, QualitySettings, SequenceVariant},
 };
 
 /// Return type for the `passes` function.
@@ -27,8 +28,9 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCal
                     }
                     FailChoice::Drop => {
                         tracing::trace!(
-                            "sample {} in variant {:?} fails quality filter {:?}",
+                            "sample {} (call_info={:?}) in variant {:?} fails quality filter {:?}",
                             &sample_name,
+                            &call_info,
                             &seqvar,
                             &quality_settings
                         );
@@ -70,7 +72,8 @@ fn passes_for_sample(
     }
 
     let genotype = if let Some(genotype) = call_info.genotype.as_ref() {
-        match genotype.as_str() {
+        let genotype = strip_gt_leading_slash(genotype);
+        match genotype {
             "0/1" | "1/0" | "0|1" | "1|0" => Genotype::Het,
             "1/1" | "1|1" | "1" => Genotype::Hom,
             "0/0" | "0|0" | "0" => Genotype::Ref,
@@ -217,6 +220,7 @@ mod test {
     }
 
     #[rstest]
+    #[allow(clippy::too_many_arguments)]
     // het, pass dp
     #[case(
         Some(10), // q_dp_het

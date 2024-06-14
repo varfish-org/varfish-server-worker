@@ -1,6 +1,8 @@
 //! Supporting code for seqvar query definition.
 
-use noodles_vcf as vcf;
+use noodles::vcf;
+
+use crate::common::genotype_to_string;
 
 /// Enumeration for recessive mode queries.
 #[derive(
@@ -94,6 +96,11 @@ impl GenotypeChoice {
     /// The valid genotype strings have the form "<VAL>/<VAL>", "<VAL>|<VAL>" or
     /// "<VAL>" with "<VAL>" being one of "0", "1", and ".".
     pub fn matches(&self, gt_str: &str) -> Result<bool, anyhow::Error> {
+        let gt_str = if gt_str.starts_with('/') || gt_str.starts_with('|') {
+            &gt_str[1..]
+        } else {
+            gt_str
+        };
         Ok(match self {
             GenotypeChoice::Any => true,
             GenotypeChoice::Ref => ["0", "0|0", "0/0"].contains(&gt_str),
@@ -198,6 +205,8 @@ pub struct CaseQuery {
     pub clinvar_include_likely_pathogenic: bool,
     /// Whether to include uncertain significance ClinVar variants.
     pub clinvar_include_uncertain_significance: bool,
+    /// Whether to include conflicting interpretation ClinVar variants.
+    pub clinvar_include_conflicting_classifications: bool,
 
     /// Whether to enable filtration by gnomAD exomes.
     pub gnomad_exomes_enabled: bool,
@@ -268,6 +277,7 @@ impl Default for CaseQuery {
             clinvar_include_likely_benign: true,
             clinvar_include_likely_pathogenic: true,
             clinvar_include_uncertain_significance: true,
+            clinvar_include_conflicting_classifications: true,
             gnomad_exomes_frequency: Default::default(),
             gnomad_exomes_heterozygous: Default::default(),
             gnomad_exomes_homozygous: Default::default(),
@@ -388,13 +398,22 @@ pub struct SequenceVariant {
 
 impl SequenceVariant {
     /// Convert from VCF record.
-    pub fn from_vcf(record: &vcf::Record, header: &vcf::Header) -> Result<Self, anyhow::Error> {
-        let chrom = record.chromosome().to_string();
-        let pos: usize = record.position().into();
+    pub fn from_vcf(
+        record: &vcf::variant::RecordBuf,
+        header: &vcf::Header,
+    ) -> Result<Self, anyhow::Error> {
+        let chrom = record.reference_sequence_name().to_string();
+        let pos: usize = record.variant_start().expect("empty variant_start?").into();
         let pos = pos as i32;
 
         let reference = record.reference_bases().to_string();
-        let alternative = record.alternate_bases()[0].to_string();
+        let alternative = record
+            .alternate_bases()
+            .as_ref()
+            .iter()
+            .next()
+            .expect("no alternate base?")
+            .to_string();
 
         let call_info = Self::build_call_info(record, header)?;
         let ann_fields = Self::extract_ann_fields(record)?;
@@ -414,48 +433,49 @@ impl SequenceVariant {
 
     /// Build call information.
     fn build_call_info(
-        record: &vcf::Record,
+        record: &vcf::variant::RecordBuf,
         header: &vcf::Header,
     ) -> Result<indexmap::IndexMap<String, CallInfo>, anyhow::Error> {
+        use vcf::variant::record::samples::keys::key;
         let mut result = indexmap::IndexMap::new();
 
-        for (name, sample) in header
-            .sample_names()
-            .iter()
-            .zip(record.genotypes().values())
-        {
-            let genotype = if let Some(Some(vcf::record::genotypes::sample::Value::String(gt))) =
-                sample.get(&vcf::record::genotypes::keys::key::GENOTYPE)
+        for (name, sample) in header.sample_names().iter().zip(record.samples().values()) {
+            let genotype = if let Some(Some(
+                vcf::variant::record_buf::samples::sample::value::Value::Genotype(gt),
+            )) = sample.get(key::GENOTYPE)
             {
-                Some(gt.clone())
+                Some(genotype_to_string(&gt)?)
             } else {
                 None
             };
-            let quality =
-                if let Some(Some(vcf::record::genotypes::sample::Value::Integer(quality))) =
-                    sample.get(&vcf::record::genotypes::keys::key::CONDITIONAL_GENOTYPE_QUALITY)
-                {
-                    Some(*quality as f32)
-                } else {
-                    None
-                };
-            let dp = if let Some(Some(vcf::record::genotypes::sample::Value::Integer(dp))) =
-                sample.get(&vcf::record::genotypes::keys::key::READ_DEPTH)
+            let quality = if let Some(Some(
+                vcf::variant::record_buf::samples::sample::value::Value::Integer(quality),
+            )) = sample.get(key::CONDITIONAL_GENOTYPE_QUALITY)
+            {
+                Some(*quality as f32)
+            } else {
+                None
+            };
+            let dp = if let Some(Some(
+                vcf::variant::record_buf::samples::sample::value::Value::Integer(dp),
+            )) = sample.get(key::READ_DEPTH)
             {
                 Some(*dp)
             } else {
                 None
             };
-            let ad = if let Some(Some(vcf::record::genotypes::sample::Value::Array(
-                vcf::record::genotypes::sample::value::Array::Integer(ad),
-            ))) = sample.get(&vcf::record::genotypes::keys::key::READ_DEPTHS)
-            {
-                Some(ad[1].expect("empty AD?"))
-            } else {
-                None
-            };
-            let phase_set = if let Some(Some(vcf::record::genotypes::sample::Value::Integer(id))) =
-                sample.get(&vcf::record::genotypes::keys::key::PHASE_SET)
+            let ad =
+                if let Some(Some(vcf::variant::record_buf::samples::sample::value::Value::Array(
+                    vcf::variant::record_buf::samples::sample::value::Array::Integer(ad),
+                ))) = sample.get(key::READ_DEPTHS)
+                {
+                    Some(ad[1].expect("empty AD?"))
+                } else {
+                    None
+                };
+            let phase_set = if let Some(Some(
+                vcf::variant::record_buf::samples::sample::value::Value::Integer(id),
+            )) = sample.get(key::PHASE_SET)
             {
                 Some(*id)
             } else {
@@ -479,15 +499,11 @@ impl SequenceVariant {
 
     /// Extract `INFO/ANN` entries
     fn extract_ann_fields(
-        record: &vcf::Record,
+        record: &vcf::variant::RecordBuf,
     ) -> Result<Vec<mehari::annotate::seqvars::ann::AnnField>, anyhow::Error> {
-        if let Some(Some(ann)) = record.info().get(
-            &"ANN"
-                .parse::<vcf::record::info::field::Key>()
-                .expect("invalid key INFO/ANN?"),
-        ) {
-            if let vcf::record::info::field::Value::Array(
-                vcf::record::info::field::value::Array::String(ann),
+        if let Some(Some(ann)) = record.info().get("ANN") {
+            if let vcf::variant::record_buf::info::field::Value::Array(
+                vcf::variant::record_buf::info::field::value::Array::String(ann),
             ) = ann
             {
                 ann.iter()
@@ -506,22 +522,18 @@ impl SequenceVariant {
     /// Copy the frequencies from `record` to `result`.
     fn with_freqs(
         result: SequenceVariant,
-        record: &vcf::Record,
+        record: &vcf::variant::RecordBuf,
     ) -> Result<SequenceVariant, anyhow::Error> {
-        use vcf::record::info::field::Key;
-        use vcf::record::info::field::Value;
+        use vcf::variant::record_buf::info::field::Value;
 
         macro_rules! extract_key {
             ($key:ident) => {
-                let $key = if let Some(Some(Value::Integer($key))) = record.info().get(
-                    &stringify!($key)
-                        .parse::<Key>()
-                        .expect(&format!("could not parse key: {:?}", stringify!($key))),
-                ) {
-                    *$key
-                } else {
-                    0
-                };
+                let $key =
+                    if let Some(Some(Value::Integer($key))) = record.info().get(stringify!($key)) {
+                        *$key
+                    } else {
+                        0
+                    };
             };
         }
 
@@ -593,7 +605,7 @@ impl SequenceVariant {
 
 #[cfg(test)]
 pub mod test {
-    use noodles_vcf as vcf;
+    use noodles::vcf;
     use rstest::rstest;
 
     pub mod genotype_choice {
@@ -647,16 +659,21 @@ pub mod test {
     #[case("tests/seqvars/query/Case_1.ingested.vcf")]
     #[case("tests/seqvars/query/dragen.ingested.vcf")]
     pub fn sequence_variant_from_vcf(#[case] path_input: &str) -> Result<(), anyhow::Error> {
+        use noodles::vcf::variant::RecordBuf;
+
         mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
 
-        let mut vcf_reader = vcf::reader::Builder::default()
+        let mut vcf_reader = vcf::io::reader::Builder::default()
             .build_from_path(path_input)
             .unwrap();
         let header = vcf_reader.read_header()?;
 
-        for record in vcf_reader.records(&header) {
+        for record in vcf_reader.records() {
             let record = record?;
-            let seqvar = super::SequenceVariant::from_vcf(&record, &header)?;
+            let seqvar = super::SequenceVariant::from_vcf(
+                &RecordBuf::try_from_variant_record(&header, &record)?,
+                &header,
+            )?;
 
             insta::assert_yaml_snapshot!(&seqvar);
         }

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use noodles_vcf as vcf;
+use noodles::vcf;
 
 use crate::common::GenomeRelease;
 
@@ -123,9 +123,7 @@ fn add_contigs_37(builder: vcf::header::Builder) -> Result<vcf::header::Builder,
 
     for (contig, length) in specs {
         builder = builder.add_contig(
-            contig
-                .parse()
-                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            *contig,
             Map::<Contig>::builder()
                 .set_length(*length)
                 .insert(
@@ -184,9 +182,7 @@ fn add_contigs_38(builder: vcf::header::Builder) -> Result<vcf::header::Builder,
 
     for (contig, length) in specs {
         builder = builder.add_contig(
-            contig
-                .parse()
-                .map_err(|_| anyhow::anyhow!("invalid contig: {}", contig))?,
+            *contig,
             Map::<Contig>::builder()
                 .set_length(*length)
                 .insert(
@@ -218,12 +214,12 @@ pub fn build_output_header(
     case_uuid: &uuid::Uuid,
     worker_version: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
+    use noodles::vcf::header::record::value::map::info::Number;
     use vcf::header::record::value::{
         map::{info::Type, Filter, Format, Info},
         Map,
     };
-    use vcf::header::Number;
-    use vcf::record::genotypes::keys::key;
+    use vcf::variant::record::samples::keys::key;
 
     let builder = vcf::Header::builder()
         .insert(
@@ -232,7 +228,7 @@ pub fn build_output_header(
         )?
         .add_filter("PASS", Map::<Filter>::new("All filters passed"))
         .add_info(
-            "gnomad_exomes_an".parse()?,
+            "gnomad_exomes_an",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -240,7 +236,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "gnomad_exomes_hom".parse()?,
+            "gnomad_exomes_hom",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -248,7 +244,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "gnomad_exomes_het".parse()?,
+            "gnomad_exomes_het",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -256,7 +252,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "gnomad_exomes_hemi".parse()?,
+            "gnomad_exomes_hemi",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -264,7 +260,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "gnomad_genomes_an".parse()?,
+            "gnomad_genomes_an",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -272,7 +268,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "gnomad_genomes_hom".parse()?,
+            "gnomad_genomes_hom",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -280,7 +276,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "gnomad_genomes_het".parse()?,
+            "gnomad_genomes_het",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -288,7 +284,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "gnomad_genomes_hemi".parse()?,
+            "gnomad_genomes_hemi",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -296,7 +292,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "helix_an".parse()?,
+            "helix_an",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -304,7 +300,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "helix_hom".parse()?,
+            "helix_hom",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -312,7 +308,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "helix_het".parse()?,
+            "helix_het",
             Map::<Info>::new(
                 Number::Count(1),
                 Type::Integer,
@@ -320,7 +316,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "ANN".parse()?,
+            "ANN",
             Map::<Info>::new(
                 Number::Unknown,
                 Type::String,
@@ -330,14 +326,14 @@ pub fn build_output_header(
                 AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'",
             ),
         )
-        .add_format(key::READ_DEPTHS, Map::<Format>::from(&key::READ_DEPTHS))
-        .add_format(key::READ_DEPTH, Map::<Format>::from(&key::READ_DEPTH))
+        .add_format(key::READ_DEPTHS, Map::<Format>::from(key::READ_DEPTHS))
+        .add_format(key::READ_DEPTH, Map::<Format>::from(key::READ_DEPTH))
         .add_format(
             key::CONDITIONAL_GENOTYPE_QUALITY,
-            Map::<Format>::from(&key::CONDITIONAL_GENOTYPE_QUALITY),
+            Map::<Format>::from(key::CONDITIONAL_GENOTYPE_QUALITY),
         )
-        .add_format(key::GENOTYPE, Map::<Format>::from(&key::GENOTYPE))
-        .add_format(key::PHASE_SET, Map::<Format>::from(&key::PHASE_SET));
+        .add_format(key::GENOTYPE, Map::<Format>::from(key::GENOTYPE))
+        .add_format(key::PHASE_SET, Map::<Format>::from(key::PHASE_SET));
 
     let mut builder = match genomebuild {
         GenomeRelease::Grch37 => add_contigs_37(builder),
@@ -397,7 +393,7 @@ pub fn build_output_header(
             // Add SAMPLE entry.
             builder = builder.insert(
                 "SAMPLE".parse()?,
-                noodles_vcf::header::record::Value::Map(
+                noodles::vcf::header::record::Value::Map(
                     i.name.clone(),
                     Map::<Other>::builder()
                         .insert(
@@ -422,7 +418,7 @@ pub fn build_output_header(
             }
             builder = builder.insert(
                 "PEDIGREE".parse()?,
-                noodles_vcf::header::record::Value::Map(i.name.clone(), map_builder.build()?),
+                noodles::vcf::header::record::Value::Map(i.name.clone(), map_builder.build()?),
             )?;
         }
 
@@ -509,7 +505,7 @@ pub fn build_output_header(
 #[cfg(test)]
 mod test {
     use mehari::ped::PedigreeByName;
-    use noodles_vcf as vcf;
+    use noodles::vcf;
     use rstest::rstest;
 
     use super::VariantCaller;
@@ -523,7 +519,7 @@ mod test {
     fn variant_caller_guess(#[case] path: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
 
-        let vcf_header = noodles_vcf::reader::Builder::default()
+        let vcf_header = noodles::vcf::io::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
 
@@ -544,7 +540,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let mut input_vcf_header = noodles_vcf::reader::Builder::default()
+        let mut input_vcf_header = noodles::vcf::io::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
@@ -559,14 +555,14 @@ mod test {
 
         // Work around glnexus issue with RNC.
         if let Some(format) = input_vcf_header.formats_mut().get_mut("RNC") {
-            *format.number_mut() = vcf::header::Number::Count(1);
+            *format.number_mut() = vcf::header::record::value::map::format::Number::Count(1);
             *format.type_mut() = vcf::header::record::value::map::format::Type::String;
         }
 
         let out_path = tmpdir.join("out.vcf");
         let out_path_str = out_path.to_str().expect("invalid path");
         {
-            noodles_vcf::writer::Writer::new(std::fs::File::create(out_path_str)?)
+            noodles::vcf::io::writer::Writer::new(std::fs::File::create(out_path_str)?)
                 .write_header(&output_vcf_header)?;
         }
 
@@ -587,7 +583,7 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let mut input_vcf_header = noodles_vcf::reader::Builder::default()
+        let mut input_vcf_header = noodles::vcf::io::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let output_vcf_header = super::build_output_header(
@@ -602,14 +598,14 @@ mod test {
 
         // Work around glnexus issue with RNC.
         if let Some(format) = input_vcf_header.formats_mut().get_mut("RNC") {
-            *format.number_mut() = vcf::header::Number::Count(1);
+            *format.number_mut() = vcf::header::record::value::map::format::Number::Count(1);
             *format.type_mut() = vcf::header::record::value::map::format::Type::String;
         }
 
         let out_path = tmpdir.join("out.vcf");
         let out_path_str = out_path.to_str().expect("invalid path");
         {
-            noodles_vcf::writer::Writer::new(std::fs::File::create(out_path_str)?)
+            noodles::vcf::io::writer::Writer::new(std::fs::File::create(out_path_str)?)
                 .write_header(&output_vcf_header)?;
         }
 

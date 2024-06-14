@@ -15,10 +15,8 @@ use std::{
     time::Instant,
 };
 
-use anyhow::anyhow;
 use biocommons_bioutils::assemblies::ASSEMBLY_INFOS;
 use clap::{command, Parser};
-use futures::TryStreamExt;
 use indexmap::IndexMap;
 use log::warn;
 use mehari::{
@@ -30,6 +28,7 @@ use mehari::{
     pbs::txs::{Strand, Transcript, TxSeqDatabase},
 };
 
+use noodles::vcf;
 use rand_core::{RngCore, SeedableRng};
 use serde::Serialize;
 use thousands::Separable;
@@ -239,14 +238,18 @@ async fn run_query(
         .from_path(&args.path_output)?;
 
     // Read through input records using the query interpreter as a filter
-    let mut records = input_reader.records(&input_header);
-    while let Some(input_record) = records
-        .try_next()
-        .await
-        .map_err(|e| anyhow!("problem reading VCF: {}", e))?
-    {
+    let mut record_buf = vcf::variant::RecordBuf::default();
+    loop {
+        let bytes_read = input_reader
+            .read_record_buf(&input_header, &mut record_buf)
+            .await
+            .map_err(|e| anyhow::anyhow!("problem reading VCF file {}: {}", &args.path_input, e))?;
+        if bytes_read == 0 {
+            break; // EOF
+        }
+
         stats.count_total += 1;
-        let record_sv = StructuralVariant::from_vcf(&input_record, &input_header)
+        let record_sv = StructuralVariant::from_vcf(&record_buf, &input_header)
             .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
 
         tracing::debug!("processing record {:?}", record_sv);
