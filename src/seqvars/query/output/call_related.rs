@@ -27,7 +27,13 @@ impl Record {
                             call_info.dp,
                             call_info.ad,
                             call_info.quality.map(|q| q as i32),
-                            call_info.genotype.clone(),
+                            call_info.genotype.as_ref().map(|s| {
+                                if s.starts_with('|') || s.starts_with('/') {
+                                    s[1..].to_string()
+                                } else {
+                                    s.to_string()
+                                }
+                            }),
                         ),
                     )
                 })

@@ -24,9 +24,8 @@ inhouse_het: 0
 inhouse_hemi: 0
 call_info:
   CASE:
-    genotype: 1/1
+    genotype: /1/1
     quality: 99
     dp: 35
     ad: 35
     phasing_id: ~
-

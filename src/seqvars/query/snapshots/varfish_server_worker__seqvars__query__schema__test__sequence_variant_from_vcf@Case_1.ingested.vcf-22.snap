@@ -24,21 +24,20 @@ inhouse_het: 0
 inhouse_hemi: 0
 call_info:
   Case_1_father-N1-DNA1-WGS1:
-    genotype: 1/1
+    genotype: /1/1
     quality: 99
     dp: 2757
     ad: 2757
     phasing_id: ~
   Case_1_index-N1-DNA1-WGS1:
-    genotype: 1/1
+    genotype: /1/1
     quality: 99
     dp: 2392
     ad: 2392
     phasing_id: ~
   Case_1_mother-N1-DNA1-WGS1:
-    genotype: 1/1
+    genotype: /1/1
     quality: 99
     dp: 1621
     ad: 1621
     phasing_id: ~
-

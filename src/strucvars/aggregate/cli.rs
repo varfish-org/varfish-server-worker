@@ -10,11 +10,8 @@ use std::{
 
 use bio::data_structures::interval_tree::IntervalTree;
 use clap::{command, Parser};
-use futures::TryStreamExt;
-use mehari::common::{
-    io::std::{open_write_maybe_bgzf, read_lines},
-    noodles::open_vcf_reader,
-};
+use futures::TryStreamExt as _;
+use mehari::common::io::std::{open_write_maybe_bgzf, read_lines};
 
 use serde_json::to_writer;
 use strum::IntoEnumIterator;
@@ -24,6 +21,7 @@ use crate::{
     common::{build_chrom_map, trace_rss_now, GenomeRelease, CHROMS},
     strucvars::query::schema::SvType,
 };
+use mehari::common::noodles::open_vcf_reader;
 
 /// Create one file with records for each chromosome and SV type.
 fn create_tmp_files(
@@ -63,7 +61,7 @@ async fn split_input_by_chrom_and_sv_type(
 
         let (pedigree, _) = crate::common::extract_pedigree_and_case_uuid(&input_header)?;
         let mut prev = std::time::Instant::now();
-        let mut records = input_reader.records(&input_header);
+        let mut records = input_reader.records();
         let before_parsing = Instant::now();
         let mut count_records = 0;
         while let Some(input_record) = records.try_next().await? {

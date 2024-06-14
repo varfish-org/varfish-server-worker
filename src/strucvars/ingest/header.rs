@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use noodles_vcf as vcf;
+use noodles::vcf;
 use vcf::header::{record::value::map::AlternativeAllele, SampleNames};
 
 use crate::common::{add_contigs_37, add_contigs_38, GenomeRelease};
@@ -36,6 +36,7 @@ fn caller_version(sv_caller: &mehari::annotate::strucvars::SvCaller) -> String {
 }
 
 /// Generate the output header from the input header.
+#[allow(clippy::too_many_arguments)]
 pub fn build_output_header(
     input_sample_names: &SampleNames,
     input_sv_callers: &[&mehari::annotate::strucvars::SvCaller],
@@ -46,12 +47,12 @@ pub fn build_output_header(
     worker_version: &str,
     case_uuid: &str,
 ) -> Result<vcf::Header, anyhow::Error> {
+    use noodles::vcf::header::record::value::map::info::Number;
+    use noodles::vcf::variant::record::info::field::key;
     use vcf::header::record::value::{
         map::{format, info, Filter, Format, Info},
         Map,
     };
-    use vcf::header::Number;
-    use vcf::record::genotypes::keys::key;
 
     let builder = vcf::Header::builder()
         .insert(
@@ -59,28 +60,13 @@ pub fn build_output_header(
             vcf::header::record::Value::from(file_date),
         )?
         .add_filter("PASS", Map::<Filter>::new("All filters passed"))
+        .add_info(key::IS_IMPRECISE, Map::<Info>::from(key::IS_IMPRECISE))
+        .add_info(key::END_POSITION, Map::<Info>::from(key::END_POSITION))
+        .add_info(key::SV_TYPE, Map::<Info>::from(key::SV_TYPE))
+        .add_info(key::SV_LENGTHS, Map::<Info>::from(key::SV_LENGTHS))
+        .add_info(key::SV_CLAIM, Map::<Info>::from(key::SV_CLAIM))
         .add_info(
-            vcf::record::info::field::key::IS_IMPRECISE,
-            Map::<Info>::from(&vcf::record::info::field::key::IS_IMPRECISE),
-        )
-        .add_info(
-            vcf::record::info::field::key::END_POSITION,
-            Map::<Info>::from(&vcf::record::info::field::key::END_POSITION),
-        )
-        .add_info(
-            vcf::record::info::field::key::SV_TYPE,
-            Map::<Info>::from(&vcf::record::info::field::key::SV_TYPE),
-        )
-        .add_info(
-            vcf::record::info::field::key::SV_LENGTHS,
-            Map::<Info>::from(&vcf::record::info::field::key::SV_LENGTHS),
-        )
-        .add_info(
-            vcf::record::info::field::key::SV_CLAIM,
-            Map::<Info>::from(&vcf::record::info::field::key::SV_CLAIM),
-        )
-        .add_info(
-            "callers".parse()?,
+            "callers",
             Map::<Info>::new(
                 Number::Unknown,
                 info::Type::String,
@@ -88,7 +74,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "chr2".parse()?,
+            "chr2",
             Map::<Info>::new(
                 Number::Count(1),
                 info::Type::String,
@@ -96,7 +82,7 @@ pub fn build_output_header(
             ),
         )
         .add_info(
-            "annsv".parse()?,
+            "annsv",
             Map::<Info>::new(
                 Number::Count(1),
                 info::Type::String,
@@ -104,82 +90,87 @@ pub fn build_output_header(
             ),
         )
         .add_format(
-            key::CONDITIONAL_GENOTYPE_QUALITY,
-            Map::<Format>::from(&key::CONDITIONAL_GENOTYPE_QUALITY),
+            vcf::variant::record::samples::keys::key::CONDITIONAL_GENOTYPE_QUALITY,
+            Map::<Format>::from(
+                vcf::variant::record::samples::keys::key::CONDITIONAL_GENOTYPE_QUALITY,
+            ),
         )
-        .add_format(key::GENOTYPE, Map::<Format>::from(&key::GENOTYPE))
         .add_format(
-            "pec".parse()?,
+            vcf::variant::record::samples::keys::key::GENOTYPE,
+            Map::<Format>::from(vcf::variant::record::samples::keys::key::GENOTYPE),
+        )
+        .add_format(
+            "pec",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Integer,
                 "Total coverage with paired-end reads",
             ),
         )
         .add_format(
-            "pev".parse()?,
+            "pev",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Integer,
                 "Paired-end reads supporting the variant",
             ),
         )
         .add_format(
-            "src".parse()?,
+            "src",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Integer,
                 "Total coverage with split reads",
             ),
         )
         .add_format(
-            "srv".parse()?,
+            "srv",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Integer,
                 "Split reads supporting the variant",
             ),
         )
         .add_format(
-            "amq".parse()?,
+            "amq",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Float,
                 "Average mapping quality over the variant",
             ),
         )
         .add_format(
-            "cn".parse()?,
+            "cn",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Integer,
                 "Copy number of the variant in the sample",
             ),
         )
         .add_format(
-            "anc".parse()?,
+            "anc",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Float,
                 "Average normalized coverage over the variant in the sample",
             ),
         )
         .add_format(
-            "pc".parse()?,
+            "pc",
             Map::<Format>::new(
-                Number::Count(1),
+                noodles::vcf::header::record::value::map::format::Number::Count(1),
                 format::Type::Integer,
                 "Point count (windows/targets/probes)",
             ),
         )
-        .add_alternative_allele("DEL".parse()?, Map::<AlternativeAllele>::new("Deletion"))
-        .add_alternative_allele("DUP".parse()?, Map::<AlternativeAllele>::new("Duplication"))
-        .add_alternative_allele("INS".parse()?, Map::<AlternativeAllele>::new("Insertion"))
+        .add_alternative_allele("DEL", Map::<AlternativeAllele>::new("Deletion"))
+        .add_alternative_allele("DUP", Map::<AlternativeAllele>::new("Duplication"))
+        .add_alternative_allele("INS", Map::<AlternativeAllele>::new("Insertion"))
         .add_alternative_allele(
-            "CNV".parse()?,
+            "CNV",
             Map::<AlternativeAllele>::new("Copy Number Variation"),
         )
-        .add_alternative_allele("INV".parse()?, Map::<AlternativeAllele>::new("Inversion"));
+        .add_alternative_allele("INV", Map::<AlternativeAllele>::new("Inversion"));
 
     let mut builder = match genomebuild {
         GenomeRelease::Grch37 => add_contigs_37(builder),
@@ -228,7 +219,7 @@ pub fn build_output_header(
             // Add SAMPLE entry.
             builder = builder.insert(
                 "SAMPLE".parse()?,
-                noodles_vcf::header::record::Value::Map(
+                noodles::vcf::header::record::Value::Map(
                     i.name.clone(),
                     Map::<Other>::builder()
                         .insert(
@@ -253,7 +244,7 @@ pub fn build_output_header(
             }
             builder = builder.insert(
                 "PEDIGREE".parse()?,
-                noodles_vcf::header::record::Value::Map(i.name.clone(), map_builder.build()?),
+                noodles::vcf::header::record::Value::Map(i.name.clone(), map_builder.build()?),
             )?;
         }
     } else {
@@ -316,17 +307,19 @@ mod test {
     #[case("tests/strucvars/ingest/sniffles2-min.vcf")]
     #[tokio::test]
     async fn build_output_header_37(#[case] path: &str) -> Result<(), anyhow::Error> {
+        use mehari::annotate::strucvars::guess_sv_caller;
+
         mehari::common::set_snapshot_suffix!("{}", path.split('/').last().unwrap());
         let tmpdir = temp_testdir::TempDir::default();
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder::default()
+        let input_vcf_header = noodles::vcf::io::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {
-            let mut reader = mehari::common::noodles::open_vcf_reader(path).await?;
-            vec![mehari::annotate::strucvars::guess_sv_caller(&mut reader).await?]
+            let mut reader = mehari::common::noodles::open_variant_reader(path).await?;
+            vec![guess_sv_caller(&mut reader).await?]
         };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
         let output_vcf_header = super::build_output_header(
@@ -343,7 +336,7 @@ mod test {
         let out_path = tmpdir.join("out.vcf");
         let out_path_str = out_path.to_str().expect("invalid path");
         {
-            noodles_vcf::writer::Writer::new(std::fs::File::create(out_path_str)?)
+            noodles::vcf::io::writer::Writer::new(std::fs::File::create(out_path_str)?)
                 .write_header(&output_vcf_header)?;
         }
 
@@ -368,11 +361,11 @@ mod test {
 
         let pedigree = PedigreeByName::from_path(path.replace(".vcf", ".ped")).unwrap();
 
-        let input_vcf_header = noodles_vcf::reader::Builder::default()
+        let input_vcf_header = noodles::vcf::io::reader::Builder::default()
             .build_from_path(path)?
             .read_header()?;
         let sv_callers = {
-            let mut reader = mehari::common::noodles::open_vcf_reader(path).await?;
+            let mut reader = mehari::common::noodles::open_variant_reader(path).await?;
             vec![mehari::annotate::strucvars::guess_sv_caller(&mut reader).await?]
         };
         let sv_caller_refs = sv_callers.iter().collect::<Vec<_>>();
@@ -390,7 +383,7 @@ mod test {
         let out_path = tmpdir.join("out.vcf");
         let out_path_str = out_path.to_str().expect("invalid path");
         {
-            noodles_vcf::writer::Writer::new(std::fs::File::create(out_path_str)?)
+            noodles::vcf::io::writer::Writer::new(std::fs::File::create(out_path_str)?)
                 .write_header(&output_vcf_header)?;
         }
 

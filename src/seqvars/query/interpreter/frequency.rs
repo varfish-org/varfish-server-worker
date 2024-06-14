@@ -58,6 +58,7 @@ pub fn passes(query: &CaseQuery, s: &SequenceVariant) -> Result<bool, anyhow::Er
 }
 
 #[cfg(test)]
+#[allow(clippy::too_many_arguments)]
 mod test {
     use mehari::annotate::seqvars::ann::{AnnField, Consequence};
     use rstest::rstest;

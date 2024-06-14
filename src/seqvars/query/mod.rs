@@ -12,11 +12,10 @@ use std::time::Instant;
 use clap::{command, Parser};
 use ext_sort::LimitedBufferBuilder;
 use ext_sort::{ExternalSorter, ExternalSorterBuilder};
-use futures::TryStreamExt;
 use itertools::Itertools;
-use mehari::common::noodles::open_vcf_reader;
 
 use mehari::annotate::seqvars::CHROM_TO_CHROM_NO;
+use noodles::vcf;
 use rand_core::{RngCore, SeedableRng};
 use thousands::Separable;
 use uuid::Uuid;
@@ -24,6 +23,7 @@ use uuid::Uuid;
 use crate::common;
 use crate::seqvars::query::schema::GenotypeChoice;
 use crate::{common::trace_rss_now, common::GenomeRelease};
+use mehari::common::noodles::open_vcf_reader;
 
 use self::annonars::Annotator;
 use self::schema::CaseQuery;
@@ -220,14 +220,20 @@ async fn run_query(
             .map(std::io::BufWriter::new)
             .map_err(|e| anyhow::anyhow!("could not create temporary unsorted file: {}", e))?;
 
-        let mut records = input_reader.records(&input_header);
-        while let Some(input_record) = records
-            .try_next()
-            .await
-            .map_err(|e| anyhow::anyhow!("could not read VCF record: {}", e))?
-        {
+        let mut record_buf = vcf::variant::RecordBuf::default();
+        loop {
+            let bytes_read = input_reader
+                .read_record_buf(&input_header, &mut record_buf)
+                .await
+                .map_err(|e| {
+                    anyhow::anyhow!("problem reading VCF file {}: {}", &args.path_input, e)
+                })?;
+            if bytes_read == 0 {
+                break; // EOF
+            }
+
             stats.count_total += 1;
-            let record_seqvar = SequenceVariant::from_vcf(&input_record, &input_header)
+            let record_seqvar = SequenceVariant::from_vcf(&record_buf, &input_header)
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
             tracing::debug!("processing record {:?}", record_seqvar);
 

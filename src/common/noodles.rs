@@ -8,15 +8,14 @@
 //! or similar.
 
 use async_compression::tokio::bufread::GzipDecoder;
-use mehari::common::{
-    io::{std::is_gz, tokio::open_read_maybe_gz},
-    noodles::AsyncVcfReader,
-};
-use noodles_bgzf as bgzf;
-use noodles_core::Position;
-use noodles_csi::{self as csi, binning_index::index::reference_sequence::bin::Chunk};
-use noodles_tabix as tabix;
-use noodles_vcf as vcf;
+use mehari::common::io::{std::is_gz, tokio::open_read_maybe_gz};
+use mehari::common::noodles::{AsyncVcfReader, VariantReader};
+use noodles::bgzf;
+use noodles::core::Position;
+use noodles::csi::{self as csi, binning_index::index::reference_sequence::bin::Chunk};
+use noodles::tabix;
+use noodles::vcf;
+use noodles::vcf::variant::Record;
 use std::{path::Path, pin::Pin};
 use tokio::io::{AsyncBufRead, BufReader};
 
@@ -45,7 +44,7 @@ where
     let mut start_position = reader.get_ref().virtual_position();
 
     while reader
-        .read_record(&header, &mut record)
+        .read_record(&mut record)
         .await
         .map_err(|e| anyhow::anyhow!("problem reading record: {}", e))?
         != 0
@@ -53,12 +52,13 @@ where
         let end_position = reader.get_ref().virtual_position();
         let chunk = Chunk::new(start_position, end_position);
 
-        let reference_sequence_name = record.chromosome().to_string();
-        let start = Position::try_from(usize::from(record.position()))
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+        let reference_sequence_name = record.reference_sequence_name().to_string();
+        let start = record
+            .variant_start()
+            .expect("no variant_start?")
             .map_err(|e| anyhow::anyhow!("error converting start position: {}", e))?;
         let end = record
-            .end()
+            .variant_end(&header)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
             .and_then(|position| {
                 Position::try_from(usize::from(position))
@@ -169,7 +169,7 @@ where
 }
 
 /// Helper function that opens a list of paths as VCF readers.
-pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<AsyncVcfReader>, anyhow::Error> {
+pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<VariantReader>, anyhow::Error> {
     let mut result = Vec::new();
     for path in paths.iter() {
         let buf_read = if super::s3::s3_mode() && !path.starts_with('/') {
@@ -177,7 +177,7 @@ pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<AsyncVcfReader>, a
         } else {
             open_read_maybe_gz(path).await?
         };
-        result.push(AsyncVcfReader::new(buf_read));
+        result.push(VariantReader::Vcf(AsyncVcfReader::new(buf_read)));
     }
     Ok(result)
 }
@@ -190,21 +190,21 @@ pub async fn open_vcf_readers(paths: &[String]) -> Result<Vec<AsyncVcfReader>, a
 /// - If environment variable `AWS_ACCESS_KEY_ID` is set then enable S3 mode.
 /// - If `path_in` is absolute or S3 mode is disabled then open `path_in` as local file
 /// - Otherwise, attempt to open `path_in` as S3 object.
-pub async fn open_vcf_reader(path_in: &str) -> Result<AsyncVcfReader, anyhow::Error> {
+pub async fn open_vcf_reader(path_in: &str) -> Result<VariantReader, anyhow::Error> {
     if super::s3::s3_mode() && path_in != "-" && !path_in.starts_with('/') {
         tracing::debug!("Opening S3 object {} for reading (async)", path_in);
-        Ok(vcf::AsyncReader::new(
+        Ok(VariantReader::Vcf(vcf::AsyncReader::new(
             s3_open_read_maybe_gz(path_in)
                 .await
                 .map_err(|e| anyhow::anyhow!("could not build VCF reader from S3 file: {}", e))?,
-        ))
+        )))
     } else {
         tracing::debug!("Opening local file {} for reading (async)", path_in);
-        Ok(vcf::AsyncReader::new(
+        Ok(VariantReader::Vcf(vcf::AsyncReader::new(
             open_read_maybe_gz(path_in).await.map_err(|e| {
                 anyhow::anyhow!("could not build VCF reader from local file: {}", e)
             })?,
-        ))
+        )))
     }
 }
 
