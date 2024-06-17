@@ -65,7 +65,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e01ed3140b2f8d422c68afa1ed2e85d996ea619c988ac834d255db32138655cb"
 dependencies = [
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -178,7 +178,7 @@ dependencies = [
  "actix-router",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -267,9 +267,9 @@ dependencies = [
 
 [[package]]
 name = "annonars"
-version = "0.36.1"
+version = "0.36.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1be5c8ae15c7a3bd4d89af452104d7a026806434490d2b201dca043485c3f468"
+checksum = "e4fb2c42b253b47b27abb5fad61498fc1a5aa04812094bdfb5be4ea9a9f100f4"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -288,14 +288,15 @@ dependencies = [
  "flate2",
  "indexmap 2.2.6",
  "indicatif",
+ "itertools 0.11.0",
  "log",
  "noodles-bed",
- "noodles-bgzf",
- "noodles-core",
- "noodles-csi",
+ "noodles-bgzf 0.29.0",
+ "noodles-core 0.14.0",
+ "noodles-csi 0.33.0",
  "noodles-gff",
- "noodles-tabix",
- "noodles-vcf",
+ "noodles-tabix 0.39.0",
+ "noodles-vcf 0.55.0",
  "pbjson",
  "pbjson-build",
  "pbjson-types",
@@ -559,7 +560,7 @@ checksum = "c980ee35e870bd1a4d2c8294d4c04d0499e67bca1e4b5cefcc693c2fa00caea9"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1027,7 +1028,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1186,7 +1187,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
  "syn_derive",
 ]
 
@@ -1209,6 +1210,16 @@ checksum = "4e2e4afe60d7dd600fdd3de8d0f08c2b7ec039712e3b6137ff98b7004e82de4f"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
+]
+
+[[package]]
+name = "bstr"
+version = "1.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05efc5cfd9110c8416e471df0e96702d58690178e206e61b7173706673c93706"
+dependencies = [
+ "memchr",
+ "serde",
 ]
 
 [[package]]
@@ -1321,6 +1332,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "cached"
+version = "0.50.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10a7d38ed2761b8a13ce42bc44b09d5a052b88da2f9fead624c779f31ac0729a"
+dependencies = [
+ "ahash 0.8.11",
+ "cached_proc_macro",
+ "cached_proc_macro_types",
+ "hashbrown 0.14.3",
+ "instant",
+ "once_cell",
+ "thiserror",
+]
+
+[[package]]
+name = "cached_proc_macro"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "771aa57f3b17da6c8bcacb187bb9ec9bc81c8160e72342e67c329e0e1651a669"
+dependencies = [
+ "darling 0.20.8",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.58",
+]
+
+[[package]]
+name = "cached_proc_macro_types"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ade8366b8bd5ba243f0a58f036cc0ca8a2f069cff1a2351ef1cac6b083e16fc0"
+
+[[package]]
 name = "cc"
 version = "1.0.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1417,7 +1461,7 @@ dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1658,7 +1702,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "strsim 0.10.0",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1680,7 +1724,7 @@ checksum = "a668eda54683121533a393014d8692171709ff57a7d61f187b6e782719f8933f"
 dependencies = [
  "darling_core 0.20.8",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1753,7 +1797,7 @@ checksum = "d150dea618e920167e5973d70ae6ece4385b7164e0d799fe7c122dd0a5d912ad"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1795,7 +1839,7 @@ dependencies = [
  "darling 0.20.8",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1815,7 +1859,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "206868b8242f27cecce124c19fd88157fbd0dd334df2587f36417bafbc85097b"
 dependencies = [
  "derive_builder_core 0.20.0",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -1946,7 +1990,7 @@ checksum = "f282cfdfe92516eb26c2af8589c274c7c17681f5ecc03c18255fe741c6aa64eb"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -2251,7 +2295,7 @@ checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -2395,9 +2439,9 @@ dependencies = [
 
 [[package]]
 name = "hashlink"
-version = "0.8.4"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8094feaf31ff591f651a2664fb9cfd92bba7a60ce3197265e9482ebe753c8f7"
+checksum = "6ba4ff7128dee98c7dc9794b6a411377e1404dba1c97deb8d1a55297bd25d8af"
 dependencies = [
  "hashbrown 0.14.3",
 ]
@@ -2428,13 +2472,15 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hgvs"
-version = "0.16.0"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dbe0946a5ab6cec23e35e8b485f64b239beb93cf4d098e5d76ebc3fcc2b8a54"
+checksum = "c860777179557614169d38d0ef292aff2e14aa2a95464dba6654c6753b4d0998"
 dependencies = [
+ "ahash 0.8.11",
  "base16ct 0.2.0",
  "bio",
  "biocommons-bioutils",
+ "cached",
  "chrono",
  "enum-map",
  "flate2",
@@ -2444,7 +2490,7 @@ dependencies = [
  "md-5",
  "nom",
  "postgres",
- "quick_cache",
+ "quick_cache 0.5.1",
  "regex",
  "rustc-hash",
  "seqrepo",
@@ -2568,7 +2614,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.6",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -2831,9 +2877,9 @@ dependencies = [
 
 [[package]]
 name = "libsqlite3-sys"
-version = "0.27.0"
+version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf4e226dcd58b4be396f7bd3c20da8fdee2911400705297ba7d2d7cc2c30f716"
+checksum = "0c10584274047cb335c23d3e61bcef8e323adae7c5c8c760540f73610177fc3f"
 dependencies = [
  "pkg-config",
  "vcpkg",
@@ -2954,9 +3000,9 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.25.4"
+version = "0.25.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1dfc6c2a062e7fc11233cc14a5b08f949b118e04e27ca3ded791a190c9373b9"
+checksum = "5ff8803704e97285ea41fa4823258ba0bffff45e36d9d548257b1681313668a5"
 dependencies = [
  "actix-web",
  "annonars",
@@ -2983,12 +3029,12 @@ dependencies = [
  "lazy_static",
  "log",
  "nom",
- "noodles-bgzf",
- "noodles-core",
- "noodles-csi",
+ "noodles-bgzf 0.26.0",
+ "noodles-core 0.14.0",
+ "noodles-csi 0.30.0",
  "noodles-fasta 0.33.0",
- "noodles-tabix",
- "noodles-vcf",
+ "noodles-tabix 0.36.0",
+ "noodles-vcf 0.49.0",
  "parse-display",
  "pbjson",
  "pbjson-build",
@@ -2996,7 +3042,7 @@ dependencies = [
  "procfs",
  "prost",
  "prost-build",
- "quick_cache",
+ "quick_cache 0.4.1",
  "rand",
  "rand_core",
  "rocksdb",
@@ -3141,12 +3187,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "noodles"
+version = "0.76.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a346e5a6000033512105890243ff310a307637ae9d9de317f7480e136549a4d"
+dependencies = [
+ "noodles-bgzf 0.30.0",
+ "noodles-core 0.15.0",
+ "noodles-fasta 0.39.0",
+]
+
+[[package]]
 name = "noodles-bed"
 version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c116ff14e3dd3ffa6c58771d1a2ee1205690e1c0fe78b0a3456402eebf44ad27"
 dependencies = [
- "noodles-core",
+ "noodles-core 0.14.0",
 ]
 
 [[package]]
@@ -3166,10 +3223,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "noodles-bgzf"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7dba1c82e9f92c00b23538359e5d191dff7ccb300cf659ee3a835af65c3cd143"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "crossbeam-channel",
+ "flate2",
+ "futures",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
+name = "noodles-bgzf"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13f54d4840fd26ed94103ded9524aa5fdd757255a556f24653d162c0a45c47e8"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "crossbeam-channel",
+ "flate2",
+ "futures",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "noodles-core"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7336c3be652de4e05444c9b12a32331beb5ba3316e8872d92bfdd8ef3b06c282"
+
+[[package]]
+name = "noodles-core"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5a8c6b020d1205abef2b0fab4463a6c5ecc3c8f4d561ca8b0d1a42323376200"
+dependencies = [
+ "bstr",
+]
 
 [[package]]
 name = "noodles-csi"
@@ -3180,21 +3278,22 @@ dependencies = [
  "bit-vec",
  "byteorder",
  "indexmap 2.2.6",
- "noodles-bgzf",
- "noodles-core",
- "tokio",
+ "noodles-bgzf 0.26.0",
+ "noodles-core 0.14.0",
 ]
 
 [[package]]
-name = "noodles-fasta"
-version = "0.32.0"
+name = "noodles-csi"
+version = "0.33.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebb3e83e0f112d3482f5234a1eb219081f12cc3aab38a9eba00ef1846b43b63b"
+checksum = "857fcce273172c7ec188369c0e745e95aefc477a67262133862c9ef3375e56b9"
 dependencies = [
- "bytes",
- "memchr",
- "noodles-bgzf",
- "noodles-core",
+ "bit-vec",
+ "byteorder",
+ "indexmap 2.2.6",
+ "noodles-bgzf 0.29.0",
+ "noodles-core 0.14.0",
+ "tokio",
 ]
 
 [[package]]
@@ -3205,8 +3304,20 @@ checksum = "5e9e953e4e90e6c96e6a384598ebf2ab6d2f5add259ff05a194cf635e892c980"
 dependencies = [
  "bytes",
  "memchr",
- "noodles-bgzf",
- "noodles-core",
+ "noodles-bgzf 0.26.0",
+ "noodles-core 0.14.0",
+]
+
+[[package]]
+name = "noodles-fasta"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3f35c5b39977f95efacb67c3ae4ca00b5229249327bb0e9a980f386cad36d93"
+dependencies = [
+ "bytes",
+ "memchr",
+ "noodles-bgzf 0.30.0",
+ "noodles-core 0.15.0",
 ]
 
 [[package]]
@@ -3216,9 +3327,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14f8ec87fe3630f57d6d8ea24cbc2cbd0bfed1fe66238bda7a7c3fb6a36d3713"
 dependencies = [
  "indexmap 2.2.6",
- "noodles-bgzf",
- "noodles-core",
- "noodles-csi",
+ "noodles-bgzf 0.26.0",
+ "noodles-core 0.14.0",
+ "noodles-csi 0.30.0",
  "percent-encoding",
 ]
 
@@ -3231,9 +3342,24 @@ dependencies = [
  "bit-vec",
  "byteorder",
  "indexmap 2.2.6",
- "noodles-bgzf",
- "noodles-core",
- "noodles-csi",
+ "noodles-bgzf 0.26.0",
+ "noodles-core 0.14.0",
+ "noodles-csi 0.30.0",
+ "tokio",
+]
+
+[[package]]
+name = "noodles-tabix"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "778b5a8cfbe846c7239cdd9f3ba7b9e46a4d46d957822051ae16680713bbd028"
+dependencies = [
+ "bit-vec",
+ "byteorder",
+ "indexmap 2.2.6",
+ "noodles-bgzf 0.29.0",
+ "noodles-core 0.14.0",
+ "noodles-csi 0.33.0",
  "tokio",
 ]
 
@@ -3246,10 +3372,27 @@ dependencies = [
  "futures",
  "indexmap 2.2.6",
  "memchr",
- "noodles-bgzf",
- "noodles-core",
- "noodles-csi",
- "noodles-tabix",
+ "noodles-bgzf 0.26.0",
+ "noodles-core 0.14.0",
+ "noodles-csi 0.30.0",
+ "noodles-tabix 0.36.0",
+ "percent-encoding",
+ "tokio",
+]
+
+[[package]]
+name = "noodles-vcf"
+version = "0.55.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad890dd39fe923d22112ed0c90ed9835b2c196d6a4e711b20a007852ed63ced9"
+dependencies = [
+ "futures",
+ "indexmap 2.2.6",
+ "memchr",
+ "noodles-bgzf 0.29.0",
+ "noodles-core 0.14.0",
+ "noodles-csi 0.33.0",
+ "noodles-tabix 0.39.0",
  "percent-encoding",
  "tokio",
 ]
@@ -3435,7 +3578,7 @@ dependencies = [
  "regex",
  "regex-syntax 0.8.2",
  "structmeta",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -3669,7 +3812,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a41cf62165e97c7f814d2221421dbb9afcbcdb0a88068e5ea206e19951c2cbb5"
 dependencies = [
  "proc-macro2",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -3766,7 +3909,7 @@ dependencies = [
  "prost",
  "prost-types",
  "regex",
- "syn 2.0.51",
+ "syn 2.0.58",
  "tempfile",
  "which",
 ]
@@ -3781,7 +3924,7 @@ dependencies = [
  "itertools 0.11.0",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -3818,6 +3961,18 @@ name = "quick_cache"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58c20af3800cee5134b79a3bd4a3d4b583c16ccfa5f53338f46400851a5b3819"
+dependencies = [
+ "ahash 0.8.11",
+ "equivalent",
+ "hashbrown 0.14.3",
+ "parking_lot",
+]
+
+[[package]]
+name = "quick_cache"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "347e1a588d1de074eeb3c00eadff93db4db65aeb62aee852b1efd0949fe65b6c"
 dependencies = [
  "ahash 0.8.11",
  "equivalent",
@@ -4114,15 +4269,15 @@ dependencies = [
  "regex",
  "relative-path",
  "rustc_version 0.4.0",
- "syn 2.0.51",
+ "syn 2.0.58",
  "unicode-ident",
 ]
 
 [[package]]
 name = "rusqlite"
-version = "0.30.0"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a78046161564f5e7cd9008aff3b2990b3850dc8e0349119b98e8f251e099f24d"
+checksum = "b838eba278d213a8beaf485bd313fd580ca4505a00d5871caeb1457c55322cae"
 dependencies = [
  "bitflags 2.4.2",
  "fallible-iterator 0.3.0",
@@ -4351,14 +4506,12 @@ checksum = "92d43fe69e652f3df9bdc2b85b2854a0825b86e4fb76bc44d945137d053639ca"
 
 [[package]]
 name = "seqrepo"
-version = "0.10.0"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88f98fe096b30d454f0dc995ad206d67356ea23292128380252f8d76b62d4c17"
+checksum = "e9bad563692d6dc960f5a22a77b8efd212fdf38d2c09645246426c96ea615541"
 dependencies = [
  "chrono",
- "noodles-bgzf",
- "noodles-core",
- "noodles-fasta 0.32.0",
+ "noodles",
  "rusqlite",
  "thiserror",
  "tracing",
@@ -4381,7 +4534,7 @@ checksum = "7eb0b34b42edc17f6b7cac84a52a1c5f0e1bb2227e997ca9011ea3dd34e8610b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4444,7 +4597,7 @@ dependencies = [
  "darling 0.20.8",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4652,7 +4805,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "structmeta-derive",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4663,7 +4816,7 @@ checksum = "152a0b65a590ff6c3da95cabe2353ee04e6167c896b28e3b14478c2636c922fc"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4691,7 +4844,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4704,7 +4857,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4726,9 +4879,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.51"
+version = "2.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ab617d94515e94ae53b8406c628598680aa0c9587474ecbe58188f7b345d66c"
+checksum = "44cfb93f38070beee36b3fef7d4f5a16f27751d94b187b666a5cc5e9b0d30687"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4744,7 +4897,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4788,7 +4941,7 @@ checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4880,7 +5033,7 @@ checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -4976,7 +5129,7 @@ checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
@@ -5188,11 +5341,11 @@ dependencies = [
  "log",
  "mehari",
  "multimap 0.10.0",
- "noodles-bgzf",
- "noodles-core",
- "noodles-csi",
- "noodles-tabix",
- "noodles-vcf",
+ "noodles-bgzf 0.30.0",
+ "noodles-core 0.15.0",
+ "noodles-csi 0.33.0",
+ "noodles-tabix 0.39.0",
+ "noodles-vcf 0.55.0",
  "pbjson",
  "pbjson-build",
  "pbjson-types",
@@ -5294,7 +5447,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
  "wasm-bindgen-shared",
 ]
 
@@ -5328,7 +5481,7 @@ checksum = "642f325be6301eb8107a83d12a8ac6c1e1c54345a7ef1a9261962dfefda09e66"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -5600,7 +5753,7 @@ checksum = "9ce1b18ccd8e73a9321186f97e46f9f04b778851177567b1975109d26a08d2a6"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.51",
+ "syn 2.0.58",
 ]
 
 [[package]]
