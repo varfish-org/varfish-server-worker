@@ -68,6 +68,7 @@ clinvar_include_pathogenic: true
 clinvar_include_likely_benign: true
 clinvar_include_likely_pathogenic: true
 clinvar_include_uncertain_significance: true
+clinvar_include_conflicting_classifications: true
 gnomad_exomes_enabled: false
 gnomad_genomes_enabled: false
 inhouse_enabled: false
@@ -87,4 +88,3 @@ inhouse_hemizygous: ~
 helixmtdb_frequency: ~
 helixmtdb_heteroplasmic: ~
 helixmtdb_homoplasmic: ~
-

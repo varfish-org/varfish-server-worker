@@ -74,7 +74,7 @@ impl AnnonarsDbs {
         }
 
         let (clinvar_db, clinvar_meta) = open_rocksdb!(
-            "clinvar-minimal",
+            "clinvar",
             clinvar_minimal,
             "clinvar",
             "meta",
@@ -195,7 +195,8 @@ impl Annotator {
     pub fn query_clinvar_minimal(
         &self,
         seqvar: &SequenceVariant,
-    ) -> Result<Option<annonars::pbs::clinvar::minimal::Record>, anyhow::Error> {
+    ) -> Result<Option<annonars::pbs::clinvar::minimal::ExtractedVcvRecordList>, anyhow::Error>
+    {
         let cf_data = self
             .annonars_dbs
             .clinvar_db

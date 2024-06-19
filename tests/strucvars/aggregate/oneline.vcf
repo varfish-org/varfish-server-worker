@@ -61,4 +61,4 @@
 ##x-varfish-version=<ID=Delly,Name="Delly",Version="1.1.3">
 ##x-varfish-version=<ID=Popdel,Name="Popdel",Version="1.1.2">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	index	father	mother
-1	586412	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=586439;SVLEN=28;callers=Delly	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:59:0:0:11:4:.:.:.:.	0/1:22:0:0:8:2:.:.:.:.	0/1:10:0:0:13:2:.:.:.:.
+1	586412	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=586439;SVLEN=28;callers=Delly	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	/0/1:59:0:0:11:4:.:.:.:.	/0/1:22:0:0:8:2:.:.:.:.	/0/1:10:0:0:13:2:.:.:.:.

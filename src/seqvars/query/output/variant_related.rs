@@ -1,6 +1,6 @@
 //! Variant-related information.
 
-use annonars::pbs::clinvar::minimal::{ClinicalSignificance, ReviewStatus};
+use annonars::pbs::clinvar_data::clinvar_public::AggregateGermlineReviewStatus;
 
 use crate::seqvars::query::{
     annonars::Annotator,
@@ -291,12 +291,10 @@ impl DbIds {
 pub struct Clinvar {
     /// The VCV accession.
     pub vcv: String,
-    /// The RCV accession.
-    pub rcv: String,
     /// The clinical significance.
-    pub significance: String,
+    pub germline_significance_description: String,
     /// The review status.
-    pub review_status: String,
+    pub germline_review_status: AggregateGermlineReviewStatus,
 }
 
 impl Clinvar {
@@ -305,63 +303,64 @@ impl Clinvar {
         seqvar: &SequenceVariant,
         annotator: &Annotator,
     ) -> Result<Option<Self>, anyhow::Error> {
-        annotator
+        let record = annotator
             .query_clinvar_minimal(seqvar)
-            .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?
-            .map(|record| {
-                if let Some(assertion) = record.reference_assertions.first() {
-                    let annonars::pbs::clinvar::minimal::ReferenceAssertion {
-                        rcv,
-                        clinical_significance,
-                        review_status,
-                        ..
-                    } = assertion;
-                    Ok(Self {
-                        vcv: record.vcv.clone(),
-                        rcv: rcv.clone(),
-                        significance: match ClinicalSignificance::try_from(*clinical_significance)
-                            .map_err(|e| {
-                            anyhow::anyhow!("could not convert clinical significance: {}", e)
-                        })? {
-                            ClinicalSignificance::Unknown => "UNKNOWN",
-                            ClinicalSignificance::Pathogenic => "Pathogenic",
-                            ClinicalSignificance::LikelyPathogenic => "Likely pathogenic",
-                            ClinicalSignificance::UncertainSignificance => "Uncertain significance",
-                            ClinicalSignificance::LikelyBenign => "Likely benign",
-                            ClinicalSignificance::Benign => "Benign",
-                        }
-                        .into(),
-                        review_status: match ReviewStatus::try_from(*review_status).map_err(
-                            |e| anyhow::anyhow!("could not convert review status: {}", e),
-                        )? {
-                            ReviewStatus::PracticeUnknown => "UNKNOWN",
-                            ReviewStatus::PracticeGuideline => "practice guideline",
-                            ReviewStatus::ReviewedByExpertPanel => "reviewed by expert panel",
-                            ReviewStatus::CriteriaProvidedMultipleSubmittersNoConflicts => {
-                                "criteria provided, multiple submitters, no conflicts"
-                            }
-                            ReviewStatus::CriteriaProvidedSingleSubmitter => {
-                                "criteria provided, single submitter"
-                            }
-                            ReviewStatus::CriteriaProvidedConflictingInterpretations => {
-                                "criteria provided, conflicting interpretations"
-                            }
-                            ReviewStatus::NoAssertionCriteriaProvided => {
-                                "no assertion criteria provided"
-                            }
-                            ReviewStatus::NoAssertionProvided => "no assertion provided",
-                            ReviewStatus::FlaggedSubmission => "flagged submission",
-                            ReviewStatus::NoClassificationsFromUnflaggedRecords => {
-                                "no classifications from unflagged records"
-                            }
-                        }
-                        .into(),
-                    })
+            .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?;
+        if let Some(record) = record.as_ref() {
+            if record.records.is_empty() {
+                tracing::error!(
+                    "variant {:?} found with empty list in ClinVar (should not happen)",
+                    seqvar
+                );
+                return Ok(None);
+            } else if record.records.len() > 1 {
+                tracing::warn!(
+                    "variant {:?} found list with {} entries, using first",
+                    seqvar,
+                    record.records.len()
+                );
+            }
+            let vcv_record = &record.records[0];
+            let accession = vcv_record.accession.as_ref().expect("no accession?");
+            let vcv = format!("{}.{}", &accession.accession, accession.version);
+
+            if let Some(agc) = vcv_record
+                .classifications
+                .as_ref()
+                .and_then(|c| c.germline_classification.as_ref())
+            {
+                let germline_significance_description = if let Some(description) =
+                    agc.description.as_ref()
+                {
+                    description.clone()
                 } else {
-                    unreachable!("no reference clinvar assertion")
-                }
-            })
-            .transpose()
+                    tracing::error!("variant {:?} has germline classification without description (should not happen)", &seqvar);
+                    return Ok(None);
+                };
+                let germline_review_status = if let Ok(review_status) =
+                    AggregateGermlineReviewStatus::try_from(agc.review_status)
+                {
+                    review_status
+                } else {
+                    tracing::error!("variant {:?} has germline classification with invalid review status (should not happen)", &seqvar);
+                    return Ok(None);
+                };
+
+                Ok(Some(Self {
+                    vcv,
+                    germline_significance_description,
+                    germline_review_status,
+                }))
+            } else {
+                tracing::trace!(
+                    "variant {:?} has no germline classification (likely somatic only)",
+                    &seqvar
+                );
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
     }
 }
 

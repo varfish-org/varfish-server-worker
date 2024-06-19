@@ -324,8 +324,7 @@ mod test {
             }],
         };
 
-        let mut buf = Vec::new();
-        buf.reserve(data.encoded_len());
+        let mut buf = Vec::with_capacity(data.encoded_len());
         data.encode(&mut buf)?;
         std::fs::write(&path_bin, buf)?;
 
