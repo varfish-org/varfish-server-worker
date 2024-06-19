@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.12.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.11.0...v0.12.0) (2024-06-19)
+
+
+### Features
+
+* implement file identifier mappings ([#364](https://github.com/varfish-org/varfish-server-worker/issues/364)) ([#365](https://github.com/varfish-org/varfish-server-worker/issues/365)) ([57db49a](https://github.com/varfish-org/varfish-server-worker/commit/57db49a6f67daa2d69fa24fc1eb887937a390fd8))
+
+
+### Bug Fixes
+
+* noodles and other deps ([#378](https://github.com/varfish-org/varfish-server-worker/issues/378)) ([#379](https://github.com/varfish-org/varfish-server-worker/issues/379)) ([4dc0f94](https://github.com/varfish-org/varfish-server-worker/commit/4dc0f94d33c0bf3ade90eeef42e7c2e367146dde))
+* using custom S3 endpoint ([#362](https://github.com/varfish-org/varfish-server-worker/issues/362)) ([06334e6](https://github.com/varfish-org/varfish-server-worker/commit/06334e66875699e2ad182bb3c3e366bcf3d56c0b))
+
 ## [0.11.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.10.2...v0.11.0) (2024-02-27)
 
 
