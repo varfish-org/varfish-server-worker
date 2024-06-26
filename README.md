@@ -343,26 +343,11 @@ This section is only relevant for developers of `varfish-server-worker`.
 
 ## Development Setup
 
+You will also need to have git LFS installed to get the test databases.
+
 You will need a recent version of protocolbuffers, e.g.:
 
 ```
 # bash utils/install-protoc.sh
 # export PATH=$PATH:$HOME/.local/share/protoc/bin
-```
-
-## GitHub Project Management
-
-We use Terraform for managing the GitHub project settings (as applicable):
-
-```
-$ export GITHUB_OWNER=bihealth
-$ export GITHUB_TOKEN=ghp_<thetoken>
-
-$ cd utils/terraform
-$ terraform init
-$ terraform import github_repository.varfish-sever-worker varfish-sever-worker
-$ terraform validate
-$ terraform fmt
-$ terraform plan
-$ terraform apply
 ```
