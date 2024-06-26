@@ -8,12 +8,11 @@ use crate::common::genotype_to_string;
 #[derive(
     serde::Serialize, serde::Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy,
 )]
+#[serde(rename_all = "kebab-case")]
 pub enum RecessiveMode {
     /// Recessive.
-    #[serde(rename = "recessive")]
     Recessive,
     /// Compound recessive.
-    #[serde(rename = "compound-recessive")]
     CompoundRecessive,
 }
 
@@ -31,16 +30,15 @@ pub enum RecessiveMode {
     Copy,
     Default,
 )]
+#[serde(rename_all = "kebab-case")]
 pub enum FailChoice {
     /// Ignore failure.
     #[default]
-    #[serde(rename = "ignore")]
     Ignore,
     /// Drop whole variant.
     #[serde(rename = "drop-variant")]
     Drop,
     /// Interpret as "no-call".
-    #[serde(rename = "no-call")]
     NoCall,
 }
 
@@ -58,34 +56,26 @@ pub enum FailChoice {
     Copy,
     Default,
 )]
+#[serde(rename_all = "kebab-case")]
 pub enum GenotypeChoice {
     /// Any genotype.
     #[default]
-    #[serde(rename = "any")]
     Any,
     /// Ref. genotype.
-    #[serde(rename = "ref")]
     Ref,
     /// Het. genotype.
-    #[serde(rename = "het")]
     Het,
     /// Hom. genotype.
-    #[serde(rename = "hom")]
     Hom,
     /// Non-hom. genotype.
-    #[serde(rename = "non-hom")]
     NonHom,
     /// Variant genotype.
-    #[serde(rename = "variant")]
     Variant,
     /// Index in comp. het. recessive inheritance.
-    #[serde(rename = "comphet-index")]
     ComphetIndex,
     /// Index in recessive inheritance.
-    #[serde(rename = "recessive-index")]
     RecessiveIndex,
     /// Parent in recessive inheritance.
-    #[serde(rename = "recessive-parent")]
     RecessiveParent,
 }
 
