@@ -6,13 +6,13 @@ pub fn passes(query: &CaseQuery, s: &SequenceVariant) -> Result<bool, anyhow::Er
     let is_mtdna = annonars::common::cli::canonicalize(&s.chrom) == "MT";
 
     if is_mtdna {
-        if q.helixmtdb_enabled
-            && (q.helixmtdb_frequency.is_some()
-                && s.helixmtdb_af() > q.helixmtdb_frequency.expect("tested before")
-                || q.helixmtdb_heteroplasmic.is_some()
-                    && s.helix_het > q.helixmtdb_heteroplasmic.expect("tested before")
-                || q.helixmtdb_homoplasmic.is_some()
-                    && s.helix_hom > q.helixmtdb_homoplasmic.expect("tested before"))
+        if q.helixmtdb.enabled
+            && (q.helixmtdb.frequency.is_some()
+                && s.helixmtdb_af() > q.helixmtdb.frequency.expect("tested before")
+                || q.helixmtdb.heteroplasmic.is_some()
+                    && s.helix_het > q.helixmtdb.heteroplasmic.expect("tested before")
+                || q.helixmtdb.homoplasmic.is_some()
+                    && s.helix_hom > q.helixmtdb.homoplasmic.expect("tested before"))
         {
             tracing::trace!("variant {:?} fails HelixMtDb frequency filter {:?}", s, &q);
             return Ok(false);
@@ -343,11 +343,15 @@ mod test {
         #[case] query_helix_homoplasmic: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
+        use crate::seqvars::query::schema::HelixMtDbOptions;
+
         let query = CaseQuery {
-            helixmtdb_enabled: query_helix_enabled,
-            helixmtdb_frequency: query_helix_frequency,
-            helixmtdb_heteroplasmic: query_helix_heteroplasmic,
-            helixmtdb_homoplasmic: query_helix_homoplasmic,
+            helixmtdb: HelixMtDbOptions {
+                enabled: query_helix_enabled,
+                frequency: query_helix_frequency,
+                heteroplasmic: query_helix_heteroplasmic,
+                homoplasmic: query_helix_homoplasmic,
+            },
             ..Default::default()
         };
         let seq_var = SequenceVariant {

@@ -196,6 +196,40 @@ pub struct GnomadOptions {
     pub genomes_hemizygous: Option<i32>,
 }
 
+serde_with::with_prefix!(prefix_inhouse "inhouse_");
+#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
+#[serde(default)]
+/// TODO: currently unused?
+pub struct InhouseOptions {
+    /// Whether to enable filtration by 1000 Genomes.
+    pub enabled: bool,
+    /// Maximal number of in-house carriers.
+    pub carriers: Option<i32>,
+    /// Maximal number of in-house heterozygous carriers.
+    pub heterozygous: Option<i32>,
+    /// Maximal number of in-house homozygous carriers.
+    pub homozygous: Option<i32>,
+    /// Maximal number of in-house hemizygous carriers.
+    pub hemizygous: Option<i32>,
+}
+
+serde_with::with_prefix!(prefix_helixmtdb "helixmtdb_");
+#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
+#[serde(default)]
+/// TODO: currently unused?
+pub struct HelixMtDbOptions {
+    /// Whether to enable filtration by mtDB.
+    pub enabled: bool,
+    /// Maximal frequency in HelixMtDb
+    pub frequency: Option<f32>,
+    /// Maximal number of heterozygous carriers in HelixMtDb.
+    pub heteroplasmic: Option<i32>,
+    /// Maximal number of homozygous carriers in HelixMtDb.
+    pub homoplasmic: Option<i32>,
+}
+
+
+
 /// Data structure with a single query.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -229,35 +263,21 @@ pub struct CaseQuery {
     /// List of genomic regions to limit restrict the resulting variants to.
     pub genomic_regions: Option<Vec<GenomicRegion>>,
 
+    /// TODO: wanted schema is defined in issue, emily reading comprehension 10/10
+
     /// Wether to require ClinVar membership.
     pub require_in_clinvar: bool,
-
+    /// ClinVar related filter options.
     #[serde(flatten, with = "prefix_clinvar")]
     pub clinvar: ClinVarOptions,
-
+    /// GnomAD related filter options.
     #[serde(flatten, with = "prefix_gnomad")]
     pub gnomad: GnomadOptions,
-
-    /// Whether to enable filtration by 1000 Genomes.
-    pub inhouse_enabled: bool,
-    /// Whether to enable filtration by mtDB.
-    pub helixmtdb_enabled: bool,
-
-    /// Maximal number of in-house carriers.
-    pub inhouse_carriers: Option<i32>,
-    /// Maximal number of in-house heterozygous carriers.
-    pub inhouse_heterozygous: Option<i32>,
-    /// Maximal number of in-house homozygous carriers.
-    pub inhouse_homozygous: Option<i32>,
-    /// Maximal number of in-house hemizygous carriers.
-    pub inhouse_hemizygous: Option<i32>,
-
-    /// Maximal frequency in HelixMtDb
-    pub helixmtdb_frequency: Option<f32>,
-    /// Maximal number of heterozygous carriers in HelixMtDb.
-    pub helixmtdb_heteroplasmic: Option<i32>,
-    /// Maximal number of homozygous carriers in HelixMtDb.
-    pub helixmtdb_homoplasmic: Option<i32>,
+    /// Inhouse related filter options. TODO BETTER COMMENT
+    #[serde(flatten, with = "prefix_inhouse")]
+    pub inhouse: InhouseOptions,
+    #[serde(flatten, with = "prefix_helixmtdb")]
+    pub helixmtdb: HelixMtDbOptions,
 }
 
 impl Default for ClinVarOptions {
@@ -278,8 +298,7 @@ impl Default for CaseQuery {
     fn default() -> Self {
         Self {
             consequences: mehari::annotate::seqvars::ann::Consequence::all(),
-            inhouse_enabled: Default::default(),
-            helixmtdb_enabled: Default::default(),
+            helixmtdb: Default::default(),
             quality: Default::default(),
             genotype: Default::default(),
             transcripts_coding: true,
@@ -293,13 +312,7 @@ impl Default for CaseQuery {
             require_in_clinvar: Default::default(),
             clinvar: Default::default(),
             gnomad: Default::default(),
-            inhouse_carriers: Default::default(),
-            inhouse_heterozygous: Default::default(),
-            inhouse_homozygous: Default::default(),
-            inhouse_hemizygous: Default::default(),
-            helixmtdb_frequency: Default::default(),
-            helixmtdb_heteroplasmic: Default::default(),
-            helixmtdb_homoplasmic: Default::default(),
+            inhouse: Default::default(),
         }
     }
 }

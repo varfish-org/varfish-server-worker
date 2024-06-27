@@ -80,8 +80,6 @@ clinvar_include_uncertain_significance: false
 clinvar_include_conflicting_classifications: true
 gnomad_exomes_enabled: true
 gnomad_genomes_enabled: true
-inhouse_enabled: true
-helixmtdb_enabled: true
 gnomad_exomes_frequency: 0.002
 gnomad_exomes_heterozygous: 20
 gnomad_exomes_homozygous: 0
@@ -90,10 +88,12 @@ gnomad_genomes_frequency: 0.002
 gnomad_genomes_heterozygous: 4
 gnomad_genomes_homozygous: 0
 gnomad_genomes_hemizygous: ~
+inhouse_enabled: true
 inhouse_carriers: 20
 inhouse_heterozygous: ~
 inhouse_homozygous: ~
 inhouse_hemizygous: ~
+helixmtdb_enabled: true
 helixmtdb_frequency: 0.01
 helixmtdb_heteroplasmic: ~
 helixmtdb_homoplasmic: ~
