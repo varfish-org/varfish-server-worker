@@ -17,39 +17,39 @@ pub fn passes(query: &CaseQuery, s: &SequenceVariant) -> Result<bool, anyhow::Er
             tracing::trace!("variant {:?} fails HelixMtDb frequency filter {:?}", s, &q);
             return Ok(false);
         }
-    } else if q.gnomad_exomes_enabled
-        && (q.gnomad_exomes_frequency.is_some()
-            && s.gnomad_exomes_af() > q.gnomad_exomes_frequency.expect("tested before")
-            || q.gnomad_exomes_heterozygous.is_some()
-                && s.gnomad_exomes_het > q.gnomad_exomes_heterozygous.expect("tested before")
-            || q.gnomad_exomes_homozygous.is_some()
-                && s.gnomad_exomes_hom > q.gnomad_exomes_homozygous.expect("tested before")
-            || q.gnomad_exomes_hemizygous.is_some()
-                && s.gnomad_exomes_hemi > q.gnomad_exomes_hemizygous.expect("tested before"))
+    } else if q.gnomad.exomes_enabled
+        && (q.gnomad.exomes_frequency.is_some()
+            && s.gnomad_exomes_af() > q.gnomad.exomes_frequency.expect("tested before")
+            || q.gnomad.exomes_heterozygous.is_some()
+                && s.gnomad_exomes_het > q.gnomad.exomes_heterozygous.expect("tested before")
+            || q.gnomad.exomes_homozygous.is_some()
+                && s.gnomad_exomes_hom > q.gnomad.exomes_homozygous.expect("tested before")
+            || q.gnomad.exomes_hemizygous.is_some()
+                && s.gnomad_exomes_hemi > q.gnomad.exomes_hemizygous.expect("tested before"))
     {
         tracing::trace!(
             "variant {:?} fails gnomAD exomes frequency filter {:?}",
             s,
-            &q.gnomad_exomes_frequency
+            &q.gnomad.exomes_frequency
         );
         return Ok(false);
     }
 
-    if q.gnomad_genomes_enabled
-        && (q.gnomad_genomes_frequency.is_some()
-            && s.gnomad_genomes_af() > q.gnomad_genomes_frequency.expect("tested before")
-            || q.gnomad_genomes_heterozygous.is_some()
-                && s.gnomad_genomes_het > q.gnomad_genomes_heterozygous.expect("tested before")
-            || q.gnomad_genomes_homozygous.is_some()
-                && s.gnomad_genomes_hom > q.gnomad_genomes_homozygous.expect("tested before")
+    if q.gnomad.genomes_enabled
+        && (q.gnomad.genomes_frequency.is_some()
+            && s.gnomad_genomes_af() > q.gnomad.genomes_frequency.expect("tested before")
+            || q.gnomad.genomes_heterozygous.is_some()
+                && s.gnomad_genomes_het > q.gnomad.genomes_heterozygous.expect("tested before")
+            || q.gnomad.genomes_homozygous.is_some()
+                && s.gnomad_genomes_hom > q.gnomad.genomes_homozygous.expect("tested before")
             || !is_mtdna
-                && q.gnomad_genomes_hemizygous.is_some()
-                && s.gnomad_genomes_hemi > q.gnomad_genomes_hemizygous.expect("tested before"))
+                && q.gnomad.genomes_hemizygous.is_some()
+                && s.gnomad_genomes_hemi > q.gnomad.genomes_hemizygous.expect("tested before"))
     {
         tracing::trace!(
             "variant {:?} fails gnomAD genomes frequency filter {:?}",
             s,
-            &q.gnomad_genomes_frequency
+            &q.gnomad.genomes_frequency
         );
         return Ok(false);
     }
@@ -130,12 +130,17 @@ mod test {
         #[case] query_gnomad_exomes_hemizygous: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
+        use crate::seqvars::query::schema::GnomadOptions;
+
         let query = CaseQuery {
-            gnomad_exomes_enabled: query_gnomad_exomes_enabled,
-            gnomad_exomes_frequency: query_gnomad_exomes_frequency,
-            gnomad_exomes_heterozygous: query_gnomad_exomes_heterozygous,
-            gnomad_exomes_homozygous: query_gnomad_exomes_homozygous,
-            gnomad_exomes_hemizygous: query_gnomad_exomes_hemizygous,
+            gnomad: GnomadOptions {
+                exomes_enabled: query_gnomad_exomes_enabled,
+                exomes_frequency: query_gnomad_exomes_frequency,
+                exomes_heterozygous: query_gnomad_exomes_heterozygous,
+                exomes_homozygous: query_gnomad_exomes_homozygous,
+                exomes_hemizygous: query_gnomad_exomes_hemizygous,
+                ..Default::default()
+            },
             ..Default::default()
         };
         let seq_var = SequenceVariant {
@@ -241,12 +246,17 @@ mod test {
         #[case] query_gnomad_genomes_hemizygous: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
+        use crate::seqvars::query::schema::GnomadOptions;
+
         let query = CaseQuery {
-            gnomad_genomes_enabled: query_gnomad_genomes_enabled,
-            gnomad_genomes_frequency: query_gnomad_genomes_frequency,
-            gnomad_genomes_heterozygous: query_gnomad_genomes_heterozygous,
-            gnomad_genomes_homozygous: query_gnomad_genomes_homozygous,
-            gnomad_genomes_hemizygous: query_gnomad_genomes_hemizygous,
+            gnomad: GnomadOptions {
+                genomes_enabled: query_gnomad_genomes_enabled,
+                genomes_frequency: query_gnomad_genomes_frequency,
+                genomes_heterozygous: query_gnomad_genomes_heterozygous,
+                genomes_homozygous: query_gnomad_genomes_homozygous,
+                genomes_hemizygous: query_gnomad_genomes_hemizygous,
+                ..Default::default()
+            },
             ..Default::default()
         };
         let seq_var = SequenceVariant {
@@ -424,11 +434,16 @@ mod test {
         #[case] query_gnomad_genomes_homoplasmic: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
+        use crate::seqvars::query::schema::GnomadOptions;
+
         let query = CaseQuery {
-            gnomad_genomes_enabled: query_gnomad_genomes_enabled,
-            gnomad_genomes_frequency: query_gnomad_genomes_frequency,
-            gnomad_genomes_heterozygous: query_gnomad_genomes_heteroplasmic,
-            gnomad_genomes_homozygous: query_gnomad_genomes_homoplasmic,
+            gnomad: GnomadOptions {
+                genomes_enabled: query_gnomad_genomes_enabled,
+                genomes_frequency: query_gnomad_genomes_frequency,
+                genomes_heterozygous: query_gnomad_genomes_heteroplasmic,
+                genomes_homozygous: query_gnomad_genomes_homoplasmic,
+                ..Default::default()
+            },
             ..Default::default()
         };
         let seq_var = SequenceVariant {

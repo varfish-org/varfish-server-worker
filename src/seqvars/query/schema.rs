@@ -150,6 +150,52 @@ pub struct GenomicRegion {
     pub range: Option<Range>,
 }
 
+serde_with::with_prefix!(prefix_clinvar "clinvar_");
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
+#[serde(default)]
+pub struct ClinVarOptions {
+    /// Whether to include benign ClinVar variants.
+    pub include_benign: bool,
+    /// Whether to include pathogenic ClinVar variants.
+    pub include_pathogenic: bool,
+    /// Whether to include likely benign ClinVar variants.
+    pub include_likely_benign: bool,
+    /// Whether to include likely pathogenic ClinVar variants.
+    pub include_likely_pathogenic: bool,
+    /// Whether to include uncertain significance ClinVar variants.
+    pub include_uncertain_significance: bool,
+    /// Whether to include conflicting interpretation ClinVar variants.
+    pub include_conflicting_classifications: bool,
+}
+
+serde_with::with_prefix!(prefix_gnomad "gnomad_");
+#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
+#[serde(default)]
+pub struct GnomadOptions {
+    /// Whether to enable filtration by gnomAD exomes.
+    pub exomes_enabled: bool,
+    /// Whether to enable filtration by gnomAD genomes
+    pub genomes_enabled: bool,
+
+    /// Maximal frequency in gnomAD exomes.
+    pub exomes_frequency: Option<f32>,
+    /// Maximal number of heterozygous carriers in gnomAD exomes.
+    pub exomes_heterozygous: Option<i32>,
+    /// Maximal number of homozygous carriers in gnomAD exomes.
+    pub exomes_homozygous: Option<i32>,
+    /// Maximal number of hemizygous carriers in gnomAD exomes.
+    pub exomes_hemizygous: Option<i32>,
+
+    /// Maximal frequency in gnomAD genomes.
+    pub genomes_frequency: Option<f32>,
+    /// Maximal number of heterozygous carriers in gnomAD genomes.
+    pub genomes_heterozygous: Option<i32>,
+    /// Maximal number of homozygous carriers in gnomAD genomes.
+    pub genomes_homozygous: Option<i32>,
+    /// Maximal number of hemizygous carriers in gnomAD genomes.
+    pub genomes_hemizygous: Option<i32>,
+}
+
 /// Data structure with a single query.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -185,45 +231,17 @@ pub struct CaseQuery {
 
     /// Wether to require ClinVar membership.
     pub require_in_clinvar: bool,
-    /// Whether to include benign ClinVar variants.
-    pub clinvar_include_benign: bool,
-    /// Whether to include pathogenic ClinVar variants.
-    pub clinvar_include_pathogenic: bool,
-    /// Whether to include likely benign ClinVar variants.
-    pub clinvar_include_likely_benign: bool,
-    /// Whether to include likely pathogenic ClinVar variants.
-    pub clinvar_include_likely_pathogenic: bool,
-    /// Whether to include uncertain significance ClinVar variants.
-    pub clinvar_include_uncertain_significance: bool,
-    /// Whether to include conflicting interpretation ClinVar variants.
-    pub clinvar_include_conflicting_classifications: bool,
 
-    /// Whether to enable filtration by gnomAD exomes.
-    pub gnomad_exomes_enabled: bool,
-    /// Whether to enable filtration by gnomAD genomes
-    pub gnomad_genomes_enabled: bool,
+    #[serde(flatten, with = "prefix_clinvar")]
+    pub clinvar: ClinVarOptions,
+
+    #[serde(flatten, with = "prefix_gnomad")]
+    pub gnomad: GnomadOptions,
+
     /// Whether to enable filtration by 1000 Genomes.
     pub inhouse_enabled: bool,
     /// Whether to enable filtration by mtDB.
     pub helixmtdb_enabled: bool,
-
-    /// Maximal frequency in gnomAD exomes.
-    pub gnomad_exomes_frequency: Option<f32>,
-    /// Maximal number of heterozygous carriers in gnomAD exomes.
-    pub gnomad_exomes_heterozygous: Option<i32>,
-    /// Maximal number of homozygous carriers in gnomAD exomes.
-    pub gnomad_exomes_homozygous: Option<i32>,
-    /// Maximal number of hemizygous carriers in gnomAD exomes.
-    pub gnomad_exomes_hemizygous: Option<i32>,
-
-    /// Maximal frequency in gnomAD genomes.
-    pub gnomad_genomes_frequency: Option<f32>,
-    /// Maximal number of heterozygous carriers in gnomAD genomes.
-    pub gnomad_genomes_heterozygous: Option<i32>,
-    /// Maximal number of homozygous carriers in gnomAD genomes.
-    pub gnomad_genomes_homozygous: Option<i32>,
-    /// Maximal number of hemizygous carriers in gnomAD genomes.
-    pub gnomad_genomes_hemizygous: Option<i32>,
 
     /// Maximal number of in-house carriers.
     pub inhouse_carriers: Option<i32>,
@@ -242,13 +260,24 @@ pub struct CaseQuery {
     pub helixmtdb_homoplasmic: Option<i32>,
 }
 
+impl Default for ClinVarOptions {
+    fn default() -> Self {
+        Self {
+            include_benign: true,
+            include_pathogenic: true,
+            include_likely_benign: true,
+            include_likely_pathogenic: true,
+            include_uncertain_significance: true,
+            include_conflicting_classifications: true,
+        }
+    }
+}
+
 impl Default for CaseQuery {
     /// Returns default values for a `CaseQuery` which makes all variants pass.
     fn default() -> Self {
         Self {
             consequences: mehari::annotate::seqvars::ann::Consequence::all(),
-            gnomad_exomes_enabled: Default::default(),
-            gnomad_genomes_enabled: Default::default(),
             inhouse_enabled: Default::default(),
             helixmtdb_enabled: Default::default(),
             quality: Default::default(),
@@ -262,20 +291,8 @@ impl Default for CaseQuery {
             gene_allowlist: Default::default(),
             genomic_regions: Default::default(),
             require_in_clinvar: Default::default(),
-            clinvar_include_benign: true,
-            clinvar_include_pathogenic: true,
-            clinvar_include_likely_benign: true,
-            clinvar_include_likely_pathogenic: true,
-            clinvar_include_uncertain_significance: true,
-            clinvar_include_conflicting_classifications: true,
-            gnomad_exomes_frequency: Default::default(),
-            gnomad_exomes_heterozygous: Default::default(),
-            gnomad_exomes_homozygous: Default::default(),
-            gnomad_exomes_hemizygous: Default::default(),
-            gnomad_genomes_frequency: Default::default(),
-            gnomad_genomes_heterozygous: Default::default(),
-            gnomad_genomes_homozygous: Default::default(),
-            gnomad_genomes_hemizygous: Default::default(),
+            clinvar: Default::default(),
+            gnomad: Default::default(),
             inhouse_carriers: Default::default(),
             inhouse_heterozygous: Default::default(),
             inhouse_homozygous: Default::default(),
@@ -293,23 +310,27 @@ impl CaseQuery {
         self.genotype.values().any(|gt_choice| {
             matches!(
                 gt_choice,
-                Some(GenotypeChoice::ComphetIndex)
-                    | Some(GenotypeChoice::RecessiveIndex)
-                    | Some(GenotypeChoice::RecessiveParent)
+                Some(
+                    GenotypeChoice::ComphetIndex
+                        | GenotypeChoice::RecessiveIndex
+                        | GenotypeChoice::RecessiveParent
+                )
             )
         })
     }
 
     /// Returns name of the recessive index sample.
     pub fn index_sample(&self) -> Option<String> {
-        self.genotype
-            .iter()
-            .find_map(|(name, gt_choice)| match gt_choice {
-                Some(GenotypeChoice::ComphetIndex) | Some(GenotypeChoice::RecessiveIndex) => {
-                    Some(name.clone())
+        for (name, gt_choice) in &self.genotype {
+            match gt_choice {
+                Some(GenotypeChoice::ComphetIndex | GenotypeChoice::RecessiveIndex) => {
+                    return Some(name.clone())
                 }
-                _ => None,
-            })
+                _ => continue,
+            }
+        }
+
+        None
     }
 }
 /// Information on the call as written out by ingest.

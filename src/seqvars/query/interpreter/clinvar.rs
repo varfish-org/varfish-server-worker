@@ -41,19 +41,19 @@ pub fn passes(
             .unwrap_or_default();
 
         let result = match description.to_lowercase().as_str() {
-            "benign" => query.clinvar_include_benign,
+            "benign" => query.clinvar.include_benign,
             "benign/likely benign" => {
-                query.clinvar_include_benign || query.clinvar_include_likely_benign
+                query.clinvar.include_benign || query.clinvar.include_likely_benign
             }
-            "likely benign" => query.clinvar_include_likely_benign,
-            "pathogenic" => query.clinvar_include_pathogenic,
+            "likely benign" => query.clinvar.include_likely_benign,
+            "pathogenic" => query.clinvar.include_pathogenic,
             "pathogenic/likely pathogenic" => {
-                query.clinvar_include_pathogenic || query.clinvar_include_likely_pathogenic
+                query.clinvar.include_pathogenic || query.clinvar.include_likely_pathogenic
             }
-            "likely pathogenic" => query.clinvar_include_likely_pathogenic,
-            "uncertain significance" => query.clinvar_include_uncertain_significance,
+            "likely pathogenic" => query.clinvar.include_likely_pathogenic,
+            "uncertain significance" => query.clinvar.include_uncertain_significance,
             "conflicting classifications of pathogenicity" => {
-                query.clinvar_include_uncertain_significance
+                query.clinvar.include_uncertain_significance
             }
             _ => {
                 // We could also downtone this to debug.
