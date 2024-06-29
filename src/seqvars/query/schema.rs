@@ -168,6 +168,23 @@ pub struct ClinVarOptions {
     pub include_conflicting_classifications: bool,
 }
 
+serde_with::with_prefix!(prefix_inhouse "inhouse_");
+#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
+#[serde(default)]
+/// TODO: currently unused?
+pub struct InhouseFrequencyOptions {
+    /// Whether to enable filtration by 1000 Genomes.
+    pub enabled: bool,
+    /// Maximal number of in-house carriers.
+    pub carriers: Option<i32>,
+    /// Maximal number of in-house heterozygous carriers.
+    pub heterozygous: Option<i32>,
+    /// Maximal number of in-house homozygous carriers.
+    pub homozygous: Option<i32>,
+    /// Maximal number of in-house hemizygous carriers.
+    pub hemizygous: Option<i32>,
+}
+
 serde_with::with_prefix!(prefix_gnomad "gnomad_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -196,23 +213,6 @@ pub struct GnomadOptions {
     pub genomes_hemizygous: Option<i32>,
 }
 
-serde_with::with_prefix!(prefix_inhouse "inhouse_");
-#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
-#[serde(default)]
-/// TODO: currently unused?
-pub struct InhouseOptions {
-    /// Whether to enable filtration by 1000 Genomes.
-    pub enabled: bool,
-    /// Maximal number of in-house carriers.
-    pub carriers: Option<i32>,
-    /// Maximal number of in-house heterozygous carriers.
-    pub heterozygous: Option<i32>,
-    /// Maximal number of in-house homozygous carriers.
-    pub homozygous: Option<i32>,
-    /// Maximal number of in-house hemizygous carriers.
-    pub hemizygous: Option<i32>,
-}
-
 serde_with::with_prefix!(prefix_helixmtdb "helixmtdb_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -228,7 +228,14 @@ pub struct HelixMtDbOptions {
     pub homoplasmic: Option<i32>,
 }
 
-
+#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
+#[serde(default)]
+pub struct PopulationFrequencyOptions {
+    #[serde(flatten, with = "prefix_gnomad")]
+    pub gnomad: GnomadOptions,
+    #[serde(flatten, with = "prefix_helixmtdb")]
+    pub helixmtdb: HelixMtDbOptions,
+}
 
 /// Data structure with a single query.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
@@ -242,10 +249,15 @@ pub struct CaseQuery {
     /// Genotype choice for each individual.
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
 
+    /// TODO v move to transcriptRealated
     /// Whether to include coding transcripts.
     pub transcripts_coding: bool,
     /// Whether to include non-coding transcripts.
     pub transcripts_noncoding: bool,
+    /// Maximal distance to next exon, if any.
+    pub max_exon_dist: Option<i32>,
+
+    /// TODO v move to varianttyperelated
 
     /// Whether to include SNVs.
     pub var_type_snv: bool,
@@ -254,8 +266,7 @@ pub struct CaseQuery {
     /// Whether to include MNVs.
     pub var_type_mnv: bool,
 
-    /// Maximal distance to next exon, if any.
-    pub max_exon_dist: Option<i32>,
+    /// TODO v Move to locusRelated
 
     /// List of HGNC symbols, HGNC:<ID>s, ENSG<ID>s, or NCBI Gene IDs to restrict
     /// the resulting variants to.
@@ -270,14 +281,15 @@ pub struct CaseQuery {
     /// ClinVar related filter options.
     #[serde(flatten, with = "prefix_clinvar")]
     pub clinvar: ClinVarOptions,
-    /// GnomAD related filter options.
-    #[serde(flatten, with = "prefix_gnomad")]
-    pub gnomad: GnomadOptions,
+
+    /// PopulationFrequency related filter options
+    #[serde(flatten)]
+    pub population_freqeuecy: PopulationFrequencyOptions,
+
+
     /// Inhouse related filter options. TODO BETTER COMMENT
     #[serde(flatten, with = "prefix_inhouse")]
-    pub inhouse: InhouseOptions,
-    #[serde(flatten, with = "prefix_helixmtdb")]
-    pub helixmtdb: HelixMtDbOptions,
+    pub inhouse: InhouseFrequencyOptions,
 }
 
 impl Default for ClinVarOptions {
@@ -298,7 +310,7 @@ impl Default for CaseQuery {
     fn default() -> Self {
         Self {
             consequences: mehari::annotate::seqvars::ann::Consequence::all(),
-            helixmtdb: Default::default(),
+            population_freqeuecy: Default::default(),
             quality: Default::default(),
             genotype: Default::default(),
             transcripts_coding: true,
@@ -311,7 +323,6 @@ impl Default for CaseQuery {
             genomic_regions: Default::default(),
             require_in_clinvar: Default::default(),
             clinvar: Default::default(),
-            gnomad: Default::default(),
             inhouse: Default::default(),
         }
     }
