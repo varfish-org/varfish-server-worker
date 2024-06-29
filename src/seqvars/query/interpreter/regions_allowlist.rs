@@ -2,7 +2,7 @@ use crate::seqvars::query::schema::{CaseQuery, GenomicRegion, Range, SequenceVar
 
 /// Determine whether the `SequenceVariant` passes the regions allowlist filter.
 pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> bool {
-    if let Some(region_allowlist) = &query.genomic_regions {
+    if let Some(region_allowlist) = &query.locus.genomic_regions {
         if region_allowlist.is_empty() {
             true
         } else {

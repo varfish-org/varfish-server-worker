@@ -237,6 +237,38 @@ pub struct PopulationFrequencyOptions {
     pub helixmtdb: HelixMtDbOptions,
 }
 
+serde_with::with_prefix!(prefix_var_type "var_type_");
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
+#[serde(default)]
+pub struct VariantTypeOptions {
+    /// Whether to include SNVs.
+    pub snv: bool,
+    /// Whether to include indels.
+    pub indel: bool,
+    /// Whether to include MNVs.
+    pub mnv: bool,
+}
+
+impl Default for VariantTypeOptions {
+    fn default() -> Self {
+        VariantTypeOptions {
+            snv: true,
+            indel: true,
+            mnv: true,
+        }
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
+#[serde(default)]
+pub struct LocusRelatedOptions {
+    /// List of HGNC symbols, HGNC:<ID>s, ENSG<ID>s, or NCBI Gene IDs to restrict
+    /// the resulting variants to.
+    pub gene_allowlist: Option<Vec<String>>,
+    /// List of genomic regions to limit restrict the resulting variants to.
+    pub genomic_regions: Option<Vec<GenomicRegion>>,
+}
+
 /// Data structure with a single query.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -257,25 +289,15 @@ pub struct CaseQuery {
     /// Maximal distance to next exon, if any.
     pub max_exon_dist: Option<i32>,
 
-    /// TODO v move to varianttyperelated
+    /// TODO: comment
+    #[serde(flatten, with = "prefix_var_type")]
+    pub var_type: VariantTypeOptions,
 
-    /// Whether to include SNVs.
-    pub var_type_snv: bool,
-    /// Whether to include indels.
-    pub var_type_indel: bool,
-    /// Whether to include MNVs.
-    pub var_type_mnv: bool,
+    /// TODO comment
+    #[serde(flatten)]
+    pub locus: LocusRelatedOptions,
 
-    /// TODO v Move to locusRelated
-
-    /// List of HGNC symbols, HGNC:<ID>s, ENSG<ID>s, or NCBI Gene IDs to restrict
-    /// the resulting variants to.
-    pub gene_allowlist: Option<Vec<String>>,
-    /// List of genomic regions to limit restrict the resulting variants to.
-    pub genomic_regions: Option<Vec<GenomicRegion>>,
-
-    /// TODO: wanted schema is defined in issue, emily reading comprehension 10/10
-
+    // TODO v moving this into ClinVarOptions without making things meh seems to be annoying
     /// Wether to require ClinVar membership.
     pub require_in_clinvar: bool,
     /// ClinVar related filter options.
@@ -285,7 +307,6 @@ pub struct CaseQuery {
     /// PopulationFrequency related filter options
     #[serde(flatten)]
     pub population_freqeuecy: PopulationFrequencyOptions,
-
 
     /// Inhouse related filter options. TODO BETTER COMMENT
     #[serde(flatten, with = "prefix_inhouse")]
@@ -315,12 +336,9 @@ impl Default for CaseQuery {
             genotype: Default::default(),
             transcripts_coding: true,
             transcripts_noncoding: true,
-            var_type_snv: true,
-            var_type_indel: true,
-            var_type_mnv: true,
+            var_type: Default::default(),
             max_exon_dist: Default::default(),
-            gene_allowlist: Default::default(),
-            genomic_regions: Default::default(),
+            locus: Default::default(),
             require_in_clinvar: Default::default(),
             clinvar: Default::default(),
             inhouse: Default::default(),

@@ -520,7 +520,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     trace_rss_now();
 
     tracing::info!("Translating gene allow list...");
-    let hgnc_allowlist = if let Some(gene_allowlist) = &query.gene_allowlist {
+    let hgnc_allowlist = if let Some(gene_allowlist) = &query.locus.gene_allowlist {
         if gene_allowlist.is_empty() {
             None
         } else {
