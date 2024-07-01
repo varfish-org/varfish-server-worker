@@ -269,6 +269,27 @@ pub struct LocusRelatedOptions {
     pub genomic_regions: Option<Vec<GenomicRegion>>,
 }
 
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
+#[serde(default)]
+pub struct TranscriptOptions {
+    /// Whether to include coding transcripts.
+    pub transcripts_coding: bool,
+    /// Whether to include non-coding transcripts.
+    pub transcripts_noncoding: bool,
+    /// Maximal distance to next exon, if any.
+    pub max_exon_dist: Option<i32>,
+}
+
+impl Default for TranscriptOptions {
+    fn default() -> Self {
+        TranscriptOptions {
+            transcripts_coding: true,
+            transcripts_noncoding: true,
+            max_exon_dist: Default::default(),
+        }
+    }
+}
+
 /// Data structure with a single query.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -281,13 +302,9 @@ pub struct CaseQuery {
     /// Genotype choice for each individual.
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
 
-    /// TODO v move to transcriptRealated
-    /// Whether to include coding transcripts.
-    pub transcripts_coding: bool,
-    /// Whether to include non-coding transcripts.
-    pub transcripts_noncoding: bool,
-    /// Maximal distance to next exon, if any.
-    pub max_exon_dist: Option<i32>,
+    /// TODO: comment
+    #[serde(flatten)]
+    pub transcript: TranscriptOptions,
 
     /// TODO: comment
     #[serde(flatten, with = "prefix_var_type")]
@@ -334,10 +351,8 @@ impl Default for CaseQuery {
             population_freqeuecy: Default::default(),
             quality: Default::default(),
             genotype: Default::default(),
-            transcripts_coding: true,
-            transcripts_noncoding: true,
+            transcript: Default::default(),
             var_type: Default::default(),
-            max_exon_dist: Default::default(),
             locus: Default::default(),
             require_in_clinvar: Default::default(),
             clinvar: Default::default(),
