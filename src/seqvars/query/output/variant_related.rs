@@ -398,20 +398,20 @@ impl Frequency {
                 .gnomad_genomes(
                     NuclearFrequency::new(
                         seqvar.gnomad_genomes_af(),
-                        seqvar.gnomad_genomes_an,
-                        seqvar.gnomad_genomes_het,
-                        seqvar.gnomad_genomes_hom,
-                        seqvar.gnomad_genomes_hemi,
+                        seqvar.population_frequencies.gnomad.genomes_an,
+                        seqvar.population_frequencies.gnomad.genomes_het,
+                        seqvar.population_frequencies.gnomad.genomes_hom,
+                        seqvar.population_frequencies.gnomad.genomes_hemi,
                     )
                     .some_unless_empty(),
                 )
                 .gnomad_exomes(
                     NuclearFrequency::new(
                         seqvar.gnomad_exomes_af(),
-                        seqvar.gnomad_exomes_an,
-                        seqvar.gnomad_exomes_het,
-                        seqvar.gnomad_exomes_hom,
-                        seqvar.gnomad_exomes_hemi,
+                        seqvar.population_frequencies.gnomad.exomes_an,
+                        seqvar.population_frequencies.gnomad.exomes_het,
+                        seqvar.population_frequencies.gnomad.exomes_hom,
+                        seqvar.population_frequencies.gnomad.exomes_hemi,
                     )
                     .some_unless_empty(),
                 )
@@ -421,18 +421,18 @@ impl Frequency {
                 .gnomad_mtdna(
                     MtdnaFrequency::new(
                         seqvar.gnomad_genomes_af(),
-                        seqvar.gnomad_genomes_an,
-                        seqvar.gnomad_genomes_het,
-                        seqvar.gnomad_genomes_hom,
+                        seqvar.population_frequencies.gnomad.genomes_an,
+                        seqvar.population_frequencies.gnomad.genomes_het,
+                        seqvar.population_frequencies.gnomad.genomes_hom,
                     )
                     .some_unless_empty(),
                 )
                 .helixmtdb(
                     MtdnaFrequency::new(
                         seqvar.helixmtdb_af(),
-                        seqvar.helix_an,
-                        seqvar.helix_het,
-                        seqvar.helix_hom,
+                        seqvar.population_frequencies.helixmtdb.an,
+                        seqvar.population_frequencies.helixmtdb.het,
+                        seqvar.population_frequencies.helixmtdb.hom,
                     )
                     .some_unless_empty(),
                 )

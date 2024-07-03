@@ -407,6 +407,50 @@ pub struct CallInfo {
     pub phasing_id: Option<i32>,
 }
 
+// serde_with::with_prefix!(prefix_gnomad "gnomad_"); < already declared earlier
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
+pub struct Gnomads {
+    /// Number of alleles in gnomAD exomes (not for chrMT).
+    pub exomes_an: i32,
+    /// Number of homozygous carriers in gnomAD exomes (not for chrMT).
+    pub exomes_hom: i32,
+    /// Number of heterozygous carriers in gnomAD exomes (not for chrMT).
+    pub exomes_het: i32,
+    /// Number of hemizygous carriers in gnomAD exomes (not for chrMT).
+    pub exomes_hemi: i32,
+
+    /// Number of alleles in gnomAD genomes (also for chrMT).
+    pub genomes_an: i32,
+    /// Number of homozygous carriers in gnomAD genomes (also for chrMT).
+    pub genomes_hom: i32,
+    /// Number of heterozygous carriers in gnomAD genomes (also for chrMT).
+    pub genomes_het: i32,
+    /// Number of hemizygous carriers in gnomAD genomes (not for chrMT).
+    pub genomes_hemi: i32,
+}
+
+// Name difference due to legacy json
+serde_with::with_prefix!(prefix_helix "helix_");
+
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
+pub struct HelixMtDBs {
+    /// Number of alleles in HelixMtDb cohort (only chrMT).
+    pub an: i32,
+    /// Number of homoplasmic carriers in HelixMtDb cohort (only chrMT).
+    pub hom: i32,
+    /// Number of heteroplasmic carriers in HelixMtDb cohort (only chrMT).
+    pub het: i32,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
+
+pub struct PopulationFrequencies {
+    #[serde(flatten, with = "prefix_gnomad")]
+    pub gnomad: Gnomads,
+    #[serde(flatten, with = "prefix_helix")]
+    pub helixmtdb: HelixMtDBs,
+}
+
 /// Definition of a sequence variant with per-sample genotype calls.
 ///
 /// This uses a subset/specialization of what is described by the VCF standard
@@ -426,30 +470,9 @@ pub struct SequenceVariant {
     /// Variant effect annotation.
     pub ann_fields: Vec<mehari::annotate::seqvars::ann::AnnField>,
 
-    /// Number of alleles in gnomAD exomes (not for chrMT).
-    pub gnomad_exomes_an: i32,
-    /// Number of homozygous carriers in gnomAD exomes (not for chrMT).
-    pub gnomad_exomes_hom: i32,
-    /// Number of heterozygous carriers in gnomAD exomes (not for chrMT).
-    pub gnomad_exomes_het: i32,
-    /// Number of hemizygous carriers in gnomAD exomes (not for chrMT).
-    pub gnomad_exomes_hemi: i32,
-
-    /// Number of alleles in gnomAD genomes (also for chrMT).
-    pub gnomad_genomes_an: i32,
-    /// Number of homozygous carriers in gnomAD genomes (also for chrMT).
-    pub gnomad_genomes_hom: i32,
-    /// Number of heterozygous carriers in gnomAD genomes (also for chrMT).
-    pub gnomad_genomes_het: i32,
-    /// Number of hemizygous carriers in gnomAD genomes (not for chrMT).
-    pub gnomad_genomes_hemi: i32,
-
-    /// Number of alleles in HelixMtDb cohort (only chrMT).
-    pub helix_an: i32,
-    /// Number of homoplasmic carriers in HelixMtDb cohort (only chrMT).
-    pub helix_hom: i32,
-    /// Number of heteroplasmic carriers in HelixMtDb cohort (only chrMT).
-    pub helix_het: i32,
+    /// TODO: comment
+    #[serde(flatten)]
+    pub population_frequencies: PopulationFrequencies,
 
     /// Number of in-house alleles (also for chrMT).
     pub inhouse_an: i32,
@@ -620,55 +643,62 @@ impl SequenceVariant {
         extract_key!(helix_het);
 
         Ok(SequenceVariant {
-            gnomad_exomes_an,
-            gnomad_exomes_hom,
-            gnomad_exomes_het,
-            gnomad_exomes_hemi,
-            gnomad_genomes_an,
-            gnomad_genomes_hom,
-            gnomad_genomes_het,
-            gnomad_genomes_hemi,
-            helix_an,
-            helix_hom,
-            helix_het,
+            population_frequencies: PopulationFrequencies {
+                gnomad: Gnomads {
+                    exomes_an: gnomad_exomes_an,
+                    exomes_hom: gnomad_exomes_hom,
+                    exomes_het: gnomad_exomes_het,
+                    exomes_hemi: gnomad_exomes_hemi,
+
+                    genomes_an: gnomad_genomes_an,
+                    genomes_hom: gnomad_genomes_hom,
+                    genomes_het: gnomad_genomes_het,
+                    genomes_hemi: gnomad_genomes_hemi,
+                },
+                helixmtdb: HelixMtDBs {
+                    an: helix_an,
+                    hom: helix_hom,
+                    het: helix_het,
+                },
+            },
             ..result
         })
     }
 
     /// Return allele frequency in gnomAD exomes.
     pub fn gnomad_exomes_af(&self) -> f32 {
-        if self.gnomad_exomes_an == 0 {
+        if self.population_frequencies.gnomad.exomes_an == 0 {
             return 0f32;
         }
-        let an = self.gnomad_exomes_an as f32;
-        let hom = self.gnomad_exomes_hom as f32;
-        let het = self.gnomad_exomes_het as f32;
-        let hemi = self.gnomad_exomes_hemi as f32;
+        let an = self.population_frequencies.gnomad.exomes_an as f32;
+        let hom = self.population_frequencies.gnomad.exomes_hom as f32;
+        let het = self.population_frequencies.gnomad.exomes_het as f32;
+        let hemi = self.population_frequencies.gnomad.exomes_hemi as f32;
         (2.0 * hom + het + hemi) / an
     }
 
     /// Return allele frequency in gnomAD genomes.
     pub fn gnomad_genomes_af(&self) -> f32 {
-        if self.gnomad_genomes_an == 0 {
+        if self.population_frequencies.gnomad.genomes_an == 0 {
             return 0f32;
         }
-        // TODO, emily: is this code hot then check v   
+        // TODO, emily: is this code hot then check v
         // This code looks like it could result in some missed oppportunity for optimisation, is it really necessary for hom het and hemi to ever be floats?
-        let an = self.gnomad_genomes_an as f32;
-        let hom = self.gnomad_genomes_hom as f32;
-        let het = self.gnomad_genomes_het as f32;
-        let hemi = self.gnomad_genomes_hemi as f32;
+        let an = self.population_frequencies.gnomad.genomes_an as f32;
+        let hom = self.population_frequencies.gnomad.genomes_hom as f32;
+        let het = self.population_frequencies.gnomad.genomes_het as f32;
+        let hemi = self.population_frequencies.gnomad.genomes_hemi as f32;
         (2.0 * hom + het + hemi) / an
     }
 
     /// Return allele frequency in HelixMtDb.
     pub fn helixmtdb_af(&self) -> f32 {
-        if self.helix_an == 0 {
+        if self.population_frequencies.helixmtdb.an == 0 {
             return 0f32;
         }
-        let an = self.helix_an as f32;
-        let hom = self.helix_hom as f32;
-        let het = self.helix_het as f32;
+        let an = self.population_frequencies.helixmtdb.an as f32;
+        let hom = self.population_frequencies.helixmtdb.hom as f32;
+        let het = self.population_frequencies.helixmtdb.het as f32;
         (2.0 * hom + het) / an
     }
 }
