@@ -120,21 +120,6 @@ ann_fields:
     protein_pos: ~
     distance: 2333
     messages: ~
-gnomad_exomes_an: 0
-gnomad_exomes_hom: 0
-gnomad_exomes_het: 0
-gnomad_exomes_hemi: 0
-gnomad_genomes_an: 0
-gnomad_genomes_hom: 0
-gnomad_genomes_het: 0
-gnomad_genomes_hemi: 0
-helix_an: 0
-helix_hom: 0
-helix_het: 0
-inhouse_an: 0
-inhouse_hom: 0
-inhouse_het: 0
-inhouse_hemi: 0
 call_info:
   Case_1_father-N1-DNA1-WGS1:
     genotype: /0/0
@@ -154,3 +139,18 @@ call_info:
     dp: 10
     ad: 5
     phasing_id: ~
+gnomad_exomes_an: 0
+gnomad_exomes_hom: 0
+gnomad_exomes_het: 0
+gnomad_exomes_hemi: 0
+gnomad_genomes_an: 0
+gnomad_genomes_hom: 0
+gnomad_genomes_het: 0
+gnomad_genomes_hemi: 0
+helix_an: 0
+helix_hom: 0
+helix_het: 0
+inhouse_an: 0
+inhouse_hom: 0
+inhouse_het: 0
+inhouse_hemi: 0

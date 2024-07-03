@@ -451,6 +451,19 @@ pub struct PopulationFrequencies {
     pub helixmtdb: HelixMtDBs,
 }
 
+// serde_with::with_prefix!(prefix_inhouse "inhouse_"); < already declared earlier
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
+pub struct InhouseFrequencies {
+    /// Number of in-house alleles (also for chrMT).
+    pub an: i32,
+    /// Number of homozygous carriers in in-house cohort (also for chrMT).
+    pub hom: i32,
+    /// Number of heterozygous carriers in in-house cohort (also for chrMT).
+    pub het: i32,
+    /// Number of hemizygous carriers in in-house cohort (not for chrMT).
+    pub hemi: i32,
+}
+
 /// Definition of a sequence variant with per-sample genotype calls.
 ///
 /// This uses a subset/specialization of what is described by the VCF standard
@@ -470,21 +483,15 @@ pub struct SequenceVariant {
     /// Variant effect annotation.
     pub ann_fields: Vec<mehari::annotate::seqvars::ann::AnnField>,
 
+    /// Mapping of sample to genotype information for the SV.
+    pub call_info: indexmap::IndexMap<String, CallInfo>,
+
     /// TODO: comment
     #[serde(flatten)]
     pub population_frequencies: PopulationFrequencies,
 
-    /// Number of in-house alleles (also for chrMT).
-    pub inhouse_an: i32,
-    /// Number of homozygous carriers in in-house cohort (also for chrMT).
-    pub inhouse_hom: i32,
-    /// Number of heterozygous carriers in in-house cohort (also for chrMT).
-    pub inhouse_het: i32,
-    /// Number of hemizygous carriers in in-house cohort (not for chrMT).
-    pub inhouse_hemi: i32,
-
-    /// Mapping of sample to genotype information for the SV.
-    pub call_info: indexmap::IndexMap<String, CallInfo>,
+    #[serde(flatten, with = "prefix_inhouse")]
+    pub inhouse_frequencies: InhouseFrequencies,
 }
 
 impl SequenceVariant {
