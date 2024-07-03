@@ -2,7 +2,7 @@ use crate::seqvars::query::schema::{CaseQuery, SequenceVariant};
 
 /// Determine whether the `SequenceVariant` passes the frequency filter.
 pub fn passes(query: &CaseQuery, s: &SequenceVariant) -> Result<bool, anyhow::Error> {
-    let pop = &query.population_freqeuecy;
+    let pop = &query.population_frequency;
     let is_mtdna = annonars::common::cli::canonicalize(&s.chrom) == "MT";
 
     if is_mtdna {
@@ -137,7 +137,7 @@ mod test {
         use crate::seqvars::query::schema::{GnomadOptions, PopulationFrequencyOptions};
 
         let query = CaseQuery {
-            population_freqeuecy: PopulationFrequencyOptions {
+            population_frequency: PopulationFrequencyOptions {
                 gnomad: GnomadOptions {
                     exomes_enabled: query_gnomad_exomes_enabled,
                     exomes_frequency: query_gnomad_exomes_frequency,
@@ -256,7 +256,7 @@ mod test {
         use crate::seqvars::query::schema::{GnomadOptions, PopulationFrequencyOptions};
 
         let query = CaseQuery {
-            population_freqeuecy: PopulationFrequencyOptions {
+            population_frequency: PopulationFrequencyOptions {
                 gnomad: GnomadOptions {
                     genomes_enabled: query_gnomad_genomes_enabled,
                     genomes_frequency: query_gnomad_genomes_frequency,
@@ -356,7 +356,7 @@ mod test {
         use crate::seqvars::query::schema::{HelixMtDbOptions, PopulationFrequencyOptions};
 
         let query = CaseQuery {
-            population_freqeuecy: PopulationFrequencyOptions {
+            population_frequency: PopulationFrequencyOptions {
                 helixmtdb: HelixMtDbOptions {
                     enabled: query_helix_enabled,
                     frequency: query_helix_frequency,
@@ -454,7 +454,7 @@ mod test {
         use crate::seqvars::query::schema::{GnomadOptions, PopulationFrequencyOptions};
 
         let query = CaseQuery {
-            population_freqeuecy: PopulationFrequencyOptions {
+            population_frequency: PopulationFrequencyOptions {
                 gnomad: GnomadOptions {
                     genomes_enabled: query_gnomad_genomes_enabled,
                     genomes_frequency: query_gnomad_genomes_frequency,

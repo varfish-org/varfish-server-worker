@@ -323,7 +323,7 @@ pub struct CaseQuery {
 
     /// PopulationFrequency related filter options
     #[serde(flatten)]
-    pub population_freqeuecy: PopulationFrequencyOptions,
+    pub population_frequency: PopulationFrequencyOptions,
 
     /// Inhouse related filter options. TODO BETTER COMMENT
     #[serde(flatten, with = "prefix_inhouse")]
@@ -348,7 +348,7 @@ impl Default for CaseQuery {
     fn default() -> Self {
         Self {
             consequences: mehari::annotate::seqvars::ann::Consequence::all(),
-            population_freqeuecy: Default::default(),
+            population_frequency: Default::default(),
             quality: Default::default(),
             genotype: Default::default(),
             transcript: Default::default(),
@@ -652,6 +652,8 @@ impl SequenceVariant {
         if self.gnomad_genomes_an == 0 {
             return 0f32;
         }
+        // TODO, emily: is this code hot then check v   
+        // This code looks like it could result in some missed oppportunity for optimisation, is it really necessary for hom het and hemi to ever be floats?
         let an = self.gnomad_genomes_an as f32;
         let hom = self.gnomad_genomes_hom as f32;
         let het = self.gnomad_genomes_het as f32;
