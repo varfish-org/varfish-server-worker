@@ -6,6 +6,10 @@ pub mod clinvar {
     include!(concat!(env!("OUT_DIR"), "/varfish.v1.clinvar.serde.rs"));
 }
 
+pub mod seqvars {
+    include!(concat!(env!("OUT_DIR"), "/varfish.v1.seqvars.rs"));
+    include!(concat!(env!("OUT_DIR"), "/varfish.v1.seqvars.serde.rs"));}
+
 /// Code generate for protobufs by `prost-build`.
 pub mod svs {
     include!(concat!(env!("OUT_DIR"), "/varfish.v1.svs.rs"));
