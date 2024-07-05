@@ -314,7 +314,7 @@ pub struct CaseQuery {
     #[serde(flatten)]
     pub locus: LocusRelatedOptions,
 
-    // TODO v moving this into ClinVarOptions without making things meh seems to be annoying
+    // In protobuf this lives inside ClinVarOptions
     /// Wether to require ClinVar membership.
     pub require_in_clinvar: bool,
     /// ClinVar related filter options.

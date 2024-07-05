@@ -1,0 +1,245 @@
+syntax = "proto3";
+
+package varfish.v1.seqvars;
+
+// Suggestion from emily that might be worth discussing: a few members where I think the enabled bool can be implied by the presence/nonpresence of an optional submessage  making for cleaner code & less branches
+
+
+// Enumeration for recessive mode queries.
+enum RecesssiveMode {
+    Recessive = 0;
+    CompoundRecessive = 1;
+}
+
+// Choices for failing quality thresholds on genotypes.
+enum FailChoice {
+    // Ignore failure
+    Ignore = 0;
+    // Drop whole variant
+    Drop = 1;
+    // TODO COMMENT
+    NoCall = 2;
+}
+
+// Choice for genotype.
+enum GenotypeChoice {
+    // Any genotype
+    Any = 0;
+    // Ref. genotype
+    Ref = 1;
+    // Het. genotype
+    Het = 2;
+    // Hom. genotype
+    Hom = 3;
+    // Non-hom genotype
+    NonHom = 4;
+    // Variant genotype
+    Variant = 5;
+    // Index in comp. het. recessive inheritance
+    ComphetIndex = 6;
+    // Index in recessive inheritance
+    RecessiveIndex = 7;
+    // Parent in recessive inheritance
+    RecessiveParent = 8;
+}
+
+// Quality settings for one sample.
+message QualitySettings {
+    // Minimal coverage for het. sites
+    optional int32 dp_het = 1;
+    // Minimal coverage for hom. sites
+    optional int32 dp_hom = 2;
+    // Minimal genotype quality
+    optional int32 gq = 3;
+    // Minimal allele balance for het. variants
+    optional float ab = 4;
+    // Minimal number of alternate reads
+    optional int32 ad = 5;
+    // Maximal number of alternate reads
+    optional int32 ad_max = 6;
+    // Behaviour on failing quality thresholds
+    FailChoice fail = 7;
+}
+
+message Range {
+    int32 start = 1;
+    int32 end = 2;
+}
+
+message GenomicRegion {
+    // Chromosome
+    string chrom = 1;
+    // Range of region
+    optional Range = 2;
+}
+
+message ClinVarOptions {
+    // Wether to require ClinVar membership
+    bool require_in_clinvar = 1;
+    // Whether to include benign ClinVar variants
+    bool include_benign = 2;
+    // Whether to include pathogenic ClinVar variants
+    bool include_pathogenic = 3;
+    // Whether to include likely benign ClinVar variants
+    bool include_likely_benign = 4;
+    // Whether to include likely pathogenic ClinVar variants
+    bool include_likely_pathogenic = 5;
+    // Whether to include uncertain significance ClinVar variants
+    bool include_uncertain_significance = 6;
+    // Whether to include conflicting interpretation ClinVar variants
+    bool include_conflicting_classifications = 7;
+}
+
+message InhouseFrequencyOptions {
+    // Whether to enable filtration by 1000 Genomes.
+    bool enabled = 1;
+    // Maximal number of in-house carriers
+    optional int32 carriers = 2;
+    // Maximal number of in-house heterozygous carriers
+    optional int32 heterozygous = 3;
+    // Maximal number of in-house homozygous carriers
+    optional int32 homozygous = 4;
+    // Maximal number of in-house hemizygous carriers
+    optional int32 hemizygous = 5;
+}
+
+// TODO: Might be better to structure with an optional submessage instead of all these individual optionals unless they need to be this way for some reason
+
+message GnomadOptions {
+    // Whether to enable filtration by gnomAD exomes
+    bool exomes_enabled = 1;
+    // Whether to enable filtration by gnomAD genomes
+    bool genomes_enabled = 2;
+    // Maximal frequency in gnomAD exomes
+    optional float exomes_frequency = 3;
+    // Maximal number of heterozygous carriers in gnomAD exomes
+    optional int32 exomes_heterozygous = 4;
+    // Maximal number of homozygous carriers in gnomAD exomes
+    optional int32 exomes_homozygous = 5;
+    // Maximal number of hemizygous carriers in gnomAD exomes
+    optional int32 exomes_hemizygous = 6;
+    // Maximal frequency in gnomAD genomes
+    optional float genomes_frequency = 7;
+    // Maximal number of heterozygous carriers in gnomAD genomes
+    optional int32 genomes_heterozygous = 8;
+    // Maximal number of homozygous carriers in gnomAD genomes
+    optional int32 genomes_homozygous = 9;
+    // Maximal number of hemizygous carriers in gnomAD genomes
+    optional int32 genomes_hemizygous = 10;
+}
+
+message HelixMtDbOptions {
+    // Whether to enable filtration by mtDB
+    bool enabled = 1;
+    // Maximal frequency in HelixMtDb
+    optional float frequency = 2;
+    // Maximal number of heterozygous carriers in HelixMtDb
+    optional int32 heteroplasmic = 3;
+    // Maximal number of homozygous carriers in HelixMtDb
+    optional int32 homoplasmic = 4;
+}
+
+message PopulationFrequencyOptions {
+    GnomadOptions gnomad = 1;
+    HelixMtDbOptions helixmtdb = 2;
+}
+
+message VariantTypeOptions {
+    // Whether to include SNVs
+    bool snv = 1;
+    // Whether to include indels
+    bool indel = 2;
+    // Whether to include MNVs
+    bool mnv = 3;
+}
+
+message LocusRelatedOptions {
+    // List of HGNC symbols, HGNC:<ID>s, ENSG<ID>s, or NCBI Gene IDs to restrict the resulting variants to
+    optional repeated  string gene_allowlist = 1;
+    // List of genomic regions to limit restrict the resulting variants to
+    optional repeated GenomicRegion gnomic_region = 2;
+}
+
+message TranscriptOptions {
+    // Whether to include coding transcripts
+    bool transcripts_coding = 1;
+    // Whether to include non-coding transcripts
+    bool transcripts_noncoding = 2;
+    // Maximal distance to next exon, if any
+    optional int32 max_exon_dist = 3;
+}
+
+enum Consequence {
+    // high impact
+    ChromosomeNumberVariation = 0;
+    ExonLossVariant = 1;
+    FrameshiftVariant = 2;
+    RareAminoAcidVariant = 3;
+    SpliceAcceptorVariant = 4;
+    SpliceDonorVariant = 5;
+    StartLost = 6;
+    StopGained = 7;
+    StopLost = 8;
+    TranscriptAblation = 9;
+    // moderate impact
+    ThreePrimeUtrTruncation = 10;
+    FivePrimeUtrTruncaction = 11;
+    ConservativeInframeDeletion = 12;
+    ConservativeInframeInsertion = 13;
+    DisruptiveInframeDeletion = 14;
+    DisruptiveInframeInsertion = 15;
+    MissenseVariant = 16;
+    RegulatoryRegionAblation = 17;
+    SpliceRegionVariant = 18;
+    TbfsAblation = 19;
+    // low impact
+    FivePrimeUtrPrematureStartCodonGainVariant = 20;
+    InitiatorCodonVariant = 21;
+    StartRetained = 22;
+    StopRetainedVariant = 23;
+    SynonymousVariant = 24;
+    // modifier
+    ThreePrimeUtrVariant = 25;
+    FivePrimeUtrVariant = 26;
+    CodingSequenceVariant = 27;
+    ConservedIntergenicVariant = 28;
+    ConservedIntronVariant = 29;
+    DownstreamGeneVariant = 30;
+    ExonVariant = 31;
+    FeatureElongation = 32;
+    FeatureTruncation = 33;
+    GeneVariant = 34;
+    IntergenicVariant = 35;
+    IntronVariant = 36;
+    MatureMirnaVariant = 37;
+    // miRNA
+    Mirna = 38;
+    NmdTranscriptVariant = 39;
+    NonCodingTranscriptExonVariant = 40;
+    NonCodingTranscriptIntronVariant = 41;
+    RegulatoryRegionAmplification = 42;
+    RegulatoryRegionVariant = 43;
+    TfBindingSiteVariant = 44;
+    TfbsAmplification = 45;
+    TranscriptAmplification = 46;
+    TranscriptVariant = 47;
+    UpstreamGeneVariant = 48;
+}
+
+
+message CaseQuery {
+    // Molecular consequences to consider
+    repeated Consequence consequences = 1;
+    // Quality settings for each individual
+    map<string, QualitySettings> quality = 2;
+    // Genotype choice for each individual
+    map<string, GenotypeChoice> genotype = 3;
+    TranscriptOptions transcript = 4;
+    VariantTypeOptions var_type = 5;
+    LocusRelatedOptions locus = 6;
+    // ClinVar related filter options
+    ClinVarOptions clinvar = 7;
+    // PopulationFrequency related filter options
+    PopulationFrequencyOptions population_frequency = 8;
+    InhouseFrequencyOptions inhouse = 9;
+}
