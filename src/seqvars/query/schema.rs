@@ -1,6 +1,9 @@
 //! Supporting code for seqvar query definition.
 
+use indexmap::IndexMap;
+use mehari::annotate::seqvars::ann;
 use noodles::vcf;
+use strum::IntoEnumIterator;
 
 use crate::common::genotype_to_string;
 
@@ -29,6 +32,7 @@ pub enum RecessiveMode {
     Clone,
     Copy,
     Default,
+    strum::EnumIter,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum FailChoice {
@@ -55,6 +59,7 @@ pub enum FailChoice {
     Clone,
     Copy,
     Default,
+    strum::EnumIter,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum GenotypeChoice {
@@ -128,6 +133,20 @@ pub struct QualitySettings {
     pub fail: FailChoice,
 }
 
+impl From<crate::pbs::seqvars::QualitySettings> for QualitySettings {
+    fn from(old: crate::pbs::seqvars::QualitySettings) -> Self {
+        Self {
+            dp_het: old.dp_het,
+            dp_hom: old.dp_hom,
+            gq: old.gq,
+            ab: old.ab,
+            ad: old.ad,
+            ad_max: old.ad_max,
+            fail: FailChoice::iter().nth(old.fail as usize).unwrap(),
+        }
+    }
+}
+
 /// Data structure to hold a range.
 #[derive(
     serde::Serialize, serde::Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone,
@@ -139,6 +158,15 @@ pub struct Range {
     pub end: i32,
 }
 
+impl From<crate::pbs::seqvars::Range> for Range {
+    fn from(value: crate::pbs::seqvars::Range) -> Self {
+        Self {
+            start: value.start,
+            end: value.end,
+        }
+    }
+}
+
 /// Data struture to hold a genomic region.
 #[derive(
     serde::Serialize, serde::Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone,
@@ -148,6 +176,15 @@ pub struct GenomicRegion {
     pub chrom: String,
     /// Range of region.
     pub range: Option<Range>,
+}
+
+impl From<crate::pbs::seqvars::GenomicRegion> for GenomicRegion {
+    fn from(other: crate::pbs::seqvars::GenomicRegion) -> Self {
+        Self {
+            chrom: other.chrom,
+            range: other.range.map(Range::from),
+        }
+    }
 }
 
 serde_with::with_prefix!(prefix_clinvar "clinvar_");
@@ -168,6 +205,19 @@ pub struct ClinVarOptions {
     pub include_conflicting_classifications: bool,
 }
 
+impl From<crate::pbs::seqvars::ClinVarOptions> for ClinVarOptions {
+    fn from(other: crate::pbs::seqvars::ClinVarOptions) -> Self {
+        Self {
+            include_benign: other.include_benign,
+            include_pathogenic: other.include_pathogenic,
+            include_likely_benign: other.include_likely_benign,
+            include_likely_pathogenic: other.include_likely_pathogenic,
+            include_uncertain_significance: other.include_uncertain_significance,
+            include_conflicting_classifications: other.include_conflicting_classifications,
+        }
+    }
+}
+
 serde_with::with_prefix!(prefix_inhouse "inhouse_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -183,6 +233,18 @@ pub struct InhouseFrequencyOptions {
     pub homozygous: Option<i32>,
     /// Maximal number of in-house hemizygous carriers.
     pub hemizygous: Option<i32>,
+}
+
+impl From<crate::pbs::seqvars::InhouseFrequencyOptions> for InhouseFrequencyOptions {
+    fn from(other: crate::pbs::seqvars::InhouseFrequencyOptions) -> Self {
+        Self {
+            enabled: other.enabled,
+            carriers: other.carriers,
+            heterozygous: other.heterozygous,
+            homozygous: other.homozygous,
+            hemizygous: other.hemizygous,
+        }
+    }
 }
 
 serde_with::with_prefix!(prefix_gnomad "gnomad_");
@@ -213,6 +275,23 @@ pub struct GnomadOptions {
     pub genomes_hemizygous: Option<i32>,
 }
 
+impl From<crate::pbs::seqvars::GnomadOptions> for GnomadOptions {
+    fn from(other: crate::pbs::seqvars::GnomadOptions) -> Self {
+        Self {
+            exomes_enabled: other.exomes_enabled,
+            genomes_enabled: other.genomes_enabled,
+            exomes_frequency: other.exomes_frequency,
+            exomes_heterozygous: other.exomes_heterozygous,
+            exomes_homozygous: other.exomes_homozygous,
+            exomes_hemizygous: other.exomes_hemizygous,
+            genomes_frequency: other.genomes_frequency,
+            genomes_heterozygous: other.genomes_heterozygous,
+            genomes_homozygous: other.genomes_homozygous,
+            genomes_hemizygous: other.genomes_hemizygous,
+        }
+    }
+}
+
 serde_with::with_prefix!(prefix_helixmtdb "helixmtdb_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
@@ -228,6 +307,17 @@ pub struct HelixMtDbOptions {
     pub homoplasmic: Option<i32>,
 }
 
+impl From<crate::pbs::seqvars::HelixMtDbOptions> for HelixMtDbOptions {
+    fn from(other: crate::pbs::seqvars::HelixMtDbOptions) -> Self {
+        Self {
+            enabled: other.enabled,
+            frequency: other.frequency,
+            heteroplasmic: other.heteroplasmic,
+            homoplasmic: other.homoplasmic,
+        }
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct PopulationFrequencyOptions {
@@ -235,6 +325,21 @@ pub struct PopulationFrequencyOptions {
     pub gnomad: GnomadOptions,
     #[serde(flatten, with = "prefix_helixmtdb")]
     pub helixmtdb: HelixMtDbOptions,
+}
+
+impl From<crate::pbs::seqvars::PopulationFrequencyOptions> for PopulationFrequencyOptions {
+    fn from(other: crate::pbs::seqvars::PopulationFrequencyOptions) -> Self {
+        Self {
+            gnomad: other
+                .gnomad
+                .expect("missing field in PopulationFrequencySptions: gnomad")
+                .into(),
+            helixmtdb: other
+                .helixmtdb
+                .expect("missing ield in PopulationFrequencyOptions: helixmtdb")
+                .into(),
+        }
+    }
 }
 
 serde_with::with_prefix!(prefix_var_type "var_type_");
@@ -259,6 +364,16 @@ impl Default for VariantTypeOptions {
     }
 }
 
+impl From<crate::pbs::seqvars::VariantTypeOptions> for VariantTypeOptions {
+    fn from(other: crate::pbs::seqvars::VariantTypeOptions) -> Self {
+        Self {
+            snv: other.snv,
+            indel: other.indel,
+            mnv: other.mnv,
+        }
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct LocusRelatedOptions {
@@ -267,6 +382,28 @@ pub struct LocusRelatedOptions {
     pub gene_allowlist: Option<Vec<String>>,
     /// List of genomic regions to limit restrict the resulting variants to.
     pub genomic_regions: Option<Vec<GenomicRegion>>,
+}
+
+impl From<crate::pbs::seqvars::LocusRelatedOptions> for LocusRelatedOptions {
+    fn from(other: crate::pbs::seqvars::LocusRelatedOptions) -> Self {
+        Self {
+            gene_allowlist: match other.gene_allowlist.first() {
+                None => None,
+                _ => Some(other.gene_allowlist),
+            },
+            genomic_regions: match other.genomic_region.first() {
+                None => None,
+                _ => Some(
+                    other
+                        .genomic_region
+                        .iter()
+                        .map(std::borrow::ToOwned::to_owned)
+                        .map(GenomicRegion::from)
+                        .collect(),
+                ),
+            },
+        }
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone)]
@@ -278,6 +415,16 @@ pub struct TranscriptOptions {
     pub transcripts_noncoding: bool,
     /// Maximal distance to next exon, if any.
     pub max_exon_dist: Option<i32>,
+}
+
+impl From<crate::pbs::seqvars::TranscriptOptions> for TranscriptOptions {
+    fn from(other: crate::pbs::seqvars::TranscriptOptions) -> Self {
+        Self {
+            transcripts_coding: other.transcripts_coding,
+            transcripts_noncoding: other.transcripts_noncoding,
+            max_exon_dist: other.max_exon_dist,
+        }
+    }
 }
 
 impl Default for TranscriptOptions {
@@ -299,6 +446,7 @@ pub struct CaseQuery {
 
     /// Quality settings for each individual.
     pub quality: indexmap::IndexMap<String, QualitySettings>,
+
     /// Genotype choice for each individual.
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
 
@@ -328,6 +476,54 @@ pub struct CaseQuery {
     /// Inhouse related filter options. TODO BETTER COMMENT
     #[serde(flatten, with = "prefix_inhouse")]
     pub inhouse: InhouseFrequencyOptions,
+}
+
+impl From<crate::pbs::seqvars::CaseQuery> for CaseQuery {
+    fn from(other: crate::pbs::seqvars::CaseQuery) -> Self {
+        let consequences: Vec<_> = other
+            .consequences
+            .iter()
+            .map(|x| ann::Consequence::iter().nth(*x as usize).unwrap())
+            .collect();
+        let quality: IndexMap<String, QualitySettings> = other
+            .quality
+            .iter()
+            .map(|(x, y)| (x.to_owned(), y.clone().into()))
+            .collect();
+
+        Self {
+            consequences,
+            quality,
+            genotype: other
+                .genotype
+                .iter()
+                .map(|(x, y)| (x.to_owned(), GenotypeChoice::iter().nth(*y as usize)))
+                .collect(),
+            // Protobuf allows retroactively declaring fields optional so we need to enforce presence here
+            transcript: other
+                .transcript
+                .expect("missing field in CaseQuery: transcript")
+                .into(),
+            var_type: other
+                .var_type
+                .expect("missing field in CaseQuery: var_type")
+                .into(),
+            locus: other
+                .locus
+                .expect("missing field in CaseQuery: locus")
+                .into(),
+            require_in_clinvar: other.clinvar.is_some(),
+            clinvar: other.clinvar.unwrap_or_default().into(),
+            population_frequency: other
+                .population_frequency
+                .expect("Missing field in CaseQuery: population_frequency")
+                .into(),
+            inhouse: other
+                .inhouse
+                .expect("Missing field in CaseQuery: inhouse")
+                .into(),
+        }
+    }
 }
 
 impl Default for ClinVarOptions {
@@ -431,7 +627,6 @@ pub struct Gnomads {
 
 // Name difference due to legacy json
 serde_with::with_prefix!(prefix_helix "helix_");
-
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct HelixMtDBs {
     /// Number of alleles in HelixMtDb cohort (only chrMT).
