@@ -45,6 +45,7 @@ RUN cargo build --release
 # Now copy in the rest of the sources.
 COPY build.rs Cargo.toml Cargo.lock /usr/src/varfish-server-worker/
 COPY src /usr/src/varfish-server-worker/src/
+COPY protos /usr/src/varfish-server-worker/protos/
 # COPY utils/alpine-linker-script.sh /usr/src/varfish-server-worker/utils/
 # RUN chmod a+rx /usr/src/varfish-server-worker/utils/alpine-linker-script.sh
 # COPY .cargo /usr/src/varfish-server-worker/.cargo/
