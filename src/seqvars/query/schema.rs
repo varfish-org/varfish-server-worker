@@ -116,7 +116,7 @@ impl GenotypeChoice {
 
 /// Quality settings for one sample.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
-pub struct QualitySettings {
+pub struct SampleQualitySettings {
     /// Minimal coverage for het. sites.
     pub dp_het: Option<i32>,
     /// Minimal coverage for hom. sites.
@@ -129,12 +129,10 @@ pub struct QualitySettings {
     pub ad: Option<i32>,
     /// Maximal number of alternate reads
     pub ad_max: Option<i32>,
-    /// Behaviour on failing quality thresholds.
-    pub fail: FailChoice,
 }
 
-impl From<crate::pbs::seqvars::QualitySettings> for QualitySettings {
-    fn from(old: crate::pbs::seqvars::QualitySettings) -> Self {
+impl From<crate::pbs::seqvars::SampleQualitySettings> for SampleQualitySettings {
+    fn from(old: crate::pbs::seqvars::SampleQualitySettings) -> Self {
         Self {
             dp_het: old.dp_het,
             dp_hom: old.dp_hom,
@@ -142,7 +140,7 @@ impl From<crate::pbs::seqvars::QualitySettings> for QualitySettings {
             ab: old.ab,
             ad: old.ad,
             ad_max: old.ad_max,
-            fail: FailChoice::iter().nth(old.fail as usize).unwrap(),
+            //fail: FailChoice::iter().nth(old.fail as usize).unwrap(),
         }
     }
 }
@@ -221,8 +219,23 @@ impl From<crate::pbs::seqvars::ClinVarOptions> for ClinVarOptions {
 serde_with::with_prefix!(prefix_inhouse "inhouse_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
-/// TODO: currently unused?
 pub struct InhouseFrequencyOptions {
+    /// Whether to enable filtration by 1000 Genomes.
+    pub enabled: bool,
+    /// Maximal number of in-house carriers
+    pub carriers: Option<i32>,
+    /// Maximal number of in-house heterozygous carriers
+    pub heterozygous: Option<i32>,
+    /// Maximal number of in-house homozygous carriers
+    pub homozygous: Option<i32>,
+    /// Maximal number of in-house hemizygous carriers
+    pub hemizygous: Option<i32>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
+#[serde(default)]
+/// TODO: currently unused?
+pub struct GnomadNuclearOptions {
     /// Whether to enable filtration by 1000 Genomes.
     pub enabled: bool,
     /// Maximal number of in-house carriers.
@@ -233,6 +246,21 @@ pub struct InhouseFrequencyOptions {
     pub homozygous: Option<i32>,
     /// Maximal number of in-house hemizygous carriers.
     pub hemizygous: Option<i32>,
+    // Maximal allele frequency.
+    pub allele_frequency: Option<f32>,
+}
+
+impl From<crate::pbs::seqvars::GnomadNuclearOptions> for GnomadNuclearOptions {
+    fn from(other: crate::pbs::seqvars::GnomadNuclearOptions) -> Self {
+        Self {
+            enabled: other.enabled,
+            carriers: other.carriers,
+            heterozygous: other.heterozygous,
+            homozygous: other.homozygous,
+            hemizygous: other.hemizygous,
+            allele_frequency: other.allele_frequency,
+        }
+    }
 }
 
 impl From<crate::pbs::seqvars::InhouseFrequencyOptions> for InhouseFrequencyOptions {
@@ -250,44 +278,27 @@ impl From<crate::pbs::seqvars::InhouseFrequencyOptions> for InhouseFrequencyOpti
 serde_with::with_prefix!(prefix_gnomad "gnomad_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
-pub struct GnomadOptions {
-    /// Whether to enable filtration by gnomAD exomes.
-    pub exomes_enabled: bool,
-    /// Whether to enable filtration by gnomAD genomes
-    pub genomes_enabled: bool,
-
-    /// Maximal frequency in gnomAD exomes.
-    pub exomes_frequency: Option<f32>,
-    /// Maximal number of heterozygous carriers in gnomAD exomes.
-    pub exomes_heterozygous: Option<i32>,
-    /// Maximal number of homozygous carriers in gnomAD exomes.
-    pub exomes_homozygous: Option<i32>,
-    /// Maximal number of hemizygous carriers in gnomAD exomes.
-    pub exomes_hemizygous: Option<i32>,
-
-    /// Maximal frequency in gnomAD genomes.
-    pub genomes_frequency: Option<f32>,
-    /// Maximal number of heterozygous carriers in gnomAD genomes.
-    pub genomes_heterozygous: Option<i32>,
-    /// Maximal number of homozygous carriers in gnomAD genomes.
-    pub genomes_homozygous: Option<i32>,
-    /// Maximal number of hemizygous carriers in gnomAD genomes.
-    pub genomes_hemizygous: Option<i32>,
+pub struct GnomadMitochondrialOptions {
+    /// Whether to enable filtration by 1000 Genomes.
+    pub enabled: bool,
+    /// Maximal number of carriers
+    pub carriers: Option<i32>,
+    /// Maximal number of heteroplasmic carriers.
+    pub heteroplasmic: Option<i32>,
+    /// Maximal number of homoplasmic carriers.
+    pub homoplasmic: Option<i32>,
+    /// Maximal allele frequency.
+    pub allele_frequency: Option<f32>,
 }
 
-impl From<crate::pbs::seqvars::GnomadOptions> for GnomadOptions {
-    fn from(other: crate::pbs::seqvars::GnomadOptions) -> Self {
+impl From<crate::pbs::seqvars::GnomadMitochondrialOptions> for GnomadMitochondrialOptions {
+    fn from(other: crate::pbs::seqvars::GnomadMitochondrialOptions) -> Self {
         Self {
-            exomes_enabled: other.exomes_enabled,
-            genomes_enabled: other.genomes_enabled,
-            exomes_frequency: other.exomes_frequency,
-            exomes_heterozygous: other.exomes_heterozygous,
-            exomes_homozygous: other.exomes_homozygous,
-            exomes_hemizygous: other.exomes_hemizygous,
-            genomes_frequency: other.genomes_frequency,
-            genomes_heterozygous: other.genomes_heterozygous,
-            genomes_homozygous: other.genomes_homozygous,
-            genomes_hemizygous: other.genomes_hemizygous,
+            enabled: other.enabled,
+            carriers: other.carriers,
+            heteroplasmic: other.heteroplasmic,
+            homoplasmic: other.homoplasmic,
+            allele_frequency: other.allele_frequency,
         }
     }
 }
@@ -322,7 +333,11 @@ impl From<crate::pbs::seqvars::HelixMtDbOptions> for HelixMtDbOptions {
 #[serde(default)]
 pub struct PopulationFrequencyOptions {
     #[serde(flatten, with = "prefix_gnomad")]
-    pub gnomad: GnomadOptions,
+    pub gnomad_exomes: GnomadNuclearOptions,
+    // TODO emily: flatten right
+    pub gnomad_genomes: GnomadNuclearOptions,
+    // gnomAD-MT filter
+    pub gnomad_mt: GnomadMitochondrialOptions,
     #[serde(flatten, with = "prefix_helixmtdb")]
     pub helixmtdb: HelixMtDbOptions,
 }
@@ -330,9 +345,17 @@ pub struct PopulationFrequencyOptions {
 impl From<crate::pbs::seqvars::PopulationFrequencyOptions> for PopulationFrequencyOptions {
     fn from(other: crate::pbs::seqvars::PopulationFrequencyOptions) -> Self {
         Self {
-            gnomad: other
-                .gnomad
-                .expect("missing field in PopulationFrequencySptions: gnomad")
+            gnomad_exomes: other
+                .gnomad_exomes
+                .expect("missing field in PopulationFrequencyOptions: gnomad_exomes")
+                .into(),
+            gnomad_genomes: other
+                .gnomad_genomes
+                .expect("missing field in PopulationFrequencyOptions: gnomad_genomes")
+                .into(),
+            gnomad_mt: other
+                .gnomad_mt
+                .expect("missing field in PopulationFrequencyOptions: gnomad_mt")
                 .into(),
             helixmtdb: other
                 .helixmtdb
@@ -445,7 +468,7 @@ pub struct CaseQuery {
     pub consequences: Vec<mehari::annotate::seqvars::ann::Consequence>,
 
     /// Quality settings for each individual.
-    pub quality: indexmap::IndexMap<String, QualitySettings>,
+    pub quality: indexmap::IndexMap<String, SampleQualitySettings>,
 
     /// Genotype choice for each individual.
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
@@ -485,7 +508,7 @@ impl From<crate::pbs::seqvars::CaseQuery> for CaseQuery {
             .iter()
             .map(|x| ann::Consequence::iter().nth(*x as usize).unwrap())
             .collect();
-        let quality: IndexMap<String, QualitySettings> = other
+        let quality: IndexMap<String, SampleQualitySettings> = other
             .quality
             .iter()
             .map(|(x, y)| (x.to_owned(), y.clone().into()))

@@ -1,6 +1,8 @@
 use crate::{
     common::strip_gt_leading_slash,
-    seqvars::query::schema::{CallInfo, CaseQuery, FailChoice, QualitySettings, SequenceVariant},
+    seqvars::query::schema::{
+        CallInfo, CaseQuery, FailChoice, SampleQualitySettings, SequenceVariant,
+    },
 };
 
 /// Return type for the `passes` function.
@@ -60,7 +62,7 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCal
 
 /// Return failure code (or None for all-pass) for one sample's call info.
 fn passes_for_sample(
-    quality_settings: &QualitySettings,
+    quality_settings: &SampleQualitySettings,
     call_info: &CallInfo,
 ) -> Option<FailChoice> {
     #[derive(PartialEq, Eq)]
@@ -90,7 +92,7 @@ fn passes_for_sample(
             if let Some(dp_het) = quality_settings.dp_het {
                 if let Some(dp) = call_info.dp {
                     if dp < dp_het {
-                        return Some(quality_settings.fail);
+                        return Some(FailChoice::Ignore); //TODO: Emily Some(quality_settings.fail);
                     }
                 }
             }
@@ -103,7 +105,7 @@ fn passes_for_sample(
                 let ab = if ab_raw > 0.5 { 1.0 - ab_raw } else { ab_raw };
                 let eps = 1e-6f64;
                 if ab + eps < settings_ab as f64 {
-                    return Some(quality_settings.fail);
+                    return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
                 }
             }
         }
@@ -111,7 +113,7 @@ fn passes_for_sample(
             if let Some(dp_hom) = quality_settings.dp_hom {
                 if let Some(dp) = call_info.dp {
                     if dp < dp_hom {
-                        return Some(quality_settings.fail);
+                        return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
                     }
                 }
             }
@@ -122,7 +124,7 @@ fn passes_for_sample(
     // gq
     if let (Some(settings_gq), Some(call_gq)) = (quality_settings.gq, call_info.quality) {
         if call_gq < settings_gq as f32 {
-            return Some(quality_settings.fail);
+            return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
         }
     }
 
@@ -130,14 +132,14 @@ fn passes_for_sample(
         // ad
         if let (Some(settings_ad), Some(call_ad)) = (quality_settings.ad, call_info.ad) {
             if call_ad < settings_ad {
-                return Some(quality_settings.fail);
+                return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
             }
         }
 
         // ad_max
         if let (Some(settings_ad_max), Some(call_ad)) = (quality_settings.ad_max, call_info.ad) {
             if call_ad > settings_ad_max {
-                return Some(quality_settings.fail);
+                return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
             }
         }
     }
@@ -152,7 +154,7 @@ mod test {
     use crate::seqvars::query::schema::{
         CallInfo, CaseQuery,
         FailChoice::{self, *},
-        QualitySettings, SequenceVariant,
+        SampleQualitySettings, SequenceVariant,
     };
 
     #[rstest]
@@ -171,14 +173,14 @@ mod test {
         let query = CaseQuery {
             quality: vec![(
                 String::from("sample"),
-                QualitySettings {
+                SampleQualitySettings {
                     dp_het: None,
                     dp_hom: None,
                     gq: if should_pass { None } else { Some(40) },
                     ab: None,
                     ad: None,
                     ad_max: None,
-                    fail: q_fail,
+                    //TODO: emily fail: q_fail,
                 },
             )]
             .into_iter()
@@ -475,14 +477,14 @@ mod test {
         #[case] c_ad: Option<i32>,
         #[case] expected: Option<FailChoice>,
     ) -> Result<(), anyhow::Error> {
-        let settings = QualitySettings {
+        let settings = SampleQualitySettings {
             dp_het: q_dp_het,
             dp_hom: q_dp_hom,
             gq: q_gq,
             ab: q_ab,
             ad: q_ad,
             ad_max: q_ad_max,
-            fail: q_fail,
+            //TODO: emily fail: q_fail,
         };
         let call_info = CallInfo {
             genotype: c_genotype.map(|s| s.to_string()),

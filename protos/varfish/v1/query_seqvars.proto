@@ -2,12 +2,10 @@ syntax = "proto3";
 
 package varfish.v1.seqvars;
 
-// Suggestion from emily that might be worth discussing: a few members where I think the enabled bool can be implied by the presence/nonpresence of an optional submessage  making for cleaner code & less branches
 
-
-
+// The Variant consequence
 enum Consequence {
-    // high impact
+    // high impact    
     ChromosomeNumberVariation = 0;
     ExonLossVariant = 1;
     FrameshiftVariant = 2;
@@ -65,18 +63,9 @@ enum Consequence {
 
 // Enumeration for recessive mode queries.
 enum RecesssiveMode {
-    Recessive = 0;
-    CompoundRecessive = 1;
-}
-
-// Choices for failing quality thresholds on genotypes.
-enum FailChoice {
-    // Ignore failure
-    Ignore = 0;
-    // Drop whole variant
-    Drop = 1;
-    // TODO COMMENT
-    NoCall = 2;
+    Unknown = 0;
+    Recessive = 1;
+    CompoundRecessive = 2;
 }
 
 // Choice for genotype.
@@ -102,21 +91,23 @@ enum GenotypeChoice {
 }
 
 // Quality settings for one sample.
-message QualitySettings {
+message SampleQualitySettings {
+    // Name of the sample filtered for
+    string sample = 1;
+    // Enable filter for sample.
+    bool enabled = 2;
     // Minimal coverage for het. sites
-    optional int32 dp_het = 1;
+    optional int32 dp_het = 3;
     // Minimal coverage for hom. sites
-    optional int32 dp_hom = 2;
+    optional int32 dp_hom = 4;
     // Minimal genotype quality
-    optional int32 gq = 3;
+    optional int32 gq = 5;
     // Minimal allele balance for het. variants
-    optional float ab = 4;
+    optional float ab = 6;
     // Minimal number of alternate reads
-    optional int32 ad = 5;
+    optional int32 ad = 7;
     // Maximal number of alternate reads
-    optional int32 ad_max = 6;
-    // Behaviour on failing quality thresholds
-    FailChoice fail = 7;
+    optional int32 ad_max = 8;
 }
 
 message Range {
@@ -148,6 +139,8 @@ message ClinVarOptions {
     bool include_conflicting_classifications = 7;
 }
 
+
+
 message InhouseFrequencyOptions {
     // Whether to enable filtration by 1000 Genomes.
     bool enabled = 1;
@@ -161,29 +154,33 @@ message InhouseFrequencyOptions {
     optional int32 hemizygous = 5;
 }
 
-// TODO: Might be better to structure with an optional submessage instead of all these individual optionals unless they need to be this way for some reason
+message GnomadNuclearOptions {
+    // Whether to enable filtration by 1000 Genomes.
+    bool enabled = 1;
+    // Maximal number of in-house carriers
+    optional int32 carriers = 2;
+    // Maximal number of in-house heterozygous carriers
+    optional int32 heterozygous = 3;
+    // Maximal number of in-house homozygous carriers
+    optional int32 homozygous = 4;
+    // Maximal number of in-house hemizygous carriers
+    optional int32 hemizygous = 5;
+    // Maximal allele frequency.
+    optional float allele_frequency = 6;
+}
 
-message GnomadOptions {
-    // Whether to enable filtration by gnomAD exomes
-    bool exomes_enabled = 1;
-    // Whether to enable filtration by gnomAD genomes
-    bool genomes_enabled = 2;
-    // Maximal frequency in gnomAD exomes
-    optional float exomes_frequency = 3;
-    // Maximal number of heterozygous carriers in gnomAD exomes
-    optional int32 exomes_heterozygous = 4;
-    // Maximal number of homozygous carriers in gnomAD exomes
-    optional int32 exomes_homozygous = 5;
-    // Maximal number of hemizygous carriers in gnomAD exomes
-    optional int32 exomes_hemizygous = 6;
-    // Maximal frequency in gnomAD genomes
-    optional float genomes_frequency = 7;
-    // Maximal number of heterozygous carriers in gnomAD genomes
-    optional int32 genomes_heterozygous = 8;
-    // Maximal number of homozygous carriers in gnomAD genomes
-    optional int32 genomes_homozygous = 9;
-    // Maximal number of hemizygous carriers in gnomAD genomes
-    optional int32 genomes_hemizygous = 10;
+
+message GnomadMitochondrialOptions {
+    // Whether to enable filtration by 1000 Genomes.
+    bool enabled = 1;
+    // Maximal number of carriers
+    optional int32 carriers = 2;
+    // Maximal number of heteroplasmic carriers.
+    optional int32 heteroplasmic = 3;
+    // Maximal number of homoplasmic carriers.
+    optional int32 homoplasmic = 4;
+    // Maximal allele frequency.
+    optional float allele_frequency = 5;
 }
 
 message HelixMtDbOptions {
@@ -198,8 +195,14 @@ message HelixMtDbOptions {
 }
 
 message PopulationFrequencyOptions {
-    GnomadOptions gnomad = 1;
-    HelixMtDbOptions helixmtdb = 2;
+    // gnomAD-exomes filter
+    GnomadNuclearOptions gnomad_exomes = 1;
+    // gnomAD-genomes filter
+    GnomadNuclearOptions gnomad_genomes = 2;
+    // gnomAD-MT filter
+    GnomadMitochondrialOptions gnomad_mt = 3;
+    // HelixMtDb filter
+    HelixMtDbOptions helixmtdb = 4;
 }
 
 message VariantTypeOptions {
@@ -233,13 +236,14 @@ message CaseQuery {
     // Molecular consequences to consider
     repeated Consequence consequences = 1;
     // Quality settings for each individual
-    map<string, QualitySettings> quality = 2;
+    map<string, SampleQualitySettings> quality = 2;
     // Genotype choice for each individual
     map<string, GenotypeChoice> genotype = 3;
     TranscriptOptions transcript = 4;
     VariantTypeOptions var_type = 5;
     LocusRelatedOptions locus = 6;
     // ClinVar related filter options
+    // need to explicitly have an enable function
     ClinVarOptions clinvar = 7;
     // PopulationFrequency related filter options
     PopulationFrequencyOptions population_frequency = 8;

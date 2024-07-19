@@ -8,7 +8,8 @@ pub mod clinvar {
 
 pub mod seqvars {
     include!(concat!(env!("OUT_DIR"), "/varfish.v1.seqvars.rs"));
-    include!(concat!(env!("OUT_DIR"), "/varfish.v1.seqvars.serde.rs"));}
+    include!(concat!(env!("OUT_DIR"), "/varfish.v1.seqvars.serde.rs"));
+}
 
 /// Code generate for protobufs by `prost-build`.
 pub mod svs {
