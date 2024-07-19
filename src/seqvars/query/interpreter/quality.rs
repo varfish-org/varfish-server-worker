@@ -92,7 +92,7 @@ fn passes_for_sample(
             if let Some(dp_het) = quality_settings.dp_het {
                 if let Some(dp) = call_info.dp {
                     if dp < dp_het {
-                        return Some(FailChoice::Ignore); //TODO: Emily Some(quality_settings.fail);
+                        return Some(FailChoice::Drop); //TODO: Emily Some(quality_settings.fail);
                     }
                 }
             }
@@ -105,7 +105,7 @@ fn passes_for_sample(
                 let ab = if ab_raw > 0.5 { 1.0 - ab_raw } else { ab_raw };
                 let eps = 1e-6f64;
                 if ab + eps < settings_ab as f64 {
-                    return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
+                    return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
                 }
             }
         }
@@ -113,7 +113,7 @@ fn passes_for_sample(
             if let Some(dp_hom) = quality_settings.dp_hom {
                 if let Some(dp) = call_info.dp {
                     if dp < dp_hom {
-                        return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
+                        return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
                     }
                 }
             }
@@ -124,7 +124,7 @@ fn passes_for_sample(
     // gq
     if let (Some(settings_gq), Some(call_gq)) = (quality_settings.gq, call_info.quality) {
         if call_gq < settings_gq as f32 {
-            return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
+            return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
         }
     }
 
@@ -132,14 +132,14 @@ fn passes_for_sample(
         // ad
         if let (Some(settings_ad), Some(call_ad)) = (quality_settings.ad, call_info.ad) {
             if call_ad < settings_ad {
-                return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
+                return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
             }
         }
 
         // ad_max
         if let (Some(settings_ad_max), Some(call_ad)) = (quality_settings.ad_max, call_info.ad) {
             if call_ad > settings_ad_max {
-                return Some(FailChoice::Ignore); // TODO: Emily Some(quality_settings.fail);
+                return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
             }
         }
     }

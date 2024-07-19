@@ -247,6 +247,7 @@ pub struct GnomadNuclearOptions {
     /// Maximal number of in-house hemizygous carriers.
     pub hemizygous: Option<i32>,
     // Maximal allele frequency.
+    #[serde(rename = "frequency")]
     pub allele_frequency: Option<f32>,
 }
 
@@ -275,7 +276,6 @@ impl From<crate::pbs::seqvars::InhouseFrequencyOptions> for InhouseFrequencyOpti
     }
 }
 
-serde_with::with_prefix!(prefix_gnomad "gnomad_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct GnomadMitochondrialOptions {
@@ -288,6 +288,7 @@ pub struct GnomadMitochondrialOptions {
     /// Maximal number of homoplasmic carriers.
     pub homoplasmic: Option<i32>,
     /// Maximal allele frequency.
+    #[serde(rename = "frequency")]
     pub allele_frequency: Option<f32>,
 }
 
@@ -329,14 +330,20 @@ impl From<crate::pbs::seqvars::HelixMtDbOptions> for HelixMtDbOptions {
     }
 }
 
+
+serde_with::with_prefix!(prefix_gnomad_exomes "gnomad_exomes_");
+serde_with::with_prefix!(prefix_gnomad_genomes "gnomad_genomes_");
+serde_with::with_prefix!(prefix_gnomad_mt "gnomat_mt_");
 #[derive(serde::Serialize, serde::Deserialize, Default, PartialEq, Debug, Clone)]
 #[serde(default)]
 pub struct PopulationFrequencyOptions {
-    #[serde(flatten, with = "prefix_gnomad")]
+    #[serde(flatten, with = "prefix_gnomad_exomes")]
     pub gnomad_exomes: GnomadNuclearOptions,
     // TODO emily: flatten right
+    #[serde(flatten, with = "prefix_gnomad_genomes")]
     pub gnomad_genomes: GnomadNuclearOptions,
     // gnomAD-MT filter
+    #[serde(flatten, with = "prefix_gnomad_mt")]
     pub gnomad_mt: GnomadMitochondrialOptions,
     #[serde(flatten, with = "prefix_helixmtdb")]
     pub helixmtdb: HelixMtDbOptions,
@@ -660,6 +667,8 @@ pub struct HelixMtDBs {
     pub het: i32,
 }
 
+
+serde_with::with_prefix!(prefix_gnomad "gnomad_"); 
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 
 pub struct PopulationFrequencies {
