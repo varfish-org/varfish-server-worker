@@ -488,7 +488,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         rand::rngs::StdRng::from_entropy()
     };
 
-    tracing::info!("Loading query...");
+    tracing::info!("Loading query... {}", args.path_query_json);
     let query: schema::CaseQuery =
         serde_json::from_reader(std::fs::File::open(&args.path_query_json)?)?;
     tracing::info!(

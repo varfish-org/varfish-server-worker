@@ -62,7 +62,7 @@
       "ab": 0.2,
       "ad": 3,
       "ad_max": null,
-      "fail": "drop-variant"
+      "filter_active": "drop-variant"
     },
     "Case_1_father-N1-DNA1-WGS1": {
       "dp_het": 10,
@@ -71,7 +71,7 @@
       "ab": 0.2,
       "ad": 3,
       "ad_max": null,
-      "fail": "drop-variant"
+      "filter_active": "drop-variant"
     },
     "Case_1_mother-N1-DNA1-WGS1": {
       "dp_het": 10,
@@ -80,7 +80,7 @@
       "ab": 0.2,
       "ad": 3,
       "ad_max": null,
-      "fail": "drop-variant"
+      "filter_active": "drop-variant"
     }
   },
   "genotype": {

@@ -54,13 +54,13 @@ consequences:
   - upstream_gene_variant
 quality:
   sample:
+    filter_active: drop-variant
     dp_het: 10
     dp_hom: 5
     gq: 10
     ab: 0.2
     ad: 3
     ad_max: ~
-    fail: drop-variant
 genotype:
   sample: het
 transcripts_coding: true
@@ -79,15 +79,22 @@ clinvar_include_likely_pathogenic: true
 clinvar_include_uncertain_significance: false
 clinvar_include_conflicting_classifications: true
 gnomad_exomes_enabled: true
-gnomad_genomes_enabled: true
-gnomad_exomes_frequency: 0.002
+gnomad_exomes_carriers: ~
 gnomad_exomes_heterozygous: 20
 gnomad_exomes_homozygous: 0
 gnomad_exomes_hemizygous: ~
-gnomad_genomes_frequency: 0.002
+gnomad_exomes_frequency: 0.002
+gnomad_genomes_enabled: true
+gnomad_genomes_carriers: ~
 gnomad_genomes_heterozygous: 4
 gnomad_genomes_homozygous: 0
 gnomad_genomes_hemizygous: ~
+gnomad_genomes_frequency: 0.002
+gnomat_mt_enabled: false
+gnomat_mt_carriers: ~
+gnomat_mt_heteroplasmic: ~
+gnomat_mt_homoplasmic: ~
+gnomat_mt_frequency: ~
 helixmtdb_enabled: true
 helixmtdb_frequency: 0.01
 helixmtdb_heteroplasmic: ~

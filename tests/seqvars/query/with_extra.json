@@ -47,7 +47,7 @@
       "ab": 0.2,
       "ad": 3,
       "ad_max": null,
-      "fail": "drop-variant"
+      "filter_active": "drop-variant"
     }
   },
   "genotype": {

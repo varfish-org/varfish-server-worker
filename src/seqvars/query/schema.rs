@@ -19,33 +19,6 @@ pub enum RecessiveMode {
     CompoundRecessive,
 }
 
-/// Choices for failing quality thresholds on genotypes.
-#[derive(
-    serde::Serialize,
-    serde::Deserialize,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Debug,
-    Clone,
-    Copy,
-    Default,
-    strum::EnumIter,
-)]
-#[serde(rename_all = "kebab-case")]
-pub enum FailChoice {
-    /// Ignore failure.
-    #[default]
-    Ignore,
-    /// Drop whole variant.
-    #[serde(rename = "drop-variant")]
-    Drop,
-    /// Interpret as "no-call".
-    NoCall,
-}
-
 /// Choice for genotype.
 #[derive(
     serde::Serialize,
@@ -114,9 +87,36 @@ impl GenotypeChoice {
     }
 }
 
+/// Choices for failing quality thresholds on genotypes.
+#[derive(
+    serde::Serialize,
+    serde::Deserialize,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    strum::EnumIter,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum FailFilterChoice {
+    /// Ignore failure.
+    #[default]
+    Ignore,
+    /// Drop whole variant.
+    #[serde(rename = "drop-variant")]
+    Drop,
+}
+
 /// Quality settings for one sample.
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct SampleQualitySettings {
+    /// Weather to ignore or drop the whole variant on failure
+    pub filter_active: FailFilterChoice,
     /// Minimal coverage for het. sites.
     pub dp_het: Option<i32>,
     /// Minimal coverage for hom. sites.
@@ -134,13 +134,17 @@ pub struct SampleQualitySettings {
 impl From<crate::pbs::seqvars::SampleQualitySettings> for SampleQualitySettings {
     fn from(old: crate::pbs::seqvars::SampleQualitySettings) -> Self {
         Self {
+            filter_active: if old.filter_active {
+                FailFilterChoice::Drop
+            } else {
+                FailFilterChoice::Ignore
+            },
             dp_het: old.dp_het,
             dp_hom: old.dp_hom,
             gq: old.gq,
             ab: old.ab,
             ad: old.ad,
             ad_max: old.ad_max,
-            //fail: FailChoice::iter().nth(old.fail as usize).unwrap(),
         }
     }
 }
@@ -330,7 +334,6 @@ impl From<crate::pbs::seqvars::HelixMtDbOptions> for HelixMtDbOptions {
     }
 }
 
-
 serde_with::with_prefix!(prefix_gnomad_exomes "gnomad_exomes_");
 serde_with::with_prefix!(prefix_gnomad_genomes "gnomad_genomes_");
 serde_with::with_prefix!(prefix_gnomad_mt "gnomat_mt_");
@@ -339,7 +342,6 @@ serde_with::with_prefix!(prefix_gnomad_mt "gnomat_mt_");
 pub struct PopulationFrequencyOptions {
     #[serde(flatten, with = "prefix_gnomad_exomes")]
     pub gnomad_exomes: GnomadNuclearOptions,
-    // TODO emily: flatten right
     #[serde(flatten, with = "prefix_gnomad_genomes")]
     pub gnomad_genomes: GnomadNuclearOptions,
     // gnomAD-MT filter
@@ -479,16 +481,10 @@ pub struct CaseQuery {
 
     /// Genotype choice for each individual.
     pub genotype: indexmap::IndexMap<String, Option<GenotypeChoice>>,
-
-    /// TODO: comment
     #[serde(flatten)]
     pub transcript: TranscriptOptions,
-
-    /// TODO: comment
     #[serde(flatten, with = "prefix_var_type")]
     pub var_type: VariantTypeOptions,
-
-    /// TODO comment
     #[serde(flatten)]
     pub locus: LocusRelatedOptions,
 
@@ -503,7 +499,7 @@ pub struct CaseQuery {
     #[serde(flatten)]
     pub population_frequency: PopulationFrequencyOptions,
 
-    /// Inhouse related filter options. TODO BETTER COMMENT
+    /// Inhouse related filter options.
     #[serde(flatten, with = "prefix_inhouse")]
     pub inhouse: InhouseFrequencyOptions,
 }
@@ -633,7 +629,6 @@ pub struct CallInfo {
     pub phasing_id: Option<i32>,
 }
 
-// serde_with::with_prefix!(prefix_gnomad "gnomad_"); < already declared earlier
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct Gnomads {
     /// Number of alleles in gnomAD exomes (not for chrMT).
@@ -667,8 +662,7 @@ pub struct HelixMtDBs {
     pub het: i32,
 }
 
-
-serde_with::with_prefix!(prefix_gnomad "gnomad_"); 
+serde_with::with_prefix!(prefix_gnomad "gnomad_");
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 
 pub struct PopulationFrequencies {
@@ -678,7 +672,6 @@ pub struct PopulationFrequencies {
     pub helixmtdb: HelixMtDBs,
 }
 
-// serde_with::with_prefix!(prefix_inhouse "inhouse_"); < already declared earlier
 #[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug, Clone, Default)]
 pub struct InhouseFrequencies {
     /// Number of in-house alleles (also for chrMT).
@@ -713,7 +706,6 @@ pub struct SequenceVariant {
     /// Mapping of sample to genotype information for the SV.
     pub call_info: indexmap::IndexMap<String, CallInfo>,
 
-    /// TODO: comment
     #[serde(flatten)]
     pub population_frequencies: PopulationFrequencies,
 
@@ -916,8 +908,7 @@ impl SequenceVariant {
         if self.population_frequencies.gnomad.genomes_an == 0 {
             return 0f32;
         }
-        // TODO, emily: is this code hot then check v
-        // This code looks like it could result in some missed oppportunity for optimisation, is it really necessary for hom het and hemi to ever be floats?
+
         let an = self.population_frequencies.gnomad.genomes_an as f32;
         let hom = self.population_frequencies.gnomad.genomes_hom as f32;
         let het = self.population_frequencies.gnomad.genomes_het as f32;

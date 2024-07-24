@@ -1,7 +1,7 @@
 use crate::{
     common::strip_gt_leading_slash,
     seqvars::query::schema::{
-        CallInfo, CaseQuery, FailChoice, SampleQualitySettings, SequenceVariant,
+        CallInfo, CaseQuery, FailFilterChoice, SampleQualitySettings, SequenceVariant,
     },
 };
 
@@ -15,7 +15,7 @@ pub struct PassOrNoCall {
 }
 
 /// Determine whether the `SequenceVariant` passes the quality filter.
-/// Will return `FailChoice::Ignore` if the variant passes.
+/// Will return `FailFilterChoice::Ignore` if the variant passes.
 pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCall, anyhow::Error> {
     let mut result = PassOrNoCall {
         pass: true,
@@ -25,10 +25,10 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCal
         if let Some(call_info) = seqvar.call_info.get(sample_name) {
             if let Some(fail) = passes_for_sample(quality_settings, call_info) {
                 match fail {
-                    FailChoice::Ignore => {
+                    FailFilterChoice::Ignore => {
                         // ignore quality failure for sample
                     }
-                    FailChoice::Drop => {
+                    FailFilterChoice::Drop => {
                         tracing::trace!(
                             "sample {} (call_info={:?}) in variant {:?} fails quality filter {:?}",
                             &sample_name,
@@ -38,9 +38,6 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCal
                         );
                         result.pass = false;
                         break;
-                    }
-                    FailChoice::NoCall => {
-                        result.no_call_samples.push(sample_name.clone());
                     }
                 }
             } else {
@@ -64,7 +61,7 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCal
 fn passes_for_sample(
     quality_settings: &SampleQualitySettings,
     call_info: &CallInfo,
-) -> Option<FailChoice> {
+) -> Option<FailFilterChoice> {
     #[derive(PartialEq, Eq)]
     enum Genotype {
         Het,
@@ -92,7 +89,7 @@ fn passes_for_sample(
             if let Some(dp_het) = quality_settings.dp_het {
                 if let Some(dp) = call_info.dp {
                     if dp < dp_het {
-                        return Some(FailChoice::Drop); //TODO: Emily Some(quality_settings.fail);
+                        return Some(quality_settings.filter_active);
                     }
                 }
             }
@@ -105,7 +102,7 @@ fn passes_for_sample(
                 let ab = if ab_raw > 0.5 { 1.0 - ab_raw } else { ab_raw };
                 let eps = 1e-6f64;
                 if ab + eps < settings_ab as f64 {
-                    return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
+                    return Some(quality_settings.filter_active);
                 }
             }
         }
@@ -113,7 +110,7 @@ fn passes_for_sample(
             if let Some(dp_hom) = quality_settings.dp_hom {
                 if let Some(dp) = call_info.dp {
                     if dp < dp_hom {
-                        return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
+                        return Some(quality_settings.filter_active);
                     }
                 }
             }
@@ -124,7 +121,7 @@ fn passes_for_sample(
     // gq
     if let (Some(settings_gq), Some(call_gq)) = (quality_settings.gq, call_info.quality) {
         if call_gq < settings_gq as f32 {
-            return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
+            return Some(quality_settings.filter_active);
         }
     }
 
@@ -132,14 +129,14 @@ fn passes_for_sample(
         // ad
         if let (Some(settings_ad), Some(call_ad)) = (quality_settings.ad, call_info.ad) {
             if call_ad < settings_ad {
-                return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
+                return Some(quality_settings.filter_active);
             }
         }
 
         // ad_max
         if let (Some(settings_ad_max), Some(call_ad)) = (quality_settings.ad_max, call_info.ad) {
             if call_ad > settings_ad_max {
-                return Some(FailChoice::Drop); // TODO: Emily Some(quality_settings.fail);
+                return Some(quality_settings.filter_active);
             }
         }
     }
@@ -153,7 +150,7 @@ mod test {
 
     use crate::seqvars::query::schema::{
         CallInfo, CaseQuery,
-        FailChoice::{self, *},
+        FailFilterChoice::{self, *},
         SampleQualitySettings, SequenceVariant,
     };
 
@@ -162,10 +159,8 @@ mod test {
     #[case(Ignore, false, true, false)]
     #[case(Drop, true, true, false)]
     #[case(Drop, false, false, false)]
-    #[case(NoCall, true, true, false)]
-    #[case(NoCall, false, true, true)]
     fn passes(
-        #[case] q_fail: FailChoice,
+        #[case] q_fail: FailFilterChoice,
         #[case] should_pass: bool,
         #[case] expected_pass: bool,
         #[case] any_no_call_sample: bool,
@@ -174,13 +169,13 @@ mod test {
             quality: vec![(
                 String::from("sample"),
                 SampleQualitySettings {
+                    filter_active: q_fail,
                     dp_het: None,
                     dp_hom: None,
                     gq: if should_pass { None } else { Some(40) },
                     ab: None,
                     ad: None,
                     ad_max: None,
-                    //TODO: emily fail: q_fail,
                 },
             )]
             .into_iter()
@@ -470,21 +465,21 @@ mod test {
         #[case] q_ab: Option<f32>,
         #[case] q_ad: Option<i32>,
         #[case] q_ad_max: Option<i32>,
-        #[case] q_fail: FailChoice,
+        #[case] q_fail: FailFilterChoice,
         #[case] c_genotype: Option<&'static str>,
         #[case] c_quality: Option<f32>,
         #[case] c_dp: Option<i32>,
         #[case] c_ad: Option<i32>,
-        #[case] expected: Option<FailChoice>,
+        #[case] expected: Option<FailFilterChoice>,
     ) -> Result<(), anyhow::Error> {
         let settings = SampleQualitySettings {
+            filter_active: q_fail,
             dp_het: q_dp_het,
             dp_hom: q_dp_hom,
             gq: q_gq,
             ab: q_ab,
             ad: q_ad,
             ad_max: q_ad_max,
-            //TODO: emily fail: q_fail,
         };
         let call_info = CallInfo {
             genotype: c_genotype.map(|s| s.to_string()),
