@@ -504,6 +504,7 @@ pub struct CaseQuery {
     pub inhouse: InhouseFrequencyOptions,
 }
 
+// TODO: emily turn into try-from
 impl From<crate::pbs::seqvars::CaseQuery> for CaseQuery {
     fn from(other: crate::pbs::seqvars::CaseQuery) -> Self {
         let consequences: Vec<_> = other
@@ -967,13 +968,16 @@ pub mod test {
     }
 
     #[rstest]
-    #[case("tests/seqvars/query/empty.json")]
-    #[case("tests/seqvars/query/full.json")]
-    #[case("tests/seqvars/query/with_extra.json")]
+    #[case("tests/seqvars/query/empty")]
+    #[case("tests/seqvars/query/full")]
+    #[case("tests/seqvars/query/with_extra")]
     pub fn smoke_test_load(#[case] path_input: &str) -> Result<(), anyhow::Error> {
-        mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
+        mehari::common::set_snapshot_suffix!("{}.json", path_input.split('/').last().unwrap());
 
-        let query: super::CaseQuery = serde_json::from_reader(std::fs::File::open(path_input)?)?;
+        let query: super::CaseQuery = serde_json::from_reader(std::fs::File::open(format!("{}.json", path_input))?)?;
+        println!("{:#?}", query);
+
+//        let _: crate::pbs::seqvars::CaseQuery = serde_json::from_reader(std::fs::File::open(format!("{}-pb.json", path_input))?)?;
 
         insta::assert_yaml_snapshot!(&query);
 

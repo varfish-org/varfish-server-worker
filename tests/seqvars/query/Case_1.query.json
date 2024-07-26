@@ -1,5 +1,5 @@
 {
-  "effects": [
+  "consequences": [
     "chromosome_number_variation",
     "exon_loss_variant",
     "frameshift_variant",
