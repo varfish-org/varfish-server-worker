@@ -356,20 +356,20 @@ impl From<crate::pbs::seqvars::PopulationFrequencyOptions> for PopulationFrequen
         Self {
             gnomad_exomes: other
                 .gnomad_exomes
-                .expect("missing field in PopulationFrequencyOptions: gnomad_exomes")
-                .into(),
+                .map(GnomadNuclearOptions::from)
+                .unwrap_or_default(),
             gnomad_genomes: other
                 .gnomad_genomes
-                .expect("missing field in PopulationFrequencyOptions: gnomad_genomes")
-                .into(),
+                .map(GnomadNuclearOptions::from)
+                .unwrap_or_default(),
             gnomad_mt: other
                 .gnomad_mt
-                .expect("missing field in PopulationFrequencyOptions: gnomad_mt")
-                .into(),
+                .map(GnomadMitochondrialOptions::from)
+                .unwrap_or_default(),
             helixmtdb: other
                 .helixmtdb
-                .expect("missing ield in PopulationFrequencyOptions: helixmtdb")
-                .into(),
+                .map(HelixMtDbOptions::from)
+                .unwrap_or_default(),
         }
     }
 }
@@ -423,11 +423,11 @@ impl From<crate::pbs::seqvars::LocusRelatedOptions> for LocusRelatedOptions {
                 None => None,
                 _ => Some(other.gene_allowlist),
             },
-            genomic_regions: match other.genomic_region.first() {
+            genomic_regions: match other.genomic_regions.first() {
                 None => None,
                 _ => Some(
                     other
-                        .genomic_region
+                        .genomic_regions
                         .iter()
                         .map(std::borrow::ToOwned::to_owned)
                         .map(GenomicRegion::from)
@@ -504,7 +504,6 @@ pub struct CaseQuery {
     pub inhouse: InhouseFrequencyOptions,
 }
 
-// TODO: emily turn into try-from
 impl From<crate::pbs::seqvars::CaseQuery> for CaseQuery {
     fn from(other: crate::pbs::seqvars::CaseQuery) -> Self {
         let consequences: Vec<_> = other
@@ -526,29 +525,29 @@ impl From<crate::pbs::seqvars::CaseQuery> for CaseQuery {
                 .iter()
                 .map(|(x, y)| (x.to_owned(), GenotypeChoice::iter().nth(*y as usize)))
                 .collect(),
-            // Protobuf allows retroactively declaring fields optional so we need to enforce presence here
+
             transcript: other
                 .transcript
-                .expect("missing field in CaseQuery: transcript")
-                .into(),
+                .map(TranscriptOptions::from)
+                .unwrap_or_default(),
             var_type: other
                 .var_type
-                .expect("missing field in CaseQuery: var_type")
-                .into(),
+                .map(VariantTypeOptions::from)
+                .unwrap_or_default(),
             locus: other
                 .locus
-                .expect("missing field in CaseQuery: locus")
-                .into(),
-            require_in_clinvar: other.clinvar.is_some(),
-            clinvar: other.clinvar.unwrap_or_default().into(),
+                .map(LocusRelatedOptions::from)
+                .unwrap_or_default(),
+            require_in_clinvar: other.clinvar.clone().unwrap_or_default().require_in_clinvar,
+            clinvar: other.clinvar.map(ClinVarOptions::from).unwrap_or_default(),
             population_frequency: other
                 .population_frequency
-                .expect("Missing field in CaseQuery: population_frequency")
-                .into(),
+                .map(PopulationFrequencyOptions::from)
+                .unwrap_or_default(),
             inhouse: other
                 .inhouse
-                .expect("Missing field in CaseQuery: inhouse")
-                .into(),
+                .map(InhouseFrequencyOptions::from)
+                .unwrap_or_default(),
         }
     }
 }
@@ -974,11 +973,16 @@ pub mod test {
     pub fn smoke_test_load(#[case] path_input: &str) -> Result<(), anyhow::Error> {
         mehari::common::set_snapshot_suffix!("{}.json", path_input.split('/').last().unwrap());
 
-        let query: super::CaseQuery = serde_json::from_reader(std::fs::File::open(format!("{}.json", path_input))?)?;
-        println!("{:#?}", query);
+        let query: super::CaseQuery =
+            serde_json::from_reader(std::fs::File::open(format!("{}.json", path_input))?)?;
 
-//        let _: crate::pbs::seqvars::CaseQuery = serde_json::from_reader(std::fs::File::open(format!("{}-pb.json", path_input))?)?;
-
+        if !path_input.contains("with_extra") {
+            // Check if pbjson loading yields same result
+            let query_pb: crate::pbs::seqvars::CaseQuery =
+                serde_json::from_reader(std::fs::File::open(format!("{}-pb.json", path_input))?)?;
+            let query_pb_conv = super::CaseQuery::from(query_pb);
+            assert_eq!(query, query_pb_conv);
+        }
         insta::assert_yaml_snapshot!(&query);
 
         Ok(())

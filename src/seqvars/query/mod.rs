@@ -489,14 +489,15 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     };
 
     tracing::info!("Loading query... {}", args.path_query_json);
-    let query: schema::CaseQuery = match serde_json::from_reader(std::fs::File::open(&args.path_query_json)?){ 
-        Ok(query) => query,
-        Err(_) => 
-        {
-            let query: crate::pbs::seqvars::CaseQuery = serde_json::from_reader(std::fs::File::open(&args.path_query_json)?)?;
-            CaseQuery::from(query)
-        },
-    };
+    let query: schema::CaseQuery =
+        match serde_json::from_reader(std::fs::File::open(&args.path_query_json)?) {
+            Ok(query) => query,
+            Err(_) => {
+                let query: crate::pbs::seqvars::CaseQuery =
+                    serde_json::from_reader(std::fs::File::open(&args.path_query_json)?)?;
+                CaseQuery::from(query)
+            }
+        };
 
     tracing::info!(
         "... done loading query = {}",

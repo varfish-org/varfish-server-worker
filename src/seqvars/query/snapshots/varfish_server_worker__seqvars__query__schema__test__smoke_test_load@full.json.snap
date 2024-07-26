@@ -69,7 +69,7 @@ max_exon_dist: 100
 var_type_snv: true
 var_type_indel: true
 var_type_mnv: true
-gene_allowlist: []
+gene_allowlist: ~
 genomic_regions: ~
 require_in_clinvar: false
 clinvar_include_benign: false

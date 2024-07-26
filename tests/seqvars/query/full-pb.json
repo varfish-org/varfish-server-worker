@@ -1,0 +1,126 @@
+{
+  "consequences": [
+    "ChromosomeNumberVariation",
+    "ExonLossVariant",
+    "FrameshiftVariant",
+    "RareAminoAcidVariant",
+    "SpliceAcceptorVariant",
+    "SpliceDonorVariant",
+    "StartLost",
+    "StopGained",
+    "StopLost",
+    "TranscriptAblation",
+    "ThreePrimeUtrTruncation",
+    "FivePrimeUtrTruncaction",
+    "ConservativeInframeDeletion",
+    "ConservativeInframeInsertion",
+    "DisruptiveInframeDeletion",
+    "DisruptiveInframeInsertion",
+    "MissenseVariant",
+    "RegulatoryRegionAblation",
+    "SpliceRegionVariant",
+    "TbfsAblation",
+    "FivePrimeUtrPrematureStartCodonGainVariant",
+    "InitiatorCodonVariant",
+    "StartRetained",
+    "StopRetainedVariant",
+    "SynonymousVariant",
+    "ThreePrimeUtrVariant",
+    "FivePrimeUtrVariant",
+    "CodingSequenceVariant",
+    "ConservedIntergenicVariant",
+    "ConservedIntronVariant",
+    "DownstreamGeneVariant",
+    "ExonVariant",
+    "FeatureElongation",
+    "FeatureTruncation",
+    "GeneVariant",
+    "IntergenicVariant",
+    "IntronVariant",
+    "MatureMirnaVariant",
+    "Mirna",
+    "NmdTranscriptVariant",
+    "NonCodingTranscriptExonVariant",
+    "NonCodingTranscriptIntronVariant",
+    "RegulatoryRegionAmplification",
+    "RegulatoryRegionVariant",
+    "TfBindingSiteVariant",
+    "TfbsAmplification",
+    "TranscriptAmplification",
+    "TranscriptVariant",
+    "UpstreamGeneVariant"
+  ],
+  "population_frequency": {
+    "gnomad_exomes": {
+      "enabled": true,
+      "allele_frequency": 0.002,
+      "heterozygous": 20,
+      "homozygous": 0,
+      "hemizygous": null
+    },
+    "gnomad_genomes": {
+      "enabled": true,
+      "allele_frequency": 0.002,
+      "heterozygous": 4,
+      "homozygous": 0,
+      "hemizygous": null
+    },
+    "gnomad_mt": {
+      "enabled": false,
+      "allele_frequency": null,
+      "heteroplasmic": null,
+      "homoplasmic": null,
+      "carriers": null
+    },
+    "helixmtdb": {
+      "enabled": true,
+      "frequency": 0.01,
+      "heteroplasmic": null,
+      "homoplasmic": null
+    }
+  },
+  "inhouse": {
+    "enabled": true,
+    "carriers": 20,
+    "heterozygous": null,
+    "homozygous": null,
+    "hemizygous": null
+  },
+  "quality": {
+    "sample": {
+      "dp_het": 10,
+      "dp_hom": 5,
+      "gq": 10,
+      "ab": 0.2,
+      "ad": 3,
+      "ad_max": null,
+      "filter_active": true
+    }
+  },
+  "genotype": {
+    "sample": "Het"
+  },
+  "clinvar": {
+    "require_in_clinvar": false,
+    "include_benign": false,
+    "include_pathogenic": true,
+    "include_likely_benign": false,
+    "include_likely_pathogenic": true,
+    "include_uncertain_significance": false,
+    "include_conflicting_classifications": true
+  },
+  "transcript": {
+    "transcripts_coding": true,
+    "transcripts_noncoding": true,
+    "max_exon_dist": 100
+  },
+  "var_type": {
+    "snv": true,
+    "indel": true,
+    "mnv": true
+  },
+  "locus": {
+    "gene_allowlist": [],
+    "genomic_regions": []  
+  }
+}

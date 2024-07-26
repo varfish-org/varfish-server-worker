@@ -75,7 +75,7 @@
   "var_type_indel": true,
   "var_type_mnv": true,
   "max_exon_dist": 100,
-  "gene_allowlist": [],
+  "gene_allowlist": null,
   "genomic_regions": null,
   "require_in_clinvar": false,
   "clinvar_include_benign": false,

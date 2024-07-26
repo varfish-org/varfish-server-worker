@@ -220,7 +220,7 @@ message LocusRelatedOptions {
     // List of HGNC symbols, HGNC:<ID>s, ENSG<ID>s, or NCBI Gene IDs to restrict the resulting variants to
     repeated string gene_allowlist = 1;
     // List of genomic regions to limit restrict the resulting variants to
-    repeated GenomicRegion genomic_region = 2;
+    repeated GenomicRegion genomic_regions = 2;
 }
 
 message TranscriptOptions {
