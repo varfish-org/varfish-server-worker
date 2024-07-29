@@ -5521,7 +5521,7 @@ dependencies = [
  "pbjson-types 0.7.0",
  "pretty_assertions",
  "procfs",
- "prost 0.12.6",
+ "prost 0.13.1",
  "prost-build 0.13.1",
  "rand",
  "rand_core",
