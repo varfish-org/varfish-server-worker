@@ -5516,7 +5516,7 @@ dependencies = [
  "mehari",
  "multimap 0.10.0",
  "noodles",
- "pbjson 0.6.0",
+ "pbjson 0.7.0",
  "pbjson-build 0.6.2",
  "pbjson-types 0.7.0",
  "pretty_assertions",
