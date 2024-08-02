@@ -1,15 +1,18 @@
 use crate::seqvars::query::{
     annonars::Annotator,
-    schema::{CaseQuery, SequenceVariant},
+    schema::{
+        data::VariantRecord,
+        query::{CaseQuery, ClinvarGermlineAggregateDescription},
+    },
 };
 
-/// Determine whether the `SequenceVariant` passes the clinvar filter.
+/// Determine whether the `VariantRecord` passes the clinvar filter.
 pub fn passes(
     query: &CaseQuery,
     annotator: &Annotator,
-    seqvar: &SequenceVariant,
+    seqvar: &VariantRecord,
 ) -> Result<bool, anyhow::Error> {
-    if !query.require_in_clinvar {
+    if !query.clinvar.presence_required {
         return Ok(true);
     }
 
@@ -40,20 +43,29 @@ pub fn passes(
             .cloned()
             .unwrap_or_default();
 
+        use ClinvarGermlineAggregateDescription::*;
         let result = match description.to_lowercase().as_str() {
-            "benign" => query.clinvar.include_benign,
+            "benign" => query.clinvar.germline_descriptions.contains(&Benign),
             "benign/likely benign" => {
-                query.clinvar.include_benign || query.clinvar.include_likely_benign
+                query.clinvar.germline_descriptions.contains(&Benign)
+                    || query.clinvar.germline_descriptions.contains(&LikelyBenign)
             }
-            "likely benign" => query.clinvar.include_likely_benign,
-            "pathogenic" => query.clinvar.include_pathogenic,
+            "likely benign" => query.clinvar.germline_descriptions.contains(&LikelyBenign),
+            "pathogenic" => query.clinvar.germline_descriptions.contains(&Pathogenic),
             "pathogenic/likely pathogenic" => {
-                query.clinvar.include_pathogenic || query.clinvar.include_likely_pathogenic
+                query.clinvar.germline_descriptions.contains(&LikelyBenign)
+                    || query.clinvar.germline_descriptions.contains(&Benign)
             }
-            "likely pathogenic" => query.clinvar.include_likely_pathogenic,
-            "uncertain significance" => query.clinvar.include_uncertain_significance,
+            "likely pathogenic" => query
+                .clinvar
+                .germline_descriptions
+                .contains(&LikelyPathogenic),
+            "uncertain significance" => query
+                .clinvar
+                .germline_descriptions
+                .contains(&UncertainSignificance),
             "conflicting classifications of pathogenicity" => {
-                query.clinvar.include_uncertain_significance
+                query.clinvar.allow_conflicting_interpretations
             }
             _ => {
                 // We could also downtone this to debug.

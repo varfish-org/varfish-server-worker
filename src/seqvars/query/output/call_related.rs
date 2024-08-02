@@ -1,6 +1,6 @@
 //! Call-related information.
 
-use crate::seqvars::query::schema::SequenceVariant;
+use crate::seqvars::query::schema::data::VariantRecord;
 
 /// Call-related record.
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
@@ -10,15 +10,15 @@ pub struct Record {
 }
 
 impl Record {
-    /// Construct a new `Record` from a `SequenceVariant`.
+    /// Construct a new `Record` from a `VariantRecord`.
     ///
     /// # Error
     ///
-    /// Returns an error if the `SequenceVariant` does not contain all necessary information.
-    pub fn with_seqvar(seqvar: &SequenceVariant) -> Result<Self, anyhow::Error> {
+    /// Returns an error if the `VariantRecord` does not contain all necessary information.
+    pub fn with_seqvar(seqvar: &VariantRecord) -> Result<Self, anyhow::Error> {
         Ok(Self {
             call_info: seqvar
-                .call_info
+                .call_infos
                 .iter()
                 .map(|(sample_name, call_info)| {
                     (

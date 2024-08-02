@@ -292,6 +292,38 @@ pub fn build_output_header(
             ),
         )
         .add_info(
+            "gnomad_mtdna_an",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of alleles in gnomAD MT",
+            ),
+        )
+        .add_info(
+            "gnomad_mtdna_hom",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of hom. alt. carriers in gnomAD MT",
+            ),
+        )
+        .add_info(
+            "gnomad_mtdna_het",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of het. alt. carriers in gnomAD MT",
+            ),
+        )
+        .add_info(
+            "gnomad_mtdna_hemi",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of hemi. alt. carriers in gnomAD MT",
+            ),
+        )
+        .add_info(
             "helix_an",
             Map::<Info>::new(
                 Number::Count(1),

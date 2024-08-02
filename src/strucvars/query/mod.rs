@@ -834,11 +834,8 @@ pub struct InMemoryDbs {
     pub clinvar_sv: ClinvarSv,
 }
 
-/// Translate gene allow list to gene identifier sfrom
-pub fn translate_gene_allowlist(
-    gene_allowlist: &Vec<String>,
-    dbs: &InMemoryDbs,
-) -> HashSet<String> {
+/// Translate gene allow list to gene identifiers from in-memory dbs.
+pub fn translate_genes(genes: &Vec<String>, dbs: &InMemoryDbs) -> HashSet<String> {
     let mut result = HashSet::new();
 
     let re_entrez = regex::Regex::new(r"^\d+").expect("invalid regex in source code");
@@ -855,7 +852,7 @@ pub fn translate_gene_allowlist(
             .map(|record| (record.symbol.clone(), record.hgnc_id.clone())),
     );
 
-    for gene in gene_allowlist {
+    for gene in genes {
         let gene = gene.trim();
         if re_entrez.is_match(gene) {
             if let Ok(gene_id) = numeric_gene_id(gene) {
@@ -986,7 +983,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         if gene_allowlist.is_empty() {
             None
         } else {
-            Some(translate_gene_allowlist(gene_allowlist, &dbs))
+            Some(translate_genes(gene_allowlist, &dbs))
         }
     } else {
         None

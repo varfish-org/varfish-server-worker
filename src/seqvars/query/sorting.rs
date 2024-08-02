@@ -1,16 +1,16 @@
-//! Code for sorting `SequenceVariant` records by HGNC ID or coordinate.
+//! Code for sorting `VariantRecord` records by HGNC ID or coordinate.
 
-use super::schema::SequenceVariant;
+use super::schema::data::VariantRecord;
 
-/// Helper wrapper that allows to sort `SequenceVariant` by HGNC ID.
+/// Helper wrapper that allows to sort `VariantRecord` by HGNC ID.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ByHgncId {
     pub hgnc_id: String,
-    pub seqvar: SequenceVariant,
+    pub seqvar: VariantRecord,
 }
 
-impl From<SequenceVariant> for ByHgncId {
-    fn from(val: SequenceVariant) -> Self {
+impl From<VariantRecord> for ByHgncId {
+    fn from(val: VariantRecord) -> Self {
         Self {
             hgnc_id: if !val.ann_fields.is_empty() {
                 val.ann_fields[0].gene_id.clone()
@@ -42,17 +42,17 @@ impl Ord for ByHgncId {
     }
 }
 
-/// Helper wrapper that allows to sort `SequenceVariant` by coordinate.
+/// Helper wrapper that allows to sort `VariantRecord` by coordinate.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ByCoordinate {
     pub coordinate: (String, i32),
-    pub seqvar: SequenceVariant,
+    pub seqvar: VariantRecord,
 }
 
-impl From<SequenceVariant> for ByCoordinate {
-    fn from(val: SequenceVariant) -> Self {
+impl From<VariantRecord> for ByCoordinate {
+    fn from(val: VariantRecord) -> Self {
         Self {
-            coordinate: (val.chrom.clone(), val.pos),
+            coordinate: (val.vcf_variant.chrom.clone(), val.vcf_variant.pos),
             seqvar: val,
         }
     }

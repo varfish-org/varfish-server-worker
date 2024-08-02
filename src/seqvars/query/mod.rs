@@ -12,22 +12,21 @@ use std::time::Instant;
 use clap::{command, Parser};
 use ext_sort::LimitedBufferBuilder;
 use ext_sort::{ExternalSorter, ExternalSorterBuilder};
-use itertools::Itertools;
 
+use itertools::Itertools as _;
 use mehari::annotate::seqvars::CHROM_TO_CHROM_NO;
 use noodles::vcf;
 use rand_core::{RngCore, SeedableRng};
+use schema::data::{TryFromVcf as _, VariantRecord, VcfVariant};
+use schema::query::{CaseQuery, GenotypeChoice, RecessiveMode, SampleGenotypeChoice};
 use thousands::Separable;
 use uuid::Uuid;
 
 use crate::common;
-use crate::seqvars::query::schema::GenotypeChoice;
 use crate::{common::trace_rss_now, common::GenomeRelease};
 use mehari::common::noodles::open_vcf_reader;
 
 use self::annonars::Annotator;
-use self::schema::CaseQuery;
-use self::schema::SequenceVariant;
 use self::sorting::{ByCoordinate, ByHgncId};
 
 /// Command line arguments for `seqvars query` sub command.
@@ -77,55 +76,46 @@ struct QueryStats {
 
 /// Checks whether the variants pass through the query interpreter.
 ///
-/// This function is only relevant if the query uses recessive mode.
-fn passes_for_gene(
-    query: &CaseQuery,
-    seqvars: &Vec<SequenceVariant>,
-) -> Result<bool, anyhow::Error> {
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    enum Mode {
-        ComphetRecessive,
-        Recessive,
-        Other,
-    }
-
-    let mut mode = Mode::Other;
-    let mut index_name = String::default();
-    let mut parents = Vec::new();
-    query
-        .genotype
-        .iter()
-        .for_each(|(sample_name, genotype_choice)| match genotype_choice {
-            Some(GenotypeChoice::ComphetIndex) => {
-                index_name.clone_from(sample_name);
-                mode = Mode::ComphetRecessive;
-            }
-            Some(GenotypeChoice::RecessiveIndex) => {
-                index_name.clone_from(sample_name);
-                mode = Mode::Recessive;
-            }
-            Some(GenotypeChoice::RecessiveParent) => {
-                parents.push(sample_name.clone());
-            }
-            _ => (),
-        });
-
-    eprintln!(
-        "mode = {:?}, index_name = {:?}, parents = {:?}",
-        mode, &index_name, &parents
-    );
-
-    // No special handling for non-recessive mode.
-    if mode == Mode::Other {
+/// This function is only relevant if the query uses comp. het. or "any" recessive mode.
+///
+/// The case of homozygous recessive mode is assumed to be handled outside.  This function
+/// only gets passed variants that are het. in the index.
+fn passes_for_gene(query: &CaseQuery, seqvars: &Vec<VariantRecord>) -> Result<bool, anyhow::Error> {
+    // Short-circuit in case of disabled or homozygous-only recessive mode.
+    if matches!(
+        query.genotype.recessive_mode,
+        RecessiveMode::Disabled | RecessiveMode::Homozygous
+    ) {
         return Ok(true);
     }
+
+    // Extract family information for recessive mode.
+    let (index, parents) = {
+        let mut index = String::new();
+        let mut parents = Vec::new();
+        for (sample_name, SampleGenotypeChoice { genotype, .. }) in
+            query.genotype.sample_genotypes.iter()
+        {
+            match genotype {
+                GenotypeChoice::RecessiveIndex => {
+                    index = sample_name.clone();
+                }
+                GenotypeChoice::RecessiveParent => {
+                    parents.push(sample_name.clone());
+                }
+                _ => (),
+            }
+        }
+        (index, parents)
+    };
+    tracing::debug!("index = {}, parents ={:?}", &index, &parents);
 
     let mut seen_het_parents = Vec::new();
     for seqvar in seqvars {
         // Get parsed index genotype.
         let index_gt: common::Genotype = seqvar
-            .call_info
-            .get(&index_name)
+            .call_infos
+            .get(&index)
             .expect("no call info for index")
             .genotype
             .as_ref()
@@ -133,16 +123,12 @@ fn passes_for_gene(
             .parse()
             .map_err(|e| anyhow::anyhow!("could not parse index genotype: {}", e))?;
 
-        eprintln!(
-            "seqvar = {:?}, index_gt = {:?}, mode = {:?}",
-            &seqvar, &index_gt, mode
-        );
-        if mode == Mode::Recessive && index_gt == common::Genotype::HomAlt {
-            // if hom. recessive is allowed then we are done
-            return Ok(true);
-        } else if mode != Mode::Recessive && index_gt != common::Genotype::Het {
-            // it only makese sense to continue in recessive mode if the index is het.
-            return Ok(false);
+        tracing::debug!("seqvar = {:?}, index_gt = {:?}", &seqvar, &index_gt);
+
+        // Index is not het., don't consider variant further for comp. het.
+        if index_gt != common::Genotype::Het {
+            // Skip variant,
+            continue;
         }
 
         // Otherwise, the index must be Het and we have to check which parent is also het.
@@ -151,7 +137,7 @@ fn passes_for_gene(
             .iter()
             .map(|parent_name| {
                 seqvar
-                    .call_info
+                    .call_infos
                     .get(parent_name)
                     .expect("no call info for parent")
                     .genotype
@@ -160,21 +146,37 @@ fn passes_for_gene(
                     .parse::<common::Genotype>()
             })
             .collect::<Result<Vec<_>, _>>()?;
+        let homalt_parents = parents
+            .iter()
+            .zip(parent_gts.iter())
+            .filter(|(_, gt)| **gt == common::Genotype::HomAlt)
+            .map(|(name, _)| name.clone())
+            .collect::<Vec<_>>();
         let het_parents = parents
             .iter()
             .zip(parent_gts.iter())
             .filter(|(_, gt)| **gt == common::Genotype::Het)
             .map(|(name, _)| name.clone())
             .collect::<Vec<_>>();
-        assert!(het_parents.len() <= 1);
-        eprintln!("het_parents = {:?}", &het_parents);
+
+        if !homalt_parents.is_empty() {
+            // Skip variants, found homozygous parent.
+            continue;
+        }
+        if het_parents.len() > 1 {
+            // Skip variants, found more than one het. parent.
+            continue;
+        }
+
+        tracing::debug!("het_parents = {:?}", &het_parents);
+
         if let Some(parent) = het_parents.first() {
             if !seen_het_parents.contains(parent) {
                 seen_het_parents.push(parent.clone());
             }
         }
 
-        eprintln!("seen_het_parents = {:?}", &seen_het_parents);
+        tracing::debug!("seen_het_parents = {:?}", &seen_het_parents);
 
         // If the number of seen het. parents is equal to the number of parents, we are done.
         if seen_het_parents.len() == parents.len() {
@@ -182,7 +184,7 @@ fn passes_for_gene(
         }
     }
 
-    // one of the recessive modes was active and we did not find all parents
+    // We did not find a compound heterozygous variant.
     Ok(false)
 }
 
@@ -233,7 +235,7 @@ async fn run_query(
             }
 
             stats.count_total += 1;
-            let record_seqvar = SequenceVariant::from_vcf(&record_buf, &input_header)
+            let record_seqvar = VariantRecord::try_from_vcf(&record_buf, &input_header)
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
             tracing::debug!("processing record {:?}", record_seqvar);
 
@@ -294,7 +296,7 @@ async fn run_query(
 
         sorted_iter
             .map(|res| res.expect("problem reading line after sorting by HGNC ID"))
-            .group_by(|by_hgnc_id| by_hgnc_id.hgnc_id.clone())
+            .chunk_by(|by_hgnc_id| by_hgnc_id.hgnc_id.clone())
             .into_iter()
             .map(|(_, group)| {
                 group
@@ -382,7 +384,7 @@ async fn run_query(
         } else {
             anyhow::bail!("error reading line from input file")
         };
-        let seqvar: SequenceVariant = serde_json::from_str(&line).map_err(|e| {
+        let seqvar: VariantRecord = serde_json::from_str(&line).map_err(|e| {
             anyhow::anyhow!(
                 "error parsing line from input file: {:?} (line: {:?})",
                 e,
@@ -406,9 +408,9 @@ async fn run_query(
 
 /// Create output payload and write the record to the output file.
 fn create_payload_and_write_record(
-    seqvar: SequenceVariant,
+    seqvar: VariantRecord,
     annotator: &Annotator,
-    chrom_to_chrom_no: &CHROM_TO_CHROM_NO,
+    chrom_to_chrom_no: &std::collections::HashMap<String, u32>,
     csv_writer: &mut csv::Writer<std::fs::File>,
     args: &Args,
     rng: &mut rand::rngs::StdRng,
@@ -430,16 +432,15 @@ fn create_payload_and_write_record(
         )
         .build()
         .map_err(|e| anyhow::anyhow!("could not build payload: {}", e))?;
-    eprintln!("result_payload = {:?}", &result_payload);
-    let start = seqvar.pos;
-    let end = start + seqvar.reference.len() as i32 - 1;
+    tracing::debug!("result_payload = {:?}", &result_payload);
+    let VcfVariant {
+        chrom,
+        pos: start,
+        ref_allele,
+        alt_allele,
+    } = seqvar.vcf_variant.clone();
+    let end = start + ref_allele.len() as i32 - 1;
     let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
-    let SequenceVariant {
-        chrom: chromosome,
-        reference,
-        alternative,
-        ..
-    } = seqvar;
     csv_writer
         .serialize(
             &output::RecordBuilder::default()
@@ -452,17 +453,13 @@ fn create_payload_and_write_record(
                     GenomeRelease::Grch37 => "GRCh37".into(),
                     GenomeRelease::Grch38 => "GRCh38".into(),
                 })
-                .chromosome_no(
-                    *chrom_to_chrom_no
-                        .get(&chromosome)
-                        .expect("invalid chromosome") as i32,
-                )
-                .chromosome(chromosome)
+                .chromosome_no(*chrom_to_chrom_no.get(&chrom).expect("invalid chromosome") as i32)
+                .chromosome(chrom)
                 .start(start)
                 .end(end)
                 .bin(bin)
-                .reference(reference)
-                .alternative(alternative)
+                .reference(ref_allele)
+                .alternative(alt_allele)
                 .payload(
                     serde_json::to_string(&result_payload)
                         .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
@@ -489,13 +486,13 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     };
 
     tracing::info!("Loading query... {}", args.path_query_json);
-    let query: schema::CaseQuery =
+    let query: CaseQuery =
         match serde_json::from_reader(std::fs::File::open(&args.path_query_json)?) {
             Ok(query) => query,
             Err(_) => {
-                let query: crate::pbs::seqvars::CaseQuery =
+                let query: crate::pbs::varfish::v1::seqvars::query::CaseQuery =
                     serde_json::from_reader(std::fs::File::open(&args.path_query_json)?)?;
-                CaseQuery::from(query)
+                CaseQuery::try_from(query)?
             }
         };
 
@@ -528,18 +525,8 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     trace_rss_now();
 
     tracing::info!("Translating gene allow list...");
-    let hgnc_allowlist = if let Some(gene_allowlist) = &query.locus.gene_allowlist {
-        if gene_allowlist.is_empty() {
-            None
-        } else {
-            Some(crate::strucvars::query::translate_gene_allowlist(
-                gene_allowlist,
-                &in_memory_dbs,
-            ))
-        }
-    } else {
-        None
-    };
+    let hgnc_allowlist =
+        crate::strucvars::query::translate_genes(&query.locus.genes, &in_memory_dbs);
 
     tracing::info!("Running queries...");
     let before_query = Instant::now();
@@ -574,85 +561,81 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
 mod test {
     use rstest::rstest;
 
-    use super::schema::{CallInfo, SequenceVariant};
-    use crate::seqvars::query::schema::{CaseQuery, GenotypeChoice};
+    use super::schema::data::{CallInfo, VariantRecord};
+    use crate::seqvars::query::schema::query::{CaseQuery, GenotypeChoice, RecessiveMode};
 
     #[rstest]
     #[case(
-        GenotypeChoice::ComphetIndex,
+        RecessiveMode::CompoundHeterozygous,
         vec!["0/1,0/1,0/0"],
         false,
     )]
     #[case(
-        GenotypeChoice::ComphetIndex,
+        RecessiveMode::CompoundHeterozygous,
         vec!["1/1,0/0,0/0"],
         false,
     )]
     #[case(
-        GenotypeChoice::ComphetIndex,
+        RecessiveMode::CompoundHeterozygous,
         vec!["0/1,0/1,0/0","0/1,0/0,0/1"],
         true,
     )]
     #[case(
-        GenotypeChoice::RecessiveIndex,
+        RecessiveMode::Any,
         vec!["1/1,0/0,0/0","0/1,0/0,0/1"],
         true,
     )]
     #[case(
-        GenotypeChoice::RecessiveIndex,
+        RecessiveMode::Any,
         vec!["1/0,1/0,0/0","0/1,0/0,0/1"],
         true,
     )]
     #[case(
-        GenotypeChoice::RecessiveIndex,
+        RecessiveMode::Any,
         vec!["1/0,1/0,0/0","1/0,0/1,0/0"],
         false,
     )]
     fn passes_for_gene_full_trio(
-        #[case] gt_choice_index: GenotypeChoice,
+        #[case] recessive_mode: RecessiveMode,
         #[case] trio_gts: Vec<&str>,
         #[case] passes: bool,
     ) -> Result<(), anyhow::Error> {
+        use crate::seqvars::query::schema::query::{QuerySettingsGenotype, SampleGenotypeChoice};
+
         let query = CaseQuery {
-            genotype: vec![
-                ("index".into(), Some(gt_choice_index)),
-                ("father".into(), Some(GenotypeChoice::RecessiveParent)),
-                ("mother".into(), Some(GenotypeChoice::RecessiveParent)),
-            ]
-            .into_iter()
-            .collect(),
+            genotype: QuerySettingsGenotype {
+                recessive_mode,
+                sample_genotypes: indexmap::indexmap! {
+                    String::from("index") => SampleGenotypeChoice { sample: String::from("index"), genotype: GenotypeChoice::RecessiveIndex, ..Default::default() },
+                    String::from("father") => SampleGenotypeChoice { sample: String::from("father"), genotype: GenotypeChoice::RecessiveParent, ..Default::default() },
+                    String::from("mother") => SampleGenotypeChoice { sample: String::from("mother"), genotype: GenotypeChoice::RecessiveParent, ..Default::default() },
+                },
+            },
             ..Default::default()
         };
         let seqvars = trio_gts
             .iter()
             .map(|gts| {
                 let gts: Vec<&str> = gts.split(',').collect();
-                SequenceVariant {
-                    call_info: vec![
-                        (
-                            String::from("index"),
+                VariantRecord {
+                    call_infos: indexmap::indexmap! {
+                        String::from("index") =>
                             CallInfo {
+                                sample: String::from("index"),
                                 genotype: Some(gts[0].into()),
                                 ..Default::default()
                             },
-                        ),
-                        (
-                            String::from("father"),
+                        String::from("father") =>
                             CallInfo {
                                 genotype: Some(gts[1].into()),
                                 ..Default::default()
                             },
-                        ),
-                        (
-                            String::from("mother"),
+                        String::from("mother") =>
                             CallInfo {
                                 genotype: Some(gts[2].into()),
                                 ..Default::default()
                             },
-                        ),
-                    ]
-                    .into_iter()
-                    .collect(),
+                    },
                     ..Default::default()
                 }
             })

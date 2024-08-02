@@ -1,69 +1,96 @@
-use crate::seqvars::query::schema::{CaseQuery, SequenceVariant};
+use crate::seqvars::query::schema::{
+    data::{Af, VariantRecord},
+    query::CaseQuery,
+};
 
-/// Determine whether the `SequenceVariant` passes the frequency filter.
-pub fn passes(query: &CaseQuery, s: &SequenceVariant) -> Result<bool, anyhow::Error> {
-    let pop = &query.population_frequency;
-    let is_mtdna = annonars::common::cli::canonicalize(&s.chrom) == "MT";
+/// Determine whether the `VariantRecord` passes the frequency filter.
+pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Error> {
+    let frequency = &query.frequency;
+    let is_mtdna = annonars::common::cli::canonicalize(&s.vcf_variant.chrom) == "MT";
 
     if is_mtdna {
-        if pop.helixmtdb.enabled
-            && (pop.helixmtdb.frequency.is_some()
-                && s.helixmtdb_af() > pop.helixmtdb.frequency.expect("tested before")
-                || pop.helixmtdb.heteroplasmic.is_some()
+        if frequency.helixmtdb.enabled
+            && (frequency.helixmtdb.frequency.is_some()
+                && s.population_frequencies.helixmtdb.af()
+                    > frequency.helixmtdb.frequency.expect("tested before")
+                || frequency.helixmtdb.heteroplasmic.is_some()
                     && s.population_frequencies.helixmtdb.het
-                        > pop.helixmtdb.heteroplasmic.expect("tested before")
-                || pop.helixmtdb.homoplasmic.is_some()
+                        > frequency.helixmtdb.heteroplasmic.expect("tested before")
+                || frequency.helixmtdb.homoplasmic.is_some()
                     && s.population_frequencies.helixmtdb.hom
-                        > pop.helixmtdb.homoplasmic.expect("tested before"))
+                        > frequency.helixmtdb.homoplasmic.expect("tested before"))
         {
             tracing::trace!(
                 "variant {:?} fails HelixMtDb frequency filter {:?}",
                 s,
-                &pop
+                &frequency.helixmtdb
             );
             return Ok(false);
         }
-    } else if pop.gnomad_exomes.enabled
-        && (pop.gnomad_exomes.allele_frequency.is_some()
-            && s.gnomad_exomes_af() > pop.gnomad_exomes.allele_frequency.expect("tested before")
-            || pop.gnomad_exomes.heterozygous.is_some()
-                && s.population_frequencies.gnomad.exomes_het
-                    > pop.gnomad_exomes.heterozygous.expect("tested before")
-            || pop.gnomad_exomes.homozygous.is_some()
-                && s.population_frequencies.gnomad.exomes_hom
-                    > pop.gnomad_exomes.homozygous.expect("tested before")
-            || pop.gnomad_exomes.hemizygous.is_some()
-                && s.population_frequencies.gnomad.exomes_hemi
-                    > pop.gnomad_exomes.hemizygous.expect("tested before"))
-    {
-        tracing::trace!(
-            "variant {:?} fails gnomAD exomes frequency filter {:?}",
-            s,
-            &pop.gnomad_exomes.allele_frequency
-        );
-        return Ok(false);
-    }
-
-    if pop.gnomad_genomes.enabled
-        && (pop.gnomad_genomes.allele_frequency.is_some()
-            && s.gnomad_genomes_af() > pop.gnomad_genomes.allele_frequency.expect("tested before")
-            || pop.gnomad_genomes.heterozygous.is_some()
-                && s.population_frequencies.gnomad.genomes_het
-                    > pop.gnomad_genomes.heterozygous.expect("tested before")
-            || pop.gnomad_genomes.homozygous.is_some()
-                && s.population_frequencies.gnomad.genomes_hom
-                    > pop.gnomad_genomes.homozygous.expect("tested before")
-            || !is_mtdna
-                && pop.gnomad_genomes.hemizygous.is_some()
-                && s.population_frequencies.gnomad.genomes_hemi
-                    > pop.gnomad_genomes.hemizygous.expect("tested before"))
-    {
-        tracing::trace!(
-            "variant {:?} fails gnomAD genomes allele_frequency filter {:?}",
-            s,
-            &pop.gnomad_genomes.allele_frequency
-        );
-        return Ok(false);
+        if frequency.gnomad_mt.enabled
+            && (frequency.gnomad_mt.frequency.is_some()
+                && s.population_frequencies.gnomad_mt.af()
+                    > frequency.gnomad_mt.frequency.expect("tested before")
+                || frequency.gnomad_mt.heteroplasmic.is_some()
+                    && s.population_frequencies.gnomad_mt.het
+                        > frequency.gnomad_mt.heteroplasmic.expect("tested before")
+                || frequency.gnomad_mt.homoplasmic.is_some()
+                    && s.population_frequencies.gnomad_mt.hom
+                        > frequency.gnomad_mt.homoplasmic.expect("tested before"))
+        {
+            tracing::trace!(
+                "variant {:?} fails gnomAD-MT frequency filter {:?}",
+                s,
+                &frequency.gnomad_mt
+            );
+            return Ok(false);
+        }
+    } else {
+        if frequency.gnomad_exomes.enabled
+            && (frequency.gnomad_exomes.frequency.is_some()
+                && s.population_frequencies.gnomad_exomes.af()
+                    > frequency.gnomad_exomes.frequency.expect("tested before")
+                || frequency.gnomad_exomes.heterozygous.is_some()
+                    && s.population_frequencies.gnomad_exomes.het
+                        > frequency.gnomad_exomes.heterozygous.expect("tested before")
+                || frequency.gnomad_exomes.homozygous.is_some()
+                    && s.population_frequencies.gnomad_exomes.hom
+                        > frequency.gnomad_exomes.homozygous.expect("tested before")
+                || frequency.gnomad_exomes.hemizygous.is_some()
+                    && s.population_frequencies.gnomad_exomes.hemi
+                        > frequency.gnomad_exomes.hemizygous.expect("tested before"))
+        {
+            tracing::trace!(
+                "variant {:?} fails gnomAD-exomes frequency filter {:?}",
+                s,
+                &frequency.gnomad_exomes
+            );
+            return Ok(false);
+        }
+        if frequency.gnomad_genomes.enabled
+            && (frequency.gnomad_genomes.frequency.is_some()
+                && s.population_frequencies.gnomad_genomes.af()
+                    > frequency.gnomad_genomes.frequency.expect("tested before")
+                || frequency.gnomad_genomes.heterozygous.is_some()
+                    && s.population_frequencies.gnomad_genomes.het
+                        > frequency
+                            .gnomad_genomes
+                            .heterozygous
+                            .expect("tested before")
+                || frequency.gnomad_genomes.homozygous.is_some()
+                    && s.population_frequencies.gnomad_genomes.hom
+                        > frequency.gnomad_genomes.homozygous.expect("tested before")
+                || frequency.gnomad_genomes.hemizygous.is_some()
+                    && s.population_frequencies.gnomad_genomes.hemi
+                        > frequency.gnomad_genomes.hemizygous.expect("tested before"))
+        {
+            tracing::trace!(
+                "variant {:?} fails gnomAD-genomes frequency filter {:?}",
+                s,
+                &frequency.gnomad_genomes
+            );
+            return Ok(false);
+        }
     }
 
     Ok(true)
@@ -76,7 +103,14 @@ mod test {
     use rstest::rstest;
 
     use crate::seqvars::query::schema::{
-        CaseQuery, HelixMtDBs, PopulationFrequencies, SequenceVariant,
+        data::{
+            MitochondrialFrequencies, NuclearFrequencies, PopulationFrequencies, VariantRecord,
+            VcfVariant,
+        },
+        query::{
+            CaseQuery, GnomadNuclearFrequencySettings, HelixMtDbFrequencySettings,
+            QuerySettingsFrequency,
+        },
     };
 
     #[rstest]
@@ -144,15 +178,11 @@ mod test {
         #[case] query_gnomad_exomes_hemizygous: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
-        use crate::seqvars::query::schema::{
-            GnomadNuclearOptions, Gnomads, PopulationFrequencies, PopulationFrequencyOptions,
-        };
-
         let query = CaseQuery {
-            population_frequency: PopulationFrequencyOptions {
-                gnomad_exomes: GnomadNuclearOptions {
+            frequency: QuerySettingsFrequency {
+                gnomad_exomes: GnomadNuclearFrequencySettings {
                     enabled: query_gnomad_exomes_enabled,
-                    allele_frequency: query_gnomad_exomes_frequency,
+                    frequency: query_gnomad_exomes_frequency,
                     heterozygous: query_gnomad_exomes_heterozygous,
                     homozygous: query_gnomad_exomes_homozygous,
                     hemizygous: query_gnomad_exomes_hemizygous,
@@ -162,20 +192,23 @@ mod test {
             },
             ..Default::default()
         };
-        let seq_var = SequenceVariant {
+        let seq_var = VariantRecord {
             population_frequencies: PopulationFrequencies {
-                gnomad: Gnomads {
-                    exomes_an: seqvar_gnomad_exomes_an,
-                    exomes_het: seqvar_gnomad_exomes_het,
-                    exomes_hom: seqvar_gnomad_exomes_hom,
-                    exomes_hemi: seqvar_gnomad_exomes_hemi,
+                gnomad_exomes: NuclearFrequencies {
+                    an: seqvar_gnomad_exomes_an,
+                    het: seqvar_gnomad_exomes_het,
+                    hom: seqvar_gnomad_exomes_hom,
+                    hemi: seqvar_gnomad_exomes_hemi,
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            chrom: "X".to_string(),
-            reference: "G".into(),
-            alternative: "A".into(),
+            vcf_variant: VcfVariant {
+                chrom: "X".to_string(),
+                pos: 1,
+                ref_allele: "G".into(),
+                alt_allele: "A".into(),
+            },
             ann_fields: vec![AnnField {
                 allele: mehari::annotate::seqvars::ann::Allele::Alt {
                     alternative: "A".into(),
@@ -187,6 +220,7 @@ mod test {
                 feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
                     term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
                 },
+                strand: Default::default(),
                 feature_id: Default::default(),
                 feature_biotype: vec![mehari::annotate::seqvars::ann::FeatureBiotype::Coding],
                 rank: Default::default(),
@@ -271,15 +305,11 @@ mod test {
         #[case] query_gnomad_genomes_hemizygous: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
-        use crate::seqvars::query::schema::{
-            GnomadNuclearOptions, Gnomads, PopulationFrequencies, PopulationFrequencyOptions,
-        };
-
         let query = CaseQuery {
-            population_frequency: PopulationFrequencyOptions {
-                gnomad_genomes: GnomadNuclearOptions {
+            frequency: QuerySettingsFrequency {
+                gnomad_genomes: GnomadNuclearFrequencySettings {
                     enabled: query_gnomad_genomes_enabled,
-                    allele_frequency: query_gnomad_genomes_frequency,
+                    frequency: query_gnomad_genomes_frequency,
                     heterozygous: query_gnomad_genomes_heterozygous,
                     homozygous: query_gnomad_genomes_homozygous,
                     hemizygous: query_gnomad_genomes_hemizygous,
@@ -289,20 +319,23 @@ mod test {
             },
             ..Default::default()
         };
-        let seq_var = SequenceVariant {
+        let seq_var = VariantRecord {
             population_frequencies: PopulationFrequencies {
-                gnomad: Gnomads {
-                    genomes_an: seqvar_gnomad_genomes_an,
-                    genomes_het: seqvar_gnomad_genomes_het,
-                    genomes_hom: seqvar_gnomad_genomes_hom,
-                    genomes_hemi: seqvar_gnomad_genomes_hemi,
+                gnomad_genomes: NuclearFrequencies {
+                    an: seqvar_gnomad_genomes_an,
+                    het: seqvar_gnomad_genomes_het,
+                    hom: seqvar_gnomad_genomes_hom,
+                    hemi: seqvar_gnomad_genomes_hemi,
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            chrom: "X".to_string(),
-            reference: "G".into(),
-            alternative: "A".into(),
+            vcf_variant: VcfVariant {
+                chrom: "X".to_string(),
+                pos: 1,
+                ref_allele: "G".into(),
+                alt_allele: "A".into(),
+            },
             ann_fields: vec![AnnField {
                 allele: mehari::annotate::seqvars::ann::Allele::Alt {
                     alternative: "A".into(),
@@ -314,6 +347,7 @@ mod test {
                 feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
                     term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
                 },
+                strand: Default::default(),
                 feature_id: Default::default(),
                 feature_biotype: vec![mehari::annotate::seqvars::ann::FeatureBiotype::Coding],
                 rank: Default::default(),
@@ -373,38 +407,39 @@ mod test {
         #[case] seqvar_helix_an: i32,
         #[case] seqvar_helix_het: i32,
         #[case] seqvar_helix_hom: i32,
-        #[case] query_helix_enabled: bool,
-        #[case] query_helix_frequency: Option<f32>,
-        #[case] query_helix_heteroplasmic: Option<i32>,
-        #[case] query_helix_homoplasmic: Option<i32>,
+        #[case] query_helixmtdb_enabled: bool,
+        #[case] query_helixmtdb_frequency: Option<f32>,
+        #[case] query_helixmtdb_heteroplasmic: Option<i32>,
+        #[case] query_helixmtdb_homoplasmic: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
-        use crate::seqvars::query::schema::{HelixMtDbOptions, PopulationFrequencyOptions};
-
         let query = CaseQuery {
-            population_frequency: PopulationFrequencyOptions {
-                helixmtdb: HelixMtDbOptions {
-                    enabled: query_helix_enabled,
-                    frequency: query_helix_frequency,
-                    heteroplasmic: query_helix_heteroplasmic,
-                    homoplasmic: query_helix_homoplasmic,
+            frequency: QuerySettingsFrequency {
+                helixmtdb: HelixMtDbFrequencySettings {
+                    enabled: query_helixmtdb_enabled,
+                    frequency: query_helixmtdb_frequency,
+                    heteroplasmic: query_helixmtdb_heteroplasmic,
+                    homoplasmic: query_helixmtdb_homoplasmic,
                 },
                 ..Default::default()
             },
             ..Default::default()
         };
-        let seq_var = SequenceVariant {
+        let seq_var = VariantRecord {
             population_frequencies: PopulationFrequencies {
-                helixmtdb: HelixMtDBs {
+                helixmtdb: MitochondrialFrequencies {
                     an: seqvar_helix_an,
                     het: seqvar_helix_het,
                     hom: seqvar_helix_hom,
                 },
                 ..Default::default()
             },
-            chrom: "MT".to_string(),
-            reference: "G".into(),
-            alternative: "A".into(),
+            vcf_variant: VcfVariant {
+                chrom: "MT".to_string(),
+                pos: 1,
+                ref_allele: "G".into(),
+                alt_allele: "A".into(),
+            },
             ann_fields: vec![AnnField {
                 allele: mehari::annotate::seqvars::ann::Allele::Alt {
                     alternative: "A".into(),
@@ -416,6 +451,7 @@ mod test {
                 feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
                     term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
                 },
+                strand: Default::default(),
                 feature_id: Default::default(),
                 feature_biotype: vec![mehari::annotate::seqvars::ann::FeatureBiotype::Coding],
                 rank: Default::default(),
@@ -472,46 +508,45 @@ mod test {
     // hom. count: pass (fail but filter is disabled)
     #[case(1000, 0, 2, false, None, None, Some(1), true)]
     #[allow(clippy::too_many_arguments)]
-    fn passes_frequency_gnomad_genomes_chrmt(
+    fn passes_frequency_gnomad_mtdna(
         #[case] seqvar_gnomad_genomes_an: i32,
         #[case] seqvar_gnomad_genomes_het: i32,
         #[case] seqvar_gnomad_genomes_hom: i32,
-        #[case] query_gnomad_genomes_enabled: bool,
-        #[case] query_gnomad_genomes_frequency: Option<f32>,
-        #[case] query_gnomad_genomes_heteroplasmic: Option<i32>,
-        #[case] query_gnomad_genomes_homoplasmic: Option<i32>,
+        #[case] query_gnomad_mtdna_enabled: bool,
+        #[case] query_gnomad_mtdna_frequency: Option<f32>,
+        #[case] query_gnomad_mtdna_heteroplasmic: Option<i32>,
+        #[case] query_gnomad_mtdna_homoplasmic: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
-        use crate::seqvars::query::schema::{
-            GnomadNuclearOptions, Gnomads, PopulationFrequencies, PopulationFrequencyOptions,
-        };
-
         let query = CaseQuery {
-            population_frequency: PopulationFrequencyOptions {
-                gnomad_genomes: GnomadNuclearOptions {
-                    enabled: query_gnomad_genomes_enabled,
-                    allele_frequency: query_gnomad_genomes_frequency,
-                    heterozygous: query_gnomad_genomes_heteroplasmic,
-                    homozygous: query_gnomad_genomes_homoplasmic,
+            frequency: QuerySettingsFrequency {
+                gnomad_genomes: GnomadNuclearFrequencySettings {
+                    enabled: query_gnomad_mtdna_enabled,
+                    frequency: query_gnomad_mtdna_frequency,
+                    heterozygous: query_gnomad_mtdna_heteroplasmic,
+                    homozygous: query_gnomad_mtdna_homoplasmic,
                     ..Default::default()
                 },
                 ..Default::default()
             },
             ..Default::default()
         };
-        let seq_var = SequenceVariant {
+        let seq_var = VariantRecord {
             population_frequencies: PopulationFrequencies {
-                gnomad: Gnomads {
-                    genomes_an: seqvar_gnomad_genomes_an,
-                    genomes_het: seqvar_gnomad_genomes_het,
-                    genomes_hom: seqvar_gnomad_genomes_hom,
+                gnomad_mt: MitochondrialFrequencies {
+                    an: seqvar_gnomad_genomes_an,
+                    het: seqvar_gnomad_genomes_het,
+                    hom: seqvar_gnomad_genomes_hom,
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            chrom: "MT".to_string(),
-            reference: "G".into(),
-            alternative: "A".into(),
+            vcf_variant: VcfVariant {
+                chrom: "MT".to_string(),
+                pos: 1,
+                ref_allele: "G".into(),
+                alt_allele: "A".into(),
+            },
             ann_fields: vec![AnnField {
                 allele: mehari::annotate::seqvars::ann::Allele::Alt {
                     alternative: "A".into(),
@@ -523,6 +558,7 @@ mod test {
                 feature_type: mehari::annotate::seqvars::ann::FeatureType::SoTerm {
                     term: mehari::annotate::seqvars::ann::SoFeature::Transcript,
                 },
+                strand: Default::default(),
                 feature_id: Default::default(),
                 feature_biotype: vec![mehari::annotate::seqvars::ann::FeatureBiotype::Coding],
                 rank: Default::default(),

@@ -1,4 +1,4 @@
-//! Apply settings from a `strucvar::query::schema::CaseQuery` to `SequenceVariant` records.
+//! Apply settings from a `strucvar::query::schema::CaseQuery` to `VariantRecord` records.
 
 use std::collections::HashSet;
 
@@ -12,7 +12,7 @@ mod regions_allowlist;
 
 use super::{
     annonars::Annotator,
-    schema::{CaseQuery, SequenceVariant},
+    schema::{data::VariantRecord, query::CaseQuery},
 };
 
 /// Hold data structures that support the interpretation of one `CaseQuery`
@@ -22,7 +22,7 @@ pub struct QueryInterpreter {
     /// The case query settings.
     pub query: CaseQuery,
     /// Gene allowlist with HGNC IDs.
-    pub hgnc_allowlist: Option<HashSet<String>>,
+    pub hgnc_allowlist: HashSet<String>,
 }
 
 /// Result type for `QueryInterpreter::passes_genotype()`.
@@ -34,17 +34,17 @@ pub struct PassesResult {
 
 impl QueryInterpreter {
     /// Construct new `QueryInterpreter` with the given query settings.
-    pub fn new(query: CaseQuery, hgnc_allowlist: Option<HashSet<String>>) -> Self {
+    pub fn new(query: CaseQuery, hgnc_allowlist: HashSet<String>) -> Self {
         QueryInterpreter {
             query,
             hgnc_allowlist,
         }
     }
 
-    /// Determine whether the annotated `SequenceVariant` passes all criteria.
+    /// Determine whether the annotated `VariantRecord` passes all criteria.
     pub fn passes(
         &self,
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
         annotator: &Annotator,
     ) -> Result<PassesResult, anyhow::Error> {
         // Check the filters first that are cheap to compute.

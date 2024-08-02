@@ -7,7 +7,7 @@ use crate::seqvars::query::{
     output::variant_related::score_collection::{
         Collector, ExtremalValueCollector, SingleValueCollector,
     },
-    schema::SequenceVariant,
+    schema::data::{Ac as _, Af as _, An as _, Hemi as _, VariantRecord},
 };
 
 /// Helper modules for score collection.
@@ -153,7 +153,7 @@ pub struct Record {
 impl Record {
     /// Construct given sequence variant and annonars annotator.
     pub fn with_seqvar_and_annotator(
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
         annotator: &Annotator,
     ) -> Result<Self, anyhow::Error> {
         Ok(Self {
@@ -166,7 +166,7 @@ impl Record {
 
     /// Query precomputed scores for `seqvar` from annonars `annotator`.
     pub fn query_precomputed_scores(
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
         annotator: &Annotator,
     ) -> Result<indexmap::IndexMap<String, serde_json::Value>, anyhow::Error> {
         let mut result = indexmap::IndexMap::new();
@@ -269,7 +269,7 @@ pub struct DbIds {
 impl DbIds {
     /// Construct given sequence variant and annonars annotator.
     pub fn with_seqvar_and_annotator(
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
         annotator: &Annotator,
     ) -> Result<Self, anyhow::Error> {
         Ok(Self {
@@ -300,7 +300,7 @@ pub struct Clinvar {
 impl Clinvar {
     /// Construct given sequence variant and annonars annotator.
     pub fn with_seqvar_and_annotator(
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
         annotator: &Annotator,
     ) -> Result<Option<Self>, anyhow::Error> {
         let record = annotator
@@ -391,27 +391,27 @@ pub struct Frequency {
 
 impl Frequency {
     /// Extract frequency information from `seqvar`
-    pub fn with_seqvar(seqvar: &SequenceVariant) -> Result<Frequency, anyhow::Error> {
-        let chrom = annonars::common::cli::canonicalize(&seqvar.chrom);
+    pub fn with_seqvar(seqvar: &VariantRecord) -> Result<Frequency, anyhow::Error> {
+        let chrom = annonars::common::cli::canonicalize(&seqvar.vcf_variant.chrom);
         let frequency = if chrom == "MT" {
             FrequencyBuilder::default()
                 .gnomad_genomes(
                     NuclearFrequency::new(
-                        seqvar.gnomad_genomes_af(),
-                        seqvar.population_frequencies.gnomad.genomes_an,
-                        seqvar.population_frequencies.gnomad.genomes_het,
-                        seqvar.population_frequencies.gnomad.genomes_hom,
-                        seqvar.population_frequencies.gnomad.genomes_hemi,
+                        seqvar.population_frequencies.gnomad_genomes.af(),
+                        seqvar.population_frequencies.gnomad_genomes.an(),
+                        seqvar.population_frequencies.gnomad_genomes.het(),
+                        seqvar.population_frequencies.gnomad_genomes.hom(),
+                        seqvar.population_frequencies.gnomad_genomes.hemi(),
                     )
                     .some_unless_empty(),
                 )
                 .gnomad_exomes(
                     NuclearFrequency::new(
-                        seqvar.gnomad_exomes_af(),
-                        seqvar.population_frequencies.gnomad.exomes_an,
-                        seqvar.population_frequencies.gnomad.exomes_het,
-                        seqvar.population_frequencies.gnomad.exomes_hom,
-                        seqvar.population_frequencies.gnomad.exomes_hemi,
+                        seqvar.population_frequencies.gnomad_exomes.af(),
+                        seqvar.population_frequencies.gnomad_exomes.an(),
+                        seqvar.population_frequencies.gnomad_exomes.het(),
+                        seqvar.population_frequencies.gnomad_exomes.hom(),
+                        seqvar.population_frequencies.gnomad_exomes.hemi(),
                     )
                     .some_unless_empty(),
                 )
@@ -420,19 +420,19 @@ impl Frequency {
             FrequencyBuilder::default()
                 .gnomad_mtdna(
                     MtdnaFrequency::new(
-                        seqvar.gnomad_genomes_af(),
-                        seqvar.population_frequencies.gnomad.genomes_an,
-                        seqvar.population_frequencies.gnomad.genomes_het,
-                        seqvar.population_frequencies.gnomad.genomes_hom,
+                        seqvar.population_frequencies.gnomad_mt.af(),
+                        seqvar.population_frequencies.gnomad_mt.ac(),
+                        seqvar.population_frequencies.gnomad_mt.het(),
+                        seqvar.population_frequencies.gnomad_mt.hom(),
                     )
                     .some_unless_empty(),
                 )
                 .helixmtdb(
                     MtdnaFrequency::new(
-                        seqvar.helixmtdb_af(),
-                        seqvar.population_frequencies.helixmtdb.an,
-                        seqvar.population_frequencies.helixmtdb.het,
-                        seqvar.population_frequencies.helixmtdb.hom,
+                        seqvar.population_frequencies.helixmtdb.af(),
+                        seqvar.population_frequencies.helixmtdb.ac(),
+                        seqvar.population_frequencies.helixmtdb.het(),
+                        seqvar.population_frequencies.helixmtdb.hom(),
                     )
                     .some_unless_empty(),
                 )
