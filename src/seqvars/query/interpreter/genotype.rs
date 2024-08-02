@@ -41,7 +41,7 @@ fn passes_recessive_modes(
             e
         )
     })?;
-    let parent_names = query_genotype.recessive_parents().map_err(|e| {
+    let _parent_names = query_genotype.recessive_parents().map_err(|e| {
         anyhow::anyhow!(
             "invalid recessive parents in genotype filter {:?}: {}",
             &query_genotype,

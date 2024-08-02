@@ -17,6 +17,7 @@ pub struct DbVarRecord {
     /// end position, 0-based
     pub end: i32,
     /// number of overall carriers
+    #[allow(dead_code)]
     pub num_carriers: u32,
     /// type of the SV
     pub sv_type: String,
@@ -114,22 +115,26 @@ pub struct GnomadSv4Record {
     /// The structural vairant type
     pub svtype: String,
     /// Number of male homozygous reference allele carriers.
+    #[allow(dead_code)]
     pub male_n_homref: u32,
     /// Number of male heterozygous alternate allele carriers.
     pub male_n_het: u32,
     /// Number of male homozygous alternate allele carriers.
     pub male_n_homalt: u32,
     /// Number of male hemizygous alternate allele carriers.
+    #[allow(dead_code)]
     pub male_n_hemiref: u32,
     /// Number of male hemizygous reference allele carriers.
     pub male_n_hemialt: u32,
     /// Number of female homozygous reference allele carriers.
+    #[allow(dead_code)]
     pub female_n_homref: u32,
     /// Number of female heterozygous alternate allele carriers.
     pub female_n_het: u32,
     /// Number of female homozygous alternate allele carriers.
     pub female_n_homalt: u32,
     /// Number of samples at this site (CNV only).
+    #[allow(dead_code)]
     pub cnv_n_total: u32,
     /// Number of samples with a CNV at this site (CNV only).
     pub cnv_n_var: u32,
@@ -147,6 +152,7 @@ pub struct GnomadCnv4Record {
     /// The structural vairant type
     pub svtype: String,
     /// Number of samples at this site (passing QC).
+    #[allow(dead_code)]
     pub n_total: u32,
     /// Number of samples with a CNV at this site (passing QC).
     pub n_var: u32,

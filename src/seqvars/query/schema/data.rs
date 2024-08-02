@@ -340,7 +340,7 @@ impl TryFromVcf for VcfVariant {
 
     fn try_from_vcf(
         record: &vcf::variant::RecordBuf,
-        header: &vcf::Header,
+        _header: &vcf::Header,
     ) -> Result<Self, Self::Error> {
         let chrom = record.reference_sequence_name().to_string();
         let pos = usize::from(

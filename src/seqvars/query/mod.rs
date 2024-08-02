@@ -98,7 +98,7 @@ fn passes_for_gene(query: &CaseQuery, seqvars: &Vec<VariantRecord>) -> Result<bo
         {
             match genotype {
                 GenotypeChoice::RecessiveIndex => {
-                    index = sample_name.clone();
+                    index.clone_from(sample_name);
                 }
                 GenotypeChoice::RecessiveParent => {
                     parents.push(sample_name.clone());

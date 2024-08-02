@@ -25,6 +25,7 @@ mod input {
         /// 1-based end position
         pub end: i32,
         /// Masked region label
+        #[allow(dead_code)]
         pub label: String,
     }
 }

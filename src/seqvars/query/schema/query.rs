@@ -544,15 +544,15 @@ pub(crate) mod query_settings_frequency {
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
     pub enum Error {
         #[error("gnomad_exomes missing in protobuf")]
-        GnomadExomesMissing,
+        GnomadExomes,
         #[error("gnomad_genomes missing in protobuf")]
-        GnomadGenomesMissing,
+        GnomadGenomes,
         #[error("gnomad_mt missing in protobuf")]
-        GnomadMtMissing,
+        GnomadMt,
         #[error("helixmtdb missing in protobuf")]
-        HelixMtDbMissing,
+        HelixMtDb,
         #[error("inhouse missing in protobuf")]
-        InhouseMissing,
+        Inhouse,
     }
 }
 
@@ -562,24 +562,18 @@ impl TryFrom<pb_query::QuerySettingsFrequency> for QuerySettingsFrequency {
     fn try_from(value: pb_query::QuerySettingsFrequency) -> Result<Self, Self::Error> {
         Ok(Self {
             gnomad_exomes: GnomadNuclearFrequencySettings::from(
-                value
-                    .gnomad_exomes
-                    .ok_or(Self::Error::GnomadExomesMissing)?,
+                value.gnomad_exomes.ok_or(Self::Error::GnomadExomes)?,
             ),
             gnomad_genomes: GnomadNuclearFrequencySettings::from(
-                value
-                    .gnomad_genomes
-                    .ok_or(Self::Error::GnomadGenomesMissing)?,
+                value.gnomad_genomes.ok_or(Self::Error::GnomadGenomes)?,
             ),
             gnomad_mt: GnomadMitochondrialFrequencySettings::from(
-                value.gnomad_mt.ok_or(Self::Error::GnomadMtMissing)?,
+                value.gnomad_mt.ok_or(Self::Error::GnomadMt)?,
             ),
             helixmtdb: HelixMtDbFrequencySettings::from(
-                value.helixmtdb.ok_or(Self::Error::HelixMtDbMissing)?,
+                value.helixmtdb.ok_or(Self::Error::HelixMtDb)?,
             ),
-            inhouse: InhouseFrequencySettings::from(
-                value.inhouse.ok_or(Self::Error::InhouseMissing)?,
-            ),
+            inhouse: InhouseFrequencySettings::from(value.inhouse.ok_or(Self::Error::Inhouse)?),
         })
     }
 }
@@ -901,17 +895,17 @@ pub(crate) mod query_settings_consequence {
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
     pub enum Error {
         #[error("Cannot convert i32 into protobuf VariantType: {0}")]
-        UnknownVariantTypeInt(i32),
+        VariantTypeInt(i32),
         #[error("Cannot convert protobuf VariantType: {0:?}")]
-        UnknownVariantTypeValue(super::pb_query::VariantType),
+        VariantTypeValue(super::pb_query::VariantType),
         #[error("Cannot convert i32 into protobuf TranscriptType: {0}")]
-        UnknownTranscriptTypeInt(i32),
+        TranscriptTypeInt(i32),
         #[error("Cannot convert protobuf TranscriptType: {0:?}")]
-        UnknownTranscriptTypeValue(super::pb_query::TranscriptType),
+        TranscriptTypeValue(super::pb_query::TranscriptType),
         #[error("Cannot convert i32 into protobuf Consequence: {0}")]
-        UnknownConsequenceInt(i32),
+        ConsequenceInt(i32),
         #[error("Cannot convert protobuf Consequence: {0:?}")]
-        UnknownConsequenceValue(super::pb_query::Consequence),
+        ConsequenceValue(super::pb_query::Consequence),
     }
 }
 
@@ -924,9 +918,9 @@ impl TryFrom<pb_query::QuerySettingsConsequence> for QuerySettingsConsequence {
             .into_iter()
             .map(|v| {
                 let v = pb_query::VariantType::try_from(v)
-                    .map_err(|_| query_settings_consequence::Error::UnknownVariantTypeInt(v))?;
+                    .map_err(|_| query_settings_consequence::Error::VariantTypeInt(v))?;
                 VariantType::try_from(v)
-                    .map_err(|_| query_settings_consequence::Error::UnknownVariantTypeValue(v))
+                    .map_err(|_| query_settings_consequence::Error::VariantTypeValue(v))
             })
             .collect::<Result<Vec<_>, _>>()?;
         let transcript_types = value
@@ -934,9 +928,9 @@ impl TryFrom<pb_query::QuerySettingsConsequence> for QuerySettingsConsequence {
             .into_iter()
             .map(|v| {
                 let v = pb_query::TranscriptType::try_from(v)
-                    .map_err(|_| query_settings_consequence::Error::UnknownTranscriptTypeInt(v))?;
+                    .map_err(|_| query_settings_consequence::Error::TranscriptTypeInt(v))?;
                 TranscriptType::try_from(v)
-                    .map_err(|_| query_settings_consequence::Error::UnknownTranscriptTypeValue(v))
+                    .map_err(|_| query_settings_consequence::Error::TranscriptTypeValue(v))
             })
             .collect::<Result<Vec<_>, _>>()?;
         let consequences = value
@@ -944,9 +938,9 @@ impl TryFrom<pb_query::QuerySettingsConsequence> for QuerySettingsConsequence {
             .into_iter()
             .map(|v| {
                 let v = pb_query::Consequence::try_from(v)
-                    .map_err(|_| query_settings_consequence::Error::UnknownConsequenceInt(v))?;
+                    .map_err(|_| query_settings_consequence::Error::ConsequenceInt(v))?;
                 Consequence::try_from(v)
-                    .map_err(|_| query_settings_consequence::Error::UnknownConsequenceValue(v))
+                    .map_err(|_| query_settings_consequence::Error::ConsequenceValue(v))
             })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(Self {
