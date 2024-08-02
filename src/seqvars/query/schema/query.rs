@@ -330,7 +330,7 @@ impl TryFrom<pb_query::QuerySettingsGenotype> for QuerySettingsGenotype {
         let mut sample_genotypes = indexmap::IndexMap::new();
         for pb_sample_genotype in value.sample_genotypes {
             let sample_genotype = SampleGenotypeChoice::try_from(pb_sample_genotype)
-                .map_err(|e| Self::Error::InvalidSampleGenotypeChoice(e))?;
+                .map_err(Self::Error::InvalidSampleGenotypeChoice)?;
             if sample_genotypes.contains_key(&sample_genotype.sample) {
                 return Err(Self::Error::DuplicateSample(sample_genotype.sample));
             }
@@ -658,7 +658,17 @@ impl TryFrom<pb_query::TranscriptType> for TranscriptType {
 
 /// Consequence types.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize, strum::EnumIter
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    strum::EnumIter,
 )]
 pub enum Consequence {
     /*
@@ -819,11 +829,11 @@ impl TryFrom<pb_query::Consequence> for Consequence {
     }
 }
 
-impl Into<mehari::annotate::seqvars::ann::Consequence> for Consequence {
-    fn into(self) -> mehari::annotate::seqvars::ann::Consequence {
+impl From<Consequence> for mehari::annotate::seqvars::ann::Consequence {
+    fn from(val: Consequence) -> Self {
         use mehari::annotate::seqvars::ann;
 
-        match self {
+        match val {
             Consequence::TranscriptAblation => ann::Consequence::TranscriptAblation,
             Consequence::ExonLossVariant => ann::Consequence::ExonLossVariant,
             Consequence::SpliceAcceptorVariant => ann::Consequence::SpliceAcceptorVariant,
@@ -1165,18 +1175,18 @@ impl TryFrom<pb_query::CaseQuery> for CaseQuery {
 
         let genotype =
             QuerySettingsGenotype::try_from(genotype.ok_or(Self::Error::GenotypeMissing)?)
-                .map_err(|e| Self::Error::GenotypeConversion(e))?;
+                .map_err(Self::Error::GenotypeConversion)?;
         let quality = QuerySettingsQuality::try_from(quality.ok_or(Self::Error::QualityMissing)?)
-            .map_err(|e| Self::Error::QualityConversion(e))?;
+            .map_err(Self::Error::QualityConversion)?;
         let frequency =
             QuerySettingsFrequency::try_from(frequency.ok_or(Self::Error::FrequencyMissing)?)
-                .map_err(|e| Self::Error::FrequencyConversion(e))?;
+                .map_err(Self::Error::FrequencyConversion)?;
         let consequence =
             QuerySettingsConsequence::try_from(consequence.ok_or(Self::Error::ConsequenceMissing)?)
-                .map_err(|e| Self::Error::ConsequenceConversion(e))?;
+                .map_err(Self::Error::ConsequenceConversion)?;
         let locus = QuerySettingsLocus::from(locus.ok_or(Self::Error::LocusMissing)?);
         let clinvar = QuerySettingsClinVar::try_from(clinvar.ok_or(Self::Error::ClinVarMissing)?)
-            .map_err(|e| Self::Error::ClinVarConversion(e))?;
+            .map_err(Self::Error::ClinVarConversion)?;
 
         Ok(Self {
             genotype,

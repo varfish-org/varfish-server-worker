@@ -312,13 +312,13 @@ pub struct VcfVariant {
     pub alt_allele: String,
 }
 
-impl Into<annonars::common::spdi::Var> for VcfVariant {
-    fn into(self) -> annonars::common::spdi::Var {
+impl From<VcfVariant> for annonars::common::spdi::Var {
+    fn from(val: VcfVariant) -> Self {
         annonars::common::spdi::Var::new(
-            annonars::common::cli::canonicalize(&self.chrom),
-            self.pos,
-            self.ref_allele,
-            self.alt_allele,
+            annonars::common::cli::canonicalize(&val.chrom),
+            val.pos,
+            val.ref_allele,
+            val.alt_allele,
         )
     }
 }
@@ -384,7 +384,7 @@ pub(crate) mod call_infos {
         #[error("Empty FORMAT/AD")]
         EmptyFormatAd,
         #[error("Problem parsing genotype: {0}")]
-        GenotypeParseError(#[from] GenotypeToStringError),
+        GenotypeParsing(#[from] GenotypeToStringError),
     }
 }
 
@@ -471,7 +471,7 @@ pub(crate) mod ann_fields {
     #[derive(thiserror::Error, Debug, Clone)]
     pub enum Error {
         #[error("Problem parsing INFO/ANN: {0}")]
-        ParseError(String),
+        Parsing(String),
         #[error("Invalid type of INFO/ANN")]
         InvalidTypeInfoAnn,
     }
@@ -495,10 +495,10 @@ impl TryFromVcf for AnnFields {
                         .flatten()
                         .map(|s| s.parse::<mehari::annotate::seqvars::ann::AnnField>())
                         .collect::<Result<Vec<_>, _>>()
-                        .map_err(|e| Self::Error::ParseError(format!("{}", e)))?,
+                        .map_err(|e| Self::Error::Parsing(format!("{}", e)))?,
                 })
             } else {
-                return Err(ann_fields::Error::InvalidTypeInfoAnn);
+                Err(ann_fields::Error::InvalidTypeInfoAnn)
             }
         } else {
             Ok(Default::default())
@@ -525,13 +525,13 @@ pub(crate) mod variant_record {
     #[derive(thiserror::Error, Debug, Clone)]
     pub enum Error {
         #[error("Problem with variant description: {0:?}")]
-        VcfVariantError(#[from] super::vcf_variant::Error),
+        VcfVariant(#[from] super::vcf_variant::Error),
         #[error("Problem with call information: {0:?}")]
-        CallInfosError(#[from] super::call_infos::Error),
+        CallInfos(#[from] super::call_infos::Error),
         #[error("Problem with annotation fields: {0:?}")]
-        AnnFieldsError(#[from] super::ann_fields::Error),
+        AnnFields(#[from] super::ann_fields::Error),
         #[error("Problem with population frequencies: {0:?}")]
-        PopulationFrequenciesError(#[from] super::population_frequencies::Error),
+        PopulationFrequencies(#[from] super::population_frequencies::Error),
     }
 }
 

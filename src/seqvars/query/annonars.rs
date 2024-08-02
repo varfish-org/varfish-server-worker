@@ -175,14 +175,15 @@ impl Annotator {
 
         raw_value
             .map(|raw_value| {
-                annonars::pbs::genes::base::Record::decode(std::io::Cursor::new(raw_value))
-                    .map_err(|e| {
+                annonars::pbs::genes::base::Record::decode(std::io::Cursor::new(raw_value)).map_err(
+                    |e| {
                         anyhow::anyhow!(
                             "problem decoding record from genes database for HGNC ID {}: {}",
                             hgnc_id,
                             e
                         )
-                    })
+                    },
+                )
             })
             .transpose()
     }

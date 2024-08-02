@@ -14,9 +14,17 @@ pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> Result<bool, anyhow:
         return Ok(true);
     }
 
-    let query_csq: indexmap::IndexSet<ann::Consequence> = indexmap::IndexSet::from_iter(query.consequence.consequences.iter().cloned().map(|c| c.into()));
+    let query_csq: indexmap::IndexSet<ann::Consequence> = indexmap::IndexSet::from_iter(
+        query
+            .consequence
+            .consequences
+            .iter()
+            .cloned()
+            .map(|c| c.into()),
+    );
     for ann_field in &seqvar.ann_fields {
-        let seqvar_csq: indexmap::IndexSet<ann::Consequence> = indexmap::IndexSet::from_iter(ann_field.consequences.iter().cloned());
+        let seqvar_csq: indexmap::IndexSet<ann::Consequence> =
+            indexmap::IndexSet::from_iter(ann_field.consequences.iter().cloned());
         let intersection_csq = query_csq.intersection(&seqvar_csq);
         if intersection_csq.count() > 0 {
             return Ok(true);
@@ -52,7 +60,10 @@ mod test {
             let query = CaseQuery {
                 consequence: QuerySettingsConsequence {
                     consequences: Consequence::iter()
-                        .filter(|c| (<Consequence as Into<ann::Consequence>>::into(*c) == csq) == c_equals_csq)
+                        .filter(|c| {
+                            (<Consequence as Into<ann::Consequence>>::into(*c) == csq)
+                                == c_equals_csq
+                        })
                         .collect(),
                     ..Default::default()
                 },
