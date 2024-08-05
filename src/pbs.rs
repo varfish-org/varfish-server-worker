@@ -8,8 +8,8 @@ pub mod varfish {
         pub mod common {
             /// Code generate for protobufs by `prost-build`.
             pub mod misc {
-                include!(concat!(env!("OUT_DIR"), "/varfish.v1.worker.rs"));
-                include!(concat!(env!("OUT_DIR"), "/varfish.v1.worker.serde.rs"));
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.common.misc.rs"));
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.common.misc.serde.rs"));
             }
         }
 
