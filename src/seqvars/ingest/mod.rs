@@ -158,9 +158,9 @@ fn transform_format_value(
                     let gt_captures = gt_re
                         .captures(&gt)
                         .unwrap_or_else(|| panic!("FORMAT/GT cannot be parsed: {}", &gt));
-                    let gt_1 = gt_captures.get(1).expect("must be capture").as_str();
-                    let gt_2 = gt_captures.get(2).expect("must be capture").as_str();
-                    let gt_3 = gt_captures.get(3).expect("must be capture").as_str();
+                    let gt_1 = gt_captures.get(1).expect("must be captured").as_str();
+                    let gt_2 = gt_captures.get(2).expect("must be captured").as_str();
+                    let gt_3 = gt_captures.get(3).expect("must be captured").as_str();
 
                     let new_gt = format!(
                         "{}{}{}",

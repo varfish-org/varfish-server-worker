@@ -68,4 +68,3 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 1	586412	.	N	<DEL>	.	.	SVCLAIM=DJ;SVTYPE=DEL;END=586439;SVLEN=28;callers=Delly	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:59:0:0:11:4:.:.:.:.	0/1:22:0:0:8:2:.:.:.:.	0/1:10:0:0:13:2:.:.:.:.
 1	1224181	.	N	<DEL>	.	.	SVCLAIM=D;SVTYPE=DEL;END=1225801;SVLEN=1621;callers=Popdel	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:4:.:.:.:.:.:.:.:.	0/1:7:.:.:.:.:.:.:.:.	0/1:7:.:.:.:.:.:.:.:.
 2	321681	.	N	G]17:198982]	.	.	SVCLAIM=J;SVTYPE=BND;END=198982;chr2=17;callers=Delly	GT:GQ:pec:pev:src:srv:amq:cn:anc:pc	0/1:.:0:.:0:.:.:.:.:.	0/1:.:0:.:0:.:.:.:.:.	0/1:.:0:.:0:.:.:.:.:.
-

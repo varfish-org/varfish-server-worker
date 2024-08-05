@@ -4,4 +4,3 @@ expression: "VariantCaller::guess(&vcf_header)"
 ---
 GatkHaplotypeCaller:
   version: 3.7-0-gcfedb67
-

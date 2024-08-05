@@ -2,8 +2,6 @@
 
 # Will install into ~/.local/share/protoc, so make sure to add the following
 # to your PATH: ~/.local/share/protoc/bin
-#
-# Will go into ./utils/var for cloning/building.
 
 set -x
 set -euo pipefail

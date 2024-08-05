@@ -2,11 +2,11 @@
 
 use std::{path::Path, sync::Arc};
 
-use prost::Message;
-
 use crate::{common::GenomeRelease, seqvars::ingest::path_component};
 
-use super::schema::SequenceVariant;
+use prost::Message as _;
+
+use super::schema::data::VariantRecord;
 
 /// Bundle the types needed for databases.
 pub struct AnnonarsDbs {
@@ -175,14 +175,15 @@ impl Annotator {
 
         raw_value
             .map(|raw_value| {
-                annonars::pbs::genes::base::Record::decode(&mut std::io::Cursor::new(&raw_value))
-                    .map_err(|e| {
+                annonars::pbs::genes::base::Record::decode(std::io::Cursor::new(raw_value)).map_err(
+                    |e| {
                         anyhow::anyhow!(
                             "problem decoding record from genes database for HGNC ID {}: {}",
                             hgnc_id,
                             e
                         )
-                    })
+                    },
+                )
             })
             .transpose()
     }
@@ -194,7 +195,7 @@ impl Annotator {
     /// If there is a problem querying the database.
     pub fn query_clinvar_minimal(
         &self,
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
     ) -> Result<Option<annonars::pbs::clinvar::minimal::ExtractedVcvRecordList>, anyhow::Error>
     {
         let cf_data = self
@@ -202,13 +203,7 @@ impl Annotator {
             .clinvar_db
             .cf_handle("clinvar")
             .ok_or_else(|| anyhow::anyhow!("could not get clinvar column family"))?;
-
-        let variant = annonars::common::spdi::Var::new(
-            annonars::common::cli::canonicalize(&seqvar.chrom),
-            seqvar.pos,
-            seqvar.reference.clone(),
-            seqvar.alternative.clone(),
-        );
+        let variant: annonars::common::spdi::Var = seqvar.vcf_variant.clone().into();
 
         annonars::clinvar_minimal::cli::query::query_for_variant(
             &variant,
@@ -226,20 +221,14 @@ impl Annotator {
     /// If there is a problem querying the database.
     pub fn query_dbsnp(
         &self,
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
     ) -> Result<Option<annonars::dbsnp::pbs::Record>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .dbsnp_db
             .cf_handle("dbsnp_data")
             .ok_or_else(|| anyhow::anyhow!("could not get dbsnp_data column family"))?;
-
-        let variant = annonars::common::spdi::Var::new(
-            annonars::common::cli::canonicalize(&seqvar.chrom),
-            seqvar.pos,
-            seqvar.reference.clone(),
-            seqvar.alternative.clone(),
-        );
+        let variant: annonars::common::spdi::Var = seqvar.vcf_variant.clone().into();
 
         annonars::dbsnp::cli::query::query_for_variant(
             &variant,
@@ -257,20 +246,14 @@ impl Annotator {
     /// If there is a problem querying the database.
     pub fn query_cadd(
         &self,
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
     ) -> Result<Option<Vec<serde_json::Value>>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .cadd_db
             .cf_handle("tsv_data")
             .ok_or_else(|| anyhow::anyhow!("could not get tsv_data column family"))?;
-
-        let variant = annonars::common::spdi::Var::new(
-            annonars::common::cli::canonicalize(&seqvar.chrom),
-            seqvar.pos,
-            seqvar.reference.clone(),
-            seqvar.alternative.clone(),
-        );
+        let variant: annonars::common::spdi::Var = seqvar.vcf_variant.clone().into();
 
         let values = annonars::tsv::cli::query::query_for_variant(
             &variant,
@@ -291,20 +274,14 @@ impl Annotator {
     /// If there is a problem querying the database.
     pub fn query_dbnsfp(
         &self,
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
     ) -> Result<Option<Vec<serde_json::Value>>, anyhow::Error> {
         let cf_data = self
             .annonars_dbs
             .dbnsfp_db
             .cf_handle("tsv_data")
             .ok_or_else(|| anyhow::anyhow!("could not get tsv_data column family"))?;
-
-        let variant = annonars::common::spdi::Var::new(
-            annonars::common::cli::canonicalize(&seqvar.chrom),
-            seqvar.pos,
-            seqvar.reference.clone(),
-            seqvar.alternative.clone(),
-        );
+        let variant: annonars::common::spdi::Var = seqvar.vcf_variant.clone().into();
 
         let values = annonars::tsv::cli::query::query_for_variant(
             &variant,

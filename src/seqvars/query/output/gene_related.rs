@@ -2,7 +2,7 @@
 
 use mehari::annotate::seqvars::ann::Consequence;
 
-use crate::seqvars::query::{annonars::Annotator, schema::SequenceVariant};
+use crate::seqvars::query::{annonars::Annotator, schema::data::VariantRecord};
 
 /// Gene-related information for a `ResultPayload`.
 #[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize, derive_new::new)]
@@ -20,16 +20,16 @@ pub struct Record {
 }
 
 impl Record {
-    /// Construct given a `SequenceVariant` if the information is given in the annotation.
+    /// Construct given a `VariantRecord` if the information is given in the annotation.
     ///
     /// Note that we will only look at the first annotation record as the ingest creates
-    /// one `SequenceVariant` record per gene.
+    /// one `VariantRecord` record per gene.
     ///
     /// # Error
     ///
     /// Returns an error if `seqvar` does not contain all necessary information.
     pub fn with_seqvar_and_annotator(
-        seqvar: &SequenceVariant,
+        seqvar: &VariantRecord,
         annotator: &Annotator,
     ) -> Result<Option<Self>, anyhow::Error> {
         if let Some(ann) = seqvar.ann_fields.first() {

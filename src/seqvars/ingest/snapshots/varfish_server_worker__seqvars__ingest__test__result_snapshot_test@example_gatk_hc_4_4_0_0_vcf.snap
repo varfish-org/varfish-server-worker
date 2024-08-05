@@ -11,10 +11,14 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##INFO=<ID=gnomad_genomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD genomes">
 ##INFO=<ID=gnomad_genomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD genomes">
 ##INFO=<ID=gnomad_genomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD genomes">
+##INFO=<ID=gnomad_mtdna_an,Number=1,Type=Integer,Description="Number of alleles in gnomAD MT">
+##INFO=<ID=gnomad_mtdna_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD MT">
+##INFO=<ID=gnomad_mtdna_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD MT">
+##INFO=<ID=gnomad_mtdna_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD MT">
 ##INFO=<ID=helix_an,Number=1,Type=Integer,Description="Number of alleles in HelixMtDb">
 ##INFO=<ID=helix_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in HelixMtDb">
 ##INFO=<ID=helix_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in HelixMtDb">
-##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'">
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | Strand | ERRORS / WARNINGS / INFO'">
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth for each allele">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
@@ -53,5 +57,5 @@ expression: "std::fs::read_to_string(&args.path_out)?"
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="GatkHaplotypeCaller",Version="4.4.0.0">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	CASE
-17	41256074	.	CA	C	.	.	gnomad_exomes_an=20150;gnomad_exomes_hom=2725;gnomad_exomes_het=5476;gnomad_genomes_an=0;gnomad_genomes_hom=0;gnomad_genomes_het=0;ANN=C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007294.4|Coding&ManeSelect|6/22|c.441+64delT|p.?|554/7088|441/5592||-64|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007297.4|Coding|5/21|c.300+64delT|p.?|494/7028|300/5451||-64|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007298.3|Coding|5/21|c.441+64delT|p.?|460/3682|441/2280||-64|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007299.4|Coding|6/21|c.441+64delT|p.?|548/3696|441/2100||-64|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007300.4|Coding|6/23|c.441+64delT|p.?|554/7151|441/5655||-64|	GT:AD:DP:GQ:PS	1|1:0,80:80:99:41256074
+17	41256074	.	CA	C	.	.	gnomad_exomes_an=20150;gnomad_exomes_hom=2725;gnomad_exomes_het=5476;gnomad_genomes_an=0;gnomad_genomes_hom=0;gnomad_genomes_het=0;ANN=C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007294.4|Coding&ManeSelect|6/22|c.441+64del|p.?|554/7088|441/5592||-64|-1|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007297.4|Coding|5/21|c.300+64del|p.?|494/7028|300/5451||-64|-1|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007298.3|Coding|5/21|c.441+64del|p.?|460/3682|441/2280||-64|-1|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007299.4|Coding|6/21|c.441+64del|p.?|548/3696|441/2100||-64|-1|,C|intron_variant|MODIFIER|BRCA1|HGNC:1100|transcript|NM_007300.4|Coding|6/23|c.441+64del|p.?|554/7151|441/5655||-64|-1|	GT:AD:DP:GQ:PS	1|1:0,80:80:99:41256074
 MT	750	.	A	G	.	.	clinvar_vcv=VCV000441148.2;clinvar_germline_classification=association not found	GT:AD:DP:GQ	1/1:0,35:35:99

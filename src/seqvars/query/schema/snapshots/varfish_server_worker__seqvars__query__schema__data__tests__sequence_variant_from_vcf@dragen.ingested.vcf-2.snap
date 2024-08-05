@@ -1,0 +1,42 @@
+---
+source: src/seqvars/query/schema/data.rs
+expression: "&seqvar"
+---
+vcf_variant:
+  chrom: MT
+  pos: 750
+  ref_allele: A
+  alt_allele: G
+call_infos:
+  CASE:
+    sample: CASE
+    genotype: /1/1
+    quality: 98
+    dp: 5608
+    ad: 5607
+    phasing_id: ~
+ann_fields: []
+population_frequencies:
+  gnomad_exomes:
+    an: 0
+    hom: 0
+    het: 0
+    hemi: 0
+  gnomad_genomes:
+    an: 0
+    hom: 0
+    het: 0
+    hemi: 0
+  gnomad_mtdna:
+    an: 0
+    hom: 0
+    het: 0
+  helixmtdb:
+    an: 0
+    hom: 0
+    het: 0
+  inhouse:
+    hom: 0
+    het: 0
+    hemi: 0
+    total: 0

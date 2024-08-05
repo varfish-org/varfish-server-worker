@@ -158,7 +158,6 @@ async fn run_filtration(
         if bytes_read == 0 {
             break; // EOF
         }
-        dbg!(&input_record);
 
         let (frequency, exon_distance) = get_freq_and_distance(&input_record)?;
         if let Some(exon_distance) = exon_distance {

@@ -9,6 +9,7 @@ fn main() -> Result<(), anyhow::Error> {
         "varfish/v1/clinvar.proto",
         "varfish/v1/sv.proto",
         "varfish/v1/worker.proto",
+        "varfish/v1/seqvars/query.proto",
     ]
     .iter()
     .map(|f| root.join(f))

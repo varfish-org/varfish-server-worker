@@ -1,45 +1,31 @@
 use crate::{
     common::strip_gt_leading_slash,
-    seqvars::query::schema::{CallInfo, CaseQuery, FailChoice, QualitySettings, SequenceVariant},
+    seqvars::query::schema::{
+        data::{CallInfo, VariantRecord},
+        query::{CaseQuery, SampleQualitySettings},
+    },
 };
 
-/// Return type for the `passes` function.
-#[derive(Debug)]
-pub struct PassOrNoCall {
-    /// Whether the variant should be kept.
-    pub pass: bool,
-    /// For which samples should the genotype be interpreted as no-call.
-    pub no_call_samples: Vec<String>,
-}
-
-/// Determine whether the `SequenceVariant` passes the quality filter.
-/// Will return `FailChoice::Ignore` if the variant passes.
-pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCall, anyhow::Error> {
-    let mut result = PassOrNoCall {
-        pass: true,
-        no_call_samples: Vec::new(),
-    };
-    for (sample_name, quality_settings) in &query.quality {
-        if let Some(call_info) = seqvar.call_info.get(sample_name) {
-            if let Some(fail) = passes_for_sample(quality_settings, call_info) {
-                match fail {
-                    FailChoice::Ignore => {
-                        // ignore quality failure for sample
-                    }
-                    FailChoice::Drop => {
-                        tracing::trace!(
-                            "sample {} (call_info={:?}) in variant {:?} fails quality filter {:?}",
-                            &sample_name,
-                            &call_info,
-                            &seqvar,
-                            &quality_settings
-                        );
-                        result.pass = false;
-                        break;
-                    }
-                    FailChoice::NoCall => {
-                        result.no_call_samples.push(sample_name.clone());
-                    }
+/// Determine whether the `VariantRecord` passes the quality filter.
+/// Will return `FailFilterChoice::Ignore` if the variant passes.
+pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> Result<bool, anyhow::Error> {
+    for (sample_name, quality_settings) in &query.quality.sample_qualities {
+        if let Some(call_info) = seqvar.call_infos.get(sample_name) {
+            if !passes_for_sample(quality_settings, call_info) {
+                tracing::trace!(
+                    "sample {} (call_info={:?}) in variant {:?} fails quality filter {:?}",
+                    &sample_name,
+                    &call_info,
+                    &seqvar,
+                    &quality_settings
+                );
+                if quality_settings.filter_active {
+                    tracing::trace!(
+                        "variant {:?} fails quality filter for sample {:?}",
+                        seqvar,
+                        &sample_name
+                    );
+                    return Ok(false);
                 }
             } else {
                 // no failure, all good
@@ -49,20 +35,18 @@ pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> Result<PassOrNoCal
         }
     }
 
-    tracing::trace!(
-        "variant {:?} has result {:?} for quality filter {:?}",
-        seqvar,
-        result,
-        &query.genotype
-    );
-    Ok(result)
+    tracing::trace!("variant {:?} passes quality filter", seqvar,);
+    Ok(true)
 }
 
-/// Return failure code (or None for all-pass) for one sample's call info.
-fn passes_for_sample(
-    quality_settings: &QualitySettings,
-    call_info: &CallInfo,
-) -> Option<FailChoice> {
+/// Return whether the sample passes the quality filter.
+fn passes_for_sample(quality_settings: &SampleQualitySettings, call_info: &CallInfo) -> bool {
+    // Short-circuit if the filter is not active.
+    if !quality_settings.filter_active {
+        return true;
+    }
+
+    // Ad-hoc enum for genotype.
     #[derive(PartialEq, Eq)]
     enum Genotype {
         Het,
@@ -83,135 +67,111 @@ fn passes_for_sample(
         Genotype::NoCall
     };
 
-    // dp_het/dp_hom and ab
+    // min_dp_het, min_dp_hom, and min_ab
     match genotype {
         Genotype::Het => {
-            // dp_het
-            if let Some(dp_het) = quality_settings.dp_het {
-                if let Some(dp) = call_info.dp {
-                    if dp < dp_het {
-                        return Some(quality_settings.fail);
-                    }
+            // min_dp_het
+            if let (Some(min_dp_het), Some(dp)) = (quality_settings.min_dp_het, call_info.dp) {
+                if dp < min_dp_het {
+                    return false;
                 }
             }
 
-            // ab
-            if let (Some(settings_ab), Some(call_dp), Some(call_ad)) =
-                (quality_settings.ab, call_info.dp, call_info.ad)
+            // min_ab
+            if let (Some(min_ab), Some(call_dp), Some(call_ad)) =
+                (quality_settings.min_ab, call_info.dp, call_info.ad)
             {
                 let ab_raw = call_ad as f64 / call_dp as f64;
                 let ab = if ab_raw > 0.5 { 1.0 - ab_raw } else { ab_raw };
                 let eps = 1e-6f64;
-                if ab + eps < settings_ab as f64 {
-                    return Some(quality_settings.fail);
+                if ab + eps < min_ab as f64 {
+                    return false;
                 }
             }
         }
         Genotype::Hom => {
-            if let Some(dp_hom) = quality_settings.dp_hom {
-                if let Some(dp) = call_info.dp {
-                    if dp < dp_hom {
-                        return Some(quality_settings.fail);
-                    }
+            // min_dp_hom
+            if let (Some(dp_hom), Some(dp)) = (quality_settings.min_dp_hom, call_info.dp) {
+                if dp < dp_hom {
+                    return false;
                 }
             }
         }
         Genotype::Ref | Genotype::NoCall => (),
     }
 
-    // gq
-    if let (Some(settings_gq), Some(call_gq)) = (quality_settings.gq, call_info.quality) {
+    // min_gq
+    if let (Some(settings_gq), Some(call_gq)) = (quality_settings.min_gq, call_info.quality) {
         if call_gq < settings_gq as f32 {
-            return Some(quality_settings.fail);
+            return false;
         }
     }
 
     if genotype != Genotype::Ref {
-        // ad
-        if let (Some(settings_ad), Some(call_ad)) = (quality_settings.ad, call_info.ad) {
+        // min_ad
+        if let (Some(settings_ad), Some(call_ad)) = (quality_settings.min_ad, call_info.ad) {
             if call_ad < settings_ad {
-                return Some(quality_settings.fail);
+                return false;
             }
         }
 
-        // ad_max
-        if let (Some(settings_ad_max), Some(call_ad)) = (quality_settings.ad_max, call_info.ad) {
+        // max_ad
+        if let (Some(settings_ad_max), Some(call_ad)) = (quality_settings.max_ad, call_info.ad) {
             if call_ad > settings_ad_max {
-                return Some(quality_settings.fail);
+                return false;
             }
         }
     }
 
-    None
+    true
 }
 
 #[cfg(test)]
 mod test {
-    use rstest::rstest;
-
-    use crate::seqvars::query::schema::{
-        CallInfo, CaseQuery,
-        FailChoice::{self, *},
-        QualitySettings, SequenceVariant,
+    use crate::seqvars::query::schema::data::{CallInfo, VariantRecord};
+    use crate::seqvars::query::schema::query::{
+        CaseQuery, QuerySettingsQuality, SampleQualitySettings,
     };
 
-    #[rstest]
-    #[case(Ignore, true, true, false)]
-    #[case(Ignore, false, true, false)]
-    #[case(Drop, true, true, false)]
-    #[case(Drop, false, false, false)]
-    #[case(NoCall, true, true, false)]
-    #[case(NoCall, false, true, true)]
+    #[rstest::rstest]
+    #[case(false, true, true)]
+    #[case(false, false, true)]
+    #[case(true, true, true)]
+    #[case(true, false, false)]
     fn passes(
-        #[case] q_fail: FailChoice,
+        #[case] filter_active: bool,
         #[case] should_pass: bool,
-        #[case] expected_pass: bool,
-        #[case] any_no_call_sample: bool,
+        #[case] expected: bool,
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
-            quality: vec![(
-                String::from("sample"),
-                QualitySettings {
-                    dp_het: None,
-                    dp_hom: None,
-                    gq: if should_pass { None } else { Some(40) },
-                    ab: None,
-                    ad: None,
-                    ad_max: None,
-                    fail: q_fail,
+            quality: QuerySettingsQuality {
+                sample_qualities: indexmap::indexmap! {
+                    String::from("sample") =>
+                    SampleQualitySettings {
+                        sample: String::from("sample"),
+                        filter_active,
+                        min_gq: if should_pass { None } else { Some(40) },
+                        ..Default::default()
+                    },
                 },
-            )]
-            .into_iter()
-            .collect(),
+            },
             ..Default::default()
         };
-        let seqvar = SequenceVariant {
-            call_info: vec![(
-                String::from("sample"),
+        let seqvar = VariantRecord {
+            call_infos: indexmap::indexmap! {
+                String::from("sample") =>
                 CallInfo {
                     quality: if should_pass { None } else { Some(30f32) },
                     ..Default::default()
                 },
-            )]
-            .into_iter()
-            .collect(),
+            },
             ..Default::default()
         };
 
         let res = super::passes(&query, &seqvar)?;
 
         assert_eq!(
-            res.pass, expected_pass,
-            "query = {:#?}, seqvar = {:#?}",
-            &query, &seqvar
-        );
-        let expected = if any_no_call_sample {
-            vec![String::from("sample")]
-        } else {
-            vec![]
-        };
-        assert_eq!(
-            &res.no_call_samples, &expected,
+            res, expected,
             "query = {:#?}, seqvar = {:#?}",
             &query, &seqvar
         );
@@ -219,272 +179,274 @@ mod test {
         Ok(())
     }
 
-    #[rstest]
+    #[rstest::rstest]
     #[allow(clippy::too_many_arguments)]
     // het, pass dp
     #[case(
-        Some(10), // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        Some(10), // q_min_dp_het
+        None, // q_dpmin__hom
+        None, // q_min_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("0/1"), // c_genotype
         None, // c_quality
         Some(10), // c_dp
         None, // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // het, fail dp
     #[case(
-        Some(10), // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        Some(10), // q_min_dp_het
+        None, // q_dpmin__hom
+        None, // q_min_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("0/1"), // c_genotype
         None, // c_quality
         Some(9), // c_dp
         None, // c_ad
-        Some(Ignore),  // expected, None = pass
+        true,  // expected
     )]
     // hom, pass dp
     #[case(
-        None, // q_dp_het
-        Some(10), // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        Some(10), // q_min_dp_hom
+        None, // q_min_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("1/1"), // c_genotype
         None, // c_quality
         Some(10), // c_dp
         None, // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // hom, fail dp
     #[case(
-        None, // q_dp_het
-        Some(10), // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        Some(10), // q_min_dp_hom
+        None, // q_min_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("1/1"), // c_genotype
         None, // c_quality
         Some(9), // c_dp
         None, // c_ad
-        Some(Ignore),  // expected, None = pass
+        true,  // expected
     )]
     // pass gq
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        Some(10), // q_gq
-        None, // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        Some(10), // min_q_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         None, // c_genotype
         Some(10f32), // c_quality
         None, // c_dp
         None, // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // fail gq
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        Some(10), // q_gq
-        None, // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        Some(10), // min_q_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("0/1"), // c_genotype
         Some(9f32), // c_quality
         None, // c_dp
         None, // c_ad
-        Some(Ignore),  // expected, None = pass
+        true,  // expected
     )]
     // het, pass ab lower
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        Some(0.2), // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        Some(0.2), //min_ q_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("0/1"), // c_genotype
         None, // c_quality
         Some(100), // c_dp
         Some(20), // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // het, pass ab upper
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        Some(0.2), // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        Some(0.2), //min_ q_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("0/1"), // c_genotype
         None, // c_quality
         Some(100), // c_dp
         Some(80), // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // het, fail ab lower
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        Some(0.2), // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        Some(0.2), //min_ q_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("0/1"), // c_genotype
         None, // c_quality
         Some(100), // c_dp
         Some(19), // c_ad
-        Some(Ignore),  // expected, None = pass
+        true,  // expected
     )]
     // het, fail ab upper
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        Some(0.2), // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        Some(0.2), //min_ q_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("0/1"), // c_genotype
         None, // c_quality
         Some(100), // c_dp
         Some(81), // c_ad
-        Some(Ignore),  // expected, None = pass
+        true,  // expected
     )]
     // hom, ab ignored
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        Some(0.2), // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        Some(0.2), //min_ q_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         Some("1/1"), // c_genotype
         None, // c_quality
         None, // c_dp
         None, // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // pass ad
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        Some(10), // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        None, // q_min_ab
+        Some(10), // min_q_ad
+        None, // q_max_ad
+        false, // filter_active
         None, // c_genotype
         None, // c_quality
         None, // c_dp
         Some(10), // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // fail ad
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        Some(10), // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        None, // q_min_ab
+        Some(10), // min_q_ad
+        None, // q_max_ad
+        false, // filter_active
         None, // c_genotype
         None, // c_quality
         None, // c_dp
         Some(9), // c_ad
-        Some(Ignore),  // expected, None = pass
+        true,  // expected
     )]
     // pass ad_max
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        None, // q_ad
-        Some(10), // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        Some(10), // max_ad
+        false, // filter_active
         None, // c_genotype
         None, // c_quality
         None, // c_dp
         Some(10), // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     // fail ad_max
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        None, // q_ad
-        Some(10), // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        Some(10), // max_ad
+        false, // filter_active
         None, // c_genotype
         None, // c_quality
         None, // c_dp
         Some(11), // c_ad
-        Some(Ignore),  // expected, None = pass
+        true,  // expected
     )]
     // all none
     #[case(
-        None, // q_dp_het
-        None, // q_dp_hom
-        None, // q_gq
-        None, // q_ab
-        None, // q_ad
-        None, // q_ad_max
-        Ignore, // q_fail
+        None, // q_min_dp_het
+        None, // q_min_dp_hom
+        None, // q_min_gq
+        None, // q_min_ab
+        None, // q_min_ad
+        None, // q_max_ad
+        false, // filter_active
         None, // c_genotype
         None, // c_quality
         None, // c_dp
         None, // c_ad
-        None,  // expected, None = pass
+        true, // expected
     )]
     fn passes_for_sample(
-        #[case] q_dp_het: Option<i32>,
-        #[case] q_dp_hom: Option<i32>,
-        #[case] q_gq: Option<i32>,
-        #[case] q_ab: Option<f32>,
-        #[case] q_ad: Option<i32>,
-        #[case] q_ad_max: Option<i32>,
-        #[case] q_fail: FailChoice,
+        #[case] q_min_dp_het: Option<i32>,
+        #[case] q_min_dp_hom: Option<i32>,
+        #[case] q_min_gq: Option<i32>,
+        #[case] q_min_ab: Option<f32>,
+        #[case] q_min_ad: Option<i32>,
+        #[case] q_max_ad: Option<i32>,
+        #[case] filter_active: bool,
         #[case] c_genotype: Option<&'static str>,
         #[case] c_quality: Option<f32>,
         #[case] c_dp: Option<i32>,
         #[case] c_ad: Option<i32>,
-        #[case] expected: Option<FailChoice>,
+        #[case] expected: bool,
     ) -> Result<(), anyhow::Error> {
-        let settings = QualitySettings {
-            dp_het: q_dp_het,
-            dp_hom: q_dp_hom,
-            gq: q_gq,
-            ab: q_ab,
-            ad: q_ad,
-            ad_max: q_ad_max,
-            fail: q_fail,
+        let settings = SampleQualitySettings {
+            sample: String::from("sample"),
+            filter_active,
+            min_dp_het: q_min_dp_het,
+            min_dp_hom: q_min_dp_hom,
+            min_gq: q_min_gq,
+            min_ab: q_min_ab,
+            min_ad: q_min_ad,
+            max_ad: q_max_ad,
         };
         let call_info = CallInfo {
+            sample: String::from("sample"),
             genotype: c_genotype.map(|s| s.to_string()),
             quality: c_quality,
             dp: c_dp,
@@ -495,7 +457,7 @@ mod test {
         assert_eq!(
             super::passes_for_sample(&settings, &call_info),
             expected,
-            "settings: {:?}, call info: {:?}",
+            "settings: {:#?}, call info: {:#?}",
             settings,
             call_info
         );

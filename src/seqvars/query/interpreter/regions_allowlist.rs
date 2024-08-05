@@ -1,30 +1,27 @@
-use crate::seqvars::query::schema::{CaseQuery, GenomicRegion, Range, SequenceVariant};
+use crate::seqvars::query::schema::data::VariantRecord;
+use crate::seqvars::query::schema::query::{CaseQuery, GenomicRegion, Range};
 
-/// Determine whether the `SequenceVariant` passes the regions allowlist filter.
-pub fn passes(query: &CaseQuery, seqvar: &SequenceVariant) -> bool {
-    if let Some(region_allowlist) = &query.genomic_regions {
-        if region_allowlist.is_empty() {
-            true
-        } else {
-            let res = region_allowlist.iter().any(|region| {
-                overlaps(
-                    region,
-                    &seqvar.chrom,
-                    seqvar.pos,
-                    seqvar.pos + seqvar.reference.len() as i32 - 1,
-                )
-            });
-            if !res {
-                tracing::trace!(
-                    "variant {:?} fails region allowlist filter {:?}",
-                    seqvar,
-                    &region_allowlist
-                );
-            }
-            res
-        }
-    } else {
+/// Determine whether the `VariantRecord` passes the regions allowlist filter.
+pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> bool {
+    if query.locus.genome_regions.is_empty() {
         true
+    } else {
+        let res = query.locus.genome_regions.iter().any(|region| {
+            overlaps(
+                region,
+                &seqvar.vcf_variant.chrom,
+                seqvar.vcf_variant.pos,
+                seqvar.vcf_variant.pos + seqvar.vcf_variant.ref_allele.len() as i32 - 1,
+            )
+        });
+        if !res {
+            tracing::trace!(
+                "variant {:?} fails region allowlist filter {:?}",
+                seqvar,
+                &query.locus.genome_regions
+            );
+        }
+        res
     }
 }
 

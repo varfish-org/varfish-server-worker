@@ -64,4 +64,3 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=Popdel,Name="Popdel",Version="1.1.2">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	index	father	mother
-

@@ -292,6 +292,38 @@ pub fn build_output_header(
             ),
         )
         .add_info(
+            "gnomad_mtdna_an",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of alleles in gnomAD MT",
+            ),
+        )
+        .add_info(
+            "gnomad_mtdna_hom",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of hom. alt. carriers in gnomAD MT",
+            ),
+        )
+        .add_info(
+            "gnomad_mtdna_het",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of het. alt. carriers in gnomAD MT",
+            ),
+        )
+        .add_info(
+            "gnomad_mtdna_hemi",
+            Map::<Info>::new(
+                Number::Count(1),
+                Type::Integer,
+                "Number of hemi. alt. carriers in gnomAD MT",
+            ),
+        )
+        .add_info(
             "helix_an",
             Map::<Info>::new(
                 Number::Count(1),
@@ -323,7 +355,7 @@ pub fn build_output_header(
                 "Functional annotations: 'Allele | Annotation | Annotation_Impact | \
                 Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | \
                 HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | \
-                AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'",
+                AA.pos / AA.length | Distance | Strand | ERRORS / WARNINGS / INFO'",
             ),
         )
         .add_format(key::READ_DEPTHS, Map::<Format>::from(key::READ_DEPTHS))

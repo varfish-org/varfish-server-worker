@@ -1,0 +1,56 @@
+---
+source: src/seqvars/query/schema/data.rs
+expression: "&seqvar"
+---
+vcf_variant:
+  chrom: MT
+  pos: 16184
+  ref_allele: C
+  alt_allele: T
+call_infos:
+  Case_1_father-N1-DNA1-WGS1:
+    sample: Case_1_father-N1-DNA1-WGS1
+    genotype: /0/0
+    quality: 99
+    dp: 1407
+    ad: 1
+    phasing_id: ~
+  Case_1_index-N1-DNA1-WGS1:
+    sample: Case_1_index-N1-DNA1-WGS1
+    genotype: /1/1
+    quality: 99
+    dp: 1969
+    ad: 1969
+    phasing_id: ~
+  Case_1_mother-N1-DNA1-WGS1:
+    sample: Case_1_mother-N1-DNA1-WGS1
+    genotype: /1/1
+    quality: 99
+    dp: 1478
+    ad: 1478
+    phasing_id: ~
+ann_fields: []
+population_frequencies:
+  gnomad_exomes:
+    an: 0
+    hom: 0
+    het: 0
+    hemi: 0
+  gnomad_genomes:
+    an: 0
+    hom: 0
+    het: 0
+    hemi: 0
+  gnomad_mtdna:
+    an: 0
+    hom: 0
+    het: 0
+  helixmtdb:
+    an: 0
+    hom: 0
+    het: 0
+  inhouse:
+    hom: 0
+    het: 0
+    hemi: 0
+    total: 0

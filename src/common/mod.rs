@@ -475,8 +475,15 @@ pub fn add_contigs_38(
     Ok(builder)
 }
 
+/// Error type for `genotype_to_string()`
+#[derive(thiserror::Error, Debug, Clone)]
+pub enum GenotypeToStringError {
+    #[error("Could not convert genotype {0}: {1}")]
+    InconvertibleGenotype(String, String),
+}
+
 /// Convert genotype to String value.
-pub fn genotype_to_string<G>(gt: &G) -> Result<String, anyhow::Error>
+pub fn genotype_to_string<G>(gt: &G) -> Result<String, GenotypeToStringError>
 where
     G: vcf::variant::record::samples::series::value::Genotype + ?Sized,
 {
@@ -484,8 +491,9 @@ where
 
     let mut tmp = String::new();
     for allele in gt.iter() {
-        let (position, phasing) =
-            allele.map_err(|e| anyhow::anyhow!("problem with Genotype {:?}: {}", gt, e))?;
+        let (position, phasing) = allele.map_err(|e| {
+            GenotypeToStringError::InconvertibleGenotype(format!("{:?}", gt), format!("{}", e))
+        })?;
         // sic! VCF 4.4 has optional/implicit leading phasing indicator
         match phasing {
             Phasing::Phased => tmp.push('|'),
