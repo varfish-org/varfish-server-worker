@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
-RELEASE_DATE=${RELEASE_DATE-20240612}
-CLINVAR_THIS_VERSION=${CLINVAR_THIS_VERSION-0.17.0}
+RELEASE_DATE=${RELEASE_DATE-20240801}
+CLINVAR_THIS_VERSION=${CLINVAR_THIS_VERSION-0.17.1}
 VERSION=${RELEASE_DATE}+${CLINVAR_THIS_VERSION}
 
 URL=https://github.com/varfish-org/clinvar-data-jsonl/releases/download/clinvar-weekly-${RELEASE_DATE}/clinvar-data-extract-vars-${VERSION}.tar.gz

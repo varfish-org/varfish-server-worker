@@ -2,347 +2,399 @@
 source: src/strucvars/txt_to_bin/vardbs/mod.rs
 expression: records
 ---
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 82189
   count: 13
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 127330
   count: 30
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 235938
   count: 13
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 21064
   stop: 35983
   count: 12
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 46501
   stop: 71800
   count: 2
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 49298
   stop: 98602
   count: 16
-- start: 49298
+- svType: SV_TYPE_DEL
+  start: 49298
   stop: 98602
   count: 16
-- start: 61723
+- svType: SV_TYPE_DEL
+  start: 61723
   stop: 356542
   count: 37
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 70007
   stop: 88084
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 86778
   stop: 91967
   count: 13
-- start: 87433
+- svType: SV_TYPE_DEL
+  start: 87433
   stop: 89163
   count: 2
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 91317
   stop: 125400
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 121042
   stop: 176984
   count: 11
-- start: 136181
+- svType: SV_TYPE_DEL
+  start: 136181
   stop: 137811
   count: 5
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 227601
   stop: 267719
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 317720
   stop: 351915
   count: 12
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 317770
   stop: 471337
   count: 9
-- start: 348092
+- svType: SV_TYPE_DEL
+  start: 348092
   stop: 461014
   count: 3
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 350531
   stop: 435382
   count: 16
-- start: 404112
+- svType: SV_TYPE_DEL
+  start: 404112
   stop: 471337
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 437342
   stop: 468644
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 459944
   stop: 464929
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 460229
   stop: 471368
   count: 14
-- start: 521413
+- svType: SV_TYPE_DEL
+  start: 521413
   stop: 575095
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 521413
   stop: 706368
   count: 4
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 521413
   stop: 850675
   count: 6
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 521553
   stop: 546384
   count: 11
-- start: 522577
+- svType: SV_TYPE_DEL
+  start: 522577
   stop: 641599
   count: 3
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 544966
   stop: 569604
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 546384
   stop: 549347
   count: 13
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 563896
   stop: 570775
   count: 24
-- start: 564452
+- svType: SV_TYPE_DEL
+  start: 564452
   stop: 574333
   count: 4
-- start: 564582
+- svType: SV_TYPE_DEL
+  start: 564582
   stop: 570178
   count: 4
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 637238
   stop: 730328
   count: 11
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 668630
   stop: 851378
   count: 63
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 712111
   stop: 764840
   count: 202
-- start: 713044
+- svType: SV_TYPE_DEL
+  start: 713044
   stop: 755966
   count: 4
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 723901
   stop: 727245
   count: 25
-- start: 724314
+- svType: SV_TYPE_DEL
+  start: 724314
   stop: 727245
   count: 10
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 738914
   stop: 809773
   count: 20
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 751887
   stop: 762622
   count: 2
-- start: 754201
+- svType: SV_TYPE_DEL
+  start: 754201
   stop: 759100
   count: 11
-- start: 766101
+- svType: SV_TYPE_DEL
+  start: 766101
   stop: 809773
   count: 2
-- start: 766408
+- svType: SV_TYPE_DEL
+  start: 766408
   stop: 769112
   count: 195
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 769117
   stop: 852664
   count: 60
-- start: 775292
+- svType: SV_TYPE_DEL
+  start: 775292
   stop: 792588
   count: 16
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 812998
   stop: 1708649
   count: 3
-- start: 834801
+- svType: SV_TYPE_DEL
+  start: 834801
   stop: 1029900
   count: 2
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 850017
   stop: 1097335
   count: 2
-- start: 869249
+- svType: SV_TYPE_DEL
+  start: 869249
   stop: 870860
   count: 71
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 869310
   stop: 870645
   count: 130
-- start: 869497
+- svType: SV_TYPE_DEL
+  start: 869497
   stop: 870645
   count: 277
-- start: 873391
+- svType: SV_TYPE_DEL
+  start: 873391
   stop: 874049
   count: 8
-- start: 947113
+- svType: SV_TYPE_DEL
+  start: 947113
   stop: 948003
   count: 5
-- start: 963659
+- svType: SV_TYPE_DEL
+  start: 963659
   stop: 964567
   count: 242
-- start: 964980
+- svType: SV_TYPE_DEL
+  start: 964980
   stop: 965488
   count: 2
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1010973
   stop: 1014683
   count: 2
-- start: 1011188
+- svType: SV_TYPE_DEL
+  start: 1011188
   stop: 1014828
   count: 15
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1034317
   stop: 1035340
   count: 30
-- start: 1058898
+- svType: SV_TYPE_DEL
+  start: 1058898
   stop: 1058993
   count: 2
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1074379
   stop: 1076572
   count: 19
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1137003
   stop: 1138283
   count: 9
-- start: 1142700
+- svType: SV_TYPE_DEL
+  start: 1142700
   stop: 1143161
   count: 939
-- start: 1183198
+- svType: SV_TYPE_DEL
+  start: 1183198
   stop: 1183861
   count: 92
-- start: 1223189
+- svType: SV_TYPE_DEL
+  start: 1223189
   stop: 1226049
   count: 49
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1223580
   stop: 1225633
   count: 5
-- start: 1226063
+- svType: SV_TYPE_DEL
+  start: 1226063
   stop: 1314437
   count: 26
-- start: 1285180
+- svType: SV_TYPE_DEL
+  start: 1285180
   stop: 1287127
   count: 9
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1285340
   stop: 1286900
   count: 24
-- start: 1302378
+- svType: SV_TYPE_DEL
+  start: 1302378
   stop: 1302882
   count: 2
-- start: 1352531
+- svType: SV_TYPE_DEL
+  start: 1352531
   stop: 1453590
   count: 19
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1385069
   stop: 1405538
   count: 11
-- start: 1387455
+- svType: SV_TYPE_DEL
+  start: 1387455
   stop: 1443716
   count: 59
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1393861
   stop: 1431581
   count: 22
-- start: 1400225
+- svType: SV_TYPE_DEL
+  start: 1400225
   stop: 1409107
   count: 34
-- start: 1414245
+- svType: SV_TYPE_DEL
+  start: 1414245
   stop: 1416792
   count: 30
-- start: 1415099
+- svType: SV_TYPE_DEL
+  start: 1415099
   stop: 1462190
   count: 2
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1432368
   stop: 1470064
   count: 12
-- start: 1443538
+- svType: SV_TYPE_DEL
+  start: 1443538
   stop: 1445764
   count: 112
-- start: 1465911
+- svType: SV_TYPE_DEL
+  start: 1465911
   stop: 1466268
   count: 346
-- start: 1500941
+- svType: SV_TYPE_DEL
+  start: 1500941
   stop: 1672603
   count: 7
-- start: 1522874
+- svType: SV_TYPE_DEL
+  start: 1522874
   stop: 1524674
   count: 30
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1540850
   stop: 1541970
   count: 8
-- start: 1540930
+- svType: SV_TYPE_DEL
+  start: 1540930
   stop: 1541970
   count: 56
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1559466
   stop: 1683706
   count: 5
-- start: 1582548
+- svType: SV_TYPE_DEL
+  start: 1582548
   stop: 1647400
   count: 5
-- start: 1584529
+- svType: SV_TYPE_DEL
+  start: 1584529
   stop: 1685076
   count: 36
-- start: 1598413
+- svType: SV_TYPE_DEL
+  start: 1598413
   stop: 1598601
   count: 450
-- start: 1616990
+- svType: SV_TYPE_DEL
+  start: 1616990
   stop: 1653672
   count: 6
-- start: 1620684
+- svType: SV_TYPE_DEL
+  start: 1620684
   stop: 1692321
   count: 322
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1627805
   stop: 1692321
   count: 80
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1634170
   stop: 1655791
   count: 2
-- start: 1635205
+- svType: SV_TYPE_DEL
+  start: 1635205
   stop: 1680442
   count: 20
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1642103
   stop: 1672603
   count: 7
-- start: 1649047
+- svType: SV_TYPE_DEL
+  start: 1649047
   stop: 1650677
   count: 69
-- start: 1658945
+- svType: SV_TYPE_DEL
+  start: 1658945
   stop: 1691900
   count: 3
-- start: 1662938
+- svType: SV_TYPE_DEL
+  start: 1662938
   stop: 1672603
   count: 3
-- start: 1866297
+- svType: SV_TYPE_DEL
+  start: 1866297
   stop: 1867172
   count: 3
-- start: 1910347
+- svType: SV_TYPE_DEL
+  start: 1910347
   stop: 1911917
   count: 16

@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package varfish.v1.worker;
+package varfish.v1.common.misc;
 
 // Protocol buffer for storing a list of file identifier mappings.
 message FileIdentifierMappings {

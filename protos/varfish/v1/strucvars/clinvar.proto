@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package varfish.v1.strucvars.clinvar;
+
+// Enum for storing the variation type from ClinVar.
+enum VariationType {
+  // Unspecified.
+  VARIATION_TYPE_UNSPECIFIED = 0;
+  // Complex.
+  VARIATION_TYPE_COMPLEX = 1;
+  // Microsatellite.
+  VARIATION_TYPE_MICROSATELLITE = 2;
+  // Duplication.
+  VARIATION_TYPE_DUP = 3;
+  // Deletion.
+  VARIATION_TYPE_DEL = 4;
+  // Break-end.
+  VARIATION_TYPE_BND = 5;
+  // Copy number variation.
+  VARIATION_TYPE_CNV = 6;
+  // Inversion.
+  VARIATION_TYPE_INV = 7;
+  // Insertion.
+  VARIATION_TYPE_INS = 8;
+}
+
+// Pathogenicity from ClinVar.
+enum Pathogenicity {
+  // Unspecified.
+  PATHOGENICITY_UNSPECIFIED = 0;
+  // Benign.
+  PATHOGENICITY_BENIGN = 1;
+  // Likely benign.
+  PATHOGENICITY_LIKELY_BENIGN = 2;
+  // Uncertain significance.
+  PATHOGENICITY_UNCERTAIN = 3;
+  // Likely pathogenic.
+  PATHOGENICITY_LIKELY_PATHOGENIC = 4;
+  // Pathogenic.
+  PATHOGENICITY_PATHOGENIC = 5;
+}
+
+// One record in ClinVar representing a structural variant.
+message SvRecord {
+  // The chromosome number.
+  int32 chrom_no = 1;
+  // The 1-based start position.
+  int32 start = 2;
+  // The 1-based stop position.
+  int32 stop = 3;
+  // The variation type.
+  VariationType variation_type = 4;
+  // The pathogenicity.
+  Pathogenicity pathogenicity = 5;
+  // The RCV ID.
+  uint32 rcv = 6;
+  // The VCV ID.
+  uint32 vcv = 7;
+}
+
+// ClinVar structural variant database.
+message SvDatabase {
+  // The records.
+  repeated SvRecord records = 1;
+}

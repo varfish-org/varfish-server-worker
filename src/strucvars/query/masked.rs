@@ -141,8 +141,9 @@ pub fn load_masked_db_records(path: &Path) -> Result<MaskedDb, anyhow::Error> {
 
     let fcontents =
         std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
-    let masked_db = pbs::svs::MaskedDatabase::decode(std::io::Cursor::new(fcontents))
-        .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
+    let masked_db =
+        pbs::varfish::v1::strucvars::bgdb::MaskedDatabase::decode(std::io::Cursor::new(fcontents))
+            .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
     for record in masked_db.records.into_iter() {
         let chrom_no = record.chrom_no as usize;
@@ -316,8 +317,8 @@ mod test {
         let tmpdir = temp_testdir::TempDir::default();
         let path_bin = tmpdir.join("masked_db.bin");
 
-        let data = super::pbs::svs::MaskedDatabase {
-            records: vec![super::pbs::svs::MaskedDbRecord {
+        let data = super::pbs::varfish::v1::strucvars::bgdb::MaskedDatabase {
+            records: vec![super::pbs::varfish::v1::strucvars::bgdb::MaskedDbRecord {
                 chrom_no: 0,
                 start: 1,
                 stop: 2,

@@ -351,3 +351,11 @@ You will need a recent version of protocolbuffers, e.g.:
 # bash utils/install-protoc.sh
 # export PATH=$PATH:$HOME/.local/share/protoc/bin
 ```
+
+For running protolint, install it as python package `protolint-bin`:
+
+```
+# virtualenv /tmp/varfish-server-worker
+# source /tmp/varfish-server-worker/bin/activate
+# pip install protolint-bin
+```
