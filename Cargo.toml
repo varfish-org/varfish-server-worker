@@ -15,16 +15,16 @@ rust-version = "1.70.0"
 annonars = "0.40"
 anyhow = "1.0"
 async-compression = { version = "0.4", features = ["tokio", "gzip"] }
-aws-sdk-s3 = { version = "1.38", features = ["behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.40", features = ["behavior-version-latest"] }
 aws-config = { version = "1.5", features = ["behavior-version-latest"] }
 base16ct = "0.2"
-bio = "1.6"
+bio = "2.0"
 biocommons-bioutils = "0.1"
 byteorder = { version = "1.5", features = ["i128"] }
 bytesize = "1.3"
 byte-unit = "5.0"
 chrono = { version = "0.4", features = ["serde"] }
-clap-verbosity-flag = "2.1"
+clap-verbosity-flag = "2.2"
 clap = { version = "4.5", features = ["derive", "help"] }
 console = "0.15"
 csv = "1.1"
@@ -41,8 +41,8 @@ itertools = "0.13"
 log = "0.4"
 mehari = "0.26.0"
 multimap = "0.10"
-pbjson = "0.6"
-pbjson-types = "0.6"
+pbjson = "0.7"
+pbjson-types = "0.7"
 procfs = "0.16"
 prost = "0.13.1"
 rand = "0.8"
@@ -53,17 +53,17 @@ rocksdb-utils-lookup = "0.4"
 rocksdb = { version = "0.22", features = ["multi-threaded-cf"] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["serde_derive"] }
-serde_with = { version = "3.3", features = ["indexmap_2"] }
+serde_with = { version = "3.8", features = ["indexmap_2"] }
 shellexpand = "3.0"
 strum_macros = "0.26"
 strum = { version = "0.26", features = ["derive"] }
 tempfile = "3.10.1"
 thiserror = "1.0"
 thousands = "0.2"
-tokio = { version = "1.34", features = ["full"] }
+tokio = { version = "1.39", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.3"
-uuid = { version = "1.9", features = ["v4", "fast-rng", "serde"] }
+uuid = { version = "1.10", features = ["v4", "fast-rng", "serde"] }
 
 [dependencies.noodles]
 version = "0.77.0"
@@ -72,7 +72,7 @@ features = ["bgzf", "core", "csi", "tabix", "vcf", "bcf"]
 
 [build-dependencies]
 anyhow = "1.0"
-prost-build = "0.12"
+prost-build = "0.13"
 pbjson-build = "0.6.2"
 
 [dev-dependencies]

@@ -27,7 +27,7 @@ RUN apt-get update && \
 RUN rustup component add rustfmt
 # Install build dependency `protoc`.
 COPY utils/install-protoc.sh /tmp
-RUN CMAKE_INSTALL_PREFIX=/usr/local bash /tmp/install-protoc.sh
+RUN PREFIX=/usr/local bash /tmp/install-protoc.sh
 
 # Now for the two-step building.
 #
@@ -45,6 +45,7 @@ RUN cargo build --release
 # Now copy in the rest of the sources.
 COPY build.rs Cargo.toml Cargo.lock /usr/src/varfish-server-worker/
 COPY src /usr/src/varfish-server-worker/src/
+COPY protos /usr/src/varfish-server-worker/protos/
 # COPY utils/alpine-linker-script.sh /usr/src/varfish-server-worker/utils/
 # RUN chmod a+rx /usr/src/varfish-server-worker/utils/alpine-linker-script.sh
 # COPY .cargo /usr/src/varfish-server-worker/.cargo/
