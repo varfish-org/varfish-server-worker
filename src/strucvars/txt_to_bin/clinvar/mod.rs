@@ -10,7 +10,7 @@ use crate::{
     common::{build_chrom_map, trace_rss_now},
     pbs::{
         self,
-        varfish::v1::strucvars::bgdb::{Pathogenicity, SvDatabase, SvRecord},
+        varfish::v1::strucvars::clinvar::{Pathogenicity, SvDatabase, SvRecord},
     },
 };
 
@@ -107,18 +107,18 @@ fn convert_jsonl_to_protobuf(reader: Box<dyn BufRead>) -> Result<Vec<SvRecord>, 
         let variation_type = match annonars::pbs::clinvar_data::extracted_vars::VariationType::try_from(record.variation_type) {
             Ok(variation_type) => match variation_type {
                 annonars::pbs::clinvar_data::extracted_vars::VariationType::Unspecified => continue,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::Insertion => pbs::varfish::v1::strucvars::bgdb::VariationType::Ins,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::Deletion => pbs::varfish::v1::strucvars::bgdb::VariationType::Del,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Insertion => pbs::varfish::v1::strucvars::clinvar::VariationType::Ins,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Deletion => pbs::varfish::v1::strucvars::clinvar::VariationType::Del,
                 annonars::pbs::clinvar_data::extracted_vars::VariationType::Snv => continue,
                 annonars::pbs::clinvar_data::extracted_vars::VariationType::Indel => continue,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::Duplication => pbs::varfish::v1::strucvars::bgdb::VariationType::Dup,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::TandemDuplication => pbs::varfish::v1::strucvars::bgdb::VariationType::Dup,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::StructuralVariant => pbs::varfish::v1::strucvars::bgdb::VariationType::Complex,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::CopyNumberGain => pbs::varfish::v1::strucvars::bgdb::VariationType::Dup,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::CopyNumberLoss => pbs::varfish::v1::strucvars::bgdb::VariationType::Del,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Duplication => pbs::varfish::v1::strucvars::clinvar::VariationType::Dup,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::TandemDuplication => pbs::varfish::v1::strucvars::clinvar::VariationType::Dup,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::StructuralVariant => pbs::varfish::v1::strucvars::clinvar::VariationType::Complex,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::CopyNumberGain => pbs::varfish::v1::strucvars::clinvar::VariationType::Dup,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::CopyNumberLoss => pbs::varfish::v1::strucvars::clinvar::VariationType::Del,
                 annonars::pbs::clinvar_data::extracted_vars::VariationType::ProteinOnly => continue,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::Microsatellite => pbs::varfish::v1::strucvars::bgdb::VariationType::Microsatellite,
-                annonars::pbs::clinvar_data::extracted_vars::VariationType::Inversion => pbs::varfish::v1::strucvars::bgdb::VariationType::Inv,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Microsatellite => pbs::varfish::v1::strucvars::clinvar::VariationType::Microsatellite,
+                annonars::pbs::clinvar_data::extracted_vars::VariationType::Inversion => pbs::varfish::v1::strucvars::clinvar::VariationType::Inv,
                 annonars::pbs::clinvar_data::extracted_vars::VariationType::Other => continue,
             },
             Err(_) => {

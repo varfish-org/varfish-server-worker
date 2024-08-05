@@ -22,7 +22,7 @@ type IntervalTree = ArrayBackedIntervalTree<i32, u32>;
 #[derive(Default, Debug)]
 pub struct ClinvarSv {
     /// Records, stored by chromosome.
-    pub records: Vec<Vec<crate::pbs::varfish::v1::strucvars::bgdb::SvRecord>>,
+    pub records: Vec<Vec<crate::pbs::varfish::v1::strucvars::clinvar::SvRecord>>,
     /// Interval trees, stored by chromosome.
     pub trees: Vec<IntervalTree>,
 }
@@ -34,7 +34,7 @@ impl ClinvarSv {
         chrom_range: &ChromRange,
         chrom_map: &IndexMap<String, usize>,
         min_patho: Option<Pathogenicity>,
-    ) -> Vec<crate::pbs::varfish::v1::strucvars::bgdb::SvRecord> {
+    ) -> Vec<crate::pbs::varfish::v1::strucvars::clinvar::SvRecord> {
         let chrom_idx = *chrom_map
             .get(&chrom_range.chromosome)
             .expect("invalid chromosome");
@@ -102,9 +102,9 @@ pub fn load_clinvar_sv(
         std::path::Path::new(path_db).join(format!("{}/strucvars/clinvar.bin", genome_release));
     let fcontents =
         std::fs::read(&path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
-    let bg_db = crate::pbs::varfish::v1::strucvars::bgdb::SvDatabase::decode(std::io::Cursor::new(
-        fcontents,
-    ))
+    let bg_db = crate::pbs::varfish::v1::strucvars::clinvar::SvDatabase::decode(
+        std::io::Cursor::new(fcontents),
+    )
     .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
     let mut total_count = 0;

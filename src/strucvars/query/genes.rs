@@ -40,10 +40,9 @@ fn load_xlink_db(path: &Path) -> Result<XlinkDb, anyhow::Error> {
 
     let fcontents =
         std::fs::read(path).map_err(|e| anyhow::anyhow!("error reading {:?}: {}", &path, e))?;
-    let xlink_db = pbs::varfish::v1::strucvars::clinvar::XlinkDatabase::decode(
-        std::io::Cursor::new(fcontents),
-    )
-    .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
+    let xlink_db =
+        pbs::varfish::v1::strucvars::bgdb::XlinkDatabase::decode(std::io::Cursor::new(fcontents))
+            .map_err(|e| anyhow::anyhow!("error decoding {:?}: {}", &path, e))?;
 
     let mut total_count = 0;
     for record in xlink_db.records.into_iter() {
