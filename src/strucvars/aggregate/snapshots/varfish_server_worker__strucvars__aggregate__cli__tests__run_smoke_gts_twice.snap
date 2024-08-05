@@ -4,4 +4,3 @@ expression: output
 ---
 #chromosome	begin	chromosome2	end	pe_orientation	sv_type	carriers	carriers_het	carriers_hom	carriers_hemi
 1	586411	1	586439	3to5	DEL	6	6	0	0
-

@@ -1,8 +1,0 @@
----
-source: src/common.rs
-expression: lines
----
-- one
-- two
-- three
-

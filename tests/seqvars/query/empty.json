@@ -1,1 +1,59 @@
-{}
+{
+  "genotype": {
+    "recessive_mode": "Disabled",
+    "sample_genotypes": {}
+  },
+  "quality": {
+    "sample_qualities": {}
+  },
+  "frequency": {
+    "gnomad_exomes": {
+      "enabled": false,
+      "heterozygous": null,
+      "homozygous": null,
+      "hemizygous": null,
+      "frequency": null
+    },
+    "gnomad_genomes": {
+      "enabled": false,
+      "heterozygous": null,
+      "homozygous": null,
+      "hemizygous": null,
+      "frequency": null
+    },
+    "gnomad_mtdna": {
+      "enabled": false,
+      "heteroplasmic": null,
+      "homoplasmic": null,
+      "frequency": null
+    },
+    "helixmtdb": {
+      "enabled": false,
+      "heteroplasmic": null,
+      "homoplasmic": null,
+      "frequency": null
+    },
+    "inhouse": {
+      "enabled": false,
+      "heterozygous": null,
+      "homozygous": null,
+      "hemizygous": null,
+      "carriers": null
+    }
+  },
+  "consequence": {
+    "variant_types": [],
+    "transcript_types": [],
+    "consequences": [],
+    "max_dist_to_exon": null
+  },
+  "locus": {
+    "genes": [],
+    "genome_regions": []
+  },
+  "clinvar": {
+    "presence_required": false,
+    "germline_descriptions": [],
+    "allow_conflicting_interpretations": false
+  }
+}

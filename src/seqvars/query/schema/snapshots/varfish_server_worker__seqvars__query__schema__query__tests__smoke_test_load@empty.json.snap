@@ -1,0 +1,50 @@
+---
+source: src/seqvars/query/schema/query.rs
+expression: "&query"
+---
+genotype:
+  recessive_mode: Disabled
+  sample_genotypes: {}
+quality:
+  sample_qualities: {}
+frequency:
+  gnomad_exomes:
+    enabled: false
+    heterozygous: ~
+    homozygous: ~
+    hemizygous: ~
+    frequency: ~
+  gnomad_genomes:
+    enabled: false
+    heterozygous: ~
+    homozygous: ~
+    hemizygous: ~
+    frequency: ~
+  gnomad_mtdna:
+    enabled: false
+    heteroplasmic: ~
+    homoplasmic: ~
+    frequency: ~
+  helixmtdb:
+    enabled: false
+    heteroplasmic: ~
+    homoplasmic: ~
+    frequency: ~
+  inhouse:
+    enabled: false
+    heterozygous: ~
+    homozygous: ~
+    hemizygous: ~
+    carriers: ~
+consequence:
+  variant_types: []
+  transcript_types: []
+  consequences: []
+  max_dist_to_exon: ~
+locus:
+  genes: []
+  genome_regions: []
+clinvar:
+  presence_required: false
+  germline_descriptions: []
+  allow_conflicting_interpretations: false

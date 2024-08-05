@@ -4,4 +4,3 @@ expression: "VariantCaller::guess(&vcf_header)"
 ---
 Dragen:
   version: "SW: 07.021.624.3.10.4, HW: 07.021.624"
-
