@@ -100,7 +100,7 @@ fn passes_for_gene(query: &CaseQuery, seqvars: &Vec<VariantRecord>) -> Result<bo
                 GenotypeChoice::RecessiveIndex => {
                     index.clone_from(sample_name);
                 }
-                GenotypeChoice::RecessiveParent => {
+                GenotypeChoice::RecessiveFather | GenotypeChoice::RecessiveMother => {
                     parents.push(sample_name.clone());
                 }
                 _ => (),
@@ -607,8 +607,8 @@ mod test {
                 recessive_mode,
                 sample_genotypes: indexmap::indexmap! {
                     String::from("index") => SampleGenotypeChoice { sample: String::from("index"), genotype: GenotypeChoice::RecessiveIndex, ..Default::default() },
-                    String::from("father") => SampleGenotypeChoice { sample: String::from("father"), genotype: GenotypeChoice::RecessiveParent, ..Default::default() },
-                    String::from("mother") => SampleGenotypeChoice { sample: String::from("mother"), genotype: GenotypeChoice::RecessiveParent, ..Default::default() },
+                    String::from("father") => SampleGenotypeChoice { sample: String::from("father"), genotype: GenotypeChoice::RecessiveFather, ..Default::default() },
+                    String::from("mother") => SampleGenotypeChoice { sample: String::from("mother"), genotype: GenotypeChoice::RecessiveMother, ..Default::default() },
                 },
             },
             ..Default::default()

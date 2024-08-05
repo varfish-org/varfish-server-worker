@@ -6,22 +6,9 @@ use crate::{
     },
 };
 
-/// Return type for the `passes` function.
-#[derive(Debug)]
-pub struct PassOrNoCall {
-    /// Whether the variant should be kept.
-    pub pass: bool,
-    /// For which samples should the genotype be interpreted as no-call.
-    pub no_call_samples: Vec<String>,
-}
-
 /// Determine whether the `VariantRecord` passes the quality filter.
 /// Will return `FailFilterChoice::Ignore` if the variant passes.
-pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> Result<PassOrNoCall, anyhow::Error> {
-    let mut result = PassOrNoCall {
-        pass: true,
-        no_call_samples: Vec::new(),
-    };
+pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> Result<bool, anyhow::Error> {
     for (sample_name, quality_settings) in &query.quality.sample_qualities {
         if let Some(call_info) = seqvar.call_infos.get(sample_name) {
             if !passes_for_sample(quality_settings, call_info) {
@@ -33,8 +20,12 @@ pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> Result<PassOrNoCall,
                     &quality_settings
                 );
                 if quality_settings.filter_active {
-                    result.pass = false;
-                    break;
+                    tracing::trace!(
+                        "variant {:?} fails quality filter for sample {:?}",
+                        seqvar,
+                        &sample_name
+                    );
+                    return Ok(false);
                 }
             } else {
                 // no failure, all good
@@ -44,17 +35,17 @@ pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> Result<PassOrNoCall,
         }
     }
 
-    tracing::trace!(
-        "variant {:?} has result {:?} for quality filter {:?}",
-        seqvar,
-        result,
-        &query.genotype
-    );
-    Ok(result)
+    tracing::trace!("variant {:?} passes quality filter", seqvar,);
+    Ok(true)
 }
 
 /// Return whether the sample passes the quality filter.
 fn passes_for_sample(quality_settings: &SampleQualitySettings, call_info: &CallInfo) -> bool {
+    // Short-circuit if the filter is not active.
+    if !quality_settings.filter_active {
+        return true;
+    }
+
     // Ad-hoc enum for genotype.
     #[derive(PartialEq, Eq)]
     enum Genotype {
@@ -143,15 +134,14 @@ mod test {
     };
 
     #[rstest::rstest]
-    #[case(false, true, true, false)]
-    #[case(false, false, true, false)]
-    #[case(true, true, true, false)]
-    #[case(true, false, false, false)]
+    #[case(false, true, true)]
+    #[case(false, false, true)]
+    #[case(true, true, true)]
+    #[case(true, false, false)]
     fn passes(
         #[case] filter_active: bool,
         #[case] should_pass: bool,
-        #[case] expected_pass: bool,
-        #[case] any_no_call_sample: bool,
+        #[case] expected: bool,
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             quality: QuerySettingsQuality {
@@ -181,17 +171,7 @@ mod test {
         let res = super::passes(&query, &seqvar)?;
 
         assert_eq!(
-            res.pass, expected_pass,
-            "query = {:#?}, seqvar = {:#?}",
-            &query, &seqvar
-        );
-        let expected = if any_no_call_sample {
-            vec![String::from("sample")]
-        } else {
-            vec![]
-        };
-        assert_eq!(
-            &res.no_call_samples, &expected,
+            res, expected,
             "query = {:#?}, seqvar = {:#?}",
             &query, &seqvar
         );
@@ -477,7 +457,7 @@ mod test {
         assert_eq!(
             super::passes_for_sample(&settings, &call_info),
             expected,
-            "settings: {:?}, call info: {:?}",
+            "settings: {:#?}, call info: {:#?}",
             settings,
             call_info
         );

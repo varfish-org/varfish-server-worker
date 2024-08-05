@@ -90,22 +90,31 @@ pub enum GenotypeChoice {
     Variant,
     /// Recessive index.
     RecessiveIndex,
-    /// Recessive parent.
-    RecessiveParent,
+    /// Recessive father.
+    RecessiveFather,
+    /// Recessive mother.
+    RecessiveMother,
 }
 
 /// Supporting code for `GenotypeChoice`.
 pub(crate) mod genotype_choice {
     /// Error type for `GenotypeChoice::try_from()`.
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
-    pub enum Error {
+    pub enum TryFromError {
         #[error("Cannot convert protobuf GenotypeChoice: {0:?}")]
         UnknownGenotypeChoiceValue(super::pb_query::GenotypeChoice),
+    }
+
+    /// Error type for `GenotypeChoice::matches()`.
+    #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
+    pub enum MatchesError {
+        #[error("Cannot use genotype matches on recessive indicator: {0:?}")]
+        RecessiveIndicator(super::GenotypeChoice),
     }
 }
 
 impl TryFrom<pb_query::GenotypeChoice> for GenotypeChoice {
-    type Error = genotype_choice::Error;
+    type Error = genotype_choice::TryFromError;
 
     fn try_from(value: pb_query::GenotypeChoice) -> Result<Self, Self::Error> {
         match value {
@@ -117,10 +126,18 @@ impl TryFrom<pb_query::GenotypeChoice> for GenotypeChoice {
             pb_query::GenotypeChoice::NonHom => Ok(GenotypeChoice::NonHom),
             pb_query::GenotypeChoice::Variant => Ok(GenotypeChoice::Variant),
             pb_query::GenotypeChoice::RecessiveIndex => Ok(GenotypeChoice::RecessiveIndex),
-            pb_query::GenotypeChoice::RecessiveParent => Ok(GenotypeChoice::RecessiveParent),
+            pb_query::GenotypeChoice::RecessiveFather => Ok(GenotypeChoice::RecessiveFather),
+            pb_query::GenotypeChoice::RecessiveMother => Ok(GenotypeChoice::RecessiveMother),
             _ => Err(Self::Error::UnknownGenotypeChoiceValue(value)),
         }
     }
+}
+
+/// Returns whether the given genotype script is treated as no-call.
+///
+/// This is the case if the genotype string contains at least one ".".
+pub fn considered_no_call(gt_str: &str) -> bool {
+    gt_str.contains('.')
 }
 
 /// Trait that describes whether a string matches a value.
@@ -129,7 +146,11 @@ impl TryFrom<pb_query::GenotypeChoice> for GenotypeChoice {
 /// The valid genotype strings have the form "<VAL>/<VAL>", "<VAL>|<VAL>" or
 /// "<VAL>" with "<VAL>" being one of "0", "1", and ".".
 pub trait MatchesGenotypeStr {
+    type Error;
+
     /// Whether `self` matches `s`.
+    ///
+    /// Note that no-call genotypes do not match anything.
     ///
     /// # Arguments
     ///
@@ -138,29 +159,47 @@ pub trait MatchesGenotypeStr {
     /// # Returns
     ///
     /// `true` if `self` matches `gt_str`, `false` otherwise.
-    fn matches(&self, gt_tr: &str) -> bool;
+    ///
+    /// # Errors
+    ///
+    /// * When the conversion fails.
+    fn matches(&self, gt_tr: &str) -> Result<bool, Self::Error>;
 }
 
 impl MatchesGenotypeStr for GenotypeChoice {
-    fn matches(&self, gt_str: &str) -> bool {
+    type Error = genotype_choice::MatchesError;
+
+    fn matches(&self, gt_str: &str) -> Result<bool, Self::Error> {
         let gt_str = if gt_str.starts_with('/') || gt_str.starts_with('|') {
             &gt_str[1..]
         } else {
             gt_str
         };
-        match self {
-            GenotypeChoice::Any => true,
+        Ok(match self {
+            // atoms
             GenotypeChoice::Ref => ["0", "0|0", "0/0"].contains(&gt_str),
-            GenotypeChoice::RecessiveIndex
-            | GenotypeChoice::RecessiveParent
-            | GenotypeChoice::Het => ["0/1", "0|1", "1/0", "1|0"].contains(&gt_str),
+            GenotypeChoice::Het => ["0/1", "0|1", "1/0", "1|0"].contains(&gt_str),
             GenotypeChoice::Hom => ["1", "1/1", "1|1"].contains(&gt_str),
-            GenotypeChoice::NonHom => !["1", "1/1", "1|1"].contains(&gt_str),
-            GenotypeChoice::NonHet => !["0/1", "0|1", "1/0", "1|0"].contains(&gt_str),
+            // combinations
             GenotypeChoice::Variant => {
-                ["1", "0/1", "0|1", "1/0", "1|0", "1|1", "1/1"].contains(&gt_str)
+                GenotypeChoice::Het.matches(gt_str)? || GenotypeChoice::Hom.matches(gt_str)?
             }
-        }
+            GenotypeChoice::Any => {
+                GenotypeChoice::Ref.matches(gt_str)? || GenotypeChoice::Variant.matches(gt_str)?
+            }
+            GenotypeChoice::NonHom => {
+                GenotypeChoice::Ref.matches(gt_str)? || GenotypeChoice::Het.matches(gt_str)?
+            }
+            GenotypeChoice::NonHet => {
+                GenotypeChoice::Ref.matches(gt_str)? || GenotypeChoice::Hom.matches(gt_str)?
+            }
+            // recessive markers
+            GenotypeChoice::RecessiveIndex
+            | GenotypeChoice::RecessiveFather
+            | GenotypeChoice::RecessiveMother => {
+                return Err(Self::Error::RecessiveIndicator(*self))
+            }
+        })
     }
 }
 
@@ -239,8 +278,10 @@ pub(crate) mod query_settings_genotype {
     /// Error type for `QuerySettingsGenotype::recessive_parents()`.
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
     pub enum RecessiveParentsError {
-        #[error("Too many recessive parent samples found: {0:?}")]
-        TooManyRecessiveParentsFound(Vec<String>),
+        #[error("Found two or more recessive fathers: {0:?}")]
+        Fathers(Vec<String>),
+        #[error("Found two or more recessive mothers: {0:?}")]
+        Mothers(Vec<String>),
     }
 
     /// Error type for `QuerySettingsGenotype::try_from()`.
@@ -254,6 +295,28 @@ pub(crate) mod query_settings_genotype {
         DuplicateSample(String),
         #[error("Invalid sample genotype choice: {0}")]
         InvalidSampleGenotypeChoice(#[from] super::sample_genotype_choice::Error),
+    }
+}
+
+/// Struct for storing recessive mother/father.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct RecessiveParents {
+    /// Name of the father, if any.
+    pub father: Option<String>,
+    /// Name of the mother, if any.
+    pub mother: Option<String>,
+}
+
+impl Into<Vec<String>> for RecessiveParents {
+    fn into(self) -> Vec<String> {
+        let mut result = Vec::new();
+        if let Some(father) = self.father {
+            result.push(father);
+        }
+        if let Some(mother) = self.mother {
+            result.push(mother);
+        }
+        result
     }
 }
 
@@ -292,29 +355,43 @@ impl QuerySettingsGenotype {
     ///
     /// # Returns
     ///
-    /// The sample names of the recessive parent samples (zero to two).
+    /// Struct holding names of recessive father and mother, if any.
     ///
     /// # Errors
     ///
-    /// * `RecessiveParentsError::TooManyRecessiveParentsFound` if more than two recessive parent samples are found.
+    /// * `RecessiveParentsError::Fathers` or `RecessiveParentsError::Mothers` if more than two
+    ///   recessive fathers/mothers samples are found.
     pub fn recessive_parents(
         &self,
-    ) -> Result<Vec<String>, query_settings_genotype::RecessiveParentsError> {
-        let samples = self
+    ) -> Result<RecessiveParents, query_settings_genotype::RecessiveParentsError> {
+        let fathers = self
             .sample_genotypes
             .values()
-            .filter(|sgc| sgc.genotype == GenotypeChoice::RecessiveParent)
+            .filter(|sgc| matches!(sgc.genotype, GenotypeChoice::RecessiveFather))
             .map(|sgc| sgc.sample.clone())
             .collect::<Vec<_>>();
-        if samples.len() > 2 {
-            Err(
-                query_settings_genotype::RecessiveParentsError::TooManyRecessiveParentsFound(
-                    samples,
-                ),
-            )
-        } else {
-            Ok(samples)
+        if fathers.len() > 2 {
+            return Err(query_settings_genotype::RecessiveParentsError::Fathers(
+                fathers,
+            ));
         }
+
+        let mothers = self
+            .sample_genotypes
+            .values()
+            .filter(|sgc| matches!(sgc.genotype, GenotypeChoice::RecessiveMother))
+            .map(|sgc| sgc.sample.clone())
+            .collect::<Vec<_>>();
+        if mothers.len() > 2 {
+            return Err(query_settings_genotype::RecessiveParentsError::Mothers(
+                mothers,
+            ));
+        }
+
+        Ok(RecessiveParents {
+            father: fathers.into_iter().next(),
+            mother: mothers.into_iter().next(),
+        })
     }
 }
 
@@ -530,8 +607,8 @@ pub struct QuerySettingsFrequency {
     pub gnomad_exomes: GnomadNuclearFrequencySettings,
     /// gnomAD-genomes filter.
     pub gnomad_genomes: GnomadNuclearFrequencySettings,
-    /// gnomAD-MT filter.
-    pub gnomad_mt: GnomadMitochondrialFrequencySettings,
+    /// gnomAD-mtDNA filter.
+    pub gnomad_mtdna: GnomadMitochondrialFrequencySettings,
     /// HelixMtDb filter.
     pub helixmtdb: HelixMtDbFrequencySettings,
     /// In-house filter.
@@ -547,8 +624,8 @@ pub(crate) mod query_settings_frequency {
         GnomadExomes,
         #[error("gnomad_genomes missing in protobuf")]
         GnomadGenomes,
-        #[error("gnomad_mt missing in protobuf")]
-        GnomadMt,
+        #[error("gnomad_mtdna missing in protobuf")]
+        GnomadMtdna,
         #[error("helixmtdb missing in protobuf")]
         HelixMtDb,
         #[error("inhouse missing in protobuf")]
@@ -567,8 +644,8 @@ impl TryFrom<pb_query::QuerySettingsFrequency> for QuerySettingsFrequency {
             gnomad_genomes: GnomadNuclearFrequencySettings::from(
                 value.gnomad_genomes.ok_or(Self::Error::GnomadGenomes)?,
             ),
-            gnomad_mt: GnomadMitochondrialFrequencySettings::from(
-                value.gnomad_mt.ok_or(Self::Error::GnomadMt)?,
+            gnomad_mtdna: GnomadMitochondrialFrequencySettings::from(
+                value.gnomad_mtdna.ok_or(Self::Error::GnomadMtdna)?,
             ),
             helixmtdb: HelixMtDbFrequencySettings::from(
                 value.helixmtdb.ok_or(Self::Error::HelixMtDb)?,
@@ -1199,6 +1276,28 @@ mod tests {
 
     use super::*;
 
+    #[rstest::rstest]
+    #[case::dot(".", true)]
+    #[case::dot_slash_dot("./.", true)]
+    #[case::dot_pipe_dot(".|.", true)]
+    #[case::zero("0", false)]
+    #[case::zero_slash_dot("0/.", true)]
+    #[case::zero_pipe_dot("0|.", true)]
+    #[case::dot_slash_zero("./0", true)]
+    #[case::dot_pipe_zero(".|0", true)]
+    #[case::one("1", false)]
+    #[case::one_slash_dot("1/.", true)]
+    #[case::one_pipe_dot("1|.", true)]
+    #[case::dot_slash_one("./1", true)]
+    #[case::dot_pipe_one(".|1", true)]
+    #[case::zero_slash_one("0/1", false)]
+    #[case::zero_pipe_one("0|1", false)]
+    #[case::one_slash_zero("1/0", false)]
+    #[case::one_pipe_zero("1|0", false)]
+    fn test_considered_no_call(#[case] gt: &str, #[case] expected: bool) {
+        assert_eq!(super::considered_no_call(gt), expected);
+    }
+
     #[test]
     fn test_recessive_mode_try_from() {
         assert_eq!(
@@ -1255,8 +1354,12 @@ mod tests {
             GenotypeChoice::RecessiveIndex
         );
         assert_eq!(
-            GenotypeChoice::try_from(pb_query::GenotypeChoice::RecessiveParent).unwrap(),
-            GenotypeChoice::RecessiveParent
+            GenotypeChoice::try_from(pb_query::GenotypeChoice::RecessiveFather).unwrap(),
+            GenotypeChoice::RecessiveFather
+        );
+        assert_eq!(
+            GenotypeChoice::try_from(pb_query::GenotypeChoice::RecessiveMother).unwrap(),
+            GenotypeChoice::RecessiveMother
         );
         assert!(GenotypeChoice::try_from(pb_query::GenotypeChoice::Unspecified).is_err());
     }
@@ -1300,18 +1403,20 @@ mod tests {
             #[case] genotype_choice: GenotypeChoice,
             #[case] gt_strs: &[&str],
             #[case] expected: bool,
-        ) {
+        ) -> Result<(), anyhow::Error> {
             use crate::seqvars::query::schema::query::MatchesGenotypeStr as _;
 
             for gt_str in gt_strs {
                 assert_eq!(
-                    genotype_choice.matches(gt_str),
+                    genotype_choice.matches(gt_str)?,
                     expected,
                     "{:?} {}",
                     genotype_choice,
                     gt_str
                 );
             }
+
+            Ok(())
         }
     }
 
@@ -1579,7 +1684,7 @@ mod tests {
                 hemizygous: Some(30),
                 frequency: Some(0.1),
             }),
-            gnomad_mt: Some(pb_query::GnomadMitochondrialFrequencySettings {
+            gnomad_mtdna: Some(pb_query::GnomadMitochondrialFrequencySettings {
                 enabled: true,
                 heteroplasmic: Some(10),
                 homoplasmic: Some(20),
@@ -1614,7 +1719,7 @@ mod tests {
                 hemizygous: Some(30),
                 frequency: Some(0.1),
             },
-            gnomad_mt: GnomadMitochondrialFrequencySettings {
+            gnomad_mtdna: GnomadMitochondrialFrequencySettings {
                 enabled: true,
                 heteroplasmic: Some(10),
                 homoplasmic: Some(20),
@@ -2007,7 +2112,7 @@ mod tests {
                     hemizygous: Some(30),
                     frequency: Some(0.1),
                 }),
-                gnomad_mt: Some(pb_query::GnomadMitochondrialFrequencySettings {
+                gnomad_mtdna: Some(pb_query::GnomadMitochondrialFrequencySettings {
                     enabled: true,
                     heteroplasmic: Some(10),
                     homoplasmic: Some(20),
@@ -2118,7 +2223,7 @@ mod tests {
                     hemizygous: Some(30),
                     frequency: Some(0.1),
                 },
-                gnomad_mt: GnomadMitochondrialFrequencySettings {
+                gnomad_mtdna: GnomadMitochondrialFrequencySettings {
                     enabled: true,
                     heteroplasmic: Some(10),
                     homoplasmic: Some(20),

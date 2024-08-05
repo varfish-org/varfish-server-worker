@@ -420,10 +420,10 @@ impl Frequency {
             FrequencyBuilder::default()
                 .gnomad_mtdna(
                     MtdnaFrequency::new(
-                        seqvar.population_frequencies.gnomad_mt.af(),
-                        seqvar.population_frequencies.gnomad_mt.ac(),
-                        seqvar.population_frequencies.gnomad_mt.het(),
-                        seqvar.population_frequencies.gnomad_mt.hom(),
+                        seqvar.population_frequencies.gnomad_mtdna.af(),
+                        seqvar.population_frequencies.gnomad_mtdna.ac(),
+                        seqvar.population_frequencies.gnomad_mtdna.het(),
+                        seqvar.population_frequencies.gnomad_mtdna.hom(),
                     )
                     .some_unless_empty(),
                 )

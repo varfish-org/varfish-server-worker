@@ -36,8 +36,10 @@ enum GenotypeChoice {
   GENOTYPE_CHOICE_VARIANT = 7;
   // Recessive index.
   GENOTYPE_CHOICE_RECESSIVE_INDEX = 8;
-  // Recessive parent.
-  GENOTYPE_CHOICE_RECESSIVE_PARENT = 9;
+  // Recessive father.
+  GENOTYPE_CHOICE_RECESSIVE_FATHER = 9;
+  // Recessive mother.
+  GENOTYPE_CHOICE_RECESSIVE_MOTHER = 10;
 }
 
 // Genotype choice for one sample.
@@ -145,7 +147,7 @@ message QuerySettingsFrequency {
   // gnomAD-genomes filter
   GnomadNuclearFreqyencySettings gnomad_genomes = 2;
   // gnomAD-MT filter
-  GnomadMitochondrialFrequencySettings gnomad_mt = 3;
+  GnomadMitochondrialFrequencySettings gnomad_mtdna = 3;
   // HelixMtDb filter
   HelixMtDbFrequencySettings helixmtdb = 4;
   // In-house filter

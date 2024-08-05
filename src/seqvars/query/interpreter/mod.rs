@@ -50,27 +50,17 @@ impl QueryInterpreter {
         // Check the filters first that are cheap to compute.
         let pass_frequency = frequency::passes(&self.query, seqvar)?;
         let pass_consequences = consequences::passes(&self.query, seqvar)?;
-        let res_quality = quality::passes(&self.query, seqvar)?;
+        let pass_quality = quality::passes(&self.query, seqvar)?;
         let pass_genes_allowlist = genes_allowlist::passes(&self.hgnc_allowlist, seqvar);
         let pass_regions_allowlist = regions_allowlist::passes(&self.query, seqvar);
+        let pass_genotype = genotype::passes(&self.query, seqvar)?;
         if !pass_frequency
             || !pass_consequences
-            || !res_quality.pass
+            || !pass_quality
             || !pass_genes_allowlist
             || !pass_regions_allowlist
+            || !pass_genotype
         {
-            return Ok(PassesResult { pass_all: false });
-        }
-        // Now also check the genotype that needs the quality filter output as input.
-        if !genotype::passes(
-            &self.query,
-            seqvar,
-            &res_quality
-                .no_call_samples
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<_>>(),
-        )? {
             return Ok(PassesResult { pass_all: false });
         }
         // If we passed until here, check the presence in ClinVar which needs a database lookup.

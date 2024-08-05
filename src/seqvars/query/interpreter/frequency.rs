@@ -27,21 +27,21 @@ pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Erro
             );
             return Ok(false);
         }
-        if frequency.gnomad_mt.enabled
-            && (frequency.gnomad_mt.frequency.is_some()
-                && s.population_frequencies.gnomad_mt.af()
-                    > frequency.gnomad_mt.frequency.expect("tested before")
-                || frequency.gnomad_mt.heteroplasmic.is_some()
-                    && s.population_frequencies.gnomad_mt.het
-                        > frequency.gnomad_mt.heteroplasmic.expect("tested before")
-                || frequency.gnomad_mt.homoplasmic.is_some()
-                    && s.population_frequencies.gnomad_mt.hom
-                        > frequency.gnomad_mt.homoplasmic.expect("tested before"))
+        if frequency.gnomad_mtdna.enabled
+            && (frequency.gnomad_mtdna.frequency.is_some()
+                && s.population_frequencies.gnomad_mtdna.af()
+                    > frequency.gnomad_mtdna.frequency.expect("tested before")
+                || frequency.gnomad_mtdna.heteroplasmic.is_some()
+                    && s.population_frequencies.gnomad_mtdna.het
+                        > frequency.gnomad_mtdna.heteroplasmic.expect("tested before")
+                || frequency.gnomad_mtdna.homoplasmic.is_some()
+                    && s.population_frequencies.gnomad_mtdna.hom
+                        > frequency.gnomad_mtdna.homoplasmic.expect("tested before"))
         {
             tracing::trace!(
                 "variant {:?} fails gnomAD-MT frequency filter {:?}",
                 s,
-                &frequency.gnomad_mt
+                &frequency.gnomad_mtdna
             );
             return Ok(false);
         }
@@ -108,8 +108,8 @@ mod test {
             VcfVariant,
         },
         query::{
-            CaseQuery, GnomadNuclearFrequencySettings, HelixMtDbFrequencySettings,
-            QuerySettingsFrequency,
+            CaseQuery, GnomadMitochondrialFrequencySettings, GnomadNuclearFrequencySettings,
+            HelixMtDbFrequencySettings, QuerySettingsFrequency,
         },
     };
 
@@ -235,7 +235,13 @@ mod test {
             ..Default::default()
         };
 
-        assert_eq!(super::passes(&query, &seq_var)?, expected_pass_all);
+        assert_eq!(
+            super::passes(&query, &seq_var)?,
+            expected_pass_all,
+            "query: {:#?}, seq_var: {:#?}",
+            query,
+            seq_var
+        );
 
         Ok(())
     }
@@ -362,7 +368,13 @@ mod test {
             ..Default::default()
         };
 
-        assert_eq!(super::passes(&query, &seq_var)?, expected_pass_all);
+        assert_eq!(
+            super::passes(&query, &seq_var)?,
+            expected_pass_all,
+            "query: {:#?}, seq_var: {:#?}",
+            query,
+            seq_var
+        );
 
         Ok(())
     }
@@ -382,9 +394,9 @@ mod test {
     // frequency: pass [hom count]
     #[case(1000, 0, 1, true, Some(0.002), None, None, true)]
     // frequency: fail [hom count]
-    #[case(1000, 0, 2, true, Some(0.002), None, None, false)]
+    #[case(1000, 0, 3, true, Some(0.002), None, None, false)]
     // frequency: pass [hom count] (fail but filter is disabled)
-    #[case(1000, 0, 2, false, Some(0.002), None, None, true)]
+    #[case(1000, 0, 3, false, Some(0.002), None, None, true)]
     // -- heteroplasmy count ------------------------------------------------
     // het. count: pass (no filter value)
     #[case(1000, 1, 0, true, None, None, None, true)]
@@ -466,7 +478,13 @@ mod test {
             ..Default::default()
         };
 
-        assert_eq!(super::passes(&query, &seq_var)?, expected_pass_all);
+        assert_eq!(
+            super::passes(&query, &seq_var)?,
+            expected_pass_all,
+            "query: {:#?}, seq_var: {:#?}",
+            query,
+            seq_var
+        );
 
         Ok(())
     }
@@ -486,9 +504,9 @@ mod test {
     // frequency: pass [hom count]
     #[case(1000, 0, 1, true, Some(0.002), None, None, true)]
     // frequency: fail [hom count]
-    #[case(1000, 0, 2, true, Some(0.002), None, None, false)]
+    #[case(1000, 0, 3, true, Some(0.002), None, None, false)]
     // frequency: pass [hom count] (fail but filter is disabled)
-    #[case(1000, 0, 2, false, Some(0.002), None, None, true)]
+    #[case(1000, 0, 3, false, Some(0.002), None, None, true)]
     // -- heteroplasmy count ------------------------------------------------
     // het. count: pass (no filter value)
     #[case(1000, 1, 0, true, None, None, None, true)]
@@ -509,9 +527,9 @@ mod test {
     #[case(1000, 0, 2, false, None, None, Some(1), true)]
     #[allow(clippy::too_many_arguments)]
     fn passes_frequency_gnomad_mtdna(
-        #[case] seqvar_gnomad_genomes_an: i32,
-        #[case] seqvar_gnomad_genomes_het: i32,
-        #[case] seqvar_gnomad_genomes_hom: i32,
+        #[case] seqvar_gnomad_mtdna_an: i32,
+        #[case] seqvar_gnomad_mtdna_het: i32,
+        #[case] seqvar_gnomad_mtdna_hom: i32,
         #[case] query_gnomad_mtdna_enabled: bool,
         #[case] query_gnomad_mtdna_frequency: Option<f32>,
         #[case] query_gnomad_mtdna_heteroplasmic: Option<i32>,
@@ -520,11 +538,11 @@ mod test {
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             frequency: QuerySettingsFrequency {
-                gnomad_genomes: GnomadNuclearFrequencySettings {
+                gnomad_mtdna: GnomadMitochondrialFrequencySettings {
                     enabled: query_gnomad_mtdna_enabled,
                     frequency: query_gnomad_mtdna_frequency,
-                    heterozygous: query_gnomad_mtdna_heteroplasmic,
-                    homozygous: query_gnomad_mtdna_homoplasmic,
+                    heteroplasmic: query_gnomad_mtdna_heteroplasmic,
+                    homoplasmic: query_gnomad_mtdna_homoplasmic,
                     ..Default::default()
                 },
                 ..Default::default()
@@ -533,10 +551,10 @@ mod test {
         };
         let seq_var = VariantRecord {
             population_frequencies: PopulationFrequencies {
-                gnomad_mt: MitochondrialFrequencies {
-                    an: seqvar_gnomad_genomes_an,
-                    het: seqvar_gnomad_genomes_het,
-                    hom: seqvar_gnomad_genomes_hom,
+                gnomad_mtdna: MitochondrialFrequencies {
+                    an: seqvar_gnomad_mtdna_an,
+                    het: seqvar_gnomad_mtdna_het,
+                    hom: seqvar_gnomad_mtdna_hom,
                     ..Default::default()
                 },
                 ..Default::default()
@@ -573,7 +591,13 @@ mod test {
             ..Default::default()
         };
 
-        assert_eq!(super::passes(&query, &seq_var)?, expected_pass_all);
+        assert_eq!(
+            super::passes(&query, &seq_var)?,
+            expected_pass_all,
+            "query: {:#?}, seq_var: {:#?}",
+            query,
+            seq_var
+        );
 
         Ok(())
     }

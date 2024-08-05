@@ -205,7 +205,7 @@ impl An for InHouseFrequencies {
 
 impl Carriers for InHouseFrequencies {
     fn carriers(&self) -> i32 {
-        2 * self.hom + self.het + self.hemi
+        self.hom + self.het + self.hemi
     }
 }
 
@@ -217,7 +217,7 @@ pub struct PopulationFrequencies {
     /// Frequencies in gnomAD-genomes.
     pub gnomad_genomes: NuclearFrequencies,
     /// Frequencies in gnomAD-MT.
-    pub gnomad_mt: MitochondrialFrequencies,
+    pub gnomad_mtdna: MitochondrialFrequencies,
     /// Frequencies in HelixMtDb.
     pub helixmtdb: MitochondrialFrequencies,
     /// Frequencies in In-house database.
@@ -284,7 +284,7 @@ impl TryFromVcf for PopulationFrequencies {
                 het: gnomad_genomes_het,
                 hemi: gnomad_genomes_hemi,
             },
-            gnomad_mt: MitochondrialFrequencies {
+            gnomad_mtdna: MitochondrialFrequencies {
                 an: gnomad_mtdna_an,
                 hom: gnomad_mtdna_hom,
                 het: gnomad_mtdna_het,
@@ -608,7 +608,7 @@ mod tests {
         PopulationFrequencies {
             gnomad_exomes: nuclear_frequencies.clone(),
             gnomad_genomes: nuclear_frequencies.clone(),
-            gnomad_mt: mitochondrial_frequencies.clone(),
+            gnomad_mtdna: mitochondrial_frequencies.clone(),
             helixmtdb: mitochondrial_frequencies.clone(),
             inhouse: inhouse_frequencies.clone(),
         }
@@ -681,14 +681,14 @@ mod tests {
     fn test_population_frequencies(population_frequencies: PopulationFrequencies) {
         assert_eq!(population_frequencies.gnomad_exomes.an, 100);
         assert_eq!(population_frequencies.gnomad_genomes.an, 100);
-        assert_eq!(population_frequencies.gnomad_mt.an, 100);
+        assert_eq!(population_frequencies.gnomad_mtdna.an, 100);
         assert_eq!(population_frequencies.helixmtdb.an, 100);
         assert_eq!(population_frequencies.inhouse.total, 35);
     }
 
     #[rstest::rstest]
-    #[case("tests/seqvars/query/Case_1.ingested.vcf")]
-    #[case("tests/seqvars/query/dragen.ingested.vcf")]
+    #[case::case_1_ingested_vcf("tests/seqvars/query/Case_1.ingested.vcf")]
+    #[case::dragen_ingested_vcf("tests/seqvars/query/dragen.ingested.vcf")]
     pub fn sequence_variant_from_vcf(#[case] path_input: &str) -> Result<(), anyhow::Error> {
         use noodles::vcf::variant::RecordBuf;
 

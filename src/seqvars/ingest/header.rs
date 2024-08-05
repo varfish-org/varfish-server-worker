@@ -355,7 +355,7 @@ pub fn build_output_header(
                 "Functional annotations: 'Allele | Annotation | Annotation_Impact | \
                 Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | \
                 HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | \
-                AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'",
+                AA.pos / AA.length | Distance | Strand | ERRORS / WARNINGS / INFO'",
             ),
         )
         .add_format(key::READ_DEPTHS, Map::<Format>::from(key::READ_DEPTHS))

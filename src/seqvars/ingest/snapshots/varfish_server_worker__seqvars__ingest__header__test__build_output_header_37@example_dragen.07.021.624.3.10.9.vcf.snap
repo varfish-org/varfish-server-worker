@@ -11,10 +11,14 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##INFO=<ID=gnomad_genomes_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD genomes">
 ##INFO=<ID=gnomad_genomes_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD genomes">
 ##INFO=<ID=gnomad_genomes_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD genomes">
+##INFO=<ID=gnomad_mtdna_an,Number=1,Type=Integer,Description="Number of alleles in gnomAD MT">
+##INFO=<ID=gnomad_mtdna_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in gnomAD MT">
+##INFO=<ID=gnomad_mtdna_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in gnomAD MT">
+##INFO=<ID=gnomad_mtdna_hemi,Number=1,Type=Integer,Description="Number of hemi. alt. carriers in gnomAD MT">
 ##INFO=<ID=helix_an,Number=1,Type=Integer,Description="Number of alleles in HelixMtDb">
 ##INFO=<ID=helix_hom,Number=1,Type=Integer,Description="Number of hom. alt. carriers in HelixMtDb">
 ##INFO=<ID=helix_het,Number=1,Type=Integer,Description="Number of het. alt. carriers in HelixMtDb">
-##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO'">
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | Strand | ERRORS / WARNINGS / INFO'">
 ##FILTER=<ID=PASS,Description="All filters passed">
 ##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Read depth for each allele">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
@@ -53,4 +57,3 @@ expression: "std::fs::read_to_string(out_path_str)?"
 ##x-varfish-version=<ID=varfish-server-worker,Version="x.y.z">
 ##x-varfish-version=<ID=orig-caller,Name="Dragen",Version="SW: 07.021.624.3.10.9, HW: 07.021.624">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	CASE
-
