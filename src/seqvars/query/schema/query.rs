@@ -307,13 +307,13 @@ pub struct RecessiveParents {
     pub mother: Option<String>,
 }
 
-impl Into<Vec<String>> for RecessiveParents {
-    fn into(self) -> Vec<String> {
+impl From<RecessiveParents> for Vec<String> {
+    fn from(val: RecessiveParents) -> Self {
         let mut result = Vec::new();
-        if let Some(father) = self.father {
+        if let Some(father) = val.father {
             result.push(father);
         }
-        if let Some(mother) = self.mother {
+        if let Some(mother) = val.mother {
             result.push(mother);
         }
         result
@@ -619,18 +619,16 @@ impl From<pb_query::QuerySettingsFrequency> for QuerySettingsFrequency {
     fn from(value: pb_query::QuerySettingsFrequency) -> Self {
         Self {
             gnomad_exomes: GnomadNuclearFrequencySettings::from(
-                value.gnomad_exomes.unwrap_or(Default::default()),
+                value.gnomad_exomes.unwrap_or_default(),
             ),
             gnomad_genomes: GnomadNuclearFrequencySettings::from(
-                value.gnomad_genomes.unwrap_or(Default::default()),
+                value.gnomad_genomes.unwrap_or_default(),
             ),
             gnomad_mtdna: GnomadMitochondrialFrequencySettings::from(
-                value.gnomad_mtdna.unwrap_or(Default::default()),
+                value.gnomad_mtdna.unwrap_or_default(),
             ),
-            helixmtdb: HelixMtDbFrequencySettings::from(
-                value.helixmtdb.unwrap_or(Default::default()),
-            ),
-            inhouse: InhouseFrequencySettings::from(value.inhouse.unwrap_or(Default::default())),
+            helixmtdb: HelixMtDbFrequencySettings::from(value.helixmtdb.unwrap_or_default()),
+            inhouse: InhouseFrequencySettings::from(value.inhouse.unwrap_or_default()),
         }
     }
 }
@@ -1187,13 +1185,13 @@ pub(crate) mod case_query {
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Eq)]
     pub enum Error {
         #[error("Problem converting protobuf for genotype: {0}")]
-        GenotypeConversion(#[from] super::query_settings_genotype::Error),
+        Genotype(#[from] super::query_settings_genotype::Error),
         #[error("Problem converting protobuf for quality: {0}")]
-        QualityConversion(#[from] super::query_settings_quality::Error),
+        Quality(#[from] super::query_settings_quality::Error),
         #[error("Problem converting protobuf for consequence: {0}")]
-        ConsequenceConversion(#[from] super::query_settings_consequence::Error),
+        Consequence(#[from] super::query_settings_consequence::Error),
         #[error("Problem converting protobuf for clinvar: {0}")]
-        ClinVarConversion(#[from] super::query_settings_clinvar::Error),
+        Clinvar(#[from] super::query_settings_clinvar::Error),
     }
 }
 
@@ -1211,16 +1209,16 @@ impl TryFrom<pb_query::CaseQuery> for CaseQuery {
         } = value;
 
         let genotype = QuerySettingsGenotype::try_from(genotype.unwrap_or(Default::default()))
-            .map_err(Self::Error::GenotypeConversion)?;
+            .map_err(Self::Error::Genotype)?;
         let quality = QuerySettingsQuality::try_from(quality.unwrap_or(Default::default()))
-            .map_err(Self::Error::QualityConversion)?;
+            .map_err(Self::Error::Quality)?;
         let frequency = QuerySettingsFrequency::from(frequency.unwrap_or(Default::default()));
         let consequence =
             QuerySettingsConsequence::try_from(consequence.unwrap_or(Default::default()))
-                .map_err(Self::Error::ConsequenceConversion)?;
+                .map_err(Self::Error::Consequence)?;
         let locus = QuerySettingsLocus::from(locus.unwrap_or(Default::default()));
         let clinvar = QuerySettingsClinVar::try_from(clinvar.unwrap_or(Default::default()))
-            .map_err(Self::Error::ClinVarConversion)?;
+            .map_err(Self::Error::Clinvar)?;
 
         Ok(Self {
             genotype,
@@ -1704,7 +1702,7 @@ mod tests {
             },
         };
         assert_eq!(
-            QuerySettingsFrequency::try_from(pb_query_settings_frequency).unwrap(),
+            QuerySettingsFrequency::from(pb_query_settings_frequency),
             query_settings_frequency
         );
     }

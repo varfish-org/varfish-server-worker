@@ -75,7 +75,6 @@ mod test {
                     pos: 1,
                     ref_allele: "G".into(),
                     alt_allele: "A".into(),
-                    ..Default::default()
                 },
                 ann_fields: vec![ann::AnnField {
                     allele: mehari::annotate::seqvars::ann::Allele::Alt {

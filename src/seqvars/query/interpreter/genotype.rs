@@ -252,7 +252,7 @@ fn passes_recessive_mode_autosomal(
             .unwrap_or(true);
         father_matches_het && mother_matches_het
     } else if GenotypeChoice::Het
-        .matches(&index_gt)
+        .matches(index_gt)
         .expect("matches() cannot fail for Het")
     {
         // Index is het.
@@ -874,9 +874,8 @@ mod test {
             ..Default::default()
         };
 
-        assert_eq!(
-            super::passes_recessive_modes(&query_genotype, &seq_var)?,
-            false,
+        assert!(
+            !(super::passes_recessive_modes(&query_genotype, &seq_var)?),
             "sample_gt = {}, recessive_mode = {:?}",
             sample_gt,
             recessive_mode,

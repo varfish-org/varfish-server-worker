@@ -186,7 +186,6 @@ mod test {
                     heterozygous: query_gnomad_exomes_heterozygous,
                     homozygous: query_gnomad_exomes_homozygous,
                     hemizygous: query_gnomad_exomes_hemizygous,
-                    ..Default::default()
                 },
                 ..Default::default()
             },
@@ -199,7 +198,6 @@ mod test {
                     het: seqvar_gnomad_exomes_het,
                     hom: seqvar_gnomad_exomes_hom,
                     hemi: seqvar_gnomad_exomes_hemi,
-                    ..Default::default()
                 },
                 ..Default::default()
             },
@@ -332,7 +330,6 @@ mod test {
                     het: seqvar_gnomad_genomes_het,
                     hom: seqvar_gnomad_genomes_hom,
                     hemi: seqvar_gnomad_genomes_hemi,
-                    ..Default::default()
                 },
                 ..Default::default()
             },
@@ -543,7 +540,6 @@ mod test {
                     frequency: query_gnomad_mtdna_frequency,
                     heteroplasmic: query_gnomad_mtdna_heteroplasmic,
                     homoplasmic: query_gnomad_mtdna_homoplasmic,
-                    ..Default::default()
                 },
                 ..Default::default()
             },
@@ -555,7 +551,6 @@ mod test {
                     an: seqvar_gnomad_mtdna_an,
                     het: seqvar_gnomad_mtdna_het,
                     hom: seqvar_gnomad_mtdna_hom,
-                    ..Default::default()
                 },
                 ..Default::default()
             },
