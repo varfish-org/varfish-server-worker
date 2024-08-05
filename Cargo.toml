@@ -73,7 +73,7 @@ features = ["bgzf", "core", "csi", "tabix", "vcf", "bcf"]
 [build-dependencies]
 anyhow = "1.0"
 prost-build = "0.13"
-pbjson-build = "0.6.2"
+pbjson-build = "0.7.0"
 
 [dev-dependencies]
 async-std = { version = "1.12", features = ["attributes"] }
