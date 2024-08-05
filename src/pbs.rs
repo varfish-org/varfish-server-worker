@@ -5,6 +5,15 @@ pub mod varfish {
     /// Code generate for protobufs by `prost-build`.
     pub mod v1 {
         /// Code generate for protobufs by `prost-build`.
+        pub mod common {
+            /// Code generate for protobufs by `prost-build`.
+            pub mod misc {
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.worker.rs"));
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.worker.serde.rs"));
+            }
+        }
+
+        /// Code generate for protobufs by `prost-build`.
         pub mod seqvars {
             /// Code generate for protobufs by `prost-build`.
             pub mod query {
@@ -15,23 +24,26 @@ pub mod varfish {
                 ));
             }
         }
+
+        /// Code generate for protobufs by `prost-build`.
+        pub mod strucvars {
+            /// Code generate for protobufs by `prost-build`.
+            pub mod clinvar {
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.strucvars.clinvar.rs"));
+                include!(concat!(
+                    env!("OUT_DIR"),
+                    "/varfish.v1.strucvars.clinvar.serde.rs"
+                ));
+            }
+
+            /// Code generate for protobufs by `prost-build`.
+            pub mod bgdb {
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.strucvars.bgdb.rs"));
+                include!(concat!(
+                    env!("OUT_DIR"),
+                    "/varfish.v1.strucvars.bgdb.serde.rs"
+                ));
+            }
+        }
     }
-}
-
-/// Code generate for protobufs by `prost-build`.
-pub mod clinvar {
-    include!(concat!(env!("OUT_DIR"), "/varfish.v1.clinvar.rs"));
-    include!(concat!(env!("OUT_DIR"), "/varfish.v1.clinvar.serde.rs"));
-}
-
-/// Code generate for protobufs by `prost-build`.
-pub mod svs {
-    include!(concat!(env!("OUT_DIR"), "/varfish.v1.svs.rs"));
-    include!(concat!(env!("OUT_DIR"), "/varfish.v1.svs.serde.rs"));
-}
-
-/// Code generate for protobufs by `prost-build`.
-pub mod worker {
-    include!(concat!(env!("OUT_DIR"), "/varfish.v1.worker.rs"));
-    include!(concat!(env!("OUT_DIR"), "/varfish.v1.worker.serde.rs"));
 }

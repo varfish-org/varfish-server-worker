@@ -6,10 +6,10 @@ use std::{env, path::PathBuf};
 fn main() -> Result<(), anyhow::Error> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("protos");
     let proto_files = [
-        "varfish/v1/clinvar.proto",
-        "varfish/v1/sv.proto",
-        "varfish/v1/worker.proto",
+        "varfish/v1/common/misc.proto",
         "varfish/v1/seqvars/query.proto",
+        "varfish/v1/strucvars/clinvar.proto",
+        "varfish/v1/strucvars/bgdb.proto",
     ]
     .iter()
     .map(|f| root.join(f))

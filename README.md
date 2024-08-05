@@ -350,19 +350,10 @@ You will need a recent version of protocolbuffers, e.g.:
 # export PATH=$PATH:$HOME/.local/share/protoc/bin
 ```
 
-## GitHub Project Management
-
-We use Terraform for managing the GitHub project settings (as applicable):
+For running protolint, install it as python package `protolint-bin`:
 
 ```
-$ export GITHUB_OWNER=bihealth
-$ export GITHUB_TOKEN=ghp_<thetoken>
-
-$ cd utils/terraform
-$ terraform init
-$ terraform import github_repository.varfish-sever-worker varfish-sever-worker
-$ terraform validate
-$ terraform fmt
-$ terraform plan
-$ terraform apply
+# virtualenv /tmp/varfish-server-worker
+# source /tmp/varfish-server-worker/bin/activate
+# pip install protolint-bin
 ```

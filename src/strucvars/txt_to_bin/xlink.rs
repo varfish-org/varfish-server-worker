@@ -8,7 +8,7 @@ use thousands::Separable;
 
 use crate::{
     common::{numeric_gene_id, trace_rss_now},
-    pbs::svs::{XlinkDatabase, XlinkRecord},
+    pbs::varfish::v1::strucvars::clinvar::{XlinkDatabase, XlinkRecord},
 };
 
 /// Module with code for parsing the TSVs.

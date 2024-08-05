@@ -576,8 +576,8 @@ pub mod id_mapping {
     impl FileIdentifierMappings {
         // Load from JSON - deserialize via serde_json.
         pub fn load_from_json(json: &str) -> Result<Self, anyhow::Error> {
-            let buf: crate::pbs::worker::FileIdentifierMappings = serde_json::from_str(json)
-                .map_err(|e| {
+            let buf: crate::pbs::varfish::v1::common::misc::FileIdentifierMappings =
+                serde_json::from_str(json).map_err(|e| {
                     anyhow::anyhow!("could not deserialize FileIdentifierMappings: {}", e)
                 })?;
             let mut mappings: indexmap::IndexMap<_, _> = Default::default();

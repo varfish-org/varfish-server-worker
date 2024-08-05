@@ -1518,34 +1518,42 @@ impl StructuralVariant {
     }
 }
 
-impl From<VariationType> for crate::pbs::clinvar::VariationType {
+impl From<VariationType> for crate::pbs::varfish::v1::strucvars::bgdb::VariationType {
     fn from(val: VariationType) -> Self {
         match val {
-            VariationType::Complex => crate::pbs::clinvar::VariationType::Complex,
-            VariationType::Microsatellite => crate::pbs::clinvar::VariationType::Microsatellite,
-            VariationType::Dup => crate::pbs::clinvar::VariationType::Dup,
-            VariationType::Del => crate::pbs::clinvar::VariationType::Del,
-            VariationType::Bnd => crate::pbs::clinvar::VariationType::Bnd,
-            VariationType::Cnv => crate::pbs::clinvar::VariationType::Cnv,
-            VariationType::Inv => crate::pbs::clinvar::VariationType::Inv,
-            VariationType::Ins => crate::pbs::clinvar::VariationType::Ins,
+            VariationType::Complex => {
+                crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Complex
+            }
+            VariationType::Microsatellite => {
+                crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Microsatellite
+            }
+            VariationType::Dup => crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Dup,
+            VariationType::Del => crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Del,
+            VariationType::Bnd => crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Bnd,
+            VariationType::Cnv => crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Cnv,
+            VariationType::Inv => crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Inv,
+            VariationType::Ins => crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Ins,
         }
     }
 }
 
-impl TryInto<VariationType> for crate::pbs::clinvar::VariationType {
+impl TryInto<VariationType> for crate::pbs::varfish::v1::strucvars::bgdb::VariationType {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<VariationType, anyhow::Error> {
         Ok(match self {
-            crate::pbs::clinvar::VariationType::Complex => VariationType::Complex,
-            crate::pbs::clinvar::VariationType::Microsatellite => VariationType::Microsatellite,
-            crate::pbs::clinvar::VariationType::Dup => VariationType::Dup,
-            crate::pbs::clinvar::VariationType::Del => VariationType::Del,
-            crate::pbs::clinvar::VariationType::Bnd => VariationType::Bnd,
-            crate::pbs::clinvar::VariationType::Cnv => VariationType::Cnv,
-            crate::pbs::clinvar::VariationType::Inv => VariationType::Inv,
-            crate::pbs::clinvar::VariationType::Ins => VariationType::Ins,
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Complex => {
+                VariationType::Complex
+            }
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Microsatellite => {
+                VariationType::Microsatellite
+            }
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Dup => VariationType::Dup,
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Del => VariationType::Del,
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Bnd => VariationType::Bnd,
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Cnv => VariationType::Cnv,
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Inv => VariationType::Inv,
+            crate::pbs::varfish::v1::strucvars::bgdb::VariationType::Ins => VariationType::Ins,
         })
     }
 }
@@ -1594,28 +1602,48 @@ pub enum Pathogenicity {
     Pathogenic,
 }
 
-impl From<Pathogenicity> for crate::pbs::clinvar::Pathogenicity {
+impl From<Pathogenicity> for crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity {
     fn from(val: Pathogenicity) -> Self {
         match val {
-            Pathogenicity::Benign => crate::pbs::clinvar::Pathogenicity::Benign,
-            Pathogenicity::LikelyBenign => crate::pbs::clinvar::Pathogenicity::LikelyBenign,
-            Pathogenicity::Uncertain => crate::pbs::clinvar::Pathogenicity::Uncertain,
-            Pathogenicity::LikelyPathogenic => crate::pbs::clinvar::Pathogenicity::LikelyPathogenic,
-            Pathogenicity::Pathogenic => crate::pbs::clinvar::Pathogenicity::Pathogenic,
+            Pathogenicity::Benign => {
+                crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::Benign
+            }
+            Pathogenicity::LikelyBenign => {
+                crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::LikelyBenign
+            }
+            Pathogenicity::Uncertain => {
+                crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::Uncertain
+            }
+            Pathogenicity::LikelyPathogenic => {
+                crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::LikelyPathogenic
+            }
+            Pathogenicity::Pathogenic => {
+                crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::Pathogenic
+            }
         }
     }
 }
 
-impl TryInto<Pathogenicity> for crate::pbs::clinvar::Pathogenicity {
+impl TryInto<Pathogenicity> for crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity {
     type Error = anyhow::Error;
 
     fn try_into(self) -> Result<Pathogenicity, anyhow::Error> {
         Ok(match self {
-            crate::pbs::clinvar::Pathogenicity::Benign => Pathogenicity::Benign,
-            crate::pbs::clinvar::Pathogenicity::LikelyBenign => Pathogenicity::LikelyBenign,
-            crate::pbs::clinvar::Pathogenicity::Uncertain => Pathogenicity::Uncertain,
-            crate::pbs::clinvar::Pathogenicity::LikelyPathogenic => Pathogenicity::LikelyPathogenic,
-            crate::pbs::clinvar::Pathogenicity::Pathogenic => Pathogenicity::Pathogenic,
+            crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::Benign => {
+                Pathogenicity::Benign
+            }
+            crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::LikelyBenign => {
+                Pathogenicity::LikelyBenign
+            }
+            crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::Uncertain => {
+                Pathogenicity::Uncertain
+            }
+            crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::LikelyPathogenic => {
+                Pathogenicity::LikelyPathogenic
+            }
+            crate::pbs::varfish::v1::strucvars::bgdb::Pathogenicity::Pathogenic => {
+                Pathogenicity::Pathogenic
+            }
         })
     }
 }
