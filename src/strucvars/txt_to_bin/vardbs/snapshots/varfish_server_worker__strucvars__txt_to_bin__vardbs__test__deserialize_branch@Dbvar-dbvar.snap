@@ -2,399 +2,399 @@
 source: src/strucvars/txt_to_bin/vardbs/mod.rs
 expression: records
 ---
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1
   stop: 2300000
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1
   stop: 16200000
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 19818
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 22118
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 52000
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 82189
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 87466
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 88143
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 127330
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 356281
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10001
   stop: 717485
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 10059
   stop: 10059
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10351
   stop: 13950
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10351
   stop: 18900
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10377
   stop: 177417
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10377
   stop: 471368
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10377
   stop: 812484
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10377
   stop: 998287
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 10380
   stop: 10380
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10469
   stop: 23975
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 79204
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 79589
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 79864
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 80652
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 81231
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 81298
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 81448
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 81829
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 86730
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 87005
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 87096
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 87610
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 87845
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 89163
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 90440
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 91558
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 91591
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 92013
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 92392
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 177368
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10499
   stop: 235938
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10501
   stop: 78200
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10529
   stop: 177368
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 10627
   stop: 10627
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 10657
   stop: 10657
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 10726
   stop: 10726
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 10752
   stop: 10752
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10801
   stop: 14400
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 10801
   stop: 114750
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 11099
   stop: 47000
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 11100
   stop: 29200
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 11189
   stop: 36287
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 11189
   stop: 36787
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 11481
   stop: 35484
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 11599
   stop: 72400
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 11600
   stop: 26700
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 11601
   stop: 15700
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 11601
   stop: 20700
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 12048
   stop: 89237
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 12048
   stop: 177033
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 12601
   stop: 27100
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 12701
   stop: 13400
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 12701
   stop: 17551
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 12751
   stop: 17501
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 12751
   stop: 17551
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 12751
   stop: 17751
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 12801
   stop: 17501
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 12801
   stop: 17551
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 13516
   stop: 91073
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 14701
   stop: 17501
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 14801
   stop: 17501
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 14874
   stop: 368661
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 15801
   stop: 16100
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 16201
   stop: 20700
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 18888
   stop: 35451
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 19225
   stop: 4401691
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 19742
   stop: 28927
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 19851
   stop: 20551
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 20141
   stop: 242707
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 20141
   stop: 356281
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 20141
   stop: 606093
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 20141
   stop: 887162
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 20701
   stop: 95200
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 20848
   stop: 20848
   count: 1
-- svType: Ins
+- svType: SV_TYPE_INS
   start: 20853
   stop: 20853
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 21064
   stop: 28577
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 21064
   stop: 35983
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 21411
   stop: 82189
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 21829
   stop: 88143
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 22118
   stop: 22723
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 22118
   stop: 35020
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 22723
   stop: 23661
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 22801
   stop: 26900
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 23661
   stop: 24819
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 23946
   stop: 88271
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 24301
   stop: 25700
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 24301
   stop: 26900
   count: 1
-- svType: Cnv
+- svType: SV_TYPE_CNV
   start: 24301
   stop: 128700
   count: 1
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 24310
   stop: 35804991
   count: 1

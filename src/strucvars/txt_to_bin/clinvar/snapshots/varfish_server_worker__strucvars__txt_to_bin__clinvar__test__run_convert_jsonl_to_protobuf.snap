@@ -5,3057 +5,3374 @@ expression: records
 - chromNo: 5
   start: 65767621
   stop: 66030608
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 566
   vcv: 536
 - chromNo: 9
   start: 126093238
   stop: 126093305
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 197
   vcv: 174
 - chromNo: 10
   start: 35010771
   stop: 35014683
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 2200
   vcv: 2119
 - chromNo: 10
   start: 34999671
   stop: 34999729
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 2193
   vcv: 2112
 - chromNo: 4
   start: 138311134
   stop: 138369402
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 2749
   vcv: 2631
 - chromNo: 12
   start: 77574551
   stop: 77575150
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 2680
   vcv: 2571
-- chromNo: 2
-  start: 100986081
-  stop: 100987929
-  variationType: Del
-  pathogenicity: Pathogenic
-  rcv: 3725
-  vcv: 3547
 - chromNo: 7
   start: 53536328
   stop: 53598019
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 4182
   vcv: 3976
 - chromNo: 7
   start: 53537321
   stop: 53574220
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 4183
   vcv: 3977
 - chromNo: 2
   start: 148844501
   stop: 148848419
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 4871
   vcv: 4608
 - chromNo: 5
   start: 144498026
   stop: 144517214
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 5580
   vcv: 5264
 - chromNo: 1
   start: 32358735
   stop: 32358736
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 6031
   vcv: 5677
 - chromNo: 4
   start: 1812546
   stop: 1816720
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 6388
   vcv: 6017
 - chromNo: 4
   start: 77436046
   stop: 77444215
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 6747
   vcv: 6375
 - chromNo: 12
   start: 100634495
   stop: 100634496
-  variationType: Ins
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_INS
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 7016
   vcv: 6637
 - start: 8022846
   stop: 8037799
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 7479
   vcv: 7063
 - chromNo: 8
   start: 139570503
   stop: 139571539
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 7011
   vcv: 6632
 - chromNo: 7
   start: 119932595
   stop: 120030098
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 7383
   vcv: 6968
 - chromNo: 4
   start: 118835010
   stop: 118835246
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 8093
   vcv: 7654
 - chromNo: 4
   start: 118837734
   stop: 118837785
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 8092
   vcv: 7653
 - chromNo: 2
   start: 48921429
   stop: 48921556
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 12916
   vcv: 12133
 - chromNo: 5
   start: 129805906
   stop: 129810893
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 15373
   vcv: 14303
 - chromNo: 10
   start: 5248144
   stop: 5255556
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 16213
   vcv: 15063
 - chromNo: 2
   start: 128891444
   stop: 128891447
-  variationType: Microsatellite
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_MICROSATELLITE
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 19124
   vcv: 17564
 - start: 33473829
   stop: 33478866
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 19912
   vcv: 18250
 - start: 196712928
   stop: 196797494
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 20179
   vcv: 21089
 - chromNo: 11
   start: 54308194
   stop: 54335815
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 33004
   vcv: 39782
 - chromNo: 4
   start: 103822591
   stop: 103842542
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 33864
   vcv: 40972
 - chromNo: 14
   start: 44862154
   stop: 44870476
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 34230
   vcv: 41329
 - chromNo: 21
   start: 34150132
   stop: 34182300
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 51361
   vcv: 57627
 - chromNo: 11
   start: 116457223
   stop: 116492163
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 51340
   vcv: 57607
 - chromNo: 22
   start: 73055208
   stop: 73059460
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51388
   vcv: 57653
 - chromNo: 22
   start: 78605903
   stop: 79090819
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51389
   vcv: 57654
 - chromNo: 22
   start: 5017631
   stop: 5025327
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51429
   vcv: 57691
 - chromNo: 22
   start: 155058022
   stop: 155209034
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51430
   vcv: 57692
 - chromNo: 23
   start: 19585515
   stop: 20802602
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51456
   vcv: 57717
 - chromNo: 23
   start: 24174296
   stop: 24495632
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51457
   vcv: 57718
 - chromNo: 14
   start: 25118923
   stop: 25166966
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 51582
   vcv: 57842
 - chromNo: 3
   start: 150877557
   stop: 151040992
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51635
   vcv: 57895
 - chromNo: 22
   start: 76746094
   stop: 76780189
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 51667
   vcv: 57925
 - chromNo: 23
   start: 2078852
   stop: 2393418
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 51766
   vcv: 58023
 - start: 147400637
   stop: 149813625
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 51850
   vcv: 58105
 - chromNo: 4
   start: 149747884
   stop: 149776406
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 51864
   vcv: 58119
 - chromNo: 12
   start: 92084151
   stop: 92280466
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51923
   vcv: 58176
 - chromNo: 14
   start: 30931844
   stop: 31038754
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 51952
   vcv: 58205
 - chromNo: 12
   start: 114739949
   stop: 115085141
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52036
   vcv: 58285
 - chromNo: 1
   start: 50661
   stop: 140943
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52100
   vcv: 58347
 - chromNo: 1
   start: 51292570
   stop: 51471786
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52122
   vcv: 58369
 - chromNo: 5
   start: 124437486
   stop: 124820793
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52198
   vcv: 58444
 - chromNo: 7
   start: 50613817
   stop: 51775130
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52171
   vcv: 58417
 - chromNo: 22
   start: 497861
   stop: 679626
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52290
   vcv: 58521
 - start: 196757278
   stop: 196796716
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52307
   vcv: 58538
 - chromNo: 6
   start: 27194426
   stop: 27461954
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52313
   vcv: 58544
 - chromNo: 22
   start: 18661700
   stop: 18856859
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52365
   vcv: 58592
 - chromNo: 22
   start: 28777940
   stop: 29112528
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52386
   vcv: 58611
 - chromNo: 22
   start: 29731388
   stop: 29759068
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52387
   vcv: 58612
 - chromNo: 22
   start: 32680483
   stop: 32777081
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52389
   vcv: 58614
 - chromNo: 15
   start: 3800306
   stop: 3819723
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52398
   vcv: 58623
 - chromNo: 22
   start: 105135228
   stop: 105669012
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52442
   vcv: 58665
 - chromNo: 22
   start: 76703995
   stop: 77038914
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52420
   vcv: 58644
 - chromNo: 10
   start: 31521964
   stop: 31561279
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52650
   vcv: 58860
 - chromNo: 23
   start: 2651665
   stop: 4972987
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52584
   vcv: 58795
 - chromNo: 23
   start: 2654967
   stop: 2862993
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52589
   vcv: 58800
 - chromNo: 5
   start: 135719028
   stop: 135727855
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52619
   vcv: 58830
 - chromNo: 6
   start: 146669919
   stop: 146755110
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52724
   vcv: 58932
 - chromNo: 19
   start: 62838038
   stop: 62893189
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52774
   vcv: 58980
 - chromNo: 6
   start: 18677922
   stop: 18836920
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52653
   vcv: 58863
 - chromNo: 20
   start: 10953431
   stop: 15707444
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52775
   vcv: 58981
 - chromNo: 1
   start: 124727329
   stop: 125011247
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52692
   vcv: 58901
 - chromNo: 7
   start: 51390997
   stop: 51703556
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52785
   vcv: 58991
 - chromNo: 20
   start: 35740989
   stop: 35901381
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52826
   vcv: 59032
 - chromNo: 10
   start: 103199536
   stop: 103441625
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52712
   vcv: 58920
 - chromNo: 6
   start: 146349600
   stop: 146467532
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52721
   vcv: 58929
 - chromNo: 8
   start: 2682523
   stop: 2784028
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52850
   vcv: 59054
 - chromNo: 7
   start: 15952782
   stop: 16021744
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52753
   vcv: 58960
 - chromNo: 21
   start: 18905109
   stop: 19015451
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52868
   vcv: 59071
 - chromNo: 8
   start: 98227972
   stop: 98230831
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52920
   vcv: 59122
 - chromNo: 20
   start: 35740918
   stop: 35900417
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52825
   vcv: 59031
 - chromNo: 1
   start: 200143328
   stop: 200237265
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52961
   vcv: 59161
 - chromNo: 8
   start: 20380585
   stop: 20478576
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52901
   vcv: 59103
 - chromNo: 1
   start: 200174658
   stop: 200268525
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52962
   vcv: 59162
 - chromNo: 21
   start: 18890271
   stop: 18999862
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52867
   vcv: 59070
 - chromNo: 22
   start: 77245
   stop: 187157
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52992
   vcv: 59188
 - chromNo: 1
   start: 145219415
   stop: 145422833
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 52949
   vcv: 59149
 - chromNo: 22
   start: 6750949
   stop: 6824084
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53054
   vcv: 59233
 - chromNo: 22
   start: 22117253
   stop: 22127885
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53062
   vcv: 59240
 - chromNo: 22
   start: 32451074
   stop: 32841556
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53086
   vcv: 59263
 - start: 66491844
   stop: 66746070
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53198
   vcv: 59361
 - start: 66435592
   stop: 66594217
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53197
   vcv: 59360
 - chromNo: 9
   start: 84082310
   stop: 84118852
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53242
   vcv: 59400
 - start: 103381480
   stop: 103431911
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53880
   vcv: 60008
 - chromNo: 16
   start: 29550192
   stop: 29573353
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53428
   vcv: 59585
 - chromNo: 1
   start: 51078393
   stop: 51222267
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 54018
   vcv: 60144
 - chromNo: 22
   start: 8663761
   stop: 8668169
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54138
   vcv: 60264
 - chromNo: 22
   start: 46315844
   stop: 46336363
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54181
   vcv: 60305
 - chromNo: 19
   start: 41188651
   stop: 41342196
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53850
   vcv: 59978
 - start: 230829506
   stop: 230915958
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53984
   vcv: 60111
 - chromNo: 20
   start: 35292816
   stop: 36834601
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53070
   vcv: 59248
 - chromNo: 3
   start: 158306273
   stop: 158428068
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54076
   vcv: 60202
 - chromNo: 4
   start: 11388883
   stop: 11462401
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54100
   vcv: 60226
 - chromNo: 1
   start: 166900946
   stop: 166936297
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 54125
   vcv: 60251
 - chromNo: 4
   start: 21852834
   stop: 21964183
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54131
   vcv: 60257
 - chromNo: 9
   start: 68303956
   stop: 68516578
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53241
   vcv: 59399
 - chromNo: 22
   start: 32738179
   stop: 32815490
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54163
   vcv: 60289
 - chromNo: 22
   start: 53401663
   stop: 53570722
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54186
   vcv: 60310
 - chromNo: 22
   start: 67494693
   stop: 67572173
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54201
   vcv: 60325
 - chromNo: 22
   start: 77085352
   stop: 77113548
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54213
   vcv: 60335
 - chromNo: 22
   start: 660563
   stop: 818762
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54233
   vcv: 60355
 - chromNo: 22
   start: 122603383
   stop: 122723979
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54244
   vcv: 60366
 - chromNo: 5
   start: 162262196
   stop: 162425681
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53392
   vcv: 59549
 - chromNo: 6
   start: 33169715
   stop: 33186579
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53437
   vcv: 59594
 - chromNo: 6
   start: 109319033
   stop: 110123840
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53501
   vcv: 59651
 - start: 45303803
   stop: 45307152
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53838
   vcv: 59967
 - chromNo: 2
   start: 60445746
   stop: 60517859
-  variationType: Del
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 53956
   vcv: 60084
 - chromNo: 1
   start: 50712339
   stop: 50758351
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 53983
   vcv: 60110
 - chromNo: 22
   start: 79884715
   stop: 80017999
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54214
   vcv: 60336
 - chromNo: 23
   start: 19585515
   stop: 20874428
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 54353
   vcv: 60453
 - start: 156844810
   stop: 156846190
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 55678
   vcv: 65491
 - chromNo: 9
   start: 28270060
   stop: 28275320
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 56283
   vcv: 66044
 - chromNo: 22
   start: 152961800
   stop: 152967144
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 59315
   vcv: 68445
 - chromNo: 11
   start: 56424828
   stop: 56445284
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 74477
   vcv: 88979
 - chromNo: 19
   start: 49557402
   stop: 49565201
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 87037
   vcv: 100637
 - chromNo: 1
   start: 198570810
   stop: 198571077
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 87059
   vcv: 100659
 - chromNo: 16
   start: 4914761
   stop: 4918508
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 87326
   vcv: 101069
 - chromNo: 22
   start: 68059111
   stop: 68067499
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 87028
   vcv: 100628
 - chromNo: 22
   start: 77085352
   stop: 77113548
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 133599
   vcv: 144097
 - chromNo: 22
   start: 8595045
   stop: 8704378
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 52335
   vcv: 144128
 - start: 143646652
   stop: 143908838
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134190
   vcv: 144786
 - start: 147909430
   stop: 147962225
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134187
   vcv: 144783
 - start: 142604414
   stop: 142642753
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134194
   vcv: 144790
 - start: 2582760
   stop: 2633368
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134206
   vcv: 144802
 - start: 145194054
   stop: 145361282
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134188
   vcv: 144784
 - start: 151333124
   stop: 151399960
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134207
   vcv: 144803
 - start: 142604414
   stop: 142642753
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134196
   vcv: 144792
 - start: 238676252
   stop: 238753428
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134218
   vcv: 144814
 - start: 49959425
   stop: 50049480
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134215
   vcv: 144811
 - start: 2590844
   stop: 2605254
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134222
   vcv: 144818
 - start: 2582760
   stop: 2633368
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134204
   vcv: 144800
 - chromNo: 1
   start: 35821806
   stop: 35956621
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134223
   vcv: 144819
 - start: 143504612
   stop: 143540851
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134216
   vcv: 144812
 - start: 147897667
   stop: 147909430
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134220
   vcv: 144816
 - chromNo: 1
   start: 51049645
   stop: 51122091
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134242
   vcv: 144838
 - chromNo: 2
   start: 195358277
   stop: 195425875
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134247
   vcv: 144843
 - chromNo: 2
   start: 1840279
   stop: 1922459
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134254
   vcv: 144850
 - chromNo: 2
   start: 85457457
   stop: 85615568
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134259
   vcv: 144855
 - chromNo: 2
   start: 60088353
   stop: 60240457
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134266
   vcv: 144862
 - start: 120556740
   stop: 120635392
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134189
   vcv: 144785
 - chromNo: 2
   start: 195358277
   stop: 195425875
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134248
   vcv: 144844
 - chromNo: 3
   start: 33520754
   stop: 33717980
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134278
   vcv: 144874
 - start: 49929425
   stop: 49988076
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134201
   vcv: 144797
 - chromNo: 3
   start: 4166772
   stop: 4249253
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134275
   vcv: 144871
 - chromNo: 4
   start: 180765809
   stop: 180890113
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134282
   vcv: 144878
 - chromNo: 3
   start: 186638639
   stop: 186659293
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134279
   vcv: 144875
 - chromNo: 4
   start: 180783055
   stop: 180825790
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134286
   vcv: 144882
 - chromNo: 2
   start: 22120611
   stop: 22255029
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134264
   vcv: 144860
 - start: 243949931
   stop: 244033798
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 134209
   vcv: 144805
 - chromNo: 4
   start: 180765809
   stop: 180875621
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134283
   vcv: 144879
 - start: 187644027
   stop: 187745698
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134217
   vcv: 144813
 - chromNo: 4
   start: 7422161
   stop: 7449338
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134291
   vcv: 144887
 - chromNo: 5
   start: 170937459
   stop: 171008097
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134298
   vcv: 144894
 - start: 2590844
   stop: 2605254
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134221
   vcv: 144817
 - chromNo: 1
   start: 39324297
   stop: 39328794
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134225
   vcv: 144821
 - chromNo: 4
   start: 22149
   stop: 163401
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134284
   vcv: 144880
 - chromNo: 5
   start: 104625850
   stop: 104789702
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134303
   vcv: 144899
 - chromNo: 5
   start: 56917608
   stop: 56950558
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134307
   vcv: 144903
 - chromNo: 5
   start: 63276588
   stop: 63348841
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134314
   vcv: 144910
 - chromNo: 1
   start: 13278775
   stop: 13417994
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134237
   vcv: 144833
 - chromNo: 1
   start: 51049645
   stop: 51066578
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134241
   vcv: 144837
 - chromNo: 1
   start: 35576002
   stop: 35821806
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134245
   vcv: 144841
 - chromNo: 5
   start: 162870369
   stop: 162933097
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134304
   vcv: 144900
 - chromNo: 5
   start: 56917608
   stop: 56950558
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 134308
   vcv: 144904
 - chromNo: 5
   start: 81572856
   stop: 81699864
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134312
   vcv: 144908
 - chromNo: 2
   start: 469128
   stop: 503718
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 134261
   vcv: 144857
 - chromNo: 2
   start: 1822272
   stop: 1980753
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134265
   vcv: 144861
 - chromNo: 3
   start: 168321293
   stop: 168477137
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134277
   vcv: 144873
 - chromNo: 3
   start: 190874457
   stop: 190943374
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134281
   vcv: 144877
 - chromNo: 4
   start: 180783055
   stop: 180825790
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134285
   vcv: 144881
 - chromNo: 4
   start: 180783055
   stop: 180875621
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134293
   vcv: 144889
 - chromNo: 5
   start: 56917608
   stop: 56950558
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 134309
   vcv: 144905
 - chromNo: 5
   start: 170937459
   stop: 171025471
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134316
   vcv: 144912
 - chromNo: 6
   start: 118866671
   stop: 119025730
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134328
   vcv: 144924
 - chromNo: 6
   start: 89571253
   stop: 89695823
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134336
   vcv: 144932
 - chromNo: 5
   start: 94487830
   stop: 94586500
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 134317
   vcv: 144913
 - chromNo: 5
   start: 170937459
   stop: 170983403
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134318
   vcv: 144914
 - chromNo: 6
   start: 53472041
   stop: 53583125
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134323
   vcv: 144919
 - chromNo: 7
   start: 87572
   stop: 128199
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134348
   vcv: 144944
 - chromNo: 6
   start: 153157388
   stop: 153487263
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134325
   vcv: 144921
 - chromNo: 6
   start: 118866671
   stop: 119025730
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134326
   vcv: 144922
 - chromNo: 6
   start: 125178203
   stop: 125790977
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134330
   vcv: 144926
 - chromNo: 6
   start: 46494
   stop: 65558
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134339
   vcv: 144935
 - chromNo: 8
   start: 30424069
   stop: 30520898
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134364
   vcv: 144960
 - chromNo: 8
   start: 138157660
   stop: 138283558
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134368
   vcv: 144964
 - chromNo: 8
   start: 8065133
   stop: 8187842
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134372
   vcv: 144968
 - chromNo: 7
   start: 114199992
   stop: 114338391
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134346
   vcv: 144942
 - chromNo: 7
   start: 87572
   stop: 128199
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134349
   vcv: 144945
 - chromNo: 7
   start: 2133991
   stop: 2349876
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134351
   vcv: 144947
 - chromNo: 9
   start: 68479220
   stop: 68599432
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134380
   vcv: 144976
 - chromNo: 7
   start: 40247
   stop: 145465
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134355
   vcv: 144951
 - chromNo: 7
   start: 15952011
   stop: 16021685
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134354
   vcv: 144950
 - chromNo: 9
   start: 107109062
   stop: 107280724
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134384
   vcv: 144980
 - chromNo: 7
   start: 40247
   stop: 128199
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134358
   vcv: 144954
 - chromNo: 8
   start: 25527395
   stop: 25616019
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134362
   vcv: 144958
 - chromNo: 8
   start: 8903382
   stop: 9014802
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134365
   vcv: 144961
 - chromNo: 9
   start: 84137675
   stop: 84270008
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134392
   vcv: 144989
 - chromNo: 8
   start: 141061567
   stop: 141106476
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134366
   vcv: 144962
 - chromNo: 8
   start: 11927681
   stop: 12007047
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134369
   vcv: 144965
 - chromNo: 8
   start: 25259013
   stop: 25346912
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134367
   vcv: 144963
 - chromNo: 8
   start: 22212553
   stop: 22326165
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134373
   vcv: 144969
 - chromNo: 8
   start: 28191461
   stop: 28320731
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134374
   vcv: 144970
 - chromNo: 10
   start: 133546203
   stop: 133626429
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134400
   vcv: 144997
 - chromNo: 8
   start: 10249116
   stop: 10340720
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134377
   vcv: 144973
 - chromNo: 8
   start: 80443049
   stop: 80460752
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134378
   vcv: 144974
 - chromNo: 8
   start: 11713632
   stop: 11868524
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134379
   vcv: 144975
 - chromNo: 9
   start: 17809523
   stop: 17962915
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134387
   vcv: 144984
 - chromNo: 9
   start: 52489127
   stop: 52518930
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134390
   vcv: 144987
 - chromNo: 9
   start: 100667725
   stop: 100696797
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134393
   vcv: 144990
 - chromNo: 9
   start: 17809523
   stop: 17892239
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 134394
   vcv: 144991
 - chromNo: 9
   start: 19446590
   stop: 19810710
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134397
   vcv: 144994
 - chromNo: 10
   start: 80656651
   stop: 80902908
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134402
   vcv: 144999
 - chromNo: 13
   start: 43856486
   stop: 44223814
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134428
   vcv: 145025
 - chromNo: 13
   start: 72638897
   stop: 72665618
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134432
   vcv: 145029
 - chromNo: 10
   start: 56322990
   stop: 56352364
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134409
   vcv: 145006
 - chromNo: 11
   start: 67177292
   stop: 67249002
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134414
   vcv: 145011
 - chromNo: 11
   start: 45667640
   stop: 45782413
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134417
   vcv: 145014
 - chromNo: 11
   start: 67183476
   stop: 67210339
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134418
   vcv: 145015
 - chromNo: 12
   start: 72826303
   stop: 73017334
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134422
   vcv: 145019
 - chromNo: 12
   start: 19327344
   stop: 19380812
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134423
   vcv: 145020
 - chromNo: 13
   start: 43856486
   stop: 44223814
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134430
   vcv: 145027
 - chromNo: 14
   start: 94218046
   stop: 94334589
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134434
   vcv: 145031
 - chromNo: 13
   start: 45821442
   stop: 45979670
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134429
   vcv: 145026
 - chromNo: 14
   start: 57656005
   stop: 57748274
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134438
   vcv: 145035
 - chromNo: 14
   start: 75541862
   stop: 75589035
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134439
   vcv: 145036
 - chromNo: 14
   start: 75552647
   stop: 75589035
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134442
   vcv: 145039
 - chromNo: 15
   start: 72769
   stop: 82412
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134446
   vcv: 145043
 - chromNo: 15
   start: 72769
   stop: 82412
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134447
   vcv: 145044
 - chromNo: 17
   start: 14316
   stop: 69754
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134480
   vcv: 145078
 - chromNo: 18
   start: 91171
   stop: 202952
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134484
   vcv: 145082
 - chromNo: 15
   start: 69193
   stop: 82412
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134449
   vcv: 145046
 - chromNo: 16
   start: 19504649
   stop: 19536309
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134462
   vcv: 145060
 - chromNo: 16
   start: 19504649
   stop: 19536309
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134463
   vcv: 145061
 - chromNo: 18
   start: 41448821
   stop: 41510949
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134496
   vcv: 145094
 - chromNo: 16
   start: 14368263
   stop: 14423007
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134471
   vcv: 145069
 - chromNo: 16
   start: 25991972
   stop: 26061973
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134465
   vcv: 145063
 - chromNo: 21
   start: 17267393
   stop: 17290275
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134512
   vcv: 145110
 - chromNo: 18
   start: 74459
   stop: 113418
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134486
   vcv: 145084
 - chromNo: 17
   start: 14316
   stop: 69754
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134481
   vcv: 145079
 - chromNo: 18
   start: 61112
   stop: 113418
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134494
   vcv: 145092
 - chromNo: 22
   start: 114218436
   stop: 114395542
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134524
   vcv: 145122
 - chromNo: 17
   start: 14316
   stop: 69754
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134479
   vcv: 145077
 - chromNo: 18
   start: 61112
   stop: 168688
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134483
   vcv: 145081
 - chromNo: 18
   start: 61112
   stop: 113418
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134493
   vcv: 145091
 - chromNo: 20
   start: 23727134
   stop: 23833530
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134506
   vcv: 145104
 - chromNo: 22
   start: 94416437
   stop: 94462590
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134536
   vcv: 145134
 - chromNo: 18
   start: 74459
   stop: 113418
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134487
   vcv: 145085
 - chromNo: 19
   start: 41067417
   stop: 41107347
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134501
   vcv: 145099
 - chromNo: 22
   start: 77054444
   stop: 77143054
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 134544
   vcv: 145142
 - chromNo: 22
   start: 148644765
   stop: 148651627
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134552
   vcv: 145150
 - chromNo: 22
   start: 155236606
   stop: 155250178
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134526
   vcv: 145124
 - chromNo: 22
   start: 94348475
   stop: 94388722
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134556
   vcv: 145154
 - chromNo: 20
   start: 19412023
   stop: 19602127
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134507
   vcv: 145105
 - chromNo: 22
   start: 155236606
   stop: 155255792
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134530
   vcv: 145128
 - chromNo: 22
   start: 61931689
   stop: 62146866
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134560
   vcv: 145158
 - chromNo: 22
   start: 154722370
   stop: 154776718
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134534
   vcv: 145132
 - chromNo: 21
   start: 16054691
   stop: 17450189
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134517
   vcv: 145115
 - chromNo: 22
   start: 143756944
   stop: 143843203
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134542
   vcv: 145140
 - chromNo: 22
   start: 155014787
   stop: 155036311
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134525
   vcv: 145123
 - chromNo: 22
   start: 114218436
   stop: 114395542
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134523
   vcv: 145121
 - chromNo: 22
   start: 115944547
   stop: 116047048
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134546
   vcv: 145144
 - chromNo: 22
   start: 32575523
   stop: 32772668
-  variationType: Del
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 134527
   vcv: 145125
 - chromNo: 22
   start: 8067038
   stop: 8184213
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134550
   vcv: 145148
 - chromNo: 23
   start: 13704922
   stop: 13820061
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134580
   vcv: 145178
 - chromNo: 22
   start: 155236606
   stop: 155255792
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134531
   vcv: 145129
 - chromNo: 22
   start: 94348475
   stop: 94388722
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134554
   vcv: 145152
 - chromNo: 22
   start: 94315189
   stop: 94375943
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134537
   vcv: 145135
 - chromNo: 23
   start: 16099893
   stop: 16104120
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134584
   vcv: 145182
 - chromNo: 22
   start: 6755142
   stop: 6818667
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134558
   vcv: 145156
 - chromNo: 22
   start: 42331117
   stop: 42441959
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134541
   vcv: 145139
 - chromNo: 23
   start: 13675923
   stop: 13848141
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134588
   vcv: 145186
 - chromNo: 22
   start: 94315189
   stop: 94375943
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134539
   vcv: 145137
 - chromNo: 22
   start: 125191679
   stop: 125301888
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134562
   vcv: 145160
 - chromNo: 22
   start: 77054444
   stop: 77143054
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 134545
   vcv: 145143
 - chromNo: 23
   start: 13723022
   stop: 13745434
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134592
   vcv: 145190
 - chromNo: 22
   start: 122607629
   stop: 122727785
-  variationType: Dup
-  pathogenicity: Pathogenic
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_PATHOGENIC
   rcv: 134543
   vcv: 145141
 - chromNo: 22
   start: 6449644
   stop: 6454095
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134549
   vcv: 145147
 - chromNo: 22
   start: 115944547
   stop: 116047048
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134547
   vcv: 145145
 - chromNo: 22
   start: 148644765
   stop: 148651627
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134553
   vcv: 145151
 - chromNo: 22
   start: 116141925
   stop: 116195097
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134574
   vcv: 145172
 - chromNo: 22
   start: 6755142
   stop: 6818667
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134557
   vcv: 145155
 - chromNo: 22
   start: 94348475
   stop: 94388722
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134555
   vcv: 145153
 - chromNo: 23
   start: 13675923
   stop: 13745434
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134578
   vcv: 145176
 - chromNo: 22
   start: 61931689
   stop: 62146866
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134559
   vcv: 145157
 - chromNo: 22
   start: 116409787
   stop: 116466743
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134561
   vcv: 145159
 - chromNo: 23
   start: 20297
   stop: 39498
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134582
   vcv: 145180
 - chromNo: 10
   start: 89631979
   stop: 89656912
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134612
   vcv: 145210
 - chromNo: 22
   start: 125191679
   stop: 125301888
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134563
   vcv: 145161
 - chromNo: 22
   start: 909049
   stop: 1252522
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134565
   vcv: 145163
 - chromNo: 23
   start: 16099893
   stop: 16393891
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134586
   vcv: 145184
 - chromNo: 5
   start: 19479947
   stop: 19570373
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134616
   vcv: 145214
 - chromNo: 23
   start: 17271029
   stop: 17284349
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134590
   vcv: 145188
 - chromNo: 23
   start: 13622055
   stop: 13849453
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134594
   vcv: 145192
 - chromNo: 22
   start: 125325276
   stop: 125360226
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134575
   vcv: 145173
 - chromNo: 22
   start: 139608915
   stop: 140041481
-  variationType: Dup
-  pathogenicity: Uncertain
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_UNCERTAIN
   rcv: 134577
   vcv: 145175
 - start: 142594227
   stop: 142642753
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134598
   vcv: 145196
 - chromNo: 8
   start: 108697403
   stop: 109009314
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134628
   vcv: 145226
 - chromNo: 23
   start: 13675923
   stop: 13745434
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134579
   vcv: 145177
 - chromNo: 23
   start: 20297
   stop: 39498
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134583
   vcv: 145181
 - chromNo: 23
   start: 16162322
   stop: 16188682
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134585
   vcv: 145183
 - chromNo: 23
   start: 59304399
   stop: 59336998
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134606
   vcv: 145204
 - chromNo: 23
   start: 24073920
   stop: 24238124
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134587
   vcv: 145185
 - chromNo: 23
   start: 859049
   stop: 1202522
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134589
   vcv: 145187
 - start: 143134063
   stop: 143284670
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134610
   vcv: 145208
 - chromNo: 22
   start: 125101992
   stop: 125287185
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 134640
   vcv: 145238
 - chromNo: 23
   start: 16077897
   stop: 16166538
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134591
   vcv: 145189
 - chromNo: 23
   start: 13723022
   stop: 13745434
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134593
   vcv: 145191
 - chromNo: 13
   start: 48786773
   stop: 48906286
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134614
   vcv: 145212
 - chromNo: 2
   start: 161435356
   stop: 161520563
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134644
   vcv: 145242
 - chromNo: 19
   start: 44350693
   stop: 44370415
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134597
   vcv: 145195
 - chromNo: 9
   start: 68443835
   stop: 68516519
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134618
   vcv: 145216
 - chromNo: 15
   start: 29725594
   stop: 29738388
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134648
   vcv: 145246
 - chromNo: 18
   start: 53328041
   stop: 53352600
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134599
   vcv: 145197
 - chromNo: 23
   start: 731071
   stop: 769170
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134601
   vcv: 145199
 - chromNo: 2
   start: 82165558
   stop: 82248585
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134622
   vcv: 145220
 - chromNo: 6
   start: 72738675
   stop: 72766313
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134603
   vcv: 145201
 - chromNo: 22
   start: 155201393
   stop: 155233992
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134605
   vcv: 145203
 - chromNo: 12
   start: 92173306
   stop: 92249821
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134626
   vcv: 145224
 - chromNo: 18
   start: 61112
   stop: 202952
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134656
   vcv: 145254
 - chromNo: 22
   start: 91214315
   stop: 91246061
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134609
   vcv: 145207
 - chromNo: 1
   start: 187080149
   stop: 187173729
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134660
   vcv: 145258
 - chromNo: 2
   start: 195381420
   stop: 195425875
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134611
   vcv: 145209
 - chromNo: 2
   start: 26060682
   stop: 26279585
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134613
   vcv: 145211
 - chromNo: 6
   start: 13156515
   stop: 13302439
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134664
   vcv: 145262
 - chromNo: 12
   start: 55153988
   stop: 55457713
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134615
   vcv: 145213
 - start: 243684045
   stop: 243694734
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134617
   vcv: 145215
 - chromNo: 14
   start: 93805530
   stop: 93889806
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134638
   vcv: 145236
 - chromNo: 12
   start: 67327801
   stop: 67348819
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134668
   vcv: 145266
 - chromNo: 7
   start: 16046
   stop: 56814
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134619
   vcv: 145217
 - chromNo: 14
   start: 101935884
   stop: 101992296
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134621
   vcv: 145219
 - chromNo: 4
   start: 104332410
   stop: 104473254
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134642
   vcv: 145240
 - chromNo: 22
   start: 154556681
   stop: 154577793
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134672
   vcv: 145270
 - chromNo: 2
   start: 164004587
   stop: 164335127
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134623
   vcv: 145221
 - chromNo: 10
   start: 96808589
   stop: 97273356
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134676
   vcv: 145274
 - chromNo: 20
   start: 24526599
   stop: 24622562
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134627
   vcv: 145225
 - chromNo: 7
   start: 14572311
   stop: 14615181
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134650
   vcv: 145248
 - chromNo: 7
   start: 140323438
   stop: 140399311
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134680
   vcv: 145278
 - chromNo: 22
   start: 153420154
   stop: 153560505
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134633
   vcv: 145231
 - start: 106060371
   stop: 106258498
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134635
   vcv: 145233
 - chromNo: 7
   start: 6043200
   stop: 6161430
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134688
   vcv: 145286
 - chromNo: 22
   start: 125101992
   stop: 125287185
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134639
   vcv: 145237
 - chromNo: 23
   start: 14022441
   stop: 14489087
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134641
   vcv: 145239
 - chromNo: 13
   start: 28224092
   stop: 28256820
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134662
   vcv: 145260
 - chromNo: 4
   start: 21288794
   stop: 21377276
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134700
   vcv: 145298
 - chromNo: 1
   start: 14182010
   stop: 14278837
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134704
   vcv: 145302
 - chromNo: 4
   start: 97051910
   stop: 97129673
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134670
   vcv: 145268
 - chromNo: 22
   start: 154672335
   stop: 154722370
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134674
   vcv: 145272
 - chromNo: 15
   start: 66203
   stop: 82412
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134678
   vcv: 145276
 - chromNo: 22
   start: 127330420
   stop: 127572796
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134669
   vcv: 145267
 - chromNo: 3
   start: 190943374
   stop: 191012562
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134663
   vcv: 145261
 - chromNo: 22
   start: 154556681
   stop: 154577793
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134673
   vcv: 145271
 - chromNo: 15
   start: 66203
   stop: 82412
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134677
   vcv: 145275
 - chromNo: 2
   start: 4094267
   stop: 4231359
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134690
   vcv: 145288
 - chromNo: 4
   start: 12820052
   stop: 13030604
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134681
   vcv: 145279
 - chromNo: 4
   start: 180809804
   stop: 180875621
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134694
   vcv: 145292
 - chromNo: 22
   start: 154672335
   stop: 154722370
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134675
   vcv: 145273
 - chromNo: 3
   start: 168831927
   stop: 168977531
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134689
   vcv: 145287
 - chromNo: 11
   start: 99958415
   stop: 100005273
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134693
   vcv: 145291
 - chromNo: 7
   start: 4725168
   stop: 4749269
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134691
   vcv: 145289
 - start: 147962225
   stop: 149418924
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134697
   vcv: 145295
 - chromNo: 18
   start: 127601
   stop: 138477
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134695
   vcv: 145293
 - chromNo: 23
   start: 2211474
   stop: 2311399
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134701
   vcv: 145299
 - chromNo: 19
   start: 41224904
   stop: 41312488
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134699
   vcv: 145297
 - chromNo: 8
   start: 11659296
   stop: 11927681
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134703
   vcv: 145301
 - chromNo: 2
   start: 4191029
   stop: 4324235
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134996
   vcv: 145670
 - chromNo: 7
   start: 4336985
   stop: 4414585
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135008
   vcv: 145682
 - chromNo: 1
   start: 51314371
   stop: 51467462
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135016
   vcv: 145690
 - chromNo: 4
   start: 21351834
   stop: 21377276
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135020
   vcv: 145694
 - chromNo: 3
   start: 132755488
   stop: 133091760
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135028
   vcv: 145702
 - chromNo: 22
   start: 81202690
   stop: 81314758
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135032
   vcv: 145706
 - chromNo: 7
   start: 73596927
   stop: 73635634
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134998
   vcv: 145672
 - chromNo: 8
   start: 141033138
   stop: 141138727
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135040
   vcv: 145714
 - chromNo: 2
   start: 1922459
   stop: 1962679
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135002
   vcv: 145676
 - chromNo: 3
   start: 13000279
   stop: 13071530
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135006
   vcv: 145680
 - chromNo: 4
   start: 99211169
   stop: 99324697
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135048
   vcv: 145722
 - chromNo: 22
   start: 86428535
   stop: 86473678
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134995
   vcv: 145669
 - chromNo: 22
   start: 155228918
   stop: 155240563
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135010
   vcv: 145684
 - chromNo: 22
   start: 126152297
   stop: 126345993
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135052
   vcv: 145726
 - chromNo: 14
   start: 94150634
   stop: 94218046
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 134999
   vcv: 145673
 - chromNo: 13
   start: 40733870
   stop: 40890943
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135014
   vcv: 145688
 - chromNo: 4
   start: 119028921
   stop: 119134844
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135056
   vcv: 145730
 - chromNo: 13
   start: 48786773
   stop: 48891586
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135001
   vcv: 145675
 - chromNo: 7
   start: 84732613
   stop: 85047388
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135005
   vcv: 145679
 - chromNo: 4
   start: 45935369
   stop: 46055437
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135007
   vcv: 145681
 - chromNo: 8
   start: 26274518
   stop: 26405992
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135022
   vcv: 145696
 - start: 120569414
   stop: 120635392
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135009
   vcv: 145683
 - chromNo: 23
   start: 59331924
   stop: 59343569
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135011
   vcv: 145685
 - chromNo: 3
   start: 190079238
   stop: 190159449
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135013
   vcv: 145687
 - start: 248291569
   stop: 248339940
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135072
   vcv: 145746
 - chromNo: 14
   start: 77722862
   stop: 77737043
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135030
   vcv: 145704
 - chromNo: 3
   start: 116913694
   stop: 117097417
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135019
   vcv: 145693
 - chromNo: 22
   start: 126550521
   stop: 126707466
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135076
   vcv: 145750
 - chromNo: 22
   start: 81202690
   stop: 81314758
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135034
   vcv: 145708
 - chromNo: 8
   start: 141073853
   stop: 141122055
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135023
   vcv: 145697
 - chromNo: 18
   start: 20385317
   stop: 20484861
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135038
   vcv: 145712
 - chromNo: 22
   start: 2118389
   stop: 2289645
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135025
   vcv: 145699
 - chromNo: 22
   start: 84030980
   stop: 84132021
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135084
   vcv: 145758
 - chromNo: 8
   start: 11573531
   stop: 11713632
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135031
   vcv: 145705
 - chromNo: 11
   start: 60367402
   stop: 60454894
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135088
   vcv: 145762
 - chromNo: 15
   start: 72569
   stop: 82612
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135046
   vcv: 145720
 - chromNo: 22
   start: 353093
   stop: 387718
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135035
   vcv: 145709
 - chromNo: 7
   start: 40247
   stop: 56814
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135050
   vcv: 145724
 - chromNo: 2
   start: 197863435
   stop: 197946533
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135037
   vcv: 145711
 - chromNo: 4
   start: 180724243
   stop: 180751873
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135039
   vcv: 145713
 - chromNo: 22
   start: 1793480
   stop: 1942205
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135100
   vcv: 145774
 - chromNo: 2
   start: 197821738
   stop: 197895169
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135058
   vcv: 145732
 - chromNo: 4
   start: 105779167
   stop: 105865777
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135045
   vcv: 145719
 - chromNo: 23
   start: 20944017
   stop: 21017616
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135062
   vcv: 145736
 - chromNo: 4
   start: 180852761
   stop: 180875621
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135049
   vcv: 145723
 - chromNo: 6
   start: 153823030
   stop: 153904470
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135053
   vcv: 145727
 - start: 248291569
   stop: 248339940
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135070
   vcv: 145744
 - chromNo: 22
   start: 95729423
   stop: 95845434
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135057
   vcv: 145731
 - chromNo: 15
   start: 78658225
   stop: 78745720
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135116
   vcv: 145790
 - chromNo: 23
   start: 20626494
   stop: 20700103
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135061
   vcv: 145735
 - chromNo: 23
   start: 18274705
   stop: 18555560
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135063
   vcv: 145737
 - start: 248158939
   stop: 248205955
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135120
   vcv: 145794
 - chromNo: 2
   start: 1797444
   stop: 2026210
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135067
   vcv: 145741
 - chromNo: 9
   start: 17809523
   stop: 18273895
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135124
   vcv: 145798
 - start: 143428345
   stop: 143532171
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135082
   vcv: 145756
 - chromNo: 10
   start: 55740538
   stop: 55821016
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135071
   vcv: 145745
 - chromNo: 22
   start: 1223372
   stop: 1321581
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135128
   vcv: 145802
 - chromNo: 10
   start: 55740538
   stop: 55821016
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135073
   vcv: 145747
 - chromNo: 6
   start: 52295077
   stop: 52580630
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135075
   vcv: 145749
 - chromNo: 22
   start: 112828750
   stop: 113202825
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135090
   vcv: 145764
 - chromNo: 7
   start: 3989887
   stop: 4069370
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135079
   vcv: 145753
 - chromNo: 22
   start: 134293036
   stop: 134330110
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135094
   vcv: 145768
 - chromNo: 22
   start: 33595181
   stop: 34078725
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135081
   vcv: 145755
 - chromNo: 2
   start: 726645
   stop: 800324
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135083
   vcv: 145757
 - chromNo: 14
   start: 32115751
   stop: 32148947
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135098
   vcv: 145772
 - chromNo: 1
   start: 89137592
   stop: 89329992
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135085
   vcv: 145759
 - chromNo: 22
   start: 124807304
   stop: 124875430
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135087
   vcv: 145761
 - chromNo: 22
   start: 571286
   stop: 590637
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135102
   vcv: 145776
 - chromNo: 14
   start: 98554119
   stop: 98685713
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135110
   vcv: 145784
 - chromNo: 22
   start: 144342100
   stop: 144478571
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135160
   vcv: 145834
 - chromNo: 1
   start: 241916309
   stop: 241919234
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135118
   vcv: 145792
 - chromNo: 12
   start: 57793354
   stop: 57872497
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135097
   vcv: 145771
 - chromNo: 1
   start: 132068071
   stop: 132266527
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135111
   vcv: 145785
 - chromNo: 23
   start: 1743480
   stop: 1892205
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135101
   vcv: 145775
 - chromNo: 23
   start: 15991426
   stop: 16166538
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135126
   vcv: 145800
 - chromNo: 8
   start: 141061567
   stop: 141138727
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135115
   vcv: 145789
 - chromNo: 1
   start: 89500023
   stop: 89527568
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135105
   vcv: 145779
 - chromNo: 5
   start: 162654091
   stop: 162748288
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135130
   vcv: 145804
 - chromNo: 22
   start: 2066618
   stop: 2166859
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135134
   vcv: 145808
 - chromNo: 17
   start: 1664567
   stop: 1783663
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135127
   vcv: 145801
 - start: 224079085
   stop: 224180364
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135117
   vcv: 145791
 - chromNo: 8
   start: 15310271
   stop: 15378135
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135188
   vcv: 145862
 - chromNo: 6
   start: 111732639
   stop: 111784310
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135135
   vcv: 145809
 - chromNo: 11
   start: 16194185
   stop: 16273130
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135192
   vcv: 145866
 - chromNo: 22
   start: 94754981
   stop: 95056650
-  variationType: Del
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135121
   vcv: 145795
 - chromNo: 9
   start: 68322619
   stop: 68443835
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135196
   vcv: 145870
 - chromNo: 23
   start: 20297
   stop: 100002
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135125
   vcv: 145799
 - chromNo: 13
   start: 41847694
   stop: 42063031
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135143
   vcv: 145817
 - chromNo: 22
   start: 1015836
   stop: 1539509
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135150
   vcv: 145824
 - chromNo: 23
   start: 1173372
   stop: 1271581
-  variationType: Dup
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_BENIGN
   rcv: 135129
   vcv: 145803
 - chromNo: 23
   start: 965836
   stop: 1489509
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135151
   vcv: 145825
 - chromNo: 11
   start: 133139462
   stop: 133164842
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135170
   vcv: 145844
 - chromNo: 22
   start: 1810323
   stop: 2361399
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135220
   vcv: 145894
 - chromNo: 3
   start: 93456196
   stop: 93554942
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135167
   vcv: 145841
 - chromNo: 12
   start: 67307371
   stop: 67406473
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135174
   vcv: 145848
 - chromNo: 7
   start: 119202780
   stop: 119243767
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135171
   vcv: 145845
 - chromNo: 18
   start: 15742501
   stop: 15803290
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135178
   vcv: 145852
 - chromNo: 22
   start: 74420870
   stop: 74463757
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135228
   vcv: 145902
 - chromNo: 22
   start: 72227953
   stop: 72313441
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135236
   vcv: 145910
 - chromNo: 22
   start: 1321581
   stop: 1347283
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135153
   vcv: 145827
 - chromNo: 12
   start: 67215674
   stop: 67399883
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135194
   vcv: 145868
 - chromNo: 22
   start: 37238833
   stop: 37519713
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135244
   vcv: 145918
 - chromNo: 22
   start: 144342100
   stop: 144478571
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135161
   vcv: 145835
 - start: 143753740
   stop: 143984287
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135191
   vcv: 145865
 - chromNo: 8
   start: 133475547
   stop: 133530586
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135165
   vcv: 145839
 - chromNo: 8
   start: 5352284
   stop: 5426040
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135252
   vcv: 145926
 - chromNo: 20
   start: 29212076
   stop: 29358348
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135256
   vcv: 145930
 - chromNo: 21
   start: 24202020
   stop: 24273134
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135173
   vcv: 145847
 - chromNo: 2
   start: 75770362
   stop: 75791565
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135206
   vcv: 145880
 - chromNo: 9
   start: 96407740
   stop: 96520226
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135181
   vcv: 145855
 - chromNo: 6
   start: 8676000
   stop: 8807326
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135214
   vcv: 145888
 - start: 50128385
   stop: 50193443
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135218
   vcv: 145892
 - chromNo: 4
   start: 12820052
   stop: 13227701
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135272
   vcv: 145946
 - chromNo: 21
   start: 18894835
   stop: 19010449
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135215
   vcv: 145889
 - chromNo: 5
   start: 157944961
   stop: 157968714
-  variationType: Dup
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DUP
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135219
   vcv: 145893
 - chromNo: 7
   start: 50995163
   stop: 51705426
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135280
   vcv: 145954
 - chromNo: 8
   start: 6312800
   stop: 6355675
-  variationType: Del
-  pathogenicity: LikelyBenign
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
   rcv: 135223
   vcv: 145897
+- chromNo: 5
+  start: 10564251
+  stop: 10629715
+  variationType: VARIATION_TYPE_DEL
+  pathogenicity: PATHOGENICITY_LIKELY_BENIGN
+  rcv: 135238
+  vcv: 145912

@@ -2,6 +2,7 @@
 source: src/strucvars/txt_to_bin/vardbs/mod.rs
 expression: records
 ---
-- start: 849999
+- svType: SV_TYPE_DEL
+  start: 849999
   stop: 860000
   count: 1

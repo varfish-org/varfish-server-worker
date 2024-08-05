@@ -2,107 +2,127 @@
 source: src/strucvars/txt_to_bin/vardbs/mod.rs
 expression: records
 ---
-- start: 925634
+- svType: SV_TYPE_DEL
+  start: 925634
   stop: 931187
   count: 464277
-- start: 925634
+- svType: SV_TYPE_DEL
+  start: 925634
   stop: 935994
   count: 464296
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 925634
   stop: 935994
   count: 464292
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 925634
   stop: 966359
   count: 464272
-- start: 925634
+- svType: SV_TYPE_DEL
+  start: 925634
   stop: 968686
   count: 464297
-- start: 925634
+- svType: SV_TYPE_DEL
+  start: 925634
   stop: 1062827
   count: 464291
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 925634
   stop: 1084604
   count: 464287
-- start: 935675
+- svType: SV_TYPE_DEL
+  start: 935675
   stop: 948701
   count: 464297
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 940979
   stop: 943475
   count: 464294
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 940979
   stop: 944898
   count: 464262
-- start: 940979
+- svType: SV_TYPE_DEL
+  start: 940979
   stop: 948330
   count: 464296
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 942006
   stop: 944898
   count: 464294
-- start: 943158
+- svType: SV_TYPE_DEL
+  start: 943158
   stop: 945751
   count: 464297
-- start: 948034
+- svType: SV_TYPE_DEL
+  start: 948034
   stop: 952237
   count: 464297
-- start: 948034
+- svType: SV_TYPE_DEL
+  start: 948034
   stop: 954621
   count: 464297
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 960487
   stop: 965817
   count: 464295
-- start: 960487
+- svType: SV_TYPE_DEL
+  start: 960487
   stop: 976739
   count: 464295
-- start: 961196
+- svType: SV_TYPE_DEL
+  start: 961196
   stop: 964057
   count: 464296
-- start: 970180
+- svType: SV_TYPE_DEL
+  start: 970180
   stop: 971621
   count: 464297
-- start: 970180
+- svType: SV_TYPE_DEL
+  start: 970180
   stop: 975355
   count: 464297
-- start: 970180
+- svType: SV_TYPE_DEL
+  start: 970180
   stop: 981271
   count: 464294
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 970180
   stop: 981271
   count: 464297
-- start: 972764
+- svType: SV_TYPE_DEL
+  start: 972764
   stop: 974402
   count: 464297
-- start: 974405
+- svType: SV_TYPE_DEL
+  start: 974405
   stop: 976739
   count: 434899
-- start: 998865
+- svType: SV_TYPE_DEL
+  start: 998865
   stop: 1008377
   count: 453104
-- start: 998865
+- svType: SV_TYPE_DEL
+  start: 998865
   stop: 1014638
   count: 464297
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 998865
   stop: 1022560
   count: 464296
-- start: 1007979
+- svType: SV_TYPE_DEL
+  start: 1007979
   stop: 1035422
   count: 464296
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1034787
   stop: 1056216
   count: 464284
-- svType: Dup
+- svType: SV_TYPE_DUP
   start: 1034787
   stop: 1072673
   count: 464293
-- start: 1040822
+- svType: SV_TYPE_DEL
+  start: 1040822
   stop: 1048759
   count: 464280
