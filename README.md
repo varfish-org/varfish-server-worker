@@ -343,6 +343,8 @@ This section is only relevant for developers of `varfish-server-worker`.
 
 ## Development Setup
 
+You will also need to have git LFS installed to get the test databases.
+
 You will need a recent version of protocolbuffers, e.g.:
 
 ```
