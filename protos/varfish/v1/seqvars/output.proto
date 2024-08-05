@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package varfish.v1.seqvars.output;
+
+import "varfish/v1/seqvars/query.proto";
+
+// Enumeration of the genome release.
+enum GenomeRelease {
+  // Unspecified genome release.
+  GENOME_RELEASE_UNSPECIFIED = 0;
+  // GRCh37.
+  GRCH37 = 1;
+  // GRCh38.
+  GRCH38 = 2;
+}
+
+// Store meta information about query results.
+message OutputDesc {
+  // Genome release.
+  GenomeRelease genome_release = 1;
+}
+
+// Store one record in the output.
+message OutputRecord {
+  // UUID of the record.
+  string uuid = 1;
+  // Genome release.
+  GenomeRelease genome_release = 2;
+  // The description.
+  VcfVariant vcf_variant = 3;
+  // The variant annotation payload.
+  VariantAnnotation variant_annotation = 4;
+}
+
+// Store a sequnce variant in VCF representation.
+message VcfVariant {
+  // Chromosome, normalized.
+  string chrom = 1;
+  // 1-based position.
+  int32 pos = 2;
+  // Reference allele.
+  string ref_allele = 3;
+  // Alternative allele.
+  string alt_allele = 4;
+}
+
+// Store the variant annotation payload (always for a single gene).
+message VariantAnnotation {
+  // Gene-related annotation.
+  GeneRelatedAnnotation gene_related = 1;
+  // Variant-related annotation.
+  VariantRelatedAnnotation variant_related = 2;
+  // Call-related annotation.
+  CallRelatedAnnotation call_related = 3;
+}
+
+// Store gene-related annotation (always for a single gene).
+message GeneRelatedAnnotation {
+  // Gene ID information.
+  GeneIdentity gene_identity = 1;
+  // Gene-related consequences, if any (none if intergenic).
+  optional GeneRelatedConsequences gene_related_consequences = 2;
+  // Gene-related phenotype information, if any.
+  optional GeneRelatedPhenotypes gene_related_phenotypes = 3;
+  // Gene-wise constraints on the gene, if any.
+  optional GeneRelatedConstraints gene_related_constraints = 4;
+}
+
+// Gene identity related information.
+message GeneIdentity {
+  // HGNC ID.
+  string hgnc_id = 1;
+  // HGNC symbol.
+  string gene_symbol = 2;
+}
+
+/// Gene-related consequences of a variant.
+message GeneRelatedConsequences {
+  // HGVS.{c,n} code of variant.
+  string hgvs_t = 1;
+  // HGVS.p code of variant.
+  optional string hgvs_p = 2;
+  // Predicted variant consequences.
+  repeated varfish.v1.seqvars.query.Consequence consequences = 3;
+}
+
+// Phenotype-related information, if any.
+message GeneRelatedPhenotypes {
+  // ACMG supplementary finding list.
+  bool is_acmg_sf = 1;
+  // Whether is a known disease gene.
+  bool is_disease_gene = 2;
+}
+
+// Gene-wise constraints.
+message GeneRelatedConstraints {
+  // gnomAD mis_z score
+  optional float gnomad_mis_z = 1;
+  // gnomAD oe_lof score
+  optional float gnomad_oe_lof = 2;
+  // gnomAD oe_lof_lower score
+  optional float gnomad_oe_lof_lower = 3;
+  // gnomAD oe_lof_upper score (LOEF)
+  optional float gnomad_oe_lof_upper = 4;
+  // gnomAD oe_mis score
+  optional float gnomad_oe_mis = 5;
+  // gnomAD oe_mis_lower score
+  optional float gnomad_oe_mis_lower = 6;
+  // gnomAD oe_mis_upper score
+  optional float gnomad_oe_mis_upper = 7;
+  // gnomAD pLI score
+  optional float gnomad_pli = 8;
+  // gnomAD syn_z score
+  optional float gnomad_syn_z = 9;
+}
+
+// Store variant-related annotation.
+message VariantRelatedAnnotation {
+
+}
+
+// Store call-related annotation.
+message CallRelatedAnnotation {
+  // Store call information for each sample.
+  repeated SampleCallInfo call_infos =1 ;
+}
+
+// Store call information for one sample.
+message SampleCallInfo {
+  // Depth of coverage.
+  optional int32 dp = 1;
+  // Alternate read depth.
+  optional int32 ad = 2;
+  // Genotype quality.
+  optional int32 gq = 3;
+  // Genotype.
+  optional string gt = 4;
+}

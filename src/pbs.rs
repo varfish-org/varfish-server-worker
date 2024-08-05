@@ -23,6 +23,15 @@ pub mod varfish {
                     "/varfish.v1.seqvars.query.serde.rs"
                 ));
             }
+
+            /// Code generate for protobufs by `prost-build`.
+            pub mod output {
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.seqvars.output.rs"));
+                include!(concat!(
+                    env!("OUT_DIR"),
+                    "/varfish.v1.seqvars.output.serde.rs"
+                ));
+            }
         }
 
         /// Code generate for protobufs by `prost-build`.
