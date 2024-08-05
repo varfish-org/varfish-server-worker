@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install protolint
-        uses: |
+        run: |
           pip install protolint-bin
 
       - name: Run protolint
