@@ -683,7 +683,7 @@ mod tests {
         assert_eq!(population_frequencies.gnomad_genomes.an, 100);
         assert_eq!(population_frequencies.gnomad_mtdna.an, 100);
         assert_eq!(population_frequencies.helixmtdb.an, 100);
-        assert_eq!(population_frequencies.inhouse.an, 35);
+        assert_eq!(population_frequencies.inhouse.an, 65);
     }
 
     #[rstest::rstest]

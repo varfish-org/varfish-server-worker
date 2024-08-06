@@ -279,6 +279,7 @@ async fn run_query(
     let path_unsorted = tmp_dir.path().join("unsorted.jsonl");
     let path_by_hgnc = tmp_dir.path().join("by_hgnc_filtered.jsonl");
     let path_by_coord = tmp_dir.path().join("by_coord.jsonl");
+    let path_noheader = tmp_dir.path().join("noheader.jsonl");
 
     // Read through input records using the query interpreter as a filter and write to
     // temporary file for unsorted records.
@@ -429,21 +430,16 @@ async fn run_query(
         })?;
     }
 
-    // Finally, perform annotation of the record using the annonars library and write it
-    // in JSONL format.  The first line will contain the header, the rest the records.
-    //
-    // Use output helper for semi-transparent upload to S3.
-    let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_output)?;
+    // Perform the annotation and write into file without header.
     {
-        // Open output file for writing (potentially temporary, then uploaded to S3 via helper).
         let writer = tokio::fs::OpenOptions::new()
             .create(true)
+            .truncate(true)
             .write(true)
-            .open(out_path_helper.path_out())
+            .open(&path_noheader)
             .await
             .map_err(|e| anyhow::anyhow!("could not open output file: {}", e))?;
         let mut writer = tokio::io::BufWriter::new(writer);
-        write_header(args, pb_query, &stats, start_time, &mut writer).await?;
         // Open reader for temporary by-coordinate file.
         let tmp_by_coord = std::fs::File::open(&path_by_coord)
             .map(std::io::BufReader::new)
@@ -482,6 +478,35 @@ async fn run_query(
             .await
             .map_err(|e| anyhow::anyhow!("could not flush output file before closing: {}", e))?;
     }
+
+    // Finally, write out records in JSONL format in JSONL format.  The first line will contain the
+    // header, the rest the records.
+    //
+    // Use output helper for semi-transparent upload to S3.
+    let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_output)?;
+    {
+        // Open output file for writing (potentially temporary, then uploaded to S3 via helper).
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(out_path_helper.path_out())
+            .map_err(|e| anyhow::anyhow!("could not open output file: {}", e))?;
+        let mut writer = std::io::BufWriter::new(file);
+        write_header(args, pb_query, &stats, start_time, &mut writer)?;
+        // Open reader for file without header.
+        let mut reader = std::fs::File::open(&path_noheader)
+            .map(std::io::BufReader::new)
+            .map_err(|e| anyhow::anyhow!("could not open temporary no_header file: {}", e))?;
+        // Append the temporary file to the output file.
+        std::io::copy(&mut reader, &mut writer)
+            .map_err(|e| anyhow::anyhow!("could not copy temporary file to output file: {}", e))?;
+        // Properly flush the output file, so upload to S3 can be done if necessary.
+        writer
+            .flush()
+            .map_err(|e| anyhow::anyhow!("could not flush output file before closing: {}", e))?;
+    }
+    // Potentially upload the output file to S3.
     out_path_helper
         .upload_for_s3()
         .await
@@ -491,12 +516,12 @@ async fn run_query(
 }
 
 /// Write the header to the output file.
-async fn write_header(
+fn write_header(
     args: &Args,
     pb_query: &pbs_query::CaseQuery,
     stats: &QueryStats,
     start_time: pbjson_types::Timestamp,
-    writer: &mut tokio::io::BufWriter<tokio::fs::File>,
+    writer: &mut std::io::BufWriter<std::fs::File>,
 ) -> Result<(), anyhow::Error> {
     let header = pbs_output::OutputHeader {
         genome_release: Into::<pbs_output::GenomeRelease>::into(args.genome_release) as i32,
@@ -524,17 +549,12 @@ async fn write_header(
             memory_used: common::rss_size()?,
         }),
     };
-    let mut buf = Vec::<u8>::new();
     writeln!(
-        &mut buf,
+        writer,
         "{}",
         serde_json::to_string(&header)
             .map_err(|e| anyhow::anyhow!("could not convert header to JSON: {}", e))?
     )?;
-    writer
-        .write_all(&buf)
-        .await
-        .map_err(|e| anyhow::anyhow!("could not write header to output file: {}", e))?;
     Ok(())
 }
 
@@ -992,7 +1012,7 @@ mod variant_related_annotation {
                 dbsnp_id: Some(dbsnp_id),
             }))
         } else {
-            return Ok(None);
+            Ok(None)
         }
     }
 
@@ -1255,7 +1275,7 @@ async fn create_and_write_record(
                 .get(&seqvar.vcf_variant.chrom)
                 .cloned()
                 .unwrap_or_default() as i32,
-            pos: seqvar.vcf_variant.pos as i32,
+            pos: seqvar.vcf_variant.pos,
             ref_allele: seqvar.vcf_variant.ref_allele.clone(),
             alt_allele: seqvar.vcf_variant.alt_allele.clone(),
         }),

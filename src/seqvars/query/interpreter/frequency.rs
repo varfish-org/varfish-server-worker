@@ -317,7 +317,6 @@ mod test {
                     heterozygous: query_gnomad_genomes_heterozygous,
                     homozygous: query_gnomad_genomes_homozygous,
                     hemizygous: query_gnomad_genomes_hemizygous,
-                    ..Default::default()
                 },
                 ..Default::default()
             },

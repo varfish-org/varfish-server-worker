@@ -421,6 +421,7 @@ mod test {
         None, // c_ad
         true, // expected
     )]
+    #[allow(clippy::too_many_arguments)]
     fn passes_for_sample(
         #[case] q_min_dp_het: Option<i32>,
         #[case] q_min_dp_hom: Option<i32>,
