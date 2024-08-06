@@ -3,8 +3,9 @@ source: src/seqvars/aggregate/mod.rs
 expression: counts
 ---
 Counts {
-    count_an: 6,
-    count_het: 0,
-    count_hom: 2,
-    count_hemi: 0,
+    count_homref: 1,
+    count_hemiref: 0,
+    count_het: 2,
+    count_homalt: 0,
+    count_hemialt: 0,
 }
