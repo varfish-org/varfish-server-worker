@@ -28,13 +28,28 @@ impl Default for Args {
     }
 }
 
+/// Return now as pbjson Timestamp.
+pub fn now_as_pbjson_timestamp() -> pbjson_types::Timestamp {
+    let now = chrono::Utc::now();
+    pbjson_types::Timestamp {
+        seconds: now.timestamp(),
+        nanos: now.timestamp_subsec_nanos() as i32,
+    }
+}
+
+/// Obtain RSS size in bytes.
+pub fn rss_size() -> Result<u64, procfs::ProcError> {
+    let me = procfs::process::Process::myself()?;
+    let stat = me.stat()?;
+    let page_size = procfs::page_size();
+    Ok(stat.rss * page_size)
+}
+
 /// Helper to print the current memory resident set size via `tracing`.
 pub fn trace_rss_now() {
-    let me = procfs::process::Process::myself().unwrap();
-    let page_size = procfs::page_size();
     tracing::debug!(
         "RSS now: {}",
-        Byte::from_u128((me.stat().unwrap().rss * page_size) as u128)
+        Byte::from_u128(rss_size().expect("no RSS?!") as u128)
             .expect("invalid RSS?!")
             .get_appropriate_unit(byte_unit::UnitType::Decimal)
     );

@@ -38,13 +38,13 @@ pub struct CallInfo {
     /// The genotype, if applicable, e.g., "0/1"
     pub genotype: Option<String>,
     /// Genotype quality score, if applicable
-    pub quality: Option<f32>,
+    pub gq: Option<f32>,
     /// Total read coverage at site in the sample.
     pub dp: Option<i32>,
     /// Alternate allele depth for the single allele in the sample.
     pub ad: Option<i32>,
     /// Physical phasing ID for this sample.
-    pub phasing_id: Option<i32>,
+    pub ps: Option<i32>,
 }
 
 impl Eq for CallInfo {}
@@ -175,14 +175,14 @@ impl Carriers for MitochondrialFrequencies {
 /// In-house frequencies.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct InHouseFrequencies {
+    // Number of alleles.
+    pub an: i32,
     /// Number of homozygous carriers.
     pub hom: i32,
     /// Number of heterozygous carriers.
     pub het: i32,
     /// Number of hemizygous carriers.
     pub hemi: i32,
-    /// Total number of carriers.
-    pub total: i32,
 }
 
 impl Ac for InHouseFrequencies {
@@ -199,7 +199,7 @@ impl Ac for InHouseFrequencies {
 
 impl An for InHouseFrequencies {
     fn an(&self) -> i32 {
-        self.total
+        self.an
     }
 }
 
@@ -446,10 +446,10 @@ impl TryFromVcf for CallInfos {
                 CallInfo {
                     sample: name.clone(),
                     genotype,
-                    quality,
+                    gq: quality,
                     dp,
                     ad,
-                    phasing_id: phase_set,
+                    ps: phase_set,
                 },
             );
         }
@@ -595,7 +595,7 @@ mod tests {
             hom: 10,
             het: 20,
             hemi: 5,
-            total: 35,
+            an: 65,
         }
     }
 
@@ -683,7 +683,7 @@ mod tests {
         assert_eq!(population_frequencies.gnomad_genomes.an, 100);
         assert_eq!(population_frequencies.gnomad_mtdna.an, 100);
         assert_eq!(population_frequencies.helixmtdb.an, 100);
-        assert_eq!(population_frequencies.inhouse.total, 35);
+        assert_eq!(population_frequencies.inhouse.an, 65);
     }
 
     #[rstest::rstest]
