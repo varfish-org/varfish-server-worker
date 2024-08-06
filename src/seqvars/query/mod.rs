@@ -548,6 +548,7 @@ fn write_header(
             end_time: Some(common::now_as_pbjson_timestamp()),
             memory_used: common::rss_size()?,
         }),
+        variant_score_columns: variant_related_annotation::score_columns(),
     };
     writeln!(
         writer,
@@ -872,7 +873,10 @@ mod gene_related_annotation {
 
 /// Helper code for pbs_output::VariantRelatedAnnotation.
 mod variant_related_annotation {
+    use crate::pbs::varfish::v1::seqvars::output as pbs_output;
     use schema::data::Af;
+
+    use super::*;
 
     /// Helper modules for score collection.
     pub mod score_collection {
@@ -984,8 +988,6 @@ mod variant_related_annotation {
             }
         }
     }
-
-    use super::*;
 
     pub(crate) fn with_seqvar_and_annotator(
         seqvar: &VariantRecord,
@@ -1113,6 +1115,54 @@ mod variant_related_annotation {
         } else {
             Ok(None)
         }
+    }
+
+    /// Return information about the scores entries.
+    pub(crate) fn score_columns() -> Vec<pbs_output::VariantScoreColumn> {
+        vec![
+            pbs_output::VariantScoreColumn {
+                name: "cadd_phred".to_string(),
+                label: "CADD".to_string(),
+                description: "PHRED-scaled CADD score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "sift".to_string(),
+                label: "SIFT".to_string(),
+                description: "SIFT score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "polyphen".to_string(),
+                label: "PolyPhen".to_string(),
+                description: "PolyPhen score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "spliceai".to_string(),
+                label: "SpliceAI".to_string(),
+                description: "SpliceAI score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "spliceai".to_string(),
+                label: "SpliceAI (which)".to_string(),
+                description: "Which SpliceAI score is maximal".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "revel".to_string(),
+                label: "REVEL".to_string(),
+                description: "REVEL score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "baysedel_addaf".to_string(),
+                label: "BayesDel".to_string(),
+                description: "BayesDell AddAF score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+        ]
     }
 
     /// Query precomputed scores for `seqvar` from annonars `annotator`.
@@ -1268,8 +1318,8 @@ async fn create_and_write_record(
         })
         .to_string(),
         case_uuid: args.case_uuid_id.unwrap_or_default().to_string(),
-        genome_release: Into::<pbs_output::GenomeRelease>::into(args.genome_release) as i32,
         vcf_variant: Some(pbs_output::VcfVariant {
+            genome_release: Into::<pbs_output::GenomeRelease>::into(args.genome_release) as i32,
             chrom: seqvar.vcf_variant.chrom.clone(),
             chrom_no: chrom_to_chrom_no
                 .get(&seqvar.vcf_variant.chrom)

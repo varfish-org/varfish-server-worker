@@ -22,6 +22,30 @@ message OutputHeader {
   ResourcesUsed resources = 5;
   // Statistics about results.
   OutputStatistics statistics = 6;
+  // Information about the variant scores in the output.
+  repeated VariantScoreColumn variant_score_columns = 7;
+}
+
+// Store information about the variant scores in the output.
+message VariantScoreColumn {
+  // Name of the score.
+  string name = 1;
+  // Label for the score.
+  string label = 2;
+  // Description of the score.
+  string description = 3;
+  // Type of the score.
+  VariantScoreColumnType type = 4;
+}
+
+// Enumeration of the variant score type.
+enum VariantScoreColumnType {
+  // Unspecified variant score type.
+  VARIANT_SCORE_COLUMN_TYPE_UNSPECIFIED = 0;
+  // Number
+  VARIANT_SCORE_COLUMN_TYPE_NUMBER = 1;
+  // String
+  VARIANT_SCORE_COLUMN_TYPE_STRING = 2;
 }
 
 // Enumeration of the genome release.
@@ -76,26 +100,26 @@ message OutputRecord {
   string uuid = 1;
   // Case UUID.
   string case_uuid = 2;
-  // Genome release.
-  GenomeRelease genome_release = 3;
   // The description.
-  VcfVariant vcf_variant = 4;
+  VcfVariant vcf_variant = 3;
   // The variant annotation payload.
-  VariantAnnotation variant_annotation = 5;
+  VariantAnnotation variant_annotation = 4;
 }
 
 // Store a sequnce variant in VCF representation.
 message VcfVariant {
+  // Genome release.
+  GenomeRelease genome_release = 1;
   // Chromosome, normalized.
-  string chrom = 1;
+  string chrom = 2;
   // Chromosome number for sorting.
-  int32 chrom_no = 2;
+  int32 chrom_no = 3;
   // 1-based position.
-  int32 pos = 3;
+  int32 pos = 4;
   // Reference allele.
-  string ref_allele = 4;
+  string ref_allele = 5;
   // Alternative allele.
-  string alt_allele = 5;
+  string alt_allele = 6;
 }
 
 // Store the variant annotation payload (always for a single gene).
