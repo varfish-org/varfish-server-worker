@@ -15,13 +15,13 @@ message OutputHeader {
   // Versions for each used database or software.
   repeated VersionEntry versions = 2;
   // The used query settings.
-  varfish.v1.seqvars.query.CaseQuery query = 3;
+  optional varfish.v1.seqvars.query.CaseQuery query = 3;
   // Case UUID.
   string case_uuid = 4;
   // Resources used.
-  ResourcesUsed resources = 5;
+  optional ResourcesUsed resources = 5;
   // Statistics about results.
-  OutputStatistics statistics = 6;
+  optional OutputStatistics statistics = 6;
   // Information about the variant scores in the output.
   repeated VariantScoreColumn variant_score_columns = 7;
 }
@@ -69,9 +69,9 @@ message VersionEntry {
 // Query resource requirements.
 message ResourcesUsed {
   // Start time.
-  google.protobuf.Timestamp start_time = 1;
+  optional google.protobuf.Timestamp start_time = 1;
   // End time.
-  google.protobuf.Timestamp end_time = 2;
+  optional google.protobuf.Timestamp end_time = 2;
   // RAM usage in bytes.
   uint64 memory_used = 3;
 }
@@ -101,9 +101,9 @@ message OutputRecord {
   // Case UUID.
   string case_uuid = 2;
   // The description.
-  VcfVariant vcf_variant = 3;
+  optional VcfVariant vcf_variant = 3;
   // The variant annotation payload.
-  VariantAnnotation variant_annotation = 4;
+  optional VariantAnnotation variant_annotation = 4;
 }
 
 // Store a sequnce variant in VCF representation.
@@ -125,11 +125,11 @@ message VcfVariant {
 // Store the variant annotation payload (always for a single gene).
 message VariantAnnotation {
   // Gene-related annotation.
-  GeneRelatedAnnotation gene = 1;
+  optional GeneRelatedAnnotation gene = 1;
   // Variant-related annotation.
-  VariantRelatedAnnotation variant = 2;
+  optional VariantRelatedAnnotation variant = 2;
   // Call-related annotation.
-  CallRelatedAnnotation call = 3;
+  optional CallRelatedAnnotation call = 3;
 }
 
 /*
@@ -139,7 +139,7 @@ message VariantAnnotation {
 // Store gene-related annotation (always for a single gene).
 message GeneRelatedAnnotation {
   // Gene ID information.
-  GeneIdentity identity = 1;
+  optional GeneIdentity identity = 1;
   // Gene-related consequences, if any (none if intergenic).
   optional GeneRelatedConsequences consequences = 2;
   // Gene-related phenotype information, if any.
@@ -277,15 +277,15 @@ message VariantRelatedAnnotation {
 // Population frequency information.
 message FrequencyAnnotation {
   // gnomAD-exomes filter
-  NuclearFrequency gnomad_exomes = 1;
+  optional NuclearFrequency gnomad_exomes = 1;
   // gnomAD-genomes filter
-  NuclearFrequency gnomad_genomes = 2;
+  optional NuclearFrequency gnomad_genomes = 2;
   // gnomAD-MT filter
-  GnomadMitochondrialFrequency gnomad_mtdna = 3;
+  optional GnomadMitochondrialFrequency gnomad_mtdna = 3;
   // HelixMtDb filter
-  HelixMtDbFrequency helixmtdb = 4;
+  optional HelixMtDbFrequency helixmtdb = 4;
   // In-house filter
-  NuclearFrequency inhouse = 5;
+  optional NuclearFrequency inhouse = 5;
 }
 
 // gnomAD and in-house frequency information.
@@ -379,7 +379,7 @@ message ScoreEntry {
   // Key.
   string key = 1;
   // Value.
-  google.protobuf.Value value = 2;
+  optional google.protobuf.Value value = 2;
 }
 
 /*
