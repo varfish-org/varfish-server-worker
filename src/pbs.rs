@@ -23,6 +23,24 @@ pub mod varfish {
                     "/varfish.v1.seqvars.query.serde.rs"
                 ));
             }
+
+            /// Code generate for protobufs by `prost-build`.
+            pub mod output {
+                include!(concat!(env!("OUT_DIR"), "/varfish.v1.seqvars.output.rs"));
+                include!(concat!(
+                    env!("OUT_DIR"),
+                    "/varfish.v1.seqvars.output.serde.rs"
+                ));
+
+                impl From<crate::common::GenomeRelease> for GenomeRelease {
+                    fn from(release: crate::common::GenomeRelease) -> Self {
+                        match release {
+                            crate::common::GenomeRelease::Grch37 => GenomeRelease::Grch37,
+                            crate::common::GenomeRelease::Grch38 => GenomeRelease::Grch38,
+                        }
+                    }
+                }
+            }
         }
 
         /// Code generate for protobufs by `prost-build`.

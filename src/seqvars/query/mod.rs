@@ -2,7 +2,6 @@
 
 pub mod annonars;
 pub mod interpreter;
-pub mod output;
 pub mod schema;
 pub mod sorting;
 
@@ -18,12 +17,15 @@ use itertools::Itertools as _;
 use mehari::annotate::seqvars::CHROM_TO_CHROM_NO;
 use noodles::vcf;
 use rand_core::{RngCore, SeedableRng};
-use schema::data::{TryFromVcf as _, VariantRecord, VcfVariant};
+use schema::data::{TryFromVcf as _, VariantRecord};
 use schema::query::{CaseQuery, GenotypeChoice, RecessiveMode, SampleGenotypeChoice};
 use thousands::Separable;
+use tokio::io::AsyncWriteExt as _;
 use uuid::Uuid;
 
 use crate::common;
+use crate::pbs::varfish::v1::seqvars::output as pbs_output;
+use crate::pbs::varfish::v1::seqvars::query as pbs_query;
 use crate::{common::trace_rss_now, common::GenomeRelease};
 use mehari::common::noodles::open_vcf_reader;
 
@@ -72,7 +74,8 @@ pub struct Args {
 struct QueryStats {
     pub count_passed: usize,
     pub count_total: usize,
-    pub by_consequence: indexmap::IndexMap<mehari::annotate::seqvars::ann::Consequence, usize>,
+    pub passed_by_consequences:
+        indexmap::IndexMap<mehari::annotate::seqvars::ann::Consequence, usize>,
 }
 
 /// Checks whether the variants pass through the query interpreter.
@@ -253,10 +256,12 @@ fn passes_for_gene(query: &CaseQuery, seqvars: &Vec<VariantRecord>) -> Result<bo
 /// `args.path_output`.
 async fn run_query(
     interpreter: &interpreter::QueryInterpreter,
+    pb_query: &pbs_query::CaseQuery,
     args: &Args,
     annotator: &annonars::Annotator,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
+    let start_time = common::now_as_pbjson_timestamp();
     let tmp_dir = tempfile::TempDir::new()?;
 
     let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
@@ -274,6 +279,7 @@ async fn run_query(
     let path_unsorted = tmp_dir.path().join("unsorted.jsonl");
     let path_by_hgnc = tmp_dir.path().join("by_hgnc_filtered.jsonl");
     let path_by_coord = tmp_dir.path().join("by_coord.jsonl");
+    let path_noheader = tmp_dir.path().join("noheader.jsonl");
 
     // Read through input records using the query interpreter as a filter and write to
     // temporary file for unsorted records.
@@ -305,7 +311,7 @@ async fn run_query(
                 if let Some(ann) = record_seqvar.ann_fields.first() {
                     ann.consequences.iter().for_each(|csq| {
                         stats
-                            .by_consequence
+                            .passed_by_consequences
                             .entry(*csq)
                             .and_modify(|e| *e += 1)
                             .or_insert(1);
@@ -424,112 +430,940 @@ async fn run_query(
         })?;
     }
 
-    // Finally, perform annotation of the record using the annonars library and write it
-    // in TSV format, ready for import into the database.  However, in recessive mode, we
-    // have to do a second pass to properly collect compound heterozygous variants.
+    // Perform the annotation and write into file without header.
+    {
+        let writer = tokio::fs::OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(&path_noheader)
+            .await
+            .map_err(|e| anyhow::anyhow!("could not open output file: {}", e))?;
+        let mut writer = tokio::io::BufWriter::new(writer);
+        // Open reader for temporary by-coordinate file.
+        let tmp_by_coord = std::fs::File::open(&path_by_coord)
+            .map(std::io::BufReader::new)
+            .map_err(|e| anyhow::anyhow!("could not open temporary by_coord file: {}", e))?;
+        // Iterate through the temporary by-coordinate file, generate and write output records.
+        for line in tmp_by_coord.lines() {
+            // get next line into a String
+            let line = if let Ok(line) = line {
+                line
+            } else {
+                anyhow::bail!("error reading line from input file")
+            };
+            let seqvar: VariantRecord = serde_json::from_str(&line).map_err(|e| {
+                anyhow::anyhow!(
+                    "error parsing line from input file: {:?} (line: {:?})",
+                    e,
+                    &line
+                )
+            })?;
 
-    let mut csv_writer = csv::WriterBuilder::new()
-        .has_headers(true)
-        .delimiter(b'\t')
-        .quote_style(csv::QuoteStyle::Never)
-        .from_path(&args.path_output)?;
-
-    let tmp_by_coord = std::fs::File::open(&path_by_coord)
-        .map(std::io::BufReader::new)
-        .map_err(|e| anyhow::anyhow!("could not open temporary by_coord file: {}", e))?;
-
-    for line in tmp_by_coord.lines() {
-        // get next line into a String
-        let line = if let Ok(line) = line {
-            line
-        } else {
-            anyhow::bail!("error reading line from input file")
-        };
-        let seqvar: VariantRecord = serde_json::from_str(&line).map_err(|e| {
-            anyhow::anyhow!(
-                "error parsing line from input file: {:?} (line: {:?})",
-                e,
-                &line
+            create_and_write_record(
+                seqvar,
+                annotator,
+                chrom_to_chrom_no,
+                &mut writer,
+                args,
+                rng,
+                &mut uuid_buf,
             )
-        })?;
+            .await?;
+        }
 
-        create_payload_and_write_record(
-            seqvar,
-            annotator,
-            chrom_to_chrom_no,
-            &mut csv_writer,
-            args,
-            rng,
-            &mut uuid_buf,
-        )?;
+        // Properly flush the output file, so upload to S3 can be done if necessary.
+        writer
+            .flush()
+            .await
+            .map_err(|e| anyhow::anyhow!("could not flush output file before closing: {}", e))?;
     }
+
+    // Finally, write out records in JSONL format in JSONL format.  The first line will contain the
+    // header, the rest the records.
+    //
+    // Use output helper for semi-transparent upload to S3.
+    let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_output)?;
+    {
+        // Open output file for writing (potentially temporary, then uploaded to S3 via helper).
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(out_path_helper.path_out())
+            .map_err(|e| anyhow::anyhow!("could not open output file: {}", e))?;
+        let mut writer = std::io::BufWriter::new(file);
+        write_header(args, pb_query, &stats, start_time, &mut writer)?;
+        // Open reader for file without header.
+        let mut reader = std::fs::File::open(&path_noheader)
+            .map(std::io::BufReader::new)
+            .map_err(|e| anyhow::anyhow!("could not open temporary no_header file: {}", e))?;
+        // Append the temporary file to the output file.
+        std::io::copy(&mut reader, &mut writer)
+            .map_err(|e| anyhow::anyhow!("could not copy temporary file to output file: {}", e))?;
+        // Properly flush the output file, so upload to S3 can be done if necessary.
+        writer
+            .flush()
+            .map_err(|e| anyhow::anyhow!("could not flush output file before closing: {}", e))?;
+    }
+    // Potentially upload the output file to S3.
+    out_path_helper
+        .upload_for_s3()
+        .await
+        .map_err(|e| anyhow::anyhow!("could not upload output file to S3: {}", e))?;
 
     Ok(stats)
 }
 
+/// Write the header to the output file.
+fn write_header(
+    args: &Args,
+    pb_query: &pbs_query::CaseQuery,
+    stats: &QueryStats,
+    start_time: pbjson_types::Timestamp,
+    writer: &mut std::io::BufWriter<std::fs::File>,
+) -> Result<(), anyhow::Error> {
+    let header = pbs_output::OutputHeader {
+        genome_release: Into::<pbs_output::GenomeRelease>::into(args.genome_release) as i32,
+        versions: vec![pbs_output::VersionEntry {
+            name: "varfish-worker".to_string(),
+            version: common::worker_version().to_string(),
+        }],
+        query: Some(pb_query.clone()),
+        case_uuid: args.case_uuid_id.unwrap_or_default().to_string(),
+        statistics: Some(pbs_output::OutputStatistics {
+            count_total: stats.count_total as u64,
+            count_passed: stats.count_passed as u64,
+            passed_by_consequences: stats
+                .passed_by_consequences
+                .iter()
+                .map(|(k, v)| pbs_output::ConsequenceCount {
+                    consequence: *k as i32,
+                    count: *v as u32,
+                })
+                .collect(),
+        }),
+        resources: Some(pbs_output::ResourcesUsed {
+            start_time: Some(start_time),
+            end_time: Some(common::now_as_pbjson_timestamp()),
+            memory_used: common::rss_size()?,
+        }),
+        variant_score_columns: variant_related_annotation::score_columns(),
+    };
+    writeln!(
+        writer,
+        "{}",
+        serde_json::to_string(&header)
+            .map_err(|e| anyhow::anyhow!("could not convert header to JSON: {}", e))?
+    )?;
+    Ok(())
+}
+
+/// Trait for records that can be constructed from a `VariantRecord` and an `Annotator`.
+trait WithSeqvarAndAnnotator: Sized {
+    /// The error type to use.
+    type Error;
+
+    /// Construct the record from the given `seqvar` and `annotator`.
+    ///
+    /// # Arguments
+    ///
+    /// * `seqvar` - The variant record to use for construction.
+    /// * `annotator` - The annotator to use for construction.
+    ///
+    /// # Error
+    ///
+    /// Returns an error if the record could not be constructed.
+    fn with_seqvar_and_annotator(
+        seqvar: &VariantRecord,
+        annotator: &Annotator,
+    ) -> Result<Self, anyhow::Error>;
+}
+
+impl TryInto<crate::pbs::varfish::v1::seqvars::query::Consequence>
+    for mehari::annotate::seqvars::ann::Consequence
+{
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<crate::pbs::varfish::v1::seqvars::query::Consequence, Self::Error> {
+        use crate::pbs::varfish::v1::seqvars::query;
+
+        Ok(match self {
+            mehari::annotate::seqvars::ann::Consequence::TranscriptAblation => {
+                query::Consequence::TranscriptAblation
+            }
+            mehari::annotate::seqvars::ann::Consequence::ExonLossVariant => {
+                query::Consequence::ExonLossVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::SpliceAcceptorVariant => {
+                query::Consequence::SpliceAcceptorVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::SpliceDonorVariant => {
+                query::Consequence::SpliceDonorVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::StopGained => {
+                query::Consequence::StopGained
+            }
+            mehari::annotate::seqvars::ann::Consequence::FrameshiftVariant => {
+                query::Consequence::FrameshiftVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::StopLost => query::Consequence::StopLost,
+            mehari::annotate::seqvars::ann::Consequence::StartLost => query::Consequence::StartLost,
+            mehari::annotate::seqvars::ann::Consequence::TranscriptAmplification => {
+                query::Consequence::TranscriptAmplification
+            }
+            mehari::annotate::seqvars::ann::Consequence::DisruptiveInframeInsertion => {
+                query::Consequence::DisruptiveInframeInsertion
+            }
+            mehari::annotate::seqvars::ann::Consequence::DisruptiveInframeDeletion => {
+                query::Consequence::DisruptiveInframeDeletion
+            }
+            mehari::annotate::seqvars::ann::Consequence::ConservativeInframeInsertion => {
+                query::Consequence::ConservativeInframeInsertion
+            }
+            mehari::annotate::seqvars::ann::Consequence::ConservativeInframeDeletion => {
+                query::Consequence::ConservativeInframeDeletion
+            }
+            mehari::annotate::seqvars::ann::Consequence::MissenseVariant => {
+                query::Consequence::MissenseVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::SpliceDonorFifthBaseVariant => {
+                query::Consequence::SpliceDonorFifthBaseVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::SpliceRegionVariant => {
+                query::Consequence::SpliceRegionVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::SpliceDonorRegionVariant => {
+                query::Consequence::SpliceDonorRegionVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::SplicePolypyrimidineTractVariant => {
+                query::Consequence::SplicePolypyrimidineTractVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::StartRetainedVariant => {
+                query::Consequence::StartRetainedVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::StopRetainedVariant => {
+                query::Consequence::StopRetainedVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::SynonymousVariant => {
+                query::Consequence::SynonymousVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::CodingSequenceVariant => {
+                query::Consequence::CodingSequenceVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::FivePrimeUtrExonVariant => {
+                query::Consequence::FivePrimeUtrExonVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::FivePrimeUtrIntronVariant => {
+                query::Consequence::FivePrimeUtrIntronVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::ThreePrimeUtrExonVariant => {
+                query::Consequence::ThreePrimeUtrExonVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::ThreePrimeUtrIntronVariant => {
+                query::Consequence::ThreePrimeUtrIntronVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::NonCodingTranscriptExonVariant => {
+                query::Consequence::NonCodingTranscriptExonVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::NonCodingTranscriptIntronVariant => {
+                query::Consequence::NonCodingTranscriptIntronVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::UpstreamGeneVariant => {
+                query::Consequence::UpstreamGeneVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::DownstreamGeneVariant => {
+                query::Consequence::DownstreamGeneVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::IntergenicVariant => {
+                query::Consequence::IntergenicVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::IntronVariant => {
+                query::Consequence::IntronVariant
+            }
+            mehari::annotate::seqvars::ann::Consequence::FeatureElongation
+            | mehari::annotate::seqvars::ann::Consequence::FeatureTruncation
+            | mehari::annotate::seqvars::ann::Consequence::MatureMirnaVariant
+            | mehari::annotate::seqvars::ann::Consequence::TfbsAblation
+            | mehari::annotate::seqvars::ann::Consequence::TfbsAmplification
+            | mehari::annotate::seqvars::ann::Consequence::TfBindingSiteVariant
+            | mehari::annotate::seqvars::ann::Consequence::RegulatoryRegionAblation
+            | mehari::annotate::seqvars::ann::Consequence::RegulatoryRegionAmplification
+            | mehari::annotate::seqvars::ann::Consequence::RegulatoryRegionVariant
+            | mehari::annotate::seqvars::ann::Consequence::GeneVariant => {
+                return Err(anyhow::anyhow!("Unsupported consequence: {:?}", self))
+            }
+        })
+    }
+}
+
+impl WithSeqvarAndAnnotator for pbs_output::GeneRelatedAnnotation {
+    type Error = anyhow::Error;
+
+    fn with_seqvar_and_annotator(
+        seqvar: &VariantRecord,
+        annotator: &Annotator,
+    ) -> Result<Self, Self::Error> {
+        if let Some(ann) = seqvar.ann_fields.first() {
+            if !ann.gene_id.is_empty() && !ann.gene_symbol.is_empty() {
+                let hgnc_id = ann.gene_id.clone();
+
+                let gene_record = annotator
+                    .query_genes(&hgnc_id)
+                    .map_err(|e| anyhow::anyhow!("problem querying genes database: {}", e))?;
+
+                return Ok(Self {
+                    identity: Some(pbs_output::GeneIdentity {
+                        hgnc_id: hgnc_id.clone(),
+                        gene_symbol: ann.gene_symbol.clone(),
+                    }),
+                    consequences: gene_related_annotation::consequences(ann)?,
+                    phenotypes: gene_related_annotation::phenotypes(&gene_record),
+                    constraints: gene_related_annotation::constraints(&gene_record)?,
+                });
+            }
+        }
+
+        Ok(Default::default())
+    }
+}
+
+/// Supporting code for pbs_output::GeneRelatedAnnotation.
+mod gene_related_annotation {
+    use super::*;
+
+    pub(crate) fn consequences(
+        ann: &mehari::annotate::seqvars::ann::AnnField,
+    ) -> Result<Option<pbs_output::GeneRelatedConsequences>, anyhow::Error> {
+        Ok(Some(pbs_output::GeneRelatedConsequences {
+            hgvs_t: ann
+                .hgvs_t
+                .clone()
+                .ok_or_else(|| anyhow::anyhow!("missing hgvs_t annotation"))?,
+            hgvs_p: ann.hgvs_p.clone(),
+            consequences: ann
+                .consequences
+                .iter()
+                .map(|csq| -> Result<i32, anyhow::Error> {
+                    let csq: pbs_query::Consequence = (*csq)
+                        .try_into()
+                        .map_err(|e| anyhow::anyhow!("could not convert consequence: {}", e))?;
+                    Ok(csq as i32)
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+        }))
+    }
+
+    pub(crate) fn phenotypes(
+        gene_record: &Option<::annonars::pbs::genes::base::Record>,
+    ) -> Option<pbs_output::GeneRelatedPhenotypes> {
+        gene_record
+            .as_ref()
+            .map(|gene_record| pbs_output::GeneRelatedPhenotypes {
+                is_acmg_sf: gene_record.acmg_sf.is_some(),
+                is_disease_gene: gene_record.omim.is_some() || gene_record.orpha.is_some(),
+            })
+    }
+
+    pub(crate) fn constraints(
+        gene_record: &Option<::annonars::pbs::genes::base::Record>,
+    ) -> Result<Option<pbs_output::GeneRelatedConstraints>, anyhow::Error> {
+        gene_record
+            .as_ref()
+            .map(
+                |gene_record| -> Result<pbs_output::GeneRelatedConstraints, anyhow::Error> {
+                    let gnomad =
+                        gene_record
+                            .gnomad_constraints
+                            .as_ref()
+                            .map(|gnomad_constraints| pbs_output::GnomadConstraints {
+                                mis_z: gnomad_constraints
+                                    .mis_z
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                                oe_lof: gnomad_constraints
+                                    .oe_lof
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                                oe_lof_lower: gnomad_constraints
+                                    .oe_lof_lower
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                                oe_lof_upper: gnomad_constraints
+                                    .oe_lof_upper
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                                oe_mis: gnomad_constraints
+                                    .oe_mis
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                                oe_mis_lower: gnomad_constraints
+                                    .oe_mis_lower
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                                oe_mis_upper: gnomad_constraints
+                                    .oe_mis_upper
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                                pli: gnomad_constraints.pli.map(|x| x as f32).unwrap_or_default(),
+                                syn_z: gnomad_constraints
+                                    .syn_z
+                                    .map(|x| x as f32)
+                                    .unwrap_or_default(),
+                            });
+                    let decipher = gene_record.decipher_hi.as_ref().map(|decipher_hi| {
+                        pbs_output::DecipherConstraints {
+                            p_hi: decipher_hi.p_hi as f32,
+                            hi_index: decipher_hi.hi_index as f32,
+                        }
+                    });
+                    let rcnv = gene_record
+                        .rcnv
+                        .as_ref()
+                        .map(|rcnv| pbs_output::RcnvConstraints {
+                            p_haplo: rcnv.p_haplo as f32,
+                            p_triplo: rcnv.p_triplo as f32,
+                        });
+                    let shet = gene_record
+                        .shet
+                        .as_ref()
+                        .map(|shet| pbs_output::ShetConstraints {
+                            s_het: shet.s_het as f32,
+                        });
+                    let clingen = gene_record
+                        .clingen
+                        .as_ref()
+                        .map(|clingen| -> Result<pbs_output::ClingenDosageAnnotation, anyhow::Error> {
+                            Ok(pbs_output::ClingenDosageAnnotation {
+                                haplo: pbs_output::ClingenDosageScore::try_from(
+                                    clingen.haploinsufficiency_score,
+                                )
+                                .map_err(|e| {
+                                    anyhow::anyhow!(
+                                        "could not convert haploinsufficiency score: {}",
+                                        e
+                                    )
+                                })
+                                .map(|x| x as i32)?,
+                                triplo: pbs_output::ClingenDosageScore::try_from(
+                                    clingen.triplosensitivity_score,
+                                )
+                                .map_err(|e| {
+                                    anyhow::anyhow!(
+                                        "could not convert triplosensitivity score: {}",
+                                        e
+                                    )
+                                })
+                                .map(|x| x as i32)?,
+                            })
+                        })
+                        .transpose()?;
+                    Ok(pbs_output::GeneRelatedConstraints {
+                        gnomad,
+                        decipher,
+                        rcnv,
+                        shet,
+                        clingen,
+                    })
+                },
+            )
+            .transpose()
+    }
+}
+
+/// Helper code for pbs_output::VariantRelatedAnnotation.
+mod variant_related_annotation {
+    use crate::pbs::varfish::v1::seqvars::output as pbs_output;
+    use schema::data::Af;
+
+    use super::*;
+
+    /// Helper modules for score collection.
+    pub mod score_collection {
+        /// Trait for score collection.
+        pub trait Collector {
+            /// Register one column value.
+            fn register(&mut self, column_name: &str, value: &serde_json::Value);
+            /// Write collected scores to the given `indexmap::IndexMap``.
+            fn write_to(&self, dict: &mut indexmap::IndexMap<String, serde_json::Value>);
+        }
+
+        /// Simple implementation for collecting a single score.
+        #[derive(Debug, Clone)]
+        pub struct SingleValueCollector {
+            /// The column name to collect.
+            pub input_column_name: String,
+            /// The output column name.
+            pub output_column_name: String,
+            /// The collected value, if any.
+            pub value: Option<serde_json::Value>,
+        }
+
+        impl SingleValueCollector {
+            /// Construct given column name.
+            pub fn new(input_column_name: &str, output_column_name: &str) -> Self {
+                Self {
+                    input_column_name: input_column_name.into(),
+                    output_column_name: output_column_name.into(),
+                    value: None,
+                }
+            }
+        }
+
+        impl Collector for SingleValueCollector {
+            fn register(&mut self, column_name: &str, value: &serde_json::Value) {
+                if column_name == self.input_column_name && !value.is_null() {
+                    self.value = Some(value.clone());
+                }
+            }
+
+            fn write_to(&self, dict: &mut indexmap::IndexMap<String, serde_json::Value>) {
+                if let Some(value) = self.value.as_ref() {
+                    dict.insert(self.output_column_name.clone(), value.clone());
+                }
+            }
+        }
+
+        /// Simple implementation for collecting aggregated min/max score.
+        #[derive(Debug, Clone)]
+        pub struct ExtremalValueCollector {
+            /// Whether is max (else is min).
+            pub is_max: bool,
+            /// The output column name.
+            pub output_column_name: String,
+            /// The column names to collect.
+            pub column_names: Vec<String>,
+            /// The collected values, if any.
+            pub values: indexmap::IndexMap<String, serde_json::Value>,
+        }
+
+        impl ExtremalValueCollector {
+            /// Construct given column name.
+            pub fn new(column_names: &[&str], output_column_name: &str, is_max: bool) -> Self {
+                Self {
+                    is_max,
+                    output_column_name: output_column_name.to_string(),
+                    column_names: column_names.iter().map(|s| s.to_string()).collect(),
+                    values: Default::default(),
+                }
+            }
+        }
+
+        impl Collector for ExtremalValueCollector {
+            fn register(&mut self, column_name: &str, value: &serde_json::Value) {
+                if self.column_names.iter().any(|s| s.as_str() == column_name) && !value.is_null() {
+                    self.values.insert(column_name.to_string(), value.clone());
+                }
+            }
+
+            fn write_to(&self, dict: &mut indexmap::IndexMap<String, serde_json::Value>) {
+                let mut sel_name = None;
+                let mut sel_value = serde_json::Value::Null;
+                for (name, value) in self.values.iter() {
+                    if value.is_null() || !value.is_number() {
+                        // can only select numeric values that are not null
+                        continue;
+                    }
+
+                    if sel_value.is_null()
+                        || (self.is_max
+                            && value.as_f64().unwrap_or_default()
+                                > sel_value.as_f64().unwrap_or_default())
+                        || (!self.is_max
+                            && value.as_f64().unwrap_or_default()
+                                < sel_value.as_f64().unwrap_or_default())
+                    {
+                        sel_name = Some(name.clone());
+                        sel_value = value.clone();
+                    }
+                }
+
+                if let Some(sel_name) = sel_name {
+                    dict.insert(self.output_column_name.clone(), sel_value);
+                    dict.insert(
+                        format!("{}_argmax", self.output_column_name),
+                        serde_json::Value::String(sel_name),
+                    );
+                }
+            }
+        }
+    }
+
+    pub(crate) fn with_seqvar_and_annotator(
+        seqvar: &VariantRecord,
+        annotator: &Annotator,
+    ) -> Result<pbs_output::VariantRelatedAnnotation, anyhow::Error> {
+        Ok(pbs_output::VariantRelatedAnnotation {
+            dbids: dbids(seqvar, annotator)?,
+            frequency: frequency(seqvar),
+            clinvar: clinvar(seqvar, annotator)?,
+            scores: scores(seqvar, annotator)?,
+        })
+    }
+
+    fn dbids(
+        seqvar: &VariantRecord,
+        annotator: &Annotator,
+    ) -> Result<Option<pbs_output::DbIds>, anyhow::Error> {
+        let dbsnp_id = annotator
+            .query_dbsnp(seqvar)
+            .map_err(|e| anyhow::anyhow!("problem querying dbSNP: {}", e))?
+            .map(|record| format!("rs{}", record.rs_id));
+        if let Some(dbsnp_id) = dbsnp_id {
+            Ok(Some(pbs_output::DbIds {
+                dbsnp_id: Some(dbsnp_id),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn frequency(seqvar: &VariantRecord) -> Option<pbs_output::FrequencyAnnotation> {
+        Some(pbs_output::FrequencyAnnotation {
+            gnomad_exomes: Some(pbs_output::NuclearFrequency {
+                an: seqvar.population_frequencies.gnomad_exomes.an,
+                het: seqvar.population_frequencies.gnomad_exomes.het,
+                homalt: seqvar.population_frequencies.gnomad_exomes.hom,
+                hemialt: seqvar.population_frequencies.gnomad_exomes.hemi,
+                af: seqvar.population_frequencies.gnomad_exomes.af(),
+            }),
+            gnomad_genomes: Some(pbs_output::NuclearFrequency {
+                an: seqvar.population_frequencies.gnomad_genomes.an,
+                het: seqvar.population_frequencies.gnomad_genomes.het,
+                homalt: seqvar.population_frequencies.gnomad_genomes.hom,
+                hemialt: seqvar.population_frequencies.gnomad_genomes.hemi,
+                af: seqvar.population_frequencies.gnomad_genomes.af(),
+            }),
+            gnomad_mtdna: Some(pbs_output::GnomadMitochondrialFrequency {
+                an: seqvar.population_frequencies.gnomad_mtdna.an,
+                het: seqvar.population_frequencies.gnomad_mtdna.het,
+                homalt: seqvar.population_frequencies.gnomad_mtdna.hom,
+                af: seqvar.population_frequencies.gnomad_mtdna.af(),
+            }),
+            helixmtdb: Some(pbs_output::HelixMtDbFrequency {
+                an: seqvar.population_frequencies.helixmtdb.an,
+                het: seqvar.population_frequencies.helixmtdb.het,
+                homalt: seqvar.population_frequencies.helixmtdb.hom,
+                af: seqvar.population_frequencies.helixmtdb.af(),
+            }),
+            inhouse: Some(pbs_output::NuclearFrequency {
+                an: seqvar.population_frequencies.inhouse.an,
+                het: seqvar.population_frequencies.inhouse.het,
+                homalt: seqvar.population_frequencies.inhouse.hom,
+                hemialt: seqvar.population_frequencies.inhouse.hemi,
+                af: seqvar.population_frequencies.inhouse.af(),
+            }),
+        })
+    }
+
+    fn clinvar(
+        seqvar: &VariantRecord,
+        annotator: &Annotator,
+    ) -> Result<Option<pbs_output::ClinvarAnnotation>, anyhow::Error> {
+        let record = annotator
+            .query_clinvar_minimal(seqvar)
+            .map_err(|e| anyhow::anyhow!("problem querying clinvar-minimal: {}", e))?;
+        if let Some(record) = record.as_ref() {
+            if record.records.is_empty() {
+                tracing::error!(
+                    "variant {:?} found with empty list in ClinVar (should not happen)",
+                    seqvar
+                );
+                return Ok(None);
+            } else if record.records.len() > 1 {
+                tracing::warn!(
+                    "variant {:?} found list with {} entries, using first",
+                    seqvar,
+                    record.records.len()
+                );
+            }
+            let vcv_record = &record.records[0];
+            let accession = vcv_record.accession.as_ref().expect("no accession?");
+            let vcv_accession = format!("{}.{}", &accession.accession, accession.version);
+
+            if let Some(agc) = vcv_record
+                .classifications
+                .as_ref()
+                .and_then(|c| c.germline_classification.as_ref())
+            {
+                let germline_significance_description = if let Some(description) =
+                    agc.description.as_ref()
+                {
+                    description.clone()
+                } else {
+                    tracing::error!("variant {:?} has germline classification without description (should not happen)", &seqvar);
+                    return Ok(None);
+                };
+                let germline_review_status = agc.review_status;
+                // TODO: search through all submitted records and pick the most significant one.
+                let effective_germline_significance_description =
+                    germline_significance_description.clone();
+
+                Ok(Some(pbs_output::ClinvarAnnotation {
+                    vcv_accession,
+                    germline_significance_description,
+                    germline_review_status,
+                    effective_germline_significance_description,
+                }))
+            } else {
+                tracing::trace!(
+                    "variant {:?} has no germline classification (likely somatic only)",
+                    &seqvar
+                );
+                Ok(None)
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Return information about the scores entries.
+    pub(crate) fn score_columns() -> Vec<pbs_output::VariantScoreColumn> {
+        vec![
+            pbs_output::VariantScoreColumn {
+                name: "cadd_phred".to_string(),
+                label: "CADD".to_string(),
+                description: "PHRED-scaled CADD score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "sift".to_string(),
+                label: "SIFT".to_string(),
+                description: "SIFT score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "polyphen".to_string(),
+                label: "PolyPhen".to_string(),
+                description: "PolyPhen score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "spliceai".to_string(),
+                label: "SpliceAI".to_string(),
+                description: "SpliceAI score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "spliceai".to_string(),
+                label: "SpliceAI (which)".to_string(),
+                description: "Which SpliceAI score is maximal".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "revel".to_string(),
+                label: "REVEL".to_string(),
+                description: "REVEL score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "baysedel_addaf".to_string(),
+                label: "BayesDel".to_string(),
+                description: "BayesDell AddAF score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+        ]
+    }
+
+    /// Query precomputed scores for `seqvar` from annonars `annotator`.
+    pub fn scores(
+        seqvar: &VariantRecord,
+        annotator: &Annotator,
+    ) -> Result<Option<pbs_output::ScoreAnnotations>, anyhow::Error> {
+        use score_collection::*;
+        let mut result = indexmap::IndexMap::new();
+
+        // Extract values from CADD.
+        if let Some(cadd_values) = annotator
+            .query_cadd(seqvar)
+            .as_ref()
+            .map_err(|e| anyhow::anyhow!("problem querying CADD: {}", e))?
+        {
+            let mut collectors: Vec<Box<dyn Collector>> = vec![
+                Box::new(SingleValueCollector::new("PHRED", "cadd_phred")),
+                Box::new(SingleValueCollector::new("SIFTval", "sift")),
+                Box::new(SingleValueCollector::new("PolyPhenVal", "polyphen")),
+                Box::new(ExtremalValueCollector::new(
+                    &[
+                        "SpliceAI-acc-gain",
+                        "SpliceAI-acc-loss",
+                        "SpliceAI-don-gain",
+                        "SpliceAI-don-loss",
+                    ],
+                    "spliceai",
+                    true,
+                )),
+            ];
+
+            for (column, value) in annotator
+                .annonars_dbs
+                .cadd_ctx
+                .schema
+                .columns
+                .iter()
+                .zip(cadd_values.iter())
+            {
+                for collector in collectors.iter_mut() {
+                    collector.register(column.name.as_str(), value);
+                }
+            }
+
+            collectors.iter_mut().for_each(|collector| {
+                collector.write_to(&mut result);
+            })
+        }
+
+        // Extract values from dbNSFP
+
+        if let Some(dbnsfp_values) = annotator
+            .query_dbnsfp(seqvar)
+            .as_ref()
+            .map_err(|e| anyhow::anyhow!("problem querying dbNSFP: {}", e))?
+        {
+            // REVEL_score
+            // BayesDel_addAF_score
+            let mut collectors: Vec<Box<dyn Collector>> = vec![
+                Box::new(SingleValueCollector::new("REVEL_score", "revel")),
+                Box::new(SingleValueCollector::new(
+                    "BayesDel_addAF_score",
+                    "bayesdel_addaf",
+                )),
+            ];
+
+            for (column, value) in annotator
+                .annonars_dbs
+                .cadd_ctx
+                .schema
+                .columns
+                .iter()
+                .zip(dbnsfp_values.iter())
+            {
+                for collector in collectors.iter_mut() {
+                    collector.register(column.name.as_str(), value);
+                }
+            }
+
+            collectors.iter_mut().for_each(|collector| {
+                collector.write_to(&mut result);
+            })
+        }
+
+        Ok(Some(pbs_output::ScoreAnnotations {
+            entries: result
+                .into_iter()
+                .map(
+                    |(key, value)| -> Result<pbs_output::ScoreEntry, anyhow::Error> {
+                        Ok(pbs_output::ScoreEntry {
+                            key,
+                            value: serde_json::from_value(value)
+                                .map_err(|e| anyhow::anyhow!("could not convert value: {}", e))?,
+                        })
+                    },
+                )
+                .collect::<Result<Vec<_>, _>>()?,
+        }))
+    }
+}
+
+impl WithSeqvarAndAnnotator for pbs_output::VariantRelatedAnnotation {
+    type Error = anyhow::Error;
+
+    fn with_seqvar_and_annotator(
+        seqvar: &VariantRecord,
+        annotator: &Annotator,
+    ) -> Result<Self, Self::Error> {
+        variant_related_annotation::with_seqvar_and_annotator(seqvar, annotator)
+    }
+}
+
+impl WithSeqvarAndAnnotator for pbs_output::CallRelatedAnnotation {
+    type Error = anyhow::Error;
+
+    fn with_seqvar_and_annotator(
+        seqvar: &VariantRecord,
+        _annotator: &Annotator,
+    ) -> Result<Self, Self::Error> {
+        Ok(Self {
+            call_infos: seqvar
+                .call_infos
+                .iter()
+                .map(|(sample, call_info)| pbs_output::SampleCallInfo {
+                    sample: sample.clone(),
+                    genotype: call_info.genotype.clone(),
+                    dp: call_info.dp,
+                    ad: call_info.ad,
+                    gq: call_info.gq,
+                    ps: call_info.ps,
+                })
+                .collect(),
+        })
+    }
+}
+
 /// Create output payload and write the record to the output file.
-fn create_payload_and_write_record(
+async fn create_and_write_record(
     seqvar: VariantRecord,
     annotator: &Annotator,
     chrom_to_chrom_no: &std::collections::HashMap<String, u32>,
-    csv_writer: &mut csv::Writer<std::fs::File>,
+    writer: &mut tokio::io::BufWriter<tokio::fs::File>,
     args: &Args,
     rng: &mut rand::rngs::StdRng,
     uuid_buf: &mut [u8; 16],
 ) -> Result<(), anyhow::Error> {
-    let result_payload = output::PayloadBuilder::default()
-        .case_uuid(args.case_uuid_id.unwrap_or_default())
-        .gene_related(
-            output::gene_related::Record::with_seqvar_and_annotator(&seqvar, annotator)
-                .map_err(|e| anyhow::anyhow!("problem creating gene-related payload: {}", e))?,
-        )
-        .variant_related(
-            output::variant_related::Record::with_seqvar_and_annotator(&seqvar, annotator)
-                .map_err(|e| anyhow::anyhow!("problem creating variant-related payload: {}", e))?,
-        )
-        .call_related(
-            output::call_related::Record::with_seqvar(&seqvar)
-                .map_err(|e| anyhow::anyhow!("problem creating call-related payload: {}", e))?,
-        )
-        .build()
-        .map_err(|e| anyhow::anyhow!("could not build payload: {}", e))?;
-    tracing::debug!("result_payload = {:?}", &result_payload);
-    let VcfVariant {
-        chrom,
-        pos: start,
-        ref_allele,
-        alt_allele,
-    } = seqvar.vcf_variant.clone();
-    let end = start + ref_allele.len() as i32 - 1;
-    let bin = mehari::annotate::seqvars::binning::bin_from_range(start - 1, end)? as u32;
-    csv_writer
-        .serialize(
-            &output::RecordBuilder::default()
-                .smallvariantqueryresultset_id(args.result_set_id.clone().unwrap_or(".".into()))
-                .sodar_uuid(Uuid::from_bytes({
-                    rng.fill_bytes(uuid_buf);
-                    *uuid_buf
-                }))
-                .release(match args.genome_release {
-                    GenomeRelease::Grch37 => "GRCh37".into(),
-                    GenomeRelease::Grch38 => "GRCh38".into(),
-                })
-                .chromosome_no(*chrom_to_chrom_no.get(&chrom).expect("invalid chromosome") as i32)
-                .chromosome(chrom)
-                .start(start)
-                .end(end)
-                .bin(bin)
-                .reference(ref_allele)
-                .alternative(alt_allele)
-                .payload(
-                    serde_json::to_string(&result_payload)
-                        .map_err(|e| anyhow::anyhow!("could not serialize payload: {}", e))?,
-                )
-                .build()
-                .map_err(|e| anyhow::anyhow!("could not build record: {}", e))?,
-        )
-        .map_err(|e| anyhow::anyhow!("could not write record: {}", e))?;
-    Ok(())
+    // Build the output record protobuf.
+    let record = pbs_output::OutputRecord {
+        uuid: Uuid::from_bytes({
+            rng.fill_bytes(uuid_buf);
+            *uuid_buf
+        })
+        .to_string(),
+        case_uuid: args.case_uuid_id.unwrap_or_default().to_string(),
+        vcf_variant: Some(pbs_output::VcfVariant {
+            genome_release: Into::<pbs_output::GenomeRelease>::into(args.genome_release) as i32,
+            chrom: seqvar.vcf_variant.chrom.clone(),
+            chrom_no: chrom_to_chrom_no
+                .get(&seqvar.vcf_variant.chrom)
+                .cloned()
+                .unwrap_or_default() as i32,
+            pos: seqvar.vcf_variant.pos,
+            ref_allele: seqvar.vcf_variant.ref_allele.clone(),
+            alt_allele: seqvar.vcf_variant.alt_allele.clone(),
+        }),
+        variant_annotation: Some(pbs_output::VariantAnnotation {
+            gene: Some(
+                pbs_output::GeneRelatedAnnotation::with_seqvar_and_annotator(&seqvar, annotator)
+                    .map_err(|e| {
+                        anyhow::anyhow!("problem creating gene-related annotation: {}", e)
+                    })?,
+            ),
+            variant: Some(
+                pbs_output::VariantRelatedAnnotation::with_seqvar_and_annotator(&seqvar, annotator)
+                    .map_err(|e| {
+                        anyhow::anyhow!("problem creating variant-related annotation: {}", e)
+                    })?,
+            ),
+            call: Some(
+                pbs_output::CallRelatedAnnotation::with_seqvar_and_annotator(&seqvar, annotator)
+                    .map_err(|e| {
+                        anyhow::anyhow!("problem creating call-related annotation: {}", e)
+                    })?,
+            ),
+        }),
+    };
+
+    // Write out the record to JSONL.
+
+    let mut buf = Vec::<u8>::new();
+    writeln!(
+        &mut buf,
+        "{}",
+        serde_json::to_string(&record)
+            .map_err(|e| anyhow::anyhow!("could not convert header to JSON: {}", e))?
+    )?;
+    writer
+        .write_all(&buf)
+        .await
+        .map_err(|e| anyhow::anyhow!("could not write header to output file: {}", e))
 }
 
 /// Main entry point for `seqvars query` sub command.
@@ -547,15 +1381,9 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     };
 
     tracing::info!("Loading query... {}", args.path_query_json);
-    let query: CaseQuery =
-        match serde_json::from_reader(std::fs::File::open(&args.path_query_json)?) {
-            Ok(query) => query,
-            Err(_) => {
-                let query: crate::pbs::varfish::v1::seqvars::query::CaseQuery =
-                    serde_json::from_reader(std::fs::File::open(&args.path_query_json)?)?;
-                CaseQuery::try_from(query)?
-            }
-        };
+    let pb_query: pbs_query::CaseQuery =
+        serde_json::from_reader(std::fs::File::open(&args.path_query_json)?)?;
+    let query = CaseQuery::try_from(pb_query.clone())?;
 
     tracing::info!(
         "... done loading query = {}",
@@ -593,6 +1421,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     let before_query = Instant::now();
     let query_stats = run_query(
         &interpreter::QueryInterpreter::new(query, hgnc_allowlist),
+        &pb_query.clone(),
         args,
         &annotator,
         &mut rng,
@@ -605,7 +1434,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         query_stats.count_total.separate_with_commas()
     );
     tracing::info!("passing records by effect type");
-    for (effect, count) in query_stats.by_consequence.iter() {
+    for (effect, count) in query_stats.passed_by_consequences.iter() {
         tracing::info!("{:?} -- {}", effect, count);
     }
 

@@ -43,7 +43,7 @@ impl ClinvarSv {
         self.trees[chrom_idx]
             .find(range)
             .iter()
-            .map(|e| self.records[chrom_idx][*e.data() as usize].clone())
+            .map(|e| self.records[chrom_idx][*e.data() as usize])
             .filter(|record| {
                 record.pathogenicity >= min_patho.unwrap_or(Pathogenicity::Benign) as i32
             })

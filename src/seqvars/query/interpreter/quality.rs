@@ -101,7 +101,7 @@ fn passes_for_sample(quality_settings: &SampleQualitySettings, call_info: &CallI
     }
 
     // min_gq
-    if let (Some(settings_gq), Some(call_gq)) = (quality_settings.min_gq, call_info.quality) {
+    if let (Some(settings_gq), Some(call_gq)) = (quality_settings.min_gq, call_info.gq) {
         if call_gq < settings_gq as f32 {
             return false;
         }
@@ -161,7 +161,7 @@ mod test {
             call_infos: indexmap::indexmap! {
                 String::from("sample") =>
                 CallInfo {
-                    quality: if should_pass { None } else { Some(30f32) },
+                    gq: if should_pass { None } else { Some(30f32) },
                     ..Default::default()
                 },
             },
@@ -421,6 +421,7 @@ mod test {
         None, // c_ad
         true, // expected
     )]
+    #[allow(clippy::too_many_arguments)]
     fn passes_for_sample(
         #[case] q_min_dp_het: Option<i32>,
         #[case] q_min_dp_hom: Option<i32>,
@@ -448,7 +449,7 @@ mod test {
         let call_info = CallInfo {
             sample: String::from("sample"),
             genotype: c_genotype.map(|s| s.to_string()),
-            quality: c_quality,
+            gq: c_quality,
             dp: c_dp,
             ad: c_ad,
             ..Default::default()

@@ -557,6 +557,7 @@ mod test {
     #[case::some_nopass_03("0/0,0/0,0/0", Any, false, Any, false, Het, false, false)]
     #[case::some_nopass_04("1,0,0/1", Variant, false, Ref, false, Ref, false, false)]
     #[case::some_nopass_05("1,0,.", Variant, false, Ref, false, Ref, false, false)]
+    #[allow(clippy::too_many_arguments)]
     fn passes_non_recessive_mode_trio(
         #[case] sample_gts: &str,
         #[case] query_gt_index: GenotypeChoice,

@@ -108,8 +108,8 @@ mod test {
             VcfVariant,
         },
         query::{
-            CaseQuery, GnomadMitochondrialFrequencySettings, GnomadNuclearFrequencySettings,
-            HelixMtDbFrequencySettings, QuerySettingsFrequency,
+            CaseQuery, GnomadMitochondrialFrequencySettings, HelixMtDbFrequencySettings,
+            NuclearFrequencySettings, QuerySettingsFrequency,
         },
     };
 
@@ -180,7 +180,7 @@ mod test {
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             frequency: QuerySettingsFrequency {
-                gnomad_exomes: GnomadNuclearFrequencySettings {
+                gnomad_exomes: NuclearFrequencySettings {
                     enabled: query_gnomad_exomes_enabled,
                     frequency: query_gnomad_exomes_frequency,
                     heterozygous: query_gnomad_exomes_heterozygous,
@@ -311,13 +311,12 @@ mod test {
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             frequency: QuerySettingsFrequency {
-                gnomad_genomes: GnomadNuclearFrequencySettings {
+                gnomad_genomes: NuclearFrequencySettings {
                     enabled: query_gnomad_genomes_enabled,
                     frequency: query_gnomad_genomes_frequency,
                     heterozygous: query_gnomad_genomes_heterozygous,
                     homozygous: query_gnomad_genomes_homozygous,
                     hemizygous: query_gnomad_genomes_hemizygous,
-                    ..Default::default()
                 },
                 ..Default::default()
             },

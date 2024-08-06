@@ -492,9 +492,9 @@ impl TryFrom<pb_query::QuerySettingsQuality> for QuerySettingsQuality {
     }
 }
 
-/// gnomAD nuclear filter options.
+/// gnomAD and In-house nuclear filter options.
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct GnomadNuclearFrequencySettings {
+pub struct NuclearFrequencySettings {
     /// Whether to enable filtration by 1000 Genomes.
     pub enabled: bool,
     /// Maximal number of in-house heterozygous carriers.
@@ -507,10 +507,10 @@ pub struct GnomadNuclearFrequencySettings {
     pub frequency: Option<f32>,
 }
 
-impl Eq for GnomadNuclearFrequencySettings {}
+impl Eq for NuclearFrequencySettings {}
 
-impl From<pb_query::GnomadNuclearFreqyencySettings> for GnomadNuclearFrequencySettings {
-    fn from(value: pb_query::GnomadNuclearFreqyencySettings) -> Self {
+impl From<pb_query::NuclearFrequencySettings> for NuclearFrequencySettings {
+    fn from(value: pb_query::NuclearFrequencySettings) -> Self {
         Self {
             enabled: value.enabled,
             heterozygous: value.heterozygous,
@@ -573,62 +573,33 @@ impl From<pb_query::HelixMtDbFrequencySettings> for HelixMtDbFrequencySettings {
     }
 }
 
-/// In-house frequency filter options.
-#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct InhouseFrequencySettings {
-    /// Whether to enable filtration by 1000 Genomes.
-    pub enabled: bool,
-    /// Maximal number of in-house heterozygous carriers.
-    pub heterozygous: Option<i32>,
-    /// Maximal number of in-house homozygous carriers.
-    pub homozygous: Option<i32>,
-    /// Maximal number of in-house hemizygous carriers.
-    pub hemizygous: Option<i32>,
-    /// Maximal number of in-house carriers.
-    pub carriers: Option<i32>,
-}
-
-impl From<pb_query::InhouseFrequencySettings> for InhouseFrequencySettings {
-    fn from(value: pb_query::InhouseFrequencySettings) -> Self {
-        Self {
-            enabled: value.enabled,
-            heterozygous: value.heterozygous,
-            homozygous: value.homozygous,
-            hemizygous: value.hemizygous,
-            carriers: value.carriers,
-        }
-    }
-}
-
 /// Query settings for population frequencies.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct QuerySettingsFrequency {
     /// gnomAD-exomes filter.
-    pub gnomad_exomes: GnomadNuclearFrequencySettings,
+    pub gnomad_exomes: NuclearFrequencySettings,
     /// gnomAD-genomes filter.
-    pub gnomad_genomes: GnomadNuclearFrequencySettings,
+    pub gnomad_genomes: NuclearFrequencySettings,
     /// gnomAD-mtDNA filter.
     pub gnomad_mtdna: GnomadMitochondrialFrequencySettings,
     /// HelixMtDb filter.
     pub helixmtdb: HelixMtDbFrequencySettings,
     /// In-house filter.
-    pub inhouse: InhouseFrequencySettings,
+    pub inhouse: NuclearFrequencySettings,
 }
 
 impl From<pb_query::QuerySettingsFrequency> for QuerySettingsFrequency {
     fn from(value: pb_query::QuerySettingsFrequency) -> Self {
         Self {
-            gnomad_exomes: GnomadNuclearFrequencySettings::from(
-                value.gnomad_exomes.unwrap_or_default(),
-            ),
-            gnomad_genomes: GnomadNuclearFrequencySettings::from(
+            gnomad_exomes: NuclearFrequencySettings::from(value.gnomad_exomes.unwrap_or_default()),
+            gnomad_genomes: NuclearFrequencySettings::from(
                 value.gnomad_genomes.unwrap_or_default(),
             ),
             gnomad_mtdna: GnomadMitochondrialFrequencySettings::from(
                 value.gnomad_mtdna.unwrap_or_default(),
             ),
             helixmtdb: HelixMtDbFrequencySettings::from(value.helixmtdb.unwrap_or_default()),
-            inhouse: InhouseFrequencySettings::from(value.inhouse.unwrap_or_default()),
+            inhouse: NuclearFrequencySettings::from(value.inhouse.unwrap_or_default()),
         }
     }
 }
@@ -1546,14 +1517,14 @@ mod tests {
 
     #[test]
     fn test_gnomad_nuclear_frequency_settings_from() {
-        let pb_gnomad_nuclear_frequency_settings = pb_query::GnomadNuclearFreqyencySettings {
+        let pb_gnomad_nuclear_frequency_settings = pb_query::NuclearFrequencySettings {
             enabled: true,
             heterozygous: Some(10),
             homozygous: Some(20),
             hemizygous: Some(30),
             frequency: Some(0.1),
         };
-        let gnomad_nuclear_frequency_settings = GnomadNuclearFrequencySettings {
+        let gnomad_nuclear_frequency_settings = NuclearFrequencySettings {
             enabled: true,
             heterozygous: Some(10),
             homozygous: Some(20),
@@ -1561,7 +1532,7 @@ mod tests {
             frequency: Some(0.1),
         };
         assert_eq!(
-            GnomadNuclearFrequencySettings::from(pb_gnomad_nuclear_frequency_settings),
+            NuclearFrequencySettings::from(pb_gnomad_nuclear_frequency_settings),
             gnomad_nuclear_frequency_settings
         );
     }
@@ -1609,22 +1580,22 @@ mod tests {
 
     #[test]
     fn test_inhouse_frequency_settings_from() {
-        let pb_inhouse_frequency_settings = pb_query::InhouseFrequencySettings {
+        let pb_inhouse_frequency_settings = pb_query::NuclearFrequencySettings {
             enabled: true,
             heterozygous: Some(10),
             homozygous: Some(20),
             hemizygous: Some(30),
-            carriers: Some(40),
+            frequency: Some(0.1),
         };
-        let inhouse_frequency_settings = InhouseFrequencySettings {
+        let inhouse_frequency_settings = NuclearFrequencySettings {
             enabled: true,
             heterozygous: Some(10),
             homozygous: Some(20),
             hemizygous: Some(30),
-            carriers: Some(40),
+            frequency: Some(0.1),
         };
         assert_eq!(
-            InhouseFrequencySettings::from(pb_inhouse_frequency_settings),
+            NuclearFrequencySettings::from(pb_inhouse_frequency_settings),
             inhouse_frequency_settings
         );
     }
@@ -1632,14 +1603,14 @@ mod tests {
     #[test]
     fn test_query_settings_frequency_try_from() {
         let pb_query_settings_frequency = pb_query::QuerySettingsFrequency {
-            gnomad_exomes: Some(pb_query::GnomadNuclearFreqyencySettings {
+            gnomad_exomes: Some(pb_query::NuclearFrequencySettings {
                 enabled: true,
                 heterozygous: Some(10),
                 homozygous: Some(20),
                 hemizygous: Some(30),
                 frequency: Some(0.1),
             }),
-            gnomad_genomes: Some(pb_query::GnomadNuclearFreqyencySettings {
+            gnomad_genomes: Some(pb_query::NuclearFrequencySettings {
                 enabled: true,
                 heterozygous: Some(10),
                 homozygous: Some(20),
@@ -1658,23 +1629,23 @@ mod tests {
                 homoplasmic: Some(20),
                 frequency: Some(0.1),
             }),
-            inhouse: Some(pb_query::InhouseFrequencySettings {
+            inhouse: Some(pb_query::NuclearFrequencySettings {
                 enabled: true,
                 heterozygous: Some(10),
                 homozygous: Some(20),
                 hemizygous: Some(30),
-                carriers: Some(40),
+                frequency: Some(0.1),
             }),
         };
         let query_settings_frequency = QuerySettingsFrequency {
-            gnomad_exomes: GnomadNuclearFrequencySettings {
+            gnomad_exomes: NuclearFrequencySettings {
                 enabled: true,
                 heterozygous: Some(10),
                 homozygous: Some(20),
                 hemizygous: Some(30),
                 frequency: Some(0.1),
             },
-            gnomad_genomes: GnomadNuclearFrequencySettings {
+            gnomad_genomes: NuclearFrequencySettings {
                 enabled: true,
                 heterozygous: Some(10),
                 homozygous: Some(20),
@@ -1693,12 +1664,12 @@ mod tests {
                 homoplasmic: Some(20),
                 frequency: Some(0.1),
             },
-            inhouse: InhouseFrequencySettings {
+            inhouse: NuclearFrequencySettings {
                 enabled: true,
                 heterozygous: Some(10),
                 homozygous: Some(20),
                 hemizygous: Some(30),
-                carriers: Some(40),
+                frequency: Some(0.1),
             },
         };
         assert_eq!(
@@ -2059,14 +2030,14 @@ mod tests {
                 }],
             }),
             frequency: Some(pb_query::QuerySettingsFrequency {
-                gnomad_exomes: Some(pb_query::GnomadNuclearFreqyencySettings {
+                gnomad_exomes: Some(pb_query::NuclearFrequencySettings {
                     enabled: true,
                     heterozygous: Some(10),
                     homozygous: Some(20),
                     hemizygous: Some(30),
                     frequency: Some(0.1),
                 }),
-                gnomad_genomes: Some(pb_query::GnomadNuclearFreqyencySettings {
+                gnomad_genomes: Some(pb_query::NuclearFrequencySettings {
                     enabled: true,
                     heterozygous: Some(10),
                     homozygous: Some(20),
@@ -2085,12 +2056,12 @@ mod tests {
                     homoplasmic: Some(20),
                     frequency: Some(0.1),
                 }),
-                inhouse: Some(pb_query::InhouseFrequencySettings {
+                inhouse: Some(pb_query::NuclearFrequencySettings {
                     enabled: true,
                     heterozygous: Some(10),
                     homozygous: Some(20),
                     hemizygous: Some(30),
-                    carriers: Some(40),
+                    frequency: Some(0.1),
                 }),
             }),
             consequence: Some(pb_query::QuerySettingsConsequence {
@@ -2169,14 +2140,14 @@ mod tests {
                 },
             },
             frequency: QuerySettingsFrequency {
-                gnomad_exomes: GnomadNuclearFrequencySettings {
+                gnomad_exomes: NuclearFrequencySettings {
                     enabled: true,
                     heterozygous: Some(10),
                     homozygous: Some(20),
                     hemizygous: Some(30),
                     frequency: Some(0.1),
                 },
-                gnomad_genomes: GnomadNuclearFrequencySettings {
+                gnomad_genomes: NuclearFrequencySettings {
                     enabled: true,
                     heterozygous: Some(10),
                     homozygous: Some(20),
@@ -2195,12 +2166,12 @@ mod tests {
                     homoplasmic: Some(20),
                     frequency: Some(0.1),
                 },
-                inhouse: InhouseFrequencySettings {
+                inhouse: NuclearFrequencySettings {
                     enabled: true,
                     heterozygous: Some(10),
                     homozygous: Some(20),
                     hemizygous: Some(30),
-                    carriers: Some(40),
+                    frequency: Some(0.1),
                 },
             },
             consequence: QuerySettingsConsequence {

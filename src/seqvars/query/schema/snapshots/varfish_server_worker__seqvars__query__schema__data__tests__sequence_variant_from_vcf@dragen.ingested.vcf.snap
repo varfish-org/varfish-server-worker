@@ -11,10 +11,10 @@ call_infos:
   CASE:
     sample: CASE
     genotype: "|0|1"
-    quality: 47
+    gq: 47
     dp: 32
     ad: 14
-    phasing_id: 41256074
+    ps: 41256074
 ann_fields:
   - allele:
       Alt:
@@ -182,7 +182,7 @@ population_frequencies:
     hom: 0
     het: 0
   inhouse:
+    an: 0
     hom: 0
     het: 0
     hemi: 0
-    total: 0
