@@ -38,12 +38,32 @@ pub struct Args {
     pub path_wal_dir: Option<String>,
 }
 
+/// Returns whether the given coordinate is in PAR for `chrom`, `pos` (1-based) and `genombuild`.
+fn is_par(chrom: Chrom, pos: usize, genomebuild: crate::common::GenomeRelease) -> bool {
+    match (chrom, genomebuild) {
+        (Chrom::X, crate::common::GenomeRelease::Grch37) => {
+            (60001..=2699520).contains(&pos) || (154931044..=155260560).contains(&pos)
+        }
+        (Chrom::X, crate::common::GenomeRelease::Grch38) => {
+            (10001..=2781479).contains(&pos) || (155701383..=156030895).contains(&pos)
+        }
+        (Chrom::Y, crate::common::GenomeRelease::Grch37) => {
+            (10001..=2649520).contains(&pos) || (59034050..=59363566).contains(&pos)
+        }
+        (Chrom::Y, crate::common::GenomeRelease::Grch38) => {
+            (10001..=2781479).contains(&pos) || (56887903..=57217415).contains(&pos)
+        }
+        _ => false,
+    }
+}
+
 /// Extract counts and carrier data from a single VCF record.
 fn handle_record(
     input_record: &vcf::variant::RecordBuf,
     input_header: &vcf::Header,
     pedigree: &mehari::ped::PedigreeByName,
     case_uuid: &uuid::Uuid,
+    genomebuild: crate::common::GenomeRelease,
 ) -> Result<(ds::Counts, ds::CarrierList), anyhow::Error> {
     let chrom: Chrom = annonars::common::cli::canonicalize(
         input_record.reference_sequence_name().to_string().as_str(),
@@ -53,6 +73,11 @@ fn handle_record(
 
     let mut res_counts = ds::Counts::default();
     let mut res_carriers = ds::CarrierList::default();
+
+    let start: usize = input_record
+        .variant_start()
+        .ok_or_else(|| anyhow::anyhow!("missing variant start in record {:?}", &input_record))?
+        .into();
 
     for (name, sample) in input_header
         .sample_names()
@@ -74,57 +99,75 @@ fn handle_record(
             anyhow::bail!("invalid genotype value in {:?}", &sample)
         };
 
-        let carrier_genotype = match (chrom, individual.sex, genotype) {
-            (_, _, Genotype::WithNoCall) => continue,
-            // on the autosomes, male/female count the same
-            (Chrom::Auto, _, Genotype::HomRef) => {
-                res_counts.count_an += 2;
+        // Ac-hoc enum for readable PAR status.
+        #[derive(Debug, PartialEq, Eq)]
+        enum _IsPar {
+            IsPar,
+            NoPar,
+        }
+        use _IsPar::*;
+        let is_par = if is_par(chrom, start, genomebuild) {
+            IsPar
+        } else {
+            NoPar
+        };
+
+        let carrier_genotype = match (chrom, is_par, individual.sex, genotype) {
+            (_, _, _, Genotype::WithNoCall) => continue,
+            // On the autosomes, male/female are handled the same.
+            (Chrom::Auto, _, _, Genotype::HomRef) => {
+                res_counts.count_homref += 1;
                 ds::Genotype::HomRef
             }
-            (Chrom::Auto, _, Genotype::Het) => {
-                res_counts.count_an += 2;
-                res_counts.count_hom += 1;
+            (Chrom::Auto, _, _, Genotype::Het) => {
+                res_counts.count_het += 1;
                 ds::Genotype::Het
             }
-            (Chrom::Auto, _, Genotype::HomAlt) => {
-                res_counts.count_an += 2;
-                res_counts.count_hom += 2;
+            (Chrom::Auto, _, _, Genotype::HomAlt) => {
+                res_counts.count_homalt += 2;
                 ds::Genotype::HomAlt
             }
-            // on the gonomosomes, we handle call male variant calls as hemizygous
-            (Chrom::X, mehari::ped::Sex::Male, Genotype::HomRef)
-            | (Chrom::Y, mehari::ped::Sex::Male, Genotype::HomRef) => {
-                res_counts.count_an += 1;
-                ds::Genotype::HomRef
+            // On the gonomosomes, we handle call male variant calls as hemizygous outside PAR.
+            (Chrom::X, NoPar, mehari::ped::Sex::Male, Genotype::HomRef)
+            | (Chrom::Y, NoPar, mehari::ped::Sex::Male, Genotype::HomRef) => {
+                res_counts.count_hemiref += 1;
+                ds::Genotype::HemiRef
             }
-            (Chrom::X, mehari::ped::Sex::Male, Genotype::Het)
-            | (Chrom::X, mehari::ped::Sex::Male, Genotype::HomAlt)
-            | (Chrom::Y, mehari::ped::Sex::Male, Genotype::Het)
-            | (Chrom::Y, mehari::ped::Sex::Male, Genotype::HomAlt) => {
-                res_counts.count_an += 1;
-                res_counts.count_hemi += 1;
+            (Chrom::X, NoPar, mehari::ped::Sex::Male, Genotype::Het)
+            | (Chrom::Y, NoPar, mehari::ped::Sex::Male, Genotype::Het)
+            | (Chrom::X, NoPar, mehari::ped::Sex::Male, Genotype::HomAlt)
+            | (Chrom::Y, NoPar, mehari::ped::Sex::Male, Genotype::HomAlt) => {
+                res_counts.count_hemialt += 1;
                 ds::Genotype::HemiAlt
             }
-            // for female samples, we handle chrX as biallelic
-            (Chrom::X, mehari::ped::Sex::Female, Genotype::HomRef)
-            | (Chrom::X, mehari::ped::Sex::Female, Genotype::Het) => {
-                res_counts.count_an += 2;
-                res_counts.count_hom += 1;
-                ds::Genotype::Het
-            }
-            (Chrom::X, mehari::ped::Sex::Female, Genotype::HomAlt) => {
-                res_counts.count_an += 2;
-                res_counts.count_hom += 2;
-                ds::Genotype::HomAlt
-            }
-            // we ignore calls to chrY for female samples
-            (Chrom::Y, mehari::ped::Sex::Female, Genotype::HomRef)
-            | (Chrom::Y, mehari::ped::Sex::Female, Genotype::Het)
-            | (Chrom::Y, mehari::ped::Sex::Female, Genotype::HomAlt) => ds::Genotype::HomRef,
-            // do not count samples with unknown sex on gonomosomes
-            (Chrom::X, mehari::ped::Sex::Unknown, _) | (Chrom::Y, mehari::ped::Sex::Unknown, _) => {
+            // For female samples, we handle chrX as biallelic, same as male inside PAR on
+            // chrX/chrY.  Note that read mapping pipelines N-mask the PAR on chrY, so we
+            // don't count twice.
+            (Chrom::X, IsPar, mehari::ped::Sex::Male, Genotype::HomRef)
+            | (Chrom::Y, IsPar, mehari::ped::Sex::Male, Genotype::HomRef)
+            | (Chrom::X, _, mehari::ped::Sex::Female, Genotype::HomRef) => {
+                res_counts.count_homref += 1;
                 ds::Genotype::HomRef
             }
+            (Chrom::X, IsPar, mehari::ped::Sex::Male, Genotype::Het)
+            | (Chrom::Y, IsPar, mehari::ped::Sex::Male, Genotype::Het)
+            | (Chrom::X, _, mehari::ped::Sex::Female, Genotype::Het) => {
+                res_counts.count_het += 1;
+                ds::Genotype::Het
+            }
+            (Chrom::X, IsPar, mehari::ped::Sex::Male, Genotype::HomAlt)
+            | (Chrom::Y, IsPar, mehari::ped::Sex::Male, Genotype::HomAlt)
+            | (Chrom::X, _, mehari::ped::Sex::Female, Genotype::HomAlt) => {
+                res_counts.count_homalt += 2;
+                ds::Genotype::HomAlt
+            }
+            // We ignore calls to chrY for female samples.
+            (Chrom::Y, _, mehari::ped::Sex::Female, Genotype::HomRef)
+            | (Chrom::Y, _, mehari::ped::Sex::Female, Genotype::Het)
+            | (Chrom::Y, _, mehari::ped::Sex::Female, Genotype::HomAlt) => ds::Genotype::HomRef,
+            // Do not count samples with unknown sex on gonomosomes.
+            (Chrom::X, _, mehari::ped::Sex::Unknown, _)
+            | (Chrom::Y, _, mehari::ped::Sex::Unknown, _) => ds::Genotype::HomRef,
         };
 
         if carrier_genotype != ds::Genotype::HomRef {
@@ -151,6 +194,7 @@ async fn import_vcf(
     path_input: &str,
     cf_counts: &str,
     cf_carriers: &str,
+    genomebuild: crate::common::GenomeRelease,
 ) -> Result<(), anyhow::Error> {
     let mut input_reader = open_vcf_reader(path_input)
         .await
@@ -173,8 +217,13 @@ async fn import_vcf(
         }
 
         // Obtain counts from the current variant.
-        let (this_counts_data, this_carrier_data) =
-            handle_record(&record_buf, &input_header, &pedigree, &case_uuid)?;
+        let (this_counts_data, this_carrier_data) = handle_record(
+            &record_buf,
+            &input_header,
+            &pedigree,
+            &case_uuid,
+            genomebuild,
+        )?;
         // Obtain annonars variant key from current allele for RocksDB lookup.
         let vcf_var = annonars::common::keys::Var::from_vcf_allele(&record_buf, 0);
         let key: Vec<u8> = vcf_var.clone().into();
@@ -201,7 +250,17 @@ async fn import_vcf(
                         &vcf_var,
                         e
                     )
-                })?.map(|buffer| ds::CarrierList::from_vec(&buffer)).unwrap_or_default();
+                })?
+                .map(|buffer| ds::CarrierList::try_from(buffer.as_slice()))
+                .transpose()
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "problem decoding carrier data for variant {:?}: {}",
+                        &vcf_var,
+                        e
+                    )
+                })?
+                .unwrap_or_default();
 
             // Aggregate the data.
             db_counts_data.aggregate(this_counts_data);
@@ -267,6 +326,7 @@ fn vcf_import(
     path_input: &[&str],
     cf_counts: &str,
     cf_carriers: &str,
+    genomebuild: crate::common::GenomeRelease,
 ) -> Result<(), anyhow::Error> {
     path_input
         .par_iter()
@@ -283,7 +343,13 @@ fn vcf_import(
                         e
                     )
                 })?
-                .block_on(import_vcf(db, path_input, cf_counts, cf_carriers))
+                .block_on(import_vcf(
+                    db,
+                    path_input,
+                    cf_counts,
+                    cf_carriers,
+                    genomebuild,
+                ))
                 .map_err(|e| anyhow::anyhow!("processing VCF file {} failed: {}", path_input, e))
         })
         .collect::<Result<Vec<_>, _>>()
@@ -354,7 +420,13 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
         tracing::info!("Importing VCF files ...");
         let before_import = std::time::Instant::now();
         let paths = path_input.iter().map(|s| s.as_ref()).collect::<Vec<_>>();
-        vcf_import(&db, &paths, &args.cf_counts, &args.cf_carriers)?;
+        vcf_import(
+            &db,
+            &paths,
+            &args.cf_counts,
+            &args.cf_carriers,
+            args.genomebuild,
+        )?;
         tracing::info!(
             "... done importing VCF files in {:?}",
             before_import.elapsed()
@@ -391,6 +463,106 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
 mod test {
     use super::*;
 
+    #[test]
+    fn test_is_par() {
+        assert_eq!(
+            super::is_par(super::Chrom::X, 60000, crate::common::GenomeRelease::Grch37),
+            false
+        );
+        assert_eq!(
+            super::is_par(super::Chrom::X, 60001, crate::common::GenomeRelease::Grch37),
+            true
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                2699520,
+                crate::common::GenomeRelease::Grch37
+            ),
+            true
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                2699521,
+                crate::common::GenomeRelease::Grch37
+            ),
+            false
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                154931043,
+                crate::common::GenomeRelease::Grch37
+            ),
+            false
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                154931044,
+                crate::common::GenomeRelease::Grch37
+            ),
+            true
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                155260560,
+                crate::common::GenomeRelease::Grch37
+            ),
+            true
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                155260561,
+                crate::common::GenomeRelease::Grch37
+            ),
+            false
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                155260561,
+                crate::common::GenomeRelease::Grch38
+            ),
+            false
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                155701383,
+                crate::common::GenomeRelease::Grch38
+            ),
+            true
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                156030895,
+                crate::common::GenomeRelease::Grch38
+            ),
+            true
+        );
+        assert_eq!(
+            super::is_par(
+                super::Chrom::X,
+                156030896,
+                crate::common::GenomeRelease::Grch38
+            ),
+            false
+        );
+        assert_eq!(
+            super::is_par(super::Chrom::Y, 10000, crate::common::GenomeRelease::Grch37),
+            false
+        );
+        assert_eq!(
+            super::is_par(super::Chrom::Y, 10001, crate::common::GenomeRelease::Grch37),
+            true
+        );
+    }
+
     #[tracing_test::traced_test]
     #[test]
     fn handle_record_snapshot() -> Result<(), anyhow::Error> {
@@ -410,8 +582,13 @@ mod test {
             }
 
             let (pedigree, case_uuid) = common::extract_pedigree_and_case_uuid(&header)?;
-            let (counts, carriers) =
-                super::handle_record(&record_buf, &header, &pedigree, &case_uuid)?;
+            let (counts, carriers) = super::handle_record(
+                &record_buf,
+                &header,
+                &pedigree,
+                &case_uuid,
+                crate::common::GenomeRelease::Grch37,
+            )?;
 
             insta::assert_debug_snapshot!(counts);
             insta::assert_debug_snapshot!(carriers);

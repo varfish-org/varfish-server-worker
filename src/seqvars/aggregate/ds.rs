@@ -5,43 +5,48 @@ use byteorder::{ByteOrder, LittleEndian};
 /// Genotype counts.
 #[derive(Debug, Default, Clone)]
 pub struct Counts {
-    /// Number of alleles in samples.
-    pub count_an: u32,
+    /// Number of hom. ref. carriers.
+    pub count_homref: u32,
+    /// Number of hemi. ref. carriers.
+    pub count_hemiref: u32,
     /// Number of het. carriers.
     pub count_het: u32,
-    /// Number of hom. carriers.
-    pub count_hom: u32,
-    /// Number of hemi. carriers.
-    pub count_hemi: u32,
+    /// Number of hom. alt. carriers.
+    pub count_homalt: u32,
+    /// Number of hemi. alt. carriers.
+    pub count_hemialt: u32,
 }
 
 impl Counts {
     /// Convert to a byte vector.
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::with_capacity(16);
-        buf.extend_from_slice(&self.count_an.to_le_bytes());
+        let mut buf = Vec::with_capacity(20);
+        buf.extend_from_slice(&self.count_homref.to_le_bytes());
+        buf.extend_from_slice(&self.count_hemiref.to_le_bytes());
         buf.extend_from_slice(&self.count_het.to_le_bytes());
-        buf.extend_from_slice(&self.count_hom.to_le_bytes());
-        buf.extend_from_slice(&self.count_hemi.to_le_bytes());
+        buf.extend_from_slice(&self.count_homalt.to_le_bytes());
+        buf.extend_from_slice(&self.count_hemialt.to_le_bytes());
         buf
     }
 
     /// Convert from a byte vector.
     pub fn from_vec(buf: &[u8]) -> Self {
         Self {
-            count_an: LittleEndian::read_u32(&buf[0..4]),
-            count_het: LittleEndian::read_u32(&buf[4..8]),
-            count_hom: LittleEndian::read_u32(&buf[8..12]),
-            count_hemi: LittleEndian::read_u32(&buf[12..16]),
+            count_homref: LittleEndian::read_u32(&buf[0..4]),
+            count_hemiref: LittleEndian::read_u32(&buf[4..8]),
+            count_het: LittleEndian::read_u32(&buf[8..12]),
+            count_homalt: LittleEndian::read_u32(&buf[12..16]),
+            count_hemialt: LittleEndian::read_u32(&buf[16..20]),
         }
     }
 
     /// Aggregate other into self.
     pub fn aggregate(&mut self, other: Self) {
-        self.count_an += other.count_an;
+        self.count_homref += other.count_homref;
+        self.count_hemiref += other.count_hemiref;
         self.count_het += other.count_het;
-        self.count_hom += other.count_hom;
-        self.count_hemi += other.count_hemi;
+        self.count_homalt += other.count_homalt;
+        self.count_hemialt += other.count_hemialt;
     }
 }
 
@@ -49,7 +54,8 @@ impl Counts {
 #[derive(Debug, Default, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
 pub enum Genotype {
     #[default]
-    HomRef, // same as hemizygous reference
+    HomRef,
+    HemiRef,
     Het,
     HomAlt,
     HemiAlt,
@@ -60,20 +66,32 @@ impl Genotype {
     pub fn to_byte(self) -> u8 {
         match self {
             Genotype::HomRef => 0,
-            Genotype::Het => 1,
-            Genotype::HomAlt => 2,
-            Genotype::HemiAlt => 3,
+            Genotype::HemiRef => 1,
+            Genotype::Het => 2,
+            Genotype::HomAlt => 3,
+            Genotype::HemiAlt => 4,
         }
     }
+}
 
-    /// Convert from a byte.
-    pub fn from_byte(byte: u8) -> Self {
+/// Error for `TryFrom<u8>` for `Genotype`.
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum GenotypeTryFromByteError {
+    #[error("invalid genotype byte: {0}")]
+    InvalidByte(u8),
+}
+
+impl TryFrom<u8> for Genotype {
+    type Error = GenotypeTryFromByteError;
+
+    fn try_from(byte: u8) -> Result<Self, Self::Error> {
         match byte {
-            0 => Genotype::HomRef,
-            1 => Genotype::Het,
-            2 => Genotype::HomAlt,
-            3 => Genotype::HemiAlt,
-            _ => panic!("invalid genotype byte"),
+            0 => Ok(Genotype::HomRef),
+            1 => Ok(Genotype::HemiRef),
+            2 => Ok(Genotype::Het),
+            3 => Ok(Genotype::HomAlt),
+            4 => Ok(Genotype::HemiAlt),
+            _ => Err(GenotypeTryFromByteError::InvalidByte(byte)),
         }
     }
 }
@@ -111,24 +129,6 @@ impl CarrierList {
         buf
     }
 
-    /// Convert from a byte vector.
-    pub fn from_vec(buf: &[u8]) -> Self {
-        let mut carriers = Vec::with_capacity((buf.len() - 2) / 18);
-        let num_carriers = LittleEndian::read_u16(&buf[0..2]) as usize;
-        for i in 0..num_carriers {
-            let uuid =
-                uuid::Uuid::from_u128(LittleEndian::read_u128(&buf[2 + 18 * i..2 + 18 * i + 16]));
-            let index = buf[2 + 18 * i + 16];
-            let genotype = Genotype::from_byte(buf[2 + 18 * i + 17]);
-            carriers.push(Carrier {
-                uuid,
-                index,
-                genotype,
-            });
-        }
-        Self { carriers }
-    }
-
     /// Order the carriers by UUID.
     pub fn sort(&mut self) {
         self.carriers.sort();
@@ -142,29 +142,51 @@ impl CarrierList {
     }
 }
 
+impl TryFrom<&[u8]> for CarrierList {
+    type Error = GenotypeTryFromByteError;
+
+    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+        let mut carriers = Vec::with_capacity((buf.len() - 2) / 18);
+        let num_carriers = LittleEndian::read_u16(&buf[0..2]) as usize;
+        for i in 0..num_carriers {
+            let uuid =
+                uuid::Uuid::from_u128(LittleEndian::read_u128(&buf[2 + 18 * i..2 + 18 * i + 16]));
+            let index = buf[2 + 18 * i + 16];
+            let genotype = Genotype::try_from(buf[2 + 18 * i + 17])?;
+            carriers.push(Carrier {
+                uuid,
+                index,
+                genotype,
+            });
+        }
+        Ok(Self { carriers })
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
-    fn counts() {
+    fn test_counts() {
         let counts = Counts {
-            count_an: 1,
-            count_het: 2,
-            count_hom: 3,
-            count_hemi: 4,
+            count_homref: 1,
+            count_hemiref: 2,
+            count_het: 3,
+            count_homalt: 4,
+            count_hemialt: 5,
         };
 
         let buf = counts.to_vec();
         insta::assert_debug_snapshot!(&buf);
-        assert_eq!(buf.len(), 16);
+        assert_eq!(buf.len(), 20);
 
         let counts2 = Counts::from_vec(&buf);
         insta::assert_debug_snapshot!(&counts2);
     }
 
     #[test]
-    fn carrier_list() {
+    fn test_carrier_list() -> Result<(), anyhow::Error> {
         let carrier_list = CarrierList {
             carriers: vec![
                 Carrier {
@@ -184,7 +206,9 @@ mod test {
         insta::assert_debug_snapshot!(&buf);
         assert_eq!(buf.len(), 38);
 
-        let carrier_list2 = CarrierList::from_vec(&buf);
+        let carrier_list2 = CarrierList::try_from(buf.as_slice())?;
         insta::assert_debug_snapshot!(&carrier_list2);
+
+        Ok(())
     }
 }
