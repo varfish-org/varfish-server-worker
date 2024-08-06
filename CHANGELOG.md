@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.13.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.12.0...v0.13.0) (2024-08-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* write out hom. ref. count in seqvars aggregate ([#428](https://github.com/varfish-org/varfish-server-worker/issues/428)) (#429)
+* cleanup protobufs to best practices ([#423](https://github.com/varfish-org/varfish-server-worker/issues/423)) (#425)
+* refactory query schema to use protobuf ([#374](https://github.com/varfish-org/varfish-server-worker/issues/374)) (#419)
+
+### Features
+
+* cleanup protobufs to best practices ([#423](https://github.com/varfish-org/varfish-server-worker/issues/423)) ([#425](https://github.com/varfish-org/varfish-server-worker/issues/425)) ([48a3144](https://github.com/varfish-org/varfish-server-worker/commit/48a3144c680a97ec32db12c7b00e7add2bf51899))
+* introduce protobuf schema for seqvars query output ([#375](https://github.com/varfish-org/varfish-server-worker/issues/375)) ([#430](https://github.com/varfish-org/varfish-server-worker/issues/430)) ([214c8e9](https://github.com/varfish-org/varfish-server-worker/commit/214c8e95aff950a131f158542c22c5911f5f6eef))
+* message members explicitely optional for protobufs ([#431](https://github.com/varfish-org/varfish-server-worker/issues/431)) ([1458aad](https://github.com/varfish-org/varfish-server-worker/commit/1458aad8346a2b154fa37fcbef41da075a73530b))
+* refactory query schema to use protobuf ([#374](https://github.com/varfish-org/varfish-server-worker/issues/374)) ([#419](https://github.com/varfish-org/varfish-server-worker/issues/419)) ([0e14e16](https://github.com/varfish-org/varfish-server-worker/commit/0e14e16df4816e5ae01494db5437b7de50acb0a6))
+* write out hom. ref. count in seqvars aggregate ([#428](https://github.com/varfish-org/varfish-server-worker/issues/428)) ([#429](https://github.com/varfish-org/varfish-server-worker/issues/429)) ([3830a55](https://github.com/varfish-org/varfish-server-worker/commit/3830a552bf1baa175d17007d429e10184ad82004))
+
+
+### Bug Fixes
+
+* allow parsing FORMAT/anc as Float/f32 ([#414](https://github.com/varfish-org/varfish-server-worker/issues/414)) ([bf4634b](https://github.com/varfish-org/varfish-server-worker/commit/bf4634b0cb93c77126638d272cb591005ec8b1b3))
+
 ## [0.12.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.11.0...v0.12.0) (2024-06-19)
 
 
