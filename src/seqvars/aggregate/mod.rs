@@ -42,16 +42,16 @@ pub struct Args {
 fn is_par(chrom: Chrom, pos: usize, genomebuild: crate::common::GenomeRelease) -> bool {
     match (chrom, genomebuild) {
         (Chrom::X, crate::common::GenomeRelease::Grch37) => {
-            (60001..2699520).contains(&pos) || (154931044..155260560).contains(&pos)
+            (60001..=2699520).contains(&pos) || (154931044..=155260560).contains(&pos)
         }
         (Chrom::X, crate::common::GenomeRelease::Grch38) => {
-            (10001..2781479).contains(&pos) || (155701383..156030895).contains(&pos)
+            (10001..=2781479).contains(&pos) || (155701383..=156030895).contains(&pos)
         }
         (Chrom::Y, crate::common::GenomeRelease::Grch37) => {
-            (10001..2649520).contains(&pos) || (59034050..59363566).contains(&pos)
+            (10001..=2649520).contains(&pos) || (59034050..=59363566).contains(&pos)
         }
         (Chrom::Y, crate::common::GenomeRelease::Grch38) => {
-            (10001..2781479).contains(&pos) || (56887903..57217415).contains(&pos)
+            (10001..=2781479).contains(&pos) || (56887903..=57217415).contains(&pos)
         }
         _ => false,
     }
