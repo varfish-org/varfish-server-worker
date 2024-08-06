@@ -7,6 +7,7 @@ fn main() -> Result<(), anyhow::Error> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("protos");
     let proto_files = [
         "varfish/v1/common/misc.proto",
+        "varfish/v1/seqvars/output.proto",
         "varfish/v1/seqvars/query.proto",
         "varfish/v1/strucvars/clinvar.proto",
         "varfish/v1/strucvars/bgdb.proto",
