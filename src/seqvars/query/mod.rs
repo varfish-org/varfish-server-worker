@@ -74,7 +74,7 @@ pub struct Args {
 struct QueryStats {
     pub count_passed: usize,
     pub count_total: usize,
-    pub passed_by_consequence:
+    pub passed_by_consequences:
         indexmap::IndexMap<mehari::annotate::seqvars::ann::Consequence, usize>,
 }
 
@@ -311,7 +311,7 @@ async fn run_query(
                 if let Some(ann) = record_seqvar.ann_fields.first() {
                     ann.consequences.iter().for_each(|csq| {
                         stats
-                            .passed_by_consequence
+                            .passed_by_consequences
                             .entry(*csq)
                             .and_modify(|e| *e += 1)
                             .or_insert(1);
@@ -534,8 +534,8 @@ fn write_header(
         statistics: Some(pbs_output::OutputStatistics {
             count_total: stats.count_total as u64,
             count_passed: stats.count_passed as u64,
-            passed_by_consequence: stats
-                .passed_by_consequence
+            passed_by_consequences: stats
+                .passed_by_consequences
                 .iter()
                 .map(|(k, v)| pbs_output::ConsequenceCount {
                     consequence: *k as i32,
@@ -1434,7 +1434,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         query_stats.count_total.separate_with_commas()
     );
     tracing::info!("passing records by effect type");
-    for (effect, count) in query_stats.passed_by_consequence.iter() {
+    for (effect, count) in query_stats.passed_by_consequences.iter() {
         tracing::info!("{:?} -- {}", effect, count);
     }
 

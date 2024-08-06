@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package varfish.v1.seqvars.output;
 
-import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
 
 import "varfish/v1/seqvars/query.proto";
 
@@ -83,7 +83,7 @@ message OutputStatistics {
   // Number of passed records.
   uint64 count_passed = 2;
   // Passed records by consequence.
-  repeated ConsequenceCount passed_by_consequence = 3;
+  repeated ConsequenceCount passed_by_consequences = 3;
 }
 
 // Store consequence statistics.
