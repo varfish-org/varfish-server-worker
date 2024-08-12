@@ -39,7 +39,7 @@ hgvs = "0.17"
 indexmap = { version = "2.2", features = ["serde"] }
 itertools = "0.13"
 log = "0.4"
-mehari = "0.26.0"
+mehari = "0.26.1"
 multimap = "0.10"
 pbjson = "0.7"
 pbjson-types = "0.7"
