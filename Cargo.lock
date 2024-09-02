@@ -295,7 +295,7 @@ dependencies = [
  "env_logger",
  "erased-serde",
  "flate2",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "indicatif",
  "itertools 0.13.0",
  "log",
@@ -1098,7 +1098,7 @@ checksum = "82c91bd0b62cec4b6317445506ed4947a53c320942a681c5a086f4d576aa4c99"
 dependencies = [
  "enum-map",
  "flate2",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "lazy_static",
  "serde",
  "serde_json",
@@ -2385,7 +2385,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.12",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "slab",
  "tokio",
  "tokio-util",
@@ -2458,7 +2458,7 @@ dependencies = [
  "chrono",
  "enum-map",
  "flate2",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "lazy_static",
  "log",
  "md-5",
@@ -2654,9 +2654,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.4.0"
+version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93ead53efc7ea8ed3cfb0c79fc8023fbb782a5432b52830b6518941cebe6505c"
+checksum = "68b900aa2f7301e21c36462b170ee99994de34dff39a4a6a528e80e7376d07e5"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.5",
@@ -3101,7 +3101,7 @@ dependencies = [
  "flate2",
  "futures",
  "hgvs",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "indicatif",
  "itertools 0.13.0",
  "jsonl",
@@ -3317,7 +3317,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "futures",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "noodles-bgzf 0.31.0",
  "noodles-core",
  "noodles-csi",
@@ -3333,7 +3333,7 @@ checksum = "303f875dac987f76fcf05e133811e3ccc25c8649151569e7c8003f25d78b7aa8"
 dependencies = [
  "byteorder",
  "futures",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "noodles-bgzf 0.31.0",
  "noodles-core",
  "noodles-csi",
@@ -3401,7 +3401,7 @@ dependencies = [
  "bzip2",
  "flate2",
  "futures",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "md-5",
  "noodles-bam",
  "noodles-core",
@@ -3420,7 +3420,7 @@ checksum = "89ac24bac459ae99c046086d771f5a79f632ab27a9280406f2fbb7a3238d79cc"
 dependencies = [
  "bit-vec 0.6.3",
  "byteorder",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "noodles-bgzf 0.31.0",
  "noodles-core",
  "tokio",
@@ -3470,7 +3470,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1461ade66be950a9c4ad10839f960a50b41c4174471ff904350d203e57a052b1"
 dependencies = [
  "futures",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "noodles-bgzf 0.31.0",
  "noodles-core",
  "noodles-csi",
@@ -3487,7 +3487,7 @@ dependencies = [
  "bitflags 2.6.0",
  "bstr",
  "futures",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "lexical-core",
  "memchr",
  "noodles-bgzf 0.31.0",
@@ -3504,7 +3504,7 @@ checksum = "8ddf20eb2a380e00bbe6ec3105f1ef5c62307381f4bcf4175b31d582d43a7e59"
 dependencies = [
  "bit-vec 0.6.3",
  "byteorder",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "noodles-bgzf 0.31.0",
  "noodles-core",
  "noodles-csi",
@@ -3518,7 +3518,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb37ce398cc0132b5855ac720c2e9efe14270b38be57ee576d79bc918754e2a"
 dependencies = [
  "futures",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "memchr",
  "noodles-bgzf 0.31.0",
  "noodles-core",
@@ -3781,7 +3781,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
 ]
 
 [[package]]
@@ -4688,7 +4688,7 @@ version = "1.0.127"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8043c06d9f82bd7271361ed64f415fe5e12a77fdb52e573e7f06a516dea329ad"
 dependencies = [
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "itoa",
  "memchr",
  "ryu",
@@ -4726,7 +4726,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "serde",
  "serde_derive",
  "serde_json",
@@ -4752,7 +4752,7 @@ version = "0.9.34+deprecated"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
 dependencies = [
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "itoa",
  "ryu",
  "serde",
@@ -5223,7 +5223,7 @@ version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8534fd7f78b5405e860340ad6575217ce99f38d4d5c8f2442cb5ecb50090e1"
 dependencies = [
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "toml_datetime",
  "winnow",
 ]
@@ -5476,7 +5476,7 @@ dependencies = [
  "futures",
  "hgvs",
  "hxdmp",
- "indexmap 2.4.0",
+ "indexmap 2.5.0",
  "insta",
  "itertools 0.13.0",
  "log",
