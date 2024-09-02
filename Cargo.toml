@@ -35,11 +35,12 @@ ext-sort = { version = "0.1", features = ["memory-limit", "bytesize"] }
 fastrand = "2.1"
 flate2 = "1.0"
 futures = "0.3.30"
-hgvs = "0.17"
+hgvs = "0.17.2"
 indexmap = { version = "2.4", features = ["serde"] }
 itertools = "0.13"
 log = "0.4"
-mehari = "0.26.1"
+mehari = { path = "../mehari" }
+# mehari = "0.28.1"
 multimap = "0.10"
 pbjson = "0.7"
 pbjson-types = "0.7"

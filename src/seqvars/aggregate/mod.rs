@@ -2,7 +2,8 @@
 
 pub mod ds;
 
-use mehari::common::noodles::open_vcf_reader;
+use futures::TryStreamExt as _;
+use mehari::common::noodles::NoodlesVariantReader as _;
 use noodles::vcf;
 use rayon::prelude::*;
 use std::{str::FromStr as _, sync::Arc};
@@ -196,7 +197,7 @@ async fn import_vcf(
     cf_carriers: &str,
     genomebuild: crate::common::GenomeRelease,
 ) -> Result<(), anyhow::Error> {
-    let mut input_reader = open_vcf_reader(path_input)
+    let mut input_reader = common::noodles::open_vcf_reader(path_input)
         .await
         .map_err(|e| anyhow::anyhow!("could not open file {} for reading: {}", path_input, e))?;
     let input_header = input_reader.read_header().await?;
@@ -206,16 +207,9 @@ async fn import_vcf(
 
     let (pedigree, case_uuid) = common::extract_pedigree_and_case_uuid(&input_header)?;
     let mut prev = std::time::Instant::now();
-    let mut record_buf = vcf::variant::RecordBuf::default();
-    loop {
-        let bytes_read = input_reader
-            .read_record_buf(&input_header, &mut record_buf)
-            .await
-            .map_err(|e| anyhow::anyhow!("problem reading VCF file {}: {}", path_input, e))?;
-        if bytes_read == 0 {
-            break; // EOF
-        }
 
+    let mut records = input_reader.records(&input_header).await;
+    while let Some(record_buf) = records.try_next().await? {
         // Obtain counts from the current variant.
         let (this_counts_data, this_carrier_data) = handle_record(
             &record_buf,
@@ -238,29 +232,29 @@ async fn import_vcf(
 
             // Read data for variant from database.
             let mut db_counts_data = transaction.get_cf(&cf_counts, key.clone()).map_err(|e| {
-                    anyhow::anyhow!(
-                        "problem acessing counts data for variant {:?}: {} (non-existing would be fine)",
-                        &vcf_var,
-                        e
-                    )
-                })?.map(|buffer| ds::Counts::from_vec(&buffer)).unwrap_or_default();
+                        anyhow::anyhow!(
+                            "problem acessing counts data for variant {:?}: {} (non-existing would be fine)",
+                            &vcf_var,
+                            e
+                        )
+                    })?.map(|buffer| ds::Counts::from_vec(&buffer)).unwrap_or_default();
             let mut db_carrier_data = transaction.get_cf(&cf_carriers, key.clone()).map_err(|e| {
-                    anyhow::anyhow!(
-                        "problem acessing carrier data for variant {:?}: {} (non-existing would be fine)",
-                        &vcf_var,
-                        e
-                    )
-                })?
-                .map(|buffer| ds::CarrierList::try_from(buffer.as_slice()))
-                .transpose()
-                .map_err(|e| {
-                    anyhow::anyhow!(
-                        "problem decoding carrier data for variant {:?}: {}",
-                        &vcf_var,
-                        e
-                    )
-                })?
-                .unwrap_or_default();
+                        anyhow::anyhow!(
+                            "problem acessing carrier data for variant {:?}: {} (non-existing would be fine)",
+                            &vcf_var,
+                            e
+                        )
+                    })?
+                    .map(|buffer| ds::CarrierList::try_from(buffer.as_slice()))
+                    .transpose()
+                    .map_err(|e| {
+                        anyhow::anyhow!(
+                            "problem decoding carrier data for variant {:?}: {}",
+                            &vcf_var,
+                            e
+                        )
+                    })?
+                    .unwrap_or_default();
 
             // Aggregate the data.
             db_counts_data.aggregate(this_counts_data);
@@ -268,7 +262,7 @@ async fn import_vcf(
 
             // Write data for variant back to database.
             transaction
-                .put_cf(&cf_counts, key.clone(), &db_counts_data.to_vec())
+                .put_cf(&cf_counts, key.clone(), db_counts_data.to_vec())
                 .map_err(|e| {
                     anyhow::anyhow!(
                         "problem writing counts data for variant {:?}: {}",
@@ -277,7 +271,7 @@ async fn import_vcf(
                     )
                 })?;
             transaction
-                .put_cf(&cf_carriers, key.clone(), &db_carrier_data.to_vec())
+                .put_cf(&cf_carriers, key.clone(), db_carrier_data.to_vec())
                 .map_err(|e| {
                     anyhow::anyhow!(
                         "problem writing carrier data for variant {:?}: {}",

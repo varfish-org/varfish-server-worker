@@ -6,8 +6,12 @@ use crate::{
     common::{self, genotype_to_string, strip_gt_leading_slash, worker_version, GenomeRelease},
     flush_and_shutdown,
 };
-use mehari::annotate::seqvars::provider::Provider as MehariProvider;
-use mehari::common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
+use futures::TryStreamExt as _;
+use mehari::common::noodles::{open_vcf_writer, AsyncVcfWriter};
+use mehari::{
+    annotate::seqvars::provider::Provider as MehariProvider,
+    common::noodles::{NoodlesVariantReader as _, VariantReader},
+};
 use noodles::vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
@@ -281,7 +285,7 @@ fn copy_format(
 /// Process the variants from `input_reader` to `output_writer`.
 async fn process_variants(
     output_writer: &mut AsyncVcfWriter,
-    input_reader: &mut AsyncVcfReader,
+    input_reader: &mut VariantReader,
     output_header: &vcf::Header,
     input_header: &vcf::Header,
     id_mapping: &Option<indexmap::IndexMap<String, String>>,
@@ -302,10 +306,7 @@ async fn process_variants(
         ["meta", "autosomal", "gonosomal", "mitochondrial"],
         false,
     )?;
-
-    let cf_autosomal = db_freq.cf_handle("autosomal").unwrap();
-    let cf_gonosomal = db_freq.cf_handle("gonosomal").unwrap();
-    let cf_mtdna = db_freq.cf_handle("mitochondrial").unwrap();
+    let freq_anno = mehari::annotate::seqvars::FrequencyAnnotator::new(db_freq);
 
     // Open the ClinVar RocksDB database in read only mode.
     tracing::info!("Opening ClinVar database");
@@ -318,8 +319,7 @@ async fn process_variants(
     let options = rocksdb::Options::default();
     let db_clinvar =
         rocksdb::DB::open_cf_for_read_only(&options, &rocksdb_path, ["meta", "clinvar"], false)?;
-
-    let cf_clinvar = db_clinvar.cf_handle("clinvar").unwrap();
+    let clinvar_anno = mehari::annotate::seqvars::ClinvarAnnotator::new(db_clinvar);
 
     // Open the serialized transcripts.
     tracing::info!("Opening transcript database");
@@ -366,17 +366,9 @@ async fn process_variants(
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
     let mut total_written = 0usize;
-    let mut input_record = vcf::variant::RecordBuf::default();
     let known_format_keys = KNOWN_FORMAT_KEYS.get_or_init(Default::default);
-    loop {
-        let bytes_read = input_reader
-            .read_record_buf(input_header, &mut input_record)
-            .await
-            .map_err(|e| anyhow::anyhow!("problem reading VCF file: {}", e))?;
-        if bytes_read == 0 {
-            break; // EOF
-        }
-
+    let mut records = input_reader.records(input_header).await;
+    while let Some(input_record) = records.try_next().await? {
         for (allele_no, alt_allele) in input_record.alternate_bases().as_ref().iter().enumerate() {
             let allele_no = allele_no + 1;
             // Construct record with first few fields describing one variant allele.
@@ -424,26 +416,11 @@ async fn process_variants(
 
                 // Annotate with frequency.
                 if mehari::annotate::seqvars::CHROM_AUTO.contains(vcf_var.chrom.as_str()) {
-                    mehari::annotate::seqvars::annotate_record_auto(
-                        &db_freq,
-                        &cf_autosomal,
-                        &key,
-                        &mut output_record,
-                    )?;
+                    freq_anno.annotate_record_auto(&key, &mut output_record)?;
                 } else if mehari::annotate::seqvars::CHROM_XY.contains(vcf_var.chrom.as_str()) {
-                    mehari::annotate::seqvars::annotate_record_xy(
-                        &db_freq,
-                        &cf_gonosomal,
-                        &key,
-                        &mut output_record,
-                    )?;
+                    freq_anno.annotate_record_xy(&key, &mut output_record)?;
                 } else if mehari::annotate::seqvars::CHROM_MT.contains(vcf_var.chrom.as_str()) {
-                    mehari::annotate::seqvars::annotate_record_mt(
-                        &db_freq,
-                        &cf_mtdna,
-                        &key,
-                        &mut output_record,
-                    )?;
+                    freq_anno.annotate_record_mt(&key, &mut output_record)?;
                 } else {
                     tracing::debug!(
                         "Record @{:?} on non-canonical chromosome, skipping.",
@@ -452,12 +429,7 @@ async fn process_variants(
                 }
 
                 // Annotate with ClinVar information.
-                mehari::annotate::seqvars::annotate_record_clinvar(
-                    &db_clinvar,
-                    &cf_clinvar,
-                    &key,
-                    &mut output_record,
-                )?;
+                clinvar_anno.annotate_record_clinvar(&key, &mut output_record)?;
             }
 
             let annonars::common::keys::Var {
@@ -527,7 +499,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     tracing::info!("pedigre = {:#?}", &pedigree);
 
     tracing::info!("opening input file...");
-    let mut input_reader = open_vcf_reader(&args.path_in)
+    let mut input_reader = common::noodles::open_vcf_reader(&args.path_in)
         .await
         .map_err(|e| anyhow::anyhow!("could not build VCF reader: {}", e))?;
 

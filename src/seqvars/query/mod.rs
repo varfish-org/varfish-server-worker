@@ -13,9 +13,10 @@ use clap::{command, Parser};
 use ext_sort::LimitedBufferBuilder;
 use ext_sort::{ExternalSorter, ExternalSorterBuilder};
 
+use futures::TryStreamExt as _;
 use itertools::Itertools as _;
 use mehari::annotate::seqvars::CHROM_TO_CHROM_NO;
-use noodles::vcf;
+use mehari::common::noodles::NoodlesVariantReader as _;
 use rand_core::{RngCore, SeedableRng};
 use schema::data::{TryFromVcf as _, VariantRecord};
 use schema::query::{CaseQuery, GenotypeChoice, RecessiveMode, SampleGenotypeChoice};
@@ -27,7 +28,6 @@ use crate::common;
 use crate::pbs::varfish::v1::seqvars::output as pbs_output;
 use crate::pbs::varfish::v1::seqvars::query as pbs_query;
 use crate::{common::trace_rss_now, common::GenomeRelease};
-use mehari::common::noodles::open_vcf_reader;
 
 use self::annonars::Annotator;
 use self::sorting::{ByCoordinate, ByHgncId};
@@ -271,9 +271,11 @@ async fn run_query(
     let mut uuid_buf = [0u8; 16];
 
     // Open VCF file, create reader, and read header.
-    let mut input_reader = open_vcf_reader(&args.path_input).await.map_err(|e| {
-        anyhow::anyhow!("could not open file {} for reading: {}", args.path_input, e)
-    })?;
+    let mut input_reader = common::noodles::open_vcf_reader(&args.path_input)
+        .await
+        .map_err(|e| {
+            anyhow::anyhow!("could not open file {} for reading: {}", args.path_input, e)
+        })?;
     let input_header = input_reader.read_header().await?;
 
     let path_unsorted = tmp_dir.path().join("unsorted.jsonl");
@@ -289,18 +291,8 @@ async fn run_query(
             .map(std::io::BufWriter::new)
             .map_err(|e| anyhow::anyhow!("could not create temporary unsorted file: {}", e))?;
 
-        let mut record_buf = vcf::variant::RecordBuf::default();
-        loop {
-            let bytes_read = input_reader
-                .read_record_buf(&input_header, &mut record_buf)
-                .await
-                .map_err(|e| {
-                    anyhow::anyhow!("problem reading VCF file {}: {}", &args.path_input, e)
-                })?;
-            if bytes_read == 0 {
-                break; // EOF
-            }
-
+        let mut records = input_reader.records(&input_header).await;
+        while let Some(record_buf) = records.try_next().await? {
             stats.count_total += 1;
             let record_seqvar = VariantRecord::try_from_vcf(&record_buf, &input_header)
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
