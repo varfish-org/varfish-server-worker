@@ -191,9 +191,9 @@ enum Consequence {
   // Transcript amplification
   CONSEQUENCE_TRANSCRIPT_AMPLIFICATION = 9;
   // Feature elongation.
-  FEATURE_ELONGATION = 10;
+  CONSEQUENCE_FEATURE_ELONGATION = 10;
   // Feature truncation.
-  FEATURE_TRUNCATION = 11;
+  CONSEQUENCE_FEATURE_TRUNCATION = 11;
   /*
    * moderate impact
    */
@@ -230,7 +230,7 @@ enum Consequence {
   // Coding sequence variant.
   CONSEQUENCE_CODING_SEQUENCE_VARIANT = 24;
   // Mature miRNA variant.
-  MATURE_MIRNA_VARIANT = 25;
+  CONSEQUENCE_MATURE_MIRNA_VARIANT = 25;
   // 5' UTR exon variant.
   CONSEQUENCE_FIVE_PRIME_UTR_EXON_VARIANT = 26;
   // 5' UTR intron variant.
