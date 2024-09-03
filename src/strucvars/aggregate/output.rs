@@ -5,7 +5,10 @@ use mehari::annotate::strucvars::{
 };
 use noodles::vcf::{
     self,
-    variant::record::{samples::Sample, AlternateBases as _},
+    variant::{
+        record::{info::field::key, samples::Sample, AlternateBases as _, Samples as _},
+        record_buf::info::field,
+    },
 };
 
 use crate::{
@@ -67,41 +70,31 @@ impl Record {
 
     /// Convert VCF record into a `Record`.
     pub fn from_vcf(
-        record: &vcf::Record,
+        record: &vcf::variant::RecordBuf,
         header: &vcf::Header,
         _genome_release: crate::common::GenomeRelease,
         pedigree: &mehari::ped::PedigreeByName,
     ) -> Result<Self, anyhow::Error> {
         let chromosome = record.reference_sequence_name().to_string();
         let begin = {
-            let position: usize = record
-                .variant_start()
-                .expect("no variant_start?")
-                .map_err(|e| anyhow::anyhow!("error converting start position: {}", e))?
-                .into();
+            let position: usize = record.variant_start().expect("no variant_start?").into();
             position.saturating_sub(1) as i32
         };
         let chromosome2 =
-            if let Some(Ok(Some(vcf::variant::record::info::field::Value::String(chromosome2)))) =
-                record.info().get(header, "chr2")
-            {
+            if let Some(Some(field::Value::String(chromosome2))) = record.info().get("chr2") {
                 chromosome2.to_string()
             } else {
                 chromosome.clone()
             };
-        use noodles::vcf::variant::record::info::field::key;
-        let end = if let Some(Ok(Some(vcf::variant::record::info::field::Value::Integer(end)))) =
-            record.info().get(header, key::END_POSITION)
-        {
-            end
-        } else {
-            anyhow::bail!("missing INFO/END")
-        };
+        let end =
+            if let Some(Some(field::Value::Integer(end))) = record.info().get(key::END_POSITION) {
+                end
+            } else {
+                anyhow::bail!("missing INFO/END")
+            };
 
         let sv_type =
-            if let Some(Ok(Some(vcf::variant::record::info::field::Value::String(sv_type)))) =
-                record.info().get(header, key::SV_TYPE)
-            {
+            if let Some(Some(field::Value::String(sv_type))) = record.info().get(key::SV_TYPE) {
                 sv_type.parse()?
             } else {
                 anyhow::bail!("missing INFO/SVTYPE")
@@ -202,7 +195,7 @@ impl Record {
             chromosome,
             begin,
             chromosome2,
-            end,
+            end: *end,
             pe_orientation,
             sv_type,
             carriers_het,

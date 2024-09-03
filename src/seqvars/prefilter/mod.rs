@@ -2,8 +2,9 @@
 
 use std::io::BufRead;
 
+use futures::TryStreamExt as _;
 use mehari::annotate::seqvars::ann::AnnField;
-use mehari::common::noodles::{open_vcf_reader, open_vcf_writer, AsyncVcfReader, AsyncVcfWriter};
+use mehari::common::noodles::{open_vcf_writer, AsyncVcfWriter, NoodlesVariantReader as _};
 use noodles::vcf;
 use thousands::Separable;
 use tokio::io::AsyncWriteExt;
@@ -140,7 +141,7 @@ fn get_freq_and_distance(
 
 /// Perform the actual prefiltration.
 async fn run_filtration(
-    input_reader: &mut AsyncVcfReader,
+    input_reader: &mut mehari::common::noodles::VariantReader,
     input_header: &vcf::Header,
     output_writers: &mut [AsyncVcfWriter],
     output_headers: &[vcf::Header],
@@ -149,16 +150,9 @@ async fn run_filtration(
     let start = std::time::Instant::now();
     let mut prev = std::time::Instant::now();
     let mut total_written = 0usize;
-    let mut input_record = vcf::variant::RecordBuf::default();
-    loop {
-        let bytes_read = input_reader
-            .read_record_buf(input_header, &mut input_record)
-            .await
-            .map_err(|e| anyhow::anyhow!("problem reading VCF file: {}", e))?;
-        if bytes_read == 0 {
-            break; // EOF
-        }
 
+    let mut records = input_reader.records(input_header).await;
+    while let Some(input_record) = records.try_next().await? {
         let (frequency, exon_distance) = get_freq_and_distance(&input_record)?;
         if let Some(exon_distance) = exon_distance {
             for ((writer_params, output_writer), output_header) in params
@@ -204,7 +198,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     tracing::info!("loading prefilter params...");
     let params_list = load_params(&args.params)?;
     tracing::info!("opening input file...");
-    let mut reader = open_vcf_reader(&args.path_in)
+    let mut reader = common::noodles::open_vcf_reader(&args.path_in)
         .await
         .map_err(|e| anyhow::anyhow!("could not open input file: {}", e))?;
     let header = reader

@@ -11,17 +11,19 @@ use std::{
 use bio::data_structures::interval_tree::IntervalTree;
 use clap::{command, Parser};
 use futures::TryStreamExt as _;
-use mehari::common::io::std::{open_write_maybe_bgzf, read_lines};
+use mehari::common::{
+    io::std::{open_write_maybe_bgzf, read_lines},
+    noodles::NoodlesVariantReader as _,
+};
 
 use serde_json::to_writer;
 use strum::IntoEnumIterator;
 use thousands::Separable;
 
 use crate::{
-    common::{build_chrom_map, trace_rss_now, GenomeRelease, CHROMS},
+    common::{self, build_chrom_map, trace_rss_now, GenomeRelease, CHROMS},
     strucvars::query::schema::SvType,
 };
-use mehari::common::noodles::open_vcf_reader;
 
 /// Create one file with records for each chromosome and SV type.
 fn create_tmp_files(
@@ -56,14 +58,15 @@ async fn split_input_by_chrom_and_sv_type(
     let mut count_files = 0;
     for path_input in &input_vcf_paths {
         tracing::debug!("parsing {:?}", &path_input);
-        let mut input_reader = open_vcf_reader(path_input).await?;
+        let mut input_reader = common::noodles::open_vcf_reader(path_input).await?;
         let input_header = input_reader.read_header().await?;
 
-        let (pedigree, _) = crate::common::extract_pedigree_and_case_uuid(&input_header)?;
+        let (pedigree, _) = common::extract_pedigree_and_case_uuid(&input_header)?;
         let mut prev = std::time::Instant::now();
-        let mut records = input_reader.records();
         let before_parsing = Instant::now();
         let mut count_records = 0;
+
+        let mut records = input_reader.records(&input_header).await;
         while let Some(input_record) = records.try_next().await? {
             let input_record = super::output::Record::from_vcf(
                 &input_record,
@@ -79,6 +82,7 @@ async fn split_input_by_chrom_and_sv_type(
             let mut tmp_file = tmp_files
                 .get_mut(&(chrom_no, sv_type))
                 .expect("no file for chrom/sv_type");
+            #[allow(clippy::needless_borrows_for_generic_args)]
             to_writer(&mut tmp_file, &input_record)?;
             tmp_file.write_all(&[b'\n'])?;
 
@@ -292,7 +296,7 @@ pub struct Args {
 }
 
 /// Main entry point for the `strucvars txt-to-bin` command.
-pub async fn run(common_args: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(common_args: &common::Args, args: &Args) -> Result<(), anyhow::Error> {
     tracing::info!("Starting `strucvars aggregate`");
     tracing::info!("  common_args = {:?}", &common_args);
     tracing::info!("  args = {:?}", &args);
