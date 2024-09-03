@@ -179,8 +179,8 @@ mod test {
         Ok(())
     }
 
-    #[rstest::rstest]
     #[allow(clippy::too_many_arguments)]
+    #[rstest::rstest]
     // het, pass dp
     #[case(
         Some(10), // q_min_dp_het
@@ -421,7 +421,6 @@ mod test {
         None, // c_ad
         true, // expected
     )]
-    #[allow(clippy::too_many_arguments)]
     fn passes_for_sample(
         #[case] q_min_dp_het: Option<i32>,
         #[case] q_min_dp_hom: Option<i32>,

@@ -159,7 +159,7 @@ message GeneIdentity {
 /// Gene-related consequences of a variant.
 message GeneRelatedConsequences {
   // HGVS. {c,n} code of variant.
-  string hgvs_t = 1;
+  optional string hgvs_t = 1;
   // HGVS.p code of variant.
   optional string hgvs_p = 2;
   // Predicted variant consequences.
