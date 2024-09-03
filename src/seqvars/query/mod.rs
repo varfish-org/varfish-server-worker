@@ -44,7 +44,7 @@ pub struct Args {
     pub result_set_id: Option<String>,
     /// The case UUID.
     #[arg(long)]
-    pub case_uuid_id: Option<uuid::Uuid>,
+    pub case_uuid: Option<uuid::Uuid>,
     /// Path to worker database to use for querying.
     #[arg(long)]
     pub path_db: String,
@@ -522,18 +522,27 @@ fn write_header(
             version: common::worker_version().to_string(),
         }],
         query: Some(pb_query.clone()),
-        case_uuid: args.case_uuid_id.unwrap_or_default().to_string(),
+        case_uuid: args.case_uuid.unwrap_or_default().to_string(),
         statistics: Some(pbs_output::OutputStatistics {
             count_total: stats.count_total as u64,
             count_passed: stats.count_passed as u64,
             passed_by_consequences: stats
                 .passed_by_consequences
                 .iter()
-                .map(|(k, v)| pbs_output::ConsequenceCount {
-                    consequence: *k as i32,
-                    count: *v as u32,
-                })
-                .collect(),
+                .map(
+                    |(csq, count)| -> Result<pbs_output::ConsequenceCount, anyhow::Error> {
+                        Ok(pbs_output::ConsequenceCount {
+                            consequence: TryInto::<pbs_query::Consequence>::try_into(*csq).map_err(
+                                |e| {
+                                    anyhow::anyhow!("could not convert consequence {}: {}", *csq, e)
+                                },
+                            )? as i32,
+                            count: *count as u32,
+                        })
+                    },
+                )
+                .collect::<Result<_, _>>()
+                .map_err(|e| anyhow::anyhow!("could not convert consequences: {}", e))?,
         }),
         resources: Some(pbs_output::ResourcesUsed {
             start_time: Some(start_time),
@@ -727,11 +736,9 @@ mod gene_related_annotation {
     pub(crate) fn consequences(
         ann: &mehari::annotate::seqvars::ann::AnnField,
     ) -> Result<Option<pbs_output::GeneRelatedConsequences>, anyhow::Error> {
+        eprintln!("{:?}", &ann);
         Ok(Some(pbs_output::GeneRelatedConsequences {
-            hgvs_t: ann
-                .hgvs_t
-                .clone()
-                .ok_or_else(|| anyhow::anyhow!("missing hgvs_t annotation"))?,
+            hgvs_t: ann.hgvs_t.clone(),
             hgvs_p: ann.hgvs_p.clone(),
             consequences: ann
                 .consequences
@@ -1309,7 +1316,7 @@ async fn create_and_write_record(
             *uuid_buf
         })
         .to_string(),
-        case_uuid: args.case_uuid_id.unwrap_or_default().to_string(),
+        case_uuid: args.case_uuid.unwrap_or_default().to_string(),
         vcf_variant: Some(pbs_output::VcfVariant {
             genome_release: Into::<pbs_output::GenomeRelease>::into(args.genome_release) as i32,
             chrom: seqvar.vcf_variant.chrom.clone(),
@@ -1350,12 +1357,12 @@ async fn create_and_write_record(
         &mut buf,
         "{}",
         serde_json::to_string(&record)
-            .map_err(|e| anyhow::anyhow!("could not convert header to JSON: {}", e))?
+            .map_err(|e| anyhow::anyhow!("could not convert record to JSON: {}", e))?
     )?;
     writer
         .write_all(&buf)
         .await
-        .map_err(|e| anyhow::anyhow!("could not write header to output file: {}", e))
+        .map_err(|e| anyhow::anyhow!("could not write record to output file: {}", e))
 }
 
 /// Main entry point for `seqvars query` sub command.

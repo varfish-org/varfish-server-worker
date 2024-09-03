@@ -691,82 +691,194 @@ impl TryFrom<pb_query::TranscriptType> for TranscriptType {
     strum::EnumIter,
 )]
 pub enum Consequence {
-    /*
-     * High impact.
-     */
-    /// Transcript ablation.
+    // high impact
+    /// "A feature ablation whereby the deleted region includes a transcript feature."
+    /// SO:transcript_ablation, VEP:transcript_ablation
     TranscriptAblation,
-    /// Exon loss variant.
+
+    /// "A sequence variant whereby an exon is lost from the transcript."
+    /// SO:exon_loss_variant, VEP:transcript_ablation
     ExonLossVariant,
-    /// Splice acceptor variant.
+
+    /// "A splice variant that changes the 2 base region at the 3' end of an intron."
+    /// SO:splice_acceptor_variant, VEP:splice_acceptor_variant
     SpliceAcceptorVariant,
-    /// Splice donor variant.
+
+    /// "A splice variant that changes the 2 base region at the 5' end of an intron."
+    /// SO:splice_donor_variant, VEP:splice_donor_variant
     SpliceDonorVariant,
-    /// Stop gained.
+
+    /// "A sequence variant whereby at least one base of a codon is changed, resulting in a premature stop codon, leading to a shortened transcript."
+    /// SO:stop_gained, VEP:stop_gained
     StopGained,
-    /// Frameshift variant.
+
+    /// "A sequence variant which causes a disruption of the translational reading frame, because the number of nucleotides inserted or deleted is not a multiple of three."
+    /// SO:frameshift_variant, VEP:frameshift_variant
     FrameshiftVariant,
-    /// Stop lost.
+
+    /// "A sequence variant where at least one base of the terminator codon (stop) is changed, resulting in an elongated transcript."
+    /// SO:stop_lost, VEP:stop_lost
     StopLost,
-    /// Start lost.
+
+    /// "A codon variant that changes at least one base of the canonical start codon."
+    /// SO:start_lost, VEP:start_lost
     StartLost,
-    /// Transcript amplification.
+
+    /// "A feature amplification of a region containing a transcript."
+    /// SO:transcript_amplification, VEP:transcript_amplification
     TranscriptAmplification,
-    /*
-     * Moderate impact.
-     */
-    /// Disruptive inframe insertion.
+
+    // Currently never written out (because hgvs::parser::ProteinEdit::Ext not produced)
+    /// "A sequence variant that causes the extension of a genomic feature, with regard to the reference sequence."
+    /// SO:feature_elongation, VEP:feature_elongation
+    FeatureElongation,
+
+    /// "A sequence variant that causes the reduction of a genomic feature, with regard to the reference sequence."
+    /// SO:feature_truncation, VEP:feature_truncation
+    FeatureTruncation,
+
+    // moderate impact
+    /// "An inframe increase in cds length that inserts one or more codons into the coding sequence within an existing codon."
+    /// SO:disruptive_inframe_insertion, VEP:inframe_insertion
     DisruptiveInframeInsertion,
-    /// Disruptive inframe deletion.
+
+    /// "An inframe decrease in cds length that deletes bases from the coding sequence starting within an existing codon."
+    /// SO:disruptive_inframe_deletion, VEP:inframe_deletion
     DisruptiveInframeDeletion,
-    /// Conservative inframe insertion.
+
+    /// "An inframe increase in cds length that inserts one or more codons into the coding sequence between existing codons."
+    /// SO:conservative_inframe_insertion, VEP:inframe_insertion
     ConservativeInframeInsertion,
-    /// Conservative inframe deletion.
+
+    /// "An inframe decrease in cds length that deletes one or more entire codons from the coding sequence but does not change any remaining codons."
+    /// SO:conservative_inframe_deletion, VEP:inframe_deletion
     ConservativeInframeDeletion,
-    /// Missense variant.
+
+    /// "A sequence variant, that changes one or more bases, resulting in a different amino acid sequence but where the length is preserved."
+    /// SO:missense_variant, VEP:missense_variant
     MissenseVariant,
-    /*
-     * Low impact.
-     */
-    /// Splice donor 5th base variant.
+
+    // Not used by mehari, but by VEP (we're usually more specific)
+    // /// "A sequence_variant which is predicted to change the protein encoded in the coding sequence."
+    // /// SO:protein_altering_variant, VEP:missense_variant
+    // ProteinAlteringVariant,
+
+    // low impact
+    /// "A sequence variant that causes a change at the 5th base pair after the start of the intron in the orientation of the transcript."
+    /// SO:splice_donor_5th_base_variant, VEP:splice_donor_5th_base_variant
     SpliceDonorFifthBaseVariant,
-    /// Splice region variant.
+
+    /// "A sequence variant in which a change has occurred within the region of the splice site, either within 1-3 bases of the exon or 3-8 bases of the intron."
+    /// SO:splice_region_variant, VEP:splice_region_variant
     SpliceRegionVariant,
-    /// Splice donor region variant.
+
+    /// "A sequence variant that falls in the region between the 3rd and 6th base after splice junction (5' end of intron)."
+    /// SO:splice_donor_region_variant, VEP:splice_donor_region_variant
     SpliceDonorRegionVariant,
-    /// Splice polypyrimidine tract variant.
+
+    /// "A sequence variant that falls in the polypyrimidine tract at 3' end of intron between 17 and 3 bases from the end (acceptor -3 to acceptor -17)."
+    /// SO:splice_polypyrimidine_tract_variant, VEP:splice_polypyrimidine_tract_variant
     SplicePolypyrimidineTractVariant,
-    /// Start retained variant.
+
+    // Not used by mehari, but by VEP
+    // /// "A sequence variant where at least one base of the final codon of an incompletely annotated transcript is changed."
+    // /// SO:incomplete_terminal_codon_variant, VEP:incomplete_terminal_codon_variant
+    // IncompleteTerminalCodonVariant
+    /// "A sequence variant where at least one base in the start codon is changed, but the start remains."
+    /// SO:start_retained_variant, VEP:start_retained_variant
     StartRetainedVariant,
-    /// Stop retained variant.
+
+    /// "A sequence variant where at least one base in the terminator codon is changed, but the terminator remains."
+    /// SO:stop_retained_variant, VEP:stop_retained_variant
     StopRetainedVariant,
-    /// Synonymous variant.
+
+    /// "A sequence variant where there is no resulting change to the encoded amino acid."
+    /// SO:synonymous_variant, VEP:synonymous_variant
     SynonymousVariant,
-    /*
-     * Modifier.
-     */
-    /// Coding sequence variant.
+
+    // modifier
+    /// "A sequence variant that changes the coding sequence."
+    /// SO:coding_sequence_variant, VEP:coding_sequence_variant
     CodingSequenceVariant,
-    /// 5' UTR exon variant.
+
+    // Not yet implemented
+    /// "A transcript variant located with the sequence of the mature miRNA."
+    /// SO:mature_miRNA_variant, VEP:mature_miRNA_variant
+    MatureMirnaVariant,
+
+    /// "A UTR variant of exonic sequence of the 5' UTR."
+    /// SO:5_prime_UTR_exon_variant, VEP:5_prime_UTR_variant
     FivePrimeUtrExonVariant,
-    /// 5' UTR intron variant.
+
+    /// "A UTR variant of intronic sequence of the 5' UTR."
+    /// SO:5_prime_UTR_intron_variant, VEP:5_prime_UTR_variant
     FivePrimeUtrIntronVariant,
-    /// 3' UTR exon variant.
+
+    /// "A UTR variant of exonic sequence of the 3' UTR."
+    /// SO:3_prime_UTR_exon_variant, VEP:3_prime_UTR_variant
     ThreePrimeUtrExonVariant,
-    /// 3' UTR intron variant.
+
+    /// "A UTR variant of intronic sequence of the 3' UTR."
+    /// SO:3_prime_UTR_intron_variant, VEP:3_prime_UTR_variant
     ThreePrimeUtrIntronVariant,
-    /// Non-coding transcript exon variant.
+
+    /// "A sequence variant that changes non-coding exon sequence in a non-coding transcript."
+    /// SO:non_coding_transcript_exon_variant, VEP:non_coding_transcript_variant
     NonCodingTranscriptExonVariant,
-    /// Non-coding transcript intron variant.
+
+    /// "A sequence variant that changes non-coding intron sequence in a non-coding transcript."
+    /// SO:non_coding_transcript_intron_variant, VEP:non_coding_transcript_variant
     NonCodingTranscriptIntronVariant,
-    /// Upstream gene variant.
+
+    // Not used by mehari, but by VEP
+    // /// "A transcript variant of a protein coding gene."
+    // /// SO:coding_transcript_variant, VEP:coding_transcript_variant
+    // CodingTranscriptVariant,
+    /// "A sequence variant located 5' of a gene."
+    /// SO:upstream_gene_variant, VEP:upstream_gene_variant
     UpstreamGeneVariant,
-    /// Downstream gene variant.
+
+    /// "A sequence variant located 3' of a gene."
+    /// SO:downstream_gene_variant, VEP:downstream_gene_variant
     DownstreamGeneVariant,
-    /// Intergenic variant.
+
+    /// "A feature ablation whereby the deleted region includes a transcription factor binding site."
+    /// SO:TFBS_ablation, VEP:TFBS_ablation
+    TfbsAblation,
+
+    /// "A feature amplification of a region containing a transcription factor binding site."
+    /// SO:TFBS_amplification, VEP:TFBS_amplification
+    TfbsAmplification,
+
+    /// "A sequence variant located within a transcription factor binding site."
+    /// SO:TF_binding_site_variant, VEP:TF_binding_site_variant
+    TfBindingSiteVariant,
+
+    /// "A feature ablation whereby the deleted region includes a regulatory region."
+    /// SO:regulatory_region_ablation, VEP:regulatory_region_ablation
+    RegulatoryRegionAblation,
+
+    /// "A feature amplification of a region containing a regulatory region."
+    /// SO:regulatory_region_amplification, VEP:regulatory_region_amplification
+    RegulatoryRegionAmplification,
+
+    /// "A sequence variant located within a regulatory region."
+    /// SO:regulatory_region_variant, VEP:regulatory_region_variant
+    RegulatoryRegionVariant,
+
+    /// "A sequence variant located in the intergenic region, between genes."
+    /// SO:intergenic_variant, VEP:intergenic_variant
     IntergenicVariant,
-    /// Intron variant.
+
+    // Not used by mehari, but by VEP
+    // /// "A sequence_variant is a non exact copy of a sequence_feature or genome exhibiting one or more sequence_alteration."
+    // /// SO:sequence_variant, VEP:sequence_variant
+    // SequenceVariant,
     IntronVariant,
+
+    /// "A sequence variant where the structure of the gene is changed."
+    /// SO:gene_variant
+    GeneVariant,
 }
 
 /// Supporting code for `Consequence`.
@@ -795,6 +907,8 @@ impl TryFrom<pb_query::Consequence> for Consequence {
             pb_query::Consequence::TranscriptAmplification => {
                 Ok(Consequence::TranscriptAmplification)
             }
+            pb_query::Consequence::FeatureElongation => Ok(Consequence::FeatureElongation),
+            pb_query::Consequence::FeatureTruncation => Ok(Consequence::FeatureTruncation),
             pb_query::Consequence::DisruptiveInframeInsertion => {
                 Ok(Consequence::DisruptiveInframeInsertion)
             }
@@ -822,6 +936,7 @@ impl TryFrom<pb_query::Consequence> for Consequence {
             pb_query::Consequence::StopRetainedVariant => Ok(Consequence::StopRetainedVariant),
             pb_query::Consequence::SynonymousVariant => Ok(Consequence::SynonymousVariant),
             pb_query::Consequence::CodingSequenceVariant => Ok(Consequence::CodingSequenceVariant),
+            pb_query::Consequence::MatureMirnaVariant => Ok(Consequence::MatureMirnaVariant),
             pb_query::Consequence::FivePrimeUtrExonVariant => {
                 Ok(Consequence::FivePrimeUtrExonVariant)
             }
@@ -842,8 +957,21 @@ impl TryFrom<pb_query::Consequence> for Consequence {
             }
             pb_query::Consequence::UpstreamGeneVariant => Ok(Consequence::UpstreamGeneVariant),
             pb_query::Consequence::DownstreamGeneVariant => Ok(Consequence::DownstreamGeneVariant),
+            pb_query::Consequence::TfbsAblation => Ok(Consequence::TfbsAblation),
+            pb_query::Consequence::TfbsAmplification => Ok(Consequence::TfbsAmplification),
+            pb_query::Consequence::TfBindingSiteVariant => Ok(Consequence::TfBindingSiteVariant),
+            pb_query::Consequence::RegulatoryRegionAblation => {
+                Ok(Consequence::RegulatoryRegionAblation)
+            }
+            pb_query::Consequence::RegulatoryRegionAmplification => {
+                Ok(Consequence::RegulatoryRegionAmplification)
+            }
+            pb_query::Consequence::RegulatoryRegionVariant => {
+                Ok(Consequence::RegulatoryRegionVariant)
+            }
             pb_query::Consequence::IntergenicVariant => Ok(Consequence::IntergenicVariant),
             pb_query::Consequence::IntronVariant => Ok(Consequence::IntronVariant),
+            pb_query::Consequence::GeneVariant => Ok(Consequence::GeneVariant),
             _ => Err(consequence::Error::UnknownConsequenceValue(value)),
         }
     }
@@ -863,6 +991,8 @@ impl From<Consequence> for mehari::annotate::seqvars::ann::Consequence {
             Consequence::StopLost => ann::Consequence::StopLost,
             Consequence::StartLost => ann::Consequence::StartLost,
             Consequence::TranscriptAmplification => ann::Consequence::TranscriptAmplification,
+            Consequence::FeatureElongation => ann::Consequence::FeatureElongation,
+            Consequence::FeatureTruncation => ann::Consequence::FeatureTruncation,
             Consequence::DisruptiveInframeInsertion => ann::Consequence::DisruptiveInframeInsertion,
             Consequence::DisruptiveInframeDeletion => ann::Consequence::DisruptiveInframeDeletion,
             Consequence::ConservativeInframeInsertion => {
@@ -884,6 +1014,7 @@ impl From<Consequence> for mehari::annotate::seqvars::ann::Consequence {
             Consequence::StopRetainedVariant => ann::Consequence::StopRetainedVariant,
             Consequence::SynonymousVariant => ann::Consequence::SynonymousVariant,
             Consequence::CodingSequenceVariant => ann::Consequence::CodingSequenceVariant,
+            Consequence::MatureMirnaVariant => ann::Consequence::MatureMirnaVariant,
             Consequence::FivePrimeUtrExonVariant => ann::Consequence::FivePrimeUtrExonVariant,
             Consequence::FivePrimeUtrIntronVariant => ann::Consequence::FivePrimeUtrIntronVariant,
             Consequence::ThreePrimeUtrExonVariant => ann::Consequence::ThreePrimeUtrExonVariant,
@@ -896,8 +1027,17 @@ impl From<Consequence> for mehari::annotate::seqvars::ann::Consequence {
             }
             Consequence::UpstreamGeneVariant => ann::Consequence::UpstreamGeneVariant,
             Consequence::DownstreamGeneVariant => ann::Consequence::DownstreamGeneVariant,
+            Consequence::TfbsAblation => ann::Consequence::TfbsAblation,
+            Consequence::TfbsAmplification => ann::Consequence::TfbsAmplification,
+            Consequence::TfBindingSiteVariant => ann::Consequence::TfBindingSiteVariant,
+            Consequence::RegulatoryRegionAblation => ann::Consequence::RegulatoryRegionAblation,
+            Consequence::RegulatoryRegionAmplification => {
+                ann::Consequence::RegulatoryRegionAmplification
+            }
+            Consequence::RegulatoryRegionVariant => ann::Consequence::RegulatoryRegionVariant,
             Consequence::IntergenicVariant => ann::Consequence::IntergenicVariant,
             Consequence::IntronVariant => ann::Consequence::IntronVariant,
+            Consequence::GeneVariant => ann::Consequence::GeneVariant,
         }
     }
 }

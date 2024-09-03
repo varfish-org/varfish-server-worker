@@ -185,13 +185,16 @@ pub fn load_gene_db(path_db: &str, genome_release: GenomeRelease) -> Result<Gene
     info!("Loading gene dbs");
 
     let result = GeneDb {
-        xlink: load_xlink_db(Path::new(path_db).join("noref/genes/xlink.bin").as_path())?,
-        acmg: load_acmg_db(Path::new(path_db).join("noref/genes/acmg.tsv").as_path())?,
+        xlink: load_xlink_db(Path::new(path_db).join("noref/genes/xlink.bin").as_path())
+            .map_err(|e| anyhow::anyhow!("error loading Xlink DB: {}", e))?,
+        acmg: load_acmg_db(Path::new(path_db).join("noref/genes/acmg.tsv").as_path())
+            .map_err(|e| anyhow::anyhow!("error loading ACMG DB: {}", e))?,
         mim2gene: load_mim2gene_db(
             Path::new(path_db)
                 .join("noref/genes/mim2gene.tsv")
                 .as_path(),
-        )?,
+        )
+        .map_err(|e| anyhow::anyhow!("error loading OMIM DB: {}", e))?,
     };
 
     Ok(result)
