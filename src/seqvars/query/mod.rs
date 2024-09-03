@@ -736,7 +736,6 @@ mod gene_related_annotation {
     pub(crate) fn consequences(
         ann: &mehari::annotate::seqvars::ann::AnnField,
     ) -> Result<Option<pbs_output::GeneRelatedConsequences>, anyhow::Error> {
-        eprintln!("{:?}", &ann);
         Ok(Some(pbs_output::GeneRelatedConsequences {
             hgvs_t: ann.hgvs_t.clone(),
             hgvs_p: ann.hgvs_p.clone(),
