@@ -12,7 +12,7 @@ rust-version = "1.70.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-annonars = "0.40"
+annonars = "0.41"
 anyhow = "1.0"
 async-compression = { version = "0.4", features = ["tokio", "gzip"] }
 aws-sdk-s3 = { version = "1.43", features = ["behavior-version-latest"] }
