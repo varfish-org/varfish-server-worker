@@ -76,7 +76,7 @@ prost-build = "0.13"
 pbjson-build = "0.7.0"
 
 [dev-dependencies]
-async-std = { version = "1.12", features = ["attributes"] }
+async-std = { version = "1.13", features = ["attributes"] }
 file_diff = "1.0"
 float-cmp = "0.9"
 hxdmp = "0.2.1"
