@@ -78,7 +78,7 @@ pbjson-build = "0.7.0"
 [dev-dependencies]
 async-std = { version = "1.13", features = ["attributes"] }
 file_diff = "1.0"
-float-cmp = "0.9"
+float-cmp = "0.10"
 hxdmp = "0.2.1"
 insta = { version = "1.40", features = ["yaml"] }
 pretty_assertions = "1.4"
