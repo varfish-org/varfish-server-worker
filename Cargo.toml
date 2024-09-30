@@ -48,7 +48,7 @@ prost = "0.13.3"
 rand = "0.8"
 rand_core = "0.6"
 rayon = "1.10"
-regex = "1.10"
+regex = "1.11"
 rocksdb-utils-lookup = "0.4"
 rocksdb = { version = "0.22", features = ["multi-threaded-cf"] }
 serde_json = "1.0"
