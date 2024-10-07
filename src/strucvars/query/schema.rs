@@ -1489,9 +1489,15 @@ impl StructuralVariant {
                     (
                         "anc",
                         vcf::variant::record_buf::samples::sample::Value::Integer(
-                            average_normalized_cov,
+                            average_normalized_cov, // float, see below
                         ),
                     ) => call_info.average_normalized_cov = Some(*average_normalized_cov as f32),
+                    (
+                        "anc",
+                        vcf::variant::record_buf::samples::sample::Value::Float(
+                            average_normalized_cov, // int, see above
+                        ),
+                    ) => call_info.average_normalized_cov = Some(*average_normalized_cov),
                     (
                         "amq",
                         vcf::variant::record_buf::samples::sample::Value::Float(
