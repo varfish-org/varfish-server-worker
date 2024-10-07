@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.2](https://github.com/varfish-org/varfish-server-worker/compare/v0.13.1...v0.13.2) (2024-10-07)
+
+
+### Bug Fixes
+
+* anc can be float or int ([#478](https://github.com/varfish-org/varfish-server-worker/issues/478)) ([0c37d30](https://github.com/varfish-org/varfish-server-worker/commit/0c37d30ae12adbd640df77373c8d517301e54c9c))
+
 ## [0.13.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.13.0...v0.13.1) (2024-10-07)
 
 
