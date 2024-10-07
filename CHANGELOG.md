@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.13.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.13.0...v0.13.1) (2024-10-07)
+
+
+### Bug Fixes
+
+* add missing consequence conversion ([#454](https://github.com/varfish-org/varfish-server-worker/issues/454)) ([843922a](https://github.com/varfish-org/varfish-server-worker/commit/843922ae6ac9ec364459406e6c3770da607b6011))
+* changing protobuf and others as needed ([#455](https://github.com/varfish-org/varfish-server-worker/issues/455)) ([2718a6e](https://github.com/varfish-org/varfish-server-worker/commit/2718a6ed26b093a63b08fc8dbdbf65812028e3a6))
+* make reading from S3 work and bump mehari ([#452](https://github.com/varfish-org/varfish-server-worker/issues/452)) ([13a106a](https://github.com/varfish-org/varfish-server-worker/commit/13a106a080577ba094f4cfed616b1d5ab65d2228))
+* proper handling of FORMAT/amq ([#477](https://github.com/varfish-org/varfish-server-worker/issues/477)) ([e1f89a0](https://github.com/varfish-org/varfish-server-worker/commit/e1f89a0f295780a6a1418f185cb36e0e4968e68e))
+
 ## [0.13.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.12.0...v0.13.0) (2024-08-06)
 
 
