@@ -13,18 +13,16 @@
 # Builder
 # ---------------------------------------------------------------------------
 
-# Pinning Rust version for now because of this issue:
-#
-# - https://github.com/rust-lang/rust/issues/95926
-FROM rust:1-bookworm AS builder
+# Use ubuntu:noble as the base image
+FROM ubuntu:noble AS builder
 
-# Build dependencies first.
-#
-# Install dependencies for compilation of C code (e.g., rocksdb).
+# Install Rust toolchain and dependencies for compilation of C code (e.g., rocksdb)
 RUN apt-get update && \
-    apt-get install -y clang
-# Add the needed Cargo components.
-RUN rustup component add rustfmt
+    apt-get install -y unzip wget curl build-essential clang librocksdb-dev libsqlite3-dev && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    . $HOME/.cargo/env && \
+    rustup component add rustfmt
+
 # Install build dependency `protoc`.
 COPY utils/install-protoc.sh /tmp
 RUN PREFIX=/usr/local bash /tmp/install-protoc.sh
@@ -49,18 +47,20 @@ COPY protos /usr/src/varfish-server-worker/protos/
 # COPY utils/alpine-linker-script.sh /usr/src/varfish-server-worker/utils/
 # RUN chmod a+rx /usr/src/varfish-server-worker/utils/alpine-linker-script.sh
 # COPY .cargo /usr/src/varfish-server-worker/.cargo/
-## Touch main.rs to prevent cached release build.
+
+# Touch main.rs to prevent cached release build.
 RUN touch /usr/src/varfish-server-worker/src/main.rs
-# This is the actual application build.
-RUN cargo build --release
+
+# Build the application
+RUN /root/.cargo/bin/cargo build --release
 
 # ---------------------------------------------------------------------------
 # Runtime
 # ---------------------------------------------------------------------------
 
-FROM debian:bookworm-slim AS runtime
+FROM ubuntu:noble AS runtime
 
-# Install dependencies (and cleanup afterwards)
+# Install dependencies (and cleanup afterward)
 RUN apt-get update && \
     apt-get install -y libsqlite3-0 && \
     apt-get clean autoclean && \
