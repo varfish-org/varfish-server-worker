@@ -3122,8 +3122,6 @@ dependencies = [
 [[package]]
 name = "mehari"
 version = "0.29.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e32986e95422745cbabb3233a271758e375d85854e480973508b2116299bf23"
 dependencies = [
  "actix-web",
  "annonars",
@@ -3161,6 +3159,7 @@ dependencies = [
  "pbjson",
  "pbjson-build",
  "pbjson-types",
+ "percent-encoding",
  "procfs",
  "prost",
  "prost-build",
