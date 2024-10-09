@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.14.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.13.2...v0.14.0) (2024-10-09)
+
+
+### Features
+
+* add mode of inheritance from HPO ([#493](https://github.com/varfish-org/varfish-server-worker/issues/493)) ([2da2b86](https://github.com/varfish-org/varfish-server-worker/commit/2da2b862bf5be6782c7cea265481b8b5650499e5))
+
+
+### Bug Fixes
+
+* bump mehari to escape clinvar output string ([#485](https://github.com/varfish-org/varfish-server-worker/issues/485)) ([#488](https://github.com/varfish-org/varfish-server-worker/issues/488)) ([e0e2370](https://github.com/varfish-org/varfish-server-worker/commit/e0e2370f27b6d1a296272b90138df6ab3a5f4688))
+* suppress unknown consequence errors ([#491](https://github.com/varfish-org/varfish-server-worker/issues/491)) ([c95ed79](https://github.com/varfish-org/varfish-server-worker/commit/c95ed797d0c3354684be338e33970ba090c5873d))
+* suppress unknown consequence errors ([#492](https://github.com/varfish-org/varfish-server-worker/issues/492)) ([bfe718d](https://github.com/varfish-org/varfish-server-worker/commit/bfe718dd8b6927d91a295a2006506fcf161da700))
+
 ## [0.13.2](https://github.com/varfish-org/varfish-server-worker/compare/v0.13.1...v0.13.2) (2024-10-07)
 
 
