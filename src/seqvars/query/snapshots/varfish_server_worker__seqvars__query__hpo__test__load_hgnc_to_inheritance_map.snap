@@ -1,0 +1,15 @@
+---
+source: src/seqvars/query/hpo.rs
+expression: "&map[0..5]"
+---
+- - "HGNC:7114"
+  - - AutosomalDominant
+- - "HGNC:19309"
+  - - AutosomalDominant
+- - "HGNC:16391"
+  - - AutosomalRecessive
+- - "HGNC:1966"
+  - - AutosomalDominant
+    - AutosomalRecessive
+- - "HGNC:4241"
+  - - AutosomalRecessive

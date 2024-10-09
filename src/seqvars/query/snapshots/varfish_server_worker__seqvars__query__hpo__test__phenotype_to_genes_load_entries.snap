@@ -1,0 +1,24 @@
+---
+source: src/seqvars/query/hpo.rs
+expression: "&entries[0..5]"
+---
+- ncbi_gene_id: 3081
+  gene_symbol: HGD
+  hpo_id: "HP:0008775"
+  hpo_name: Abnormal prostate morphology
+- ncbi_gene_id: 695
+  gene_symbol: BTK
+  hpo_id: "HP:0008775"
+  hpo_name: Abnormal prostate morphology
+- ncbi_gene_id: 695
+  gene_symbol: BTK
+  hpo_id: "HP:0008775"
+  hpo_name: Abnormal prostate morphology
+- ncbi_gene_id: 1493
+  gene_symbol: CTLA4
+  hpo_id: "HP:0008775"
+  hpo_name: Abnormal prostate morphology
+- ncbi_gene_id: 26191
+  gene_symbol: PTPN22
+  hpo_id: "HP:0008775"
+  hpo_name: Abnormal prostate morphology

@@ -6,11 +6,14 @@ use crate::{common::GenomeRelease, seqvars::ingest::path_component};
 
 use prost::Message as _;
 
-use super::schema::data::VariantRecord;
+use super::{
+    hpo::{load_hgnc_to_inheritance_map, HgncToMoiMap},
+    schema::data::VariantRecord,
+};
 
 /// Bundle the types needed for databases.
 pub struct AnnonarsDbs {
-    /// annonaars gene RocksDB.
+    /// annonars gene RocksDB.
     pub genes_db: Arc<rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>>,
     /// ClinVar database as annonars RocksDB.
     pub clinvar_db: Arc<rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>>,
@@ -124,6 +127,8 @@ impl AnnonarsDbs {
 pub struct Annotator {
     /// Annonars database bundles.
     pub annonars_dbs: AnnonarsDbs,
+    /// Mapping from HGNC gene ID to modes of inheritance; from `hpo` directory.
+    pub hgnc_to_moi: HgncToMoiMap,
 }
 
 impl Annotator {
@@ -143,7 +148,18 @@ impl Annotator {
                 e
             )
         })?;
-        Ok(Self { annonars_dbs })
+        let hgnc_to_moi =
+            load_hgnc_to_inheritance_map(&path.as_ref().join("hpo")).map_err(|e| {
+                anyhow::anyhow!(
+                    "problem loading HGNC to mode of inheritance map at {}: {}",
+                    path.as_ref().join("hpo").display(),
+                    e
+                )
+            })?;
+        Ok(Self {
+            annonars_dbs,
+            hgnc_to_moi,
+        })
     }
 
     /// Query `genes` database for a given HGNC ID.
