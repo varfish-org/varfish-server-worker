@@ -296,7 +296,7 @@ async fn run_query(
             stats.count_total += 1;
             let record_seqvar = VariantRecord::try_from_vcf(&record_buf, &input_header)
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
-            tracing::debug!("processing record {:?}", record_seqvar);
+            tracing::trace!("processing record {:?}", record_seqvar);
 
             if interpreter.passes(&record_seqvar, annotator)?.pass_all {
                 stats.count_passed += 1;
@@ -424,6 +424,7 @@ async fn run_query(
 
     // Perform the annotation and write into file without header.
     {
+        tracing::debug!("writing noheader file {}", path_noheader.display());
         let writer = tokio::fs::OpenOptions::new()
             .create(true)
             .truncate(true)
@@ -477,6 +478,7 @@ async fn run_query(
     // Use output helper for semi-transparent upload to S3.
     let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_output)?;
     {
+        tracing::debug!("writing file {}", out_path_helper.path_out());
         // Open output file for writing (potentially temporary, then uploaded to S3 via helper).
         let file = std::fs::OpenOptions::new()
             .create(true)
