@@ -252,7 +252,7 @@ async fn run_query(
         let record_sv = StructuralVariant::from_vcf(&record_buf, &input_header)
             .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
 
-        tracing::debug!("processing record {:?}", record_sv);
+        tracing::trace!("processing record {:?}", record_sv);
 
         let mut result_payload = ResultPayload {
             call_info: record_sv.call_info.clone(),

@@ -296,7 +296,7 @@ async fn run_query(
             stats.count_total += 1;
             let record_seqvar = VariantRecord::try_from_vcf(&record_buf, &input_header)
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
-            tracing::debug!("processing record {:?}", record_seqvar);
+            tracing::trace!("processing record {:?}", record_seqvar);
 
             if interpreter.passes(&record_seqvar, annotator)?.pass_all {
                 stats.count_passed += 1;
@@ -424,6 +424,7 @@ async fn run_query(
 
     // Perform the annotation and write into file without header.
     {
+        tracing::debug!("writing noheader file {}", path_noheader.display());
         let writer = tokio::fs::OpenOptions::new()
             .create(true)
             .truncate(true)
@@ -477,6 +478,7 @@ async fn run_query(
     // Use output helper for semi-transparent upload to S3.
     let out_path_helper = crate::common::s3::OutputPathHelper::new(&args.path_output)?;
     {
+        tracing::debug!("writing file {}", out_path_helper.path_out());
         // Open output file for writing (potentially temporary, then uploaded to S3 via helper).
         let file = std::fs::OpenOptions::new()
             .create(true)
@@ -529,20 +531,18 @@ fn write_header(
             passed_by_consequences: stats
                 .passed_by_consequences
                 .iter()
-                .map(
-                    |(csq, count)| -> Result<pbs_output::ConsequenceCount, anyhow::Error> {
-                        Ok(pbs_output::ConsequenceCount {
-                            consequence: TryInto::<pbs_query::Consequence>::try_into(*csq).map_err(
-                                |e| {
-                                    anyhow::anyhow!("could not convert consequence {}: {}", *csq, e)
-                                },
-                            )? as i32,
+                .filter_map(|(csq, count)| -> Option<pbs_output::ConsequenceCount> {
+                    // We ignore consequences that don't have a mapping into the protobuf.
+                    if let Ok(csq) = TryInto::<pbs_query::Consequence>::try_into(*csq) {
+                        Some(pbs_output::ConsequenceCount {
+                            consequence: csq as i32,
                             count: *count as u32,
                         })
-                    },
-                )
-                .collect::<Result<_, _>>()
-                .map_err(|e| anyhow::anyhow!("could not convert consequences: {}", e))?,
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>(),
         }),
         resources: Some(pbs_output::ResourcesUsed {
             start_time: Some(start_time),
@@ -742,13 +742,15 @@ mod gene_related_annotation {
             consequences: ann
                 .consequences
                 .iter()
-                .map(|csq| -> Result<i32, anyhow::Error> {
-                    let csq: pbs_query::Consequence = (*csq)
-                        .try_into()
-                        .map_err(|e| anyhow::anyhow!("could not convert consequence: {}", e))?;
-                    Ok(csq as i32)
+                .filter_map(|csq| -> Option<i32> {
+                    // We ignore consequences that don't have a mapping into the protobuf.
+                    if let Ok(csq) = TryInto::<pbs_query::Consequence>::try_into(*csq) {
+                        Some(csq as i32)
+                    } else {
+                        None
+                    }
                 })
-                .collect::<Result<Vec<_>, _>>()?,
+                .collect::<Vec<_>>(),
         }))
     }
 
