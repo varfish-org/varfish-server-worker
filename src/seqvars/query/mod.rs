@@ -1,6 +1,7 @@
 //! Code implementing the "seqvars query" sub command.
 
 pub mod annonars;
+pub mod hpo;
 pub mod interpreter;
 pub mod schema;
 pub mod sorting;
@@ -712,6 +713,7 @@ impl WithSeqvarAndAnnotator for pbs_output::GeneRelatedAnnotation {
                 let gene_record = annotator
                     .query_genes(&hgnc_id)
                     .map_err(|e| anyhow::anyhow!("problem querying genes database: {}", e))?;
+                let mois = annotator.hgnc_to_moi.get(&hgnc_id);
 
                 return Ok(Self {
                     identity: Some(pbs_output::GeneIdentity {
@@ -719,7 +721,7 @@ impl WithSeqvarAndAnnotator for pbs_output::GeneRelatedAnnotation {
                         gene_symbol: ann.gene_symbol.clone(),
                     }),
                     consequences: gene_related_annotation::consequences(ann)?,
-                    phenotypes: gene_related_annotation::phenotypes(&gene_record),
+                    phenotypes: gene_related_annotation::phenotypes(&gene_record, mois),
                     constraints: gene_related_annotation::constraints(&gene_record)?,
                 });
             }
@@ -756,12 +758,19 @@ mod gene_related_annotation {
 
     pub(crate) fn phenotypes(
         gene_record: &Option<::annonars::pbs::genes::base::Record>,
+        mois: Option<&indexmap::IndexSet<hpo::ModeOfInheritance>>,
     ) -> Option<pbs_output::GeneRelatedPhenotypes> {
         gene_record
             .as_ref()
             .map(|gene_record| pbs_output::GeneRelatedPhenotypes {
                 is_acmg_sf: gene_record.acmg_sf.is_some(),
                 is_disease_gene: gene_record.omim.is_some() || gene_record.orpha.is_some(),
+                mode_of_inheritances: mois
+                    .cloned()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|moi| Into::<pbs_output::ModeOfInheritance>::into(moi) as i32)
+                    .collect::<Vec<_>>(),
             })
     }
 

@@ -1,0 +1,24 @@
+---
+source: src/seqvars/query/hpo.rs
+expression: "&map[0..5]"
+---
+- hgnc_id: "HGNC:5"
+  ensembl_gene_id: ENSG00000121410
+  ncbi_gene_id: 1
+  gene_symbol: A1BG
+- hgnc_id: "HGNC:37133"
+  ensembl_gene_id: ENSG00000268895
+  ncbi_gene_id: 503538
+  gene_symbol: A1BG-AS1
+- hgnc_id: "HGNC:24086"
+  ensembl_gene_id: ENSG00000148584
+  ncbi_gene_id: 29974
+  gene_symbol: A1CF
+- hgnc_id: "HGNC:7"
+  ensembl_gene_id: ENSG00000175899
+  ncbi_gene_id: 2
+  gene_symbol: A2M
+- hgnc_id: "HGNC:27057"
+  ensembl_gene_id: ENSG00000245105
+  ncbi_gene_id: 144571
+  gene_symbol: A2M-AS1

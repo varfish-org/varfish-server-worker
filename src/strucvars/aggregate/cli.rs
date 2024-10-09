@@ -84,7 +84,7 @@ async fn split_input_by_chrom_and_sv_type(
                 .expect("no file for chrom/sv_type");
             #[allow(clippy::needless_borrows_for_generic_args)]
             to_writer(&mut tmp_file, &input_record)?;
-            tmp_file.write_all(&[b'\n'])?;
+            tmp_file.write_all(b"\n")?;
 
             // Write out progress indicator every 60 seconds.
             if prev.elapsed().as_secs() >= 60 {
