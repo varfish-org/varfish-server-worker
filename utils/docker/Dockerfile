@@ -38,7 +38,7 @@ COPY Cargo.toml Cargo.lock /usr/src/varfish-server-worker/
 # Set the working directory.
 WORKDIR /usr/src/varfish-server-worker
 # This is a dummy build to get the dependencies cached.
-RUN cargo build --release
+RUN /root/.cargo/bin/cargo build --release
 #
 # Now copy in the rest of the sources.
 COPY build.rs Cargo.toml Cargo.lock /usr/src/varfish-server-worker/
