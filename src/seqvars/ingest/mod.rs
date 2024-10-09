@@ -323,7 +323,7 @@ async fn process_variants(
 
     // Open the serialized transcripts.
     tracing::info!("Opening transcript database");
-    let tx_db = mehari::annotate::seqvars::load_tx_db(&format!(
+    let tx_db = mehari::annotate::seqvars::load_tx_db(format!(
         "{}/{}/txs.bin.zst",
         &args.path_mehari_db,
         path_component(args.genomebuild)

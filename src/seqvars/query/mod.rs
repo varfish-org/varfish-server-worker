@@ -529,20 +529,18 @@ fn write_header(
             passed_by_consequences: stats
                 .passed_by_consequences
                 .iter()
-                .map(
-                    |(csq, count)| -> Result<pbs_output::ConsequenceCount, anyhow::Error> {
-                        Ok(pbs_output::ConsequenceCount {
-                            consequence: TryInto::<pbs_query::Consequence>::try_into(*csq).map_err(
-                                |e| {
-                                    anyhow::anyhow!("could not convert consequence {}: {}", *csq, e)
-                                },
-                            )? as i32,
+                .filter_map(|(csq, count)| -> Option<pbs_output::ConsequenceCount> {
+                    // We ignore consequences that don't have a mapping into the protobuf.
+                    if let Ok(csq) = TryInto::<pbs_query::Consequence>::try_into(*csq) {
+                        Some(pbs_output::ConsequenceCount {
+                            consequence: csq as i32,
                             count: *count as u32,
                         })
-                    },
-                )
-                .collect::<Result<_, _>>()
-                .map_err(|e| anyhow::anyhow!("could not convert consequences: {}", e))?,
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>(),
         }),
         resources: Some(pbs_output::ResourcesUsed {
             start_time: Some(start_time),
@@ -742,13 +740,15 @@ mod gene_related_annotation {
             consequences: ann
                 .consequences
                 .iter()
-                .map(|csq| -> Result<i32, anyhow::Error> {
-                    let csq: pbs_query::Consequence = (*csq)
-                        .try_into()
-                        .map_err(|e| anyhow::anyhow!("could not convert consequence: {}", e))?;
-                    Ok(csq as i32)
+                .filter_map(|csq| -> Option<i32> {
+                    // We ignore consequences that don't have a mapping into the protobuf.
+                    if let Ok(csq) = TryInto::<pbs_query::Consequence>::try_into(*csq) {
+                        Some(csq as i32)
+                    } else {
+                        None
+                    }
                 })
-                .collect::<Result<Vec<_>, _>>()?,
+                .collect::<Vec<_>>(),
         }))
     }
 
