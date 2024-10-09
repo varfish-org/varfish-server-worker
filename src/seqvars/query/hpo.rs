@@ -88,10 +88,10 @@ pub fn load_hgnc_to_inheritance_map<P: AsRef<std::path::Path>>(
                     if let Some(mode_of_inheritance) =
                         ModeOfInheritance::from_hpo_id(&ptg_entry.hpo_id)
                     {
-                        let modes_of_inheritance = result
+                        let mode_of_inheritances = result
                             .entry(hgnc_id.clone())
                             .or_insert_with(indexmap::IndexSet::new);
-                        modes_of_inheritance.insert_sorted(mode_of_inheritance);
+                        mode_of_inheritances.insert_sorted(mode_of_inheritance);
                     }
                 }
             }

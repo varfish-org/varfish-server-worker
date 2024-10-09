@@ -191,7 +191,7 @@ message GeneRelatedPhenotypes {
   // Whether is a known disease gene.
   bool is_disease_gene = 2;
   // Linked modes of inheritance.
-  repeated ModeOfInheritance modes_of_inheritance = 3;
+  repeated ModeOfInheritance mode_of_inheritances = 3;
 }
 
 // Gene-wise constraints.

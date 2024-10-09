@@ -765,7 +765,7 @@ mod gene_related_annotation {
             .map(|gene_record| pbs_output::GeneRelatedPhenotypes {
                 is_acmg_sf: gene_record.acmg_sf.is_some(),
                 is_disease_gene: gene_record.omim.is_some() || gene_record.orpha.is_some(),
-                modes_of_inheritance: mois
+                mode_of_inheritances: mois
                     .cloned()
                     .unwrap_or_default()
                     .into_iter()
