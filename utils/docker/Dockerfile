@@ -32,7 +32,7 @@ RUN PREFIX=/usr/local bash /tmp/install-protoc.sh
 # Set initial workdir.
 WORKDIR /usr/src
 # Create blank project.
-RUN USER=root cargo new varfish-server-worker
+RUN USER=root /root/.cargo/bin/cargo new varfish-server-worker
 # We want dependencies cached, so copy those first.
 COPY Cargo.toml Cargo.lock /usr/src/varfish-server-worker/
 # Set the working directory.
