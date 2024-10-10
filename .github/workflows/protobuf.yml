@@ -10,10 +10,15 @@ on:
 
 jobs:
   Linting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
       - name: Install protolint
         run: |
