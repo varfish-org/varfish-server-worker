@@ -74,7 +74,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: Swatinem/rust-cache@v2.7.3
+      - uses: Swatinem/rust-cache@v2.7.5
 
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
