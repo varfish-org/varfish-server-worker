@@ -277,9 +277,9 @@ dependencies = [
 
 [[package]]
 name = "annonars"
-version = "0.41.1"
+version = "0.41.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0542294339cfff9475cc1b31decbf6fc41d518ebb06f4acf50f220174ad62b5"
+checksum = "00b75fa31308f0d683d6f24bbfde06c76e2679661dc3ad5a6ca0347256b980ee"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -3121,9 +3121,9 @@ dependencies = [
 
 [[package]]
 name = "mehari"
-version = "0.29.5"
+version = "0.29.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b674feb19c2f61d5b23f8f75d1f7a9472d7451671323622a9843d5a7f358c085"
+checksum = "813beab32532331615621ef04136e2e0f330bfb052ade27439ff96f479ba9634"
 dependencies = [
  "actix-web",
  "annonars",
