@@ -3162,7 +3162,7 @@ dependencies = [
  "pbjson-build",
  "pbjson-types",
  "percent-encoding",
- "procfs",
+ "procfs 0.16.0",
  "prost",
  "prost-build",
  "quick_cache",
@@ -4082,7 +4082,21 @@ dependencies = [
  "flate2",
  "hex",
  "lazy_static",
- "procfs-core",
+ "procfs-core 0.16.0",
+ "rustix",
+]
+
+[[package]]
+name = "procfs"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc5b72d8145275d844d4b5f6d4e1eef00c8cd889edb6035c21675d1bb1f45c9f"
+dependencies = [
+ "bitflags",
+ "chrono",
+ "flate2",
+ "hex",
+ "procfs-core 0.17.0",
  "rustix",
 ]
 
@@ -4091,6 +4105,17 @@ name = "procfs-core"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d3554923a69f4ce04c4a754260c338f505ce22642d3830e049a399fc2059a29"
+dependencies = [
+ "bitflags",
+ "chrono",
+ "hex",
+]
+
+[[package]]
+name = "procfs-core"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "239df02d8349b06fc07398a3a1697b06418223b1c7725085e801e7c0fc6a12ec"
 dependencies = [
  "bitflags",
  "chrono",
@@ -5796,7 +5821,7 @@ dependencies = [
  "pbjson-build",
  "pbjson-types",
  "pretty_assertions",
- "procfs",
+ "procfs 0.17.0",
  "prost",
  "prost-build",
  "rand",
