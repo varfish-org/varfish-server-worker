@@ -21,8 +21,10 @@ jobs:
           python-version: '3.12'
 
       - name: Install protolint
+        # We need to use `--break-system-packages` to work around the "This
+        # environment is externally managed" errors.
         run: |
-          pip install protolint-bin
+          pip install --break-system-packages protolint-bin
 
       - name: Run protolint
         run: |
