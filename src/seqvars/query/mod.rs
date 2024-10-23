@@ -904,16 +904,27 @@ mod variant_related_annotation {
             pub input_column_name: String,
             /// The output column name.
             pub output_column_name: String,
+            /// Separator to split multiple columns by.
+            pub separator: Option<char>,
+            /// Whether to compute maximum (is minimum if separator is some).
+            pub is_max: bool,
             /// The collected value, if any.
             pub value: Option<serde_json::Value>,
         }
 
         impl SingleValueCollector {
             /// Construct given column name.
-            pub fn new(input_column_name: &str, output_column_name: &str) -> Self {
+            pub fn new(
+                input_column_name: &str,
+                output_column_name: &str,
+                separator: Option<char>,
+                is_max: Option<bool>,
+            ) -> Self {
                 Self {
                     input_column_name: input_column_name.into(),
                     output_column_name: output_column_name.into(),
+                    separator,
+                    is_max: is_max.unwrap_or(true),
                     value: None,
                 }
             }
@@ -922,7 +933,29 @@ mod variant_related_annotation {
         impl Collector for SingleValueCollector {
             fn register(&mut self, column_name: &str, value: &serde_json::Value) {
                 if column_name == self.input_column_name && !value.is_null() {
-                    self.value = Some(value.clone());
+                    if let Some(separator) = self.separator {
+                        if let serde_json::Value::String(value_str) = value {
+                            // Split string value if we have a separator and a string.
+                            let values_f64 = value_str
+                                .split(separator)
+                                .collect::<Vec<_>>()
+                                .into_iter()
+                                .flat_map(|s| s.parse::<f64>().ok())
+                                .collect::<Vec<_>>();
+                            let f64_value = if self.is_max {
+                                values_f64.into_iter().max_by(|a, b| a.total_cmp(b))
+                            } else {
+                                values_f64.into_iter().min_by(|a, b| a.total_cmp(b))
+                            };
+                            if let Some(f64_value) = f64_value {
+                                if let Some(f64_value) = serde_json::Number::from_f64(f64_value) {
+                                    self.value = Some(serde_json::Value::Number(f64_value));
+                                }
+                            }
+                        }
+                    } else {
+                        self.value = Some(value.clone());
+                    }
                 }
             }
 
@@ -1129,6 +1162,7 @@ mod variant_related_annotation {
     /// Return information about the scores entries.
     pub(crate) fn score_columns() -> Vec<pbs_output::VariantScoreColumn> {
         vec![
+            // Scores obtained from CADD file.
             pbs_output::VariantScoreColumn {
                 name: "cadd_phred".to_string(),
                 label: "CADD".to_string(),
@@ -1136,9 +1170,15 @@ mod variant_related_annotation {
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
             pbs_output::VariantScoreColumn {
-                name: "sift".to_string(),
-                label: "SIFT".to_string(),
-                description: "SIFT score".to_string(),
+                name: "mmsplice".to_string(),
+                label: "MMSplice".to_string(),
+                description: "MMSplice score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "mmsplice_argmax".to_string(),
+                label: "MMSplice (which)".to_string(),
+                description: "Which MMSplice score is maximal".to_string(),
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
             pbs_output::VariantScoreColumn {
@@ -1148,27 +1188,88 @@ mod variant_related_annotation {
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
             pbs_output::VariantScoreColumn {
+                name: "sift".to_string(),
+                label: "SIFT".to_string(),
+                description: "SIFT score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
                 name: "spliceai".to_string(),
                 label: "SpliceAI".to_string(),
                 description: "SpliceAI score".to_string(),
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
             pbs_output::VariantScoreColumn {
-                name: "spliceai".to_string(),
+                name: "spliceai_argmax".to_string(),
                 label: "SpliceAI (which)".to_string(),
                 description: "Which SpliceAI score is maximal".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            // Scores obtained from dbNSFP file.
+            pbs_output::VariantScoreColumn {
+                name: "alphamissense".to_string(),
+                label: "AlphaMissense".to_string(),
+                description: "AlphaMissense score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "baysedel_addaf".to_string(),
+                label: "BayesDel".to_string(),
+                description: "BayesDel AddAF score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "fathmm".to_string(),
+                label: "PROVEAN".to_string(),
+                description: "PROVEAN score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "fitcons_integrated".to_string(),
+                label: "fitCons".to_string(),
+                description: "The integrated fitCons score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "lrt".to_string(),
+                label: "LRT".to_string(),
+                description: "LRT score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "metasvm".to_string(),
+                label: "MetaSVM".to_string(),
+                description: "MetaSVM score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "polyphen2_hdiv".to_string(),
+                label: "Polyphen2 HDIV".to_string(),
+                description: "Polyphen2 HDIV score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "polyphen2_hvar".to_string(),
+                label: "Polyphen2 HVAR".to_string(),
+                description: "Polyphen2 HVAR score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "primateai".to_string(),
+                label: "PrimateAI".to_string(),
+                description: "PrimateAI score".to_string(),
+                r#type: pbs_output::VariantScoreColumnType::Number as i32,
+            },
+            pbs_output::VariantScoreColumn {
+                name: "provean".to_string(),
+                label: "PROVEAN".to_string(),
+                description: "PROVEAN score".to_string(),
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
             pbs_output::VariantScoreColumn {
                 name: "revel".to_string(),
                 label: "REVEL".to_string(),
                 description: "REVEL score".to_string(),
-                r#type: pbs_output::VariantScoreColumnType::Number as i32,
-            },
-            pbs_output::VariantScoreColumn {
-                name: "baysedel_addaf".to_string(),
-                label: "BayesDel".to_string(),
-                description: "BayesDell AddAF score".to_string(),
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
         ]
@@ -1189,9 +1290,14 @@ mod variant_related_annotation {
             .map_err(|e| anyhow::anyhow!("problem querying CADD: {}", e))?
         {
             let mut collectors: Vec<Box<dyn Collector>> = vec![
-                Box::new(SingleValueCollector::new("PHRED", "cadd_phred")),
-                Box::new(SingleValueCollector::new("SIFTval", "sift")),
-                Box::new(SingleValueCollector::new("PolyPhenVal", "polyphen")),
+                Box::new(SingleValueCollector::new("PHRED", "cadd_phred", None, None)),
+                Box::new(SingleValueCollector::new("SIFTval", "sift", None, None)),
+                Box::new(SingleValueCollector::new(
+                    "PolyPhenVal",
+                    "polyphen",
+                    None,
+                    None,
+                )),
                 Box::new(ExtremalValueCollector::new(
                     &[
                         "SpliceAI-acc-gain",
@@ -1200,6 +1306,17 @@ mod variant_related_annotation {
                         "SpliceAI-don-loss",
                     ],
                     "spliceai",
+                    true,
+                )),
+                Box::new(ExtremalValueCollector::new(
+                    &[
+                        "MMSp_acceptorIntron",
+                        "MMSp_acceptor",
+                        "MMSp_exon",
+                        "MMSp_donor",
+                        "MMSp_donorIntron",
+                    ],
+                    "mmsplice",
                     true,
                 )),
             ];
@@ -1229,19 +1346,73 @@ mod variant_related_annotation {
             .as_ref()
             .map_err(|e| anyhow::anyhow!("problem querying dbNSFP: {}", e))?
         {
-            // REVEL_score
-            // BayesDel_addAF_score
             let mut collectors: Vec<Box<dyn Collector>> = vec![
-                Box::new(SingleValueCollector::new("REVEL_score", "revel")),
+                Box::new(SingleValueCollector::new(
+                    "AlphaMissense_score",
+                    "alphamissense",
+                    Some(';'),
+                    None,
+                )),
                 Box::new(SingleValueCollector::new(
                     "BayesDel_addAF_score",
                     "bayesdel_addaf",
+                    None,
+                    None,
+                )),
+                Box::new(SingleValueCollector::new(
+                    "FATHMM_score",
+                    "fathmm",
+                    Some(';'),
+                    None,
+                )),
+                Box::new(SingleValueCollector::new(
+                    "integrated_fitCons_score",
+                    "fitcons_integrated",
+                    None,
+                    None,
+                )),
+                Box::new(SingleValueCollector::new("LRT_score", "lrt", None, None)),
+                Box::new(SingleValueCollector::new(
+                    "MetaSVM_score",
+                    "metasvm",
+                    None,
+                    None,
+                )),
+                Box::new(SingleValueCollector::new(
+                    "Polyphen2_HDIV_score",
+                    "polyphen2_hdiv",
+                    Some(';'),
+                    None,
+                )),
+                Box::new(SingleValueCollector::new(
+                    "Polyphen2_HVAR_score",
+                    "polyphen2_hvar",
+                    Some(';'),
+                    None,
+                )),
+                Box::new(SingleValueCollector::new(
+                    "PrimateAI_score",
+                    "primateai",
+                    None,
+                    None,
+                )),
+                Box::new(SingleValueCollector::new(
+                    "PROVEAN_score",
+                    "provean",
+                    Some(';'),
+                    None,
+                )),
+                Box::new(SingleValueCollector::new(
+                    "REVEL_score",
+                    "revel",
+                    Some(';'),
+                    None,
                 )),
             ];
 
             for (column, value) in annotator
                 .annonars_dbs
-                .cadd_ctx
+                .dbnsfp_ctx
                 .schema
                 .columns
                 .iter()
