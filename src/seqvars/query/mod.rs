@@ -759,12 +759,9 @@ mod gene_related_annotation {
         let (tx_accession, tx_version) = if ann.feature_id.is_empty() {
             (None, None)
         } else {
-            let feature_id_split: Vec<&str> =
-                ann.feature_id.split(".").collect::<Vec<_>>();
+            let feature_id_split: Vec<&str> = ann.feature_id.split(".").collect::<Vec<_>>();
             let tx_accession = feature_id_split.first().map(|s| s.to_string());
-            let tx_version = feature_id_split
-                .get(1)
-                .and_then(|s| s.parse::<i32>().ok());
+            let tx_version = feature_id_split.get(1).and_then(|s| s.parse::<i32>().ok());
             (tx_accession, tx_version)
         };
 
