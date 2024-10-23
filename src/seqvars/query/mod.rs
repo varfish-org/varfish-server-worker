@@ -733,11 +733,47 @@ impl WithSeqvarAndAnnotator for pbs_output::GeneRelatedAnnotation {
 
 /// Supporting code for pbs_output::GeneRelatedAnnotation.
 mod gene_related_annotation {
+    use mehari::annotate::seqvars::ann;
+
     use super::*;
 
     pub(crate) fn consequences(
-        ann: &mehari::annotate::seqvars::ann::AnnField,
+        ann: &ann::AnnField,
     ) -> Result<Option<pbs_output::GeneRelatedConsequences>, anyhow::Error> {
+        let location = if ann.distance.is_none() {
+            pbs_output::VariantLocation::Exon
+        } else if ann
+            .consequences
+            .contains(&ann::Consequence::UpstreamGeneVariant)
+        {
+            pbs_output::VariantLocation::Upstream
+        } else if ann
+            .consequences
+            .contains(&ann::Consequence::DownstreamGeneVariant)
+        {
+            pbs_output::VariantLocation::Downstream
+        } else {
+            pbs_output::VariantLocation::Intron
+        };
+
+        let (tx_accession, tx_version) = if ann.feature_id.is_empty() {
+            (None, None)
+        } else {
+            let feature_id_split: Vec<&str> =
+                ann.feature_id.split(".").collect::<Vec<_>>();
+            let tx_accession = feature_id_split.first().map(|s| s.to_string());
+            let tx_version = feature_id_split
+                .get(1)
+                .and_then(|s| s.parse::<i32>().ok());
+            (tx_accession, tx_version)
+        };
+
+        let (rank_ord, rank_total) = if let Some(rank) = ann.rank.as_ref() {
+            (Some(rank.ord), Some(rank.total))
+        } else {
+            (None, None)
+        };
+
         Ok(Some(pbs_output::GeneRelatedConsequences {
             hgvs_t: ann.hgvs_t.clone(),
             hgvs_p: ann.hgvs_p.clone(),
@@ -753,6 +789,11 @@ mod gene_related_annotation {
                     }
                 })
                 .collect::<Vec<_>>(),
+            tx_accession,
+            tx_version,
+            location: location as i32,
+            rank_ord,
+            rank_total,
         }))
     }
 

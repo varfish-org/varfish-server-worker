@@ -304,7 +304,7 @@ mod test {
     #[test]
     fn test_load_ncbi_to_hgnc() -> Result<(), anyhow::Error> {
         let path = std::path::Path::new("tests/seqvars/query/db/hpo/hgnc_xlink.tsv");
-        let map = super::hgnc_xlink::load_ncbi_to_hgnc(&path)?;
+        let map = super::hgnc_xlink::load_ncbi_to_hgnc(path)?;
 
         assert_eq!(map.len(), 43792);
         assert_eq!(map.get(&1), Some(&vec!["HGNC:5".to_string()]));
