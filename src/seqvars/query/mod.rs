@@ -1260,8 +1260,8 @@ mod variant_related_annotation {
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
             pbs_output::VariantScoreColumn {
-                name: "baysedel_addaf".to_string(),
-                label: "BayesDel".to_string(),
+                name: "bayesdel_addaf".to_string(),
+                label: "BaessDel".to_string(),
                 description: "BayesDel AddAF score".to_string(),
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
