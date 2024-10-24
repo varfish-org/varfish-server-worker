@@ -759,9 +759,13 @@ mod gene_related_annotation {
         let (tx_accession, tx_version) = if ann.feature_id.is_empty() {
             (None, None)
         } else {
-            let feature_id_split: Vec<&str> = ann.feature_id.split(".").collect::<Vec<_>>();
-            let tx_accession = feature_id_split.first().map(|s| s.to_string());
-            let tx_version = feature_id_split.get(1).and_then(|s| s.parse::<i32>().ok());
+            let (accession, version) = ann.feature_id.split_once('.').unwrap_or((&ann.feature_id, ""));
+            let tx_accession = Some(accession.to_string());
+            let tx_version = if version.is_empty() {
+                None
+            } else {
+                version.parse::<i32>().ok()
+            };
             (tx_accession, tx_version)
         };
 
@@ -1258,8 +1262,8 @@ mod variant_related_annotation {
             },
             pbs_output::VariantScoreColumn {
                 name: "fathmm".to_string(),
-                label: "PROVEAN".to_string(),
-                description: "PROVEAN score".to_string(),
+                label: "FATHMM".to_string(),
+                description: "FATHMM score".to_string(),
                 r#type: pbs_output::VariantScoreColumnType::Number as i32,
             },
             pbs_output::VariantScoreColumn {
