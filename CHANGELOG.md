@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.15.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.14.0...v0.15.0) (2024-10-24)
+
+
+### Features
+
+* adding more annotations to output ([#504](https://github.com/varfish-org/varfish-server-worker/issues/504)) ([#505](https://github.com/varfish-org/varfish-server-worker/issues/505)) ([0225f81](https://github.com/varfish-org/varfish-server-worker/commit/0225f81e5b159868fd76154e9bfd7fdde2919ad7))
+
+
+### Bug Fixes
+
+* typos in score field names ([#507](https://github.com/varfish-org/varfish-server-worker/issues/507)) ([85da7e6](https://github.com/varfish-org/varfish-server-worker/commit/85da7e6f8838523a67b98a5b937efc195f682857))
+
 ## [0.14.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.13.2...v0.14.0) (2024-10-09)
 
 
