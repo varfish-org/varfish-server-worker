@@ -989,6 +989,8 @@ mod variant_related_annotation {
                             } else {
                                 values_f64.into_iter().min_by(|a, b| a.total_cmp(b))
                             };
+                            // Write out the value if we could convert into float, silently ignore the `.`
+                            // entries (and everything else from dbNSFP) that could not be converted.
                             if let Some(f64_value) = f64_value {
                                 if let Some(f64_value) = serde_json::Number::from_f64(f64_value) {
                                     self.value = Some(serde_json::Value::Number(f64_value));
