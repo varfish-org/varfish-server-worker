@@ -759,7 +759,10 @@ mod gene_related_annotation {
         let (tx_accession, tx_version) = if ann.feature_id.is_empty() {
             (None, None)
         } else {
-            let (accession, version) = ann.feature_id.split_once('.').unwrap_or((&ann.feature_id, ""));
+            let (accession, version) = ann
+                .feature_id
+                .split_once('.')
+                .unwrap_or((&ann.feature_id, ""));
             let tx_accession = Some(accession.to_string());
             let tx_version = if version.is_empty() {
                 None
