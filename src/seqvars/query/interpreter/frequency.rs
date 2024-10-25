@@ -108,8 +108,8 @@ mod test {
             VcfVariant,
         },
         query::{
-            CaseQuery, GnomadMitochondrialFrequencySettings, HelixMtDbFrequencySettings,
-            NuclearFrequencySettings, QuerySettingsFrequency,
+            CaseQuery, MitochondrialFrequencySettings, NuclearFrequencySettings,
+            QuerySettingsFrequency,
         },
     };
 
@@ -423,7 +423,7 @@ mod test {
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             frequency: QuerySettingsFrequency {
-                helixmtdb: HelixMtDbFrequencySettings {
+                helixmtdb: MitochondrialFrequencySettings {
                     enabled: query_helixmtdb_enabled,
                     frequency: query_helixmtdb_frequency,
                     heteroplasmic: query_helixmtdb_heteroplasmic,
@@ -534,7 +534,7 @@ mod test {
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             frequency: QuerySettingsFrequency {
-                gnomad_mtdna: GnomadMitochondrialFrequencySettings {
+                gnomad_mtdna: MitochondrialFrequencySettings {
                     enabled: query_gnomad_mtdna_enabled,
                     frequency: query_gnomad_mtdna_frequency,
                     heteroplasmic: query_gnomad_mtdna_heteroplasmic,

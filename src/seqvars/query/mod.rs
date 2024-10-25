@@ -1123,13 +1123,13 @@ mod variant_related_annotation {
                 hemialt: seqvar.population_frequencies.gnomad_genomes.hemi,
                 af: seqvar.population_frequencies.gnomad_genomes.af(),
             }),
-            gnomad_mtdna: Some(pbs_output::GnomadMitochondrialFrequency {
+            gnomad_mtdna: Some(pbs_output::MitochondrialFrequency {
                 an: seqvar.population_frequencies.gnomad_mtdna.an,
                 het: seqvar.population_frequencies.gnomad_mtdna.het,
                 homalt: seqvar.population_frequencies.gnomad_mtdna.hom,
                 af: seqvar.population_frequencies.gnomad_mtdna.af(),
             }),
-            helixmtdb: Some(pbs_output::HelixMtDbFrequency {
+            helixmtdb: Some(pbs_output::MitochondrialFrequency {
                 an: seqvar.population_frequencies.helixmtdb.an,
                 het: seqvar.population_frequencies.helixmtdb.het,
                 homalt: seqvar.population_frequencies.helixmtdb.hom,
