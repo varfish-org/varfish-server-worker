@@ -25,7 +25,7 @@ pub fn passes(query: &CaseQuery, seqvar: &VariantRecord) -> bool {
     }
 }
 
-fn overlaps(region: &GenomicRegion, seqvar_chrom: &str, seqvar_pos: i32, seqvar_end: i32) -> bool {
+fn overlaps(region: &GenomicRegion, seqvar_chrom: &str, seqvar_pos: i32, seqvar_stop: i32) -> bool {
     let GenomicRegion {
         chrom: region_chrom,
         range: region_range,
@@ -39,10 +39,10 @@ fn overlaps(region: &GenomicRegion, seqvar_chrom: &str, seqvar_pos: i32, seqvar_
 
     if let Some(Range {
         start: region_start,
-        end: region_end,
+        stop: region_stop,
     }) = region_range
     {
-        *region_start <= seqvar_end && *region_end >= seqvar_pos
+        *region_start <= seqvar_stop && *region_stop >= seqvar_pos
     } else {
         true
     }
@@ -64,18 +64,18 @@ mod test {
         #[case] region_range: Option<(i32, i32)>,
         #[case] seqvar_chrom: &str,
         #[case] seqvar_start: i32,
-        #[case] seqvar_end: i32,
+        #[case] seqvar_stop: i32,
         #[case] expected: bool,
     ) {
         let region = super::GenomicRegion {
             chrom: String::from(region_chrom),
-            range: region_range.map(|(region_start, region_end)| super::Range {
+            range: region_range.map(|(region_start, region_stop)| super::Range {
                 start: region_start,
-                end: region_end,
+                stop: region_stop,
             }),
         };
         assert_eq!(
-            super::overlaps(&region, seqvar_chrom, seqvar_start, seqvar_end),
+            super::overlaps(&region, seqvar_chrom, seqvar_start, seqvar_stop),
             expected
         );
     }

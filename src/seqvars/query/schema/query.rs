@@ -521,35 +521,9 @@ impl From<pb_query::NuclearFrequencySettings> for NuclearFrequencySettings {
     }
 }
 
-/// gnomAD mitochondrial filter options.
-#[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct GnomadMitochondrialFrequencySettings {
-    /// Whether to enable filtration by 1000 Genomes.
-    pub enabled: bool,
-    /// Maximal number of heteroplasmic carriers.
-    pub heteroplasmic: Option<i32>,
-    /// Maximal number of homoplasmic carriers.
-    pub homoplasmic: Option<i32>,
-    /// Maximal allele frequency.
-    pub frequency: Option<f32>,
-}
-
-impl Eq for GnomadMitochondrialFrequencySettings {}
-
-impl From<pb_query::GnomadMitochondrialFrequencySettings> for GnomadMitochondrialFrequencySettings {
-    fn from(value: pb_query::GnomadMitochondrialFrequencySettings) -> Self {
-        Self {
-            enabled: value.enabled,
-            heteroplasmic: value.heteroplasmic,
-            homoplasmic: value.homoplasmic,
-            frequency: value.frequency,
-        }
-    }
-}
-
 /// HelixMtDb filter options.
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct HelixMtDbFrequencySettings {
+pub struct MitochondrialFrequencySettings {
     /// Whether to enable filtration by mtDB.
     pub enabled: bool,
     /// Maximal number of heterozygous carriers in HelixMtDb.
@@ -560,10 +534,10 @@ pub struct HelixMtDbFrequencySettings {
     pub frequency: Option<f32>,
 }
 
-impl Eq for HelixMtDbFrequencySettings {}
+impl Eq for MitochondrialFrequencySettings {}
 
-impl From<pb_query::HelixMtDbFrequencySettings> for HelixMtDbFrequencySettings {
-    fn from(value: pb_query::HelixMtDbFrequencySettings) -> Self {
+impl From<pb_query::MitochondrialFrequencySettings> for MitochondrialFrequencySettings {
+    fn from(value: pb_query::MitochondrialFrequencySettings) -> Self {
         Self {
             enabled: value.enabled,
             heteroplasmic: value.heteroplasmic,
@@ -581,9 +555,9 @@ pub struct QuerySettingsFrequency {
     /// gnomAD-genomes filter.
     pub gnomad_genomes: NuclearFrequencySettings,
     /// gnomAD-mtDNA filter.
-    pub gnomad_mtdna: GnomadMitochondrialFrequencySettings,
+    pub gnomad_mtdna: MitochondrialFrequencySettings,
     /// HelixMtDb filter.
-    pub helixmtdb: HelixMtDbFrequencySettings,
+    pub helixmtdb: MitochondrialFrequencySettings,
     /// In-house filter.
     pub inhouse: NuclearFrequencySettings,
 }
@@ -595,10 +569,10 @@ impl From<pb_query::QuerySettingsFrequency> for QuerySettingsFrequency {
             gnomad_genomes: NuclearFrequencySettings::from(
                 value.gnomad_genomes.unwrap_or_default(),
             ),
-            gnomad_mtdna: GnomadMitochondrialFrequencySettings::from(
+            gnomad_mtdna: MitochondrialFrequencySettings::from(
                 value.gnomad_mtdna.unwrap_or_default(),
             ),
-            helixmtdb: HelixMtDbFrequencySettings::from(value.helixmtdb.unwrap_or_default()),
+            helixmtdb: MitochondrialFrequencySettings::from(value.helixmtdb.unwrap_or_default()),
             inhouse: NuclearFrequencySettings::from(value.inhouse.unwrap_or_default()),
         }
     }
@@ -1124,14 +1098,14 @@ pub struct Range {
     /// 1-based start position.
     pub start: i32,
     /// 1-based end position.
-    pub end: i32,
+    pub stop: i32,
 }
 
 impl From<pb_query::Range> for Range {
     fn from(value: pb_query::Range) -> Self {
         Self {
             start: value.start,
-            end: value.end,
+            stop: value.stop,
         }
     }
 }
@@ -1679,41 +1653,40 @@ mod tests {
 
     #[test]
     fn test_gnomad_mitochondrial_frequency_settings_from() {
-        let pb_gnomad_mitochondrial_frequency_settings =
-            pb_query::GnomadMitochondrialFrequencySettings {
-                enabled: true,
-                heteroplasmic: Some(10),
-                homoplasmic: Some(20),
-                frequency: Some(0.1),
-            };
-        let gnomad_mitochondrial_frequency_settings = GnomadMitochondrialFrequencySettings {
+        let pb_gnomad_mitochondrial_frequency_settings = pb_query::MitochondrialFrequencySettings {
+            enabled: true,
+            heteroplasmic: Some(10),
+            homoplasmic: Some(20),
+            frequency: Some(0.1),
+        };
+        let gnomad_mitochondrial_frequency_settings = MitochondrialFrequencySettings {
             enabled: true,
             heteroplasmic: Some(10),
             homoplasmic: Some(20),
             frequency: Some(0.1),
         };
         assert_eq!(
-            GnomadMitochondrialFrequencySettings::from(pb_gnomad_mitochondrial_frequency_settings),
+            MitochondrialFrequencySettings::from(pb_gnomad_mitochondrial_frequency_settings),
             gnomad_mitochondrial_frequency_settings
         );
     }
 
     #[test]
     fn test_helix_mtdb_frequency_settings_from() {
-        let pb_helix_mtdb_frequency_settings = pb_query::HelixMtDbFrequencySettings {
+        let pb_helix_mtdb_frequency_settings = pb_query::MitochondrialFrequencySettings {
             enabled: true,
             heteroplasmic: Some(10),
             homoplasmic: Some(20),
             frequency: Some(0.1),
         };
-        let helix_mtdb_frequency_settings = HelixMtDbFrequencySettings {
+        let helix_mtdb_frequency_settings = MitochondrialFrequencySettings {
             enabled: true,
             heteroplasmic: Some(10),
             homoplasmic: Some(20),
             frequency: Some(0.1),
         };
         assert_eq!(
-            HelixMtDbFrequencySettings::from(pb_helix_mtdb_frequency_settings),
+            MitochondrialFrequencySettings::from(pb_helix_mtdb_frequency_settings),
             helix_mtdb_frequency_settings
         );
     }
@@ -1757,13 +1730,13 @@ mod tests {
                 hemizygous: Some(30),
                 frequency: Some(0.1),
             }),
-            gnomad_mtdna: Some(pb_query::GnomadMitochondrialFrequencySettings {
+            gnomad_mtdna: Some(pb_query::MitochondrialFrequencySettings {
                 enabled: true,
                 heteroplasmic: Some(10),
                 homoplasmic: Some(20),
                 frequency: Some(0.1),
             }),
-            helixmtdb: Some(pb_query::HelixMtDbFrequencySettings {
+            helixmtdb: Some(pb_query::MitochondrialFrequencySettings {
                 enabled: true,
                 heteroplasmic: Some(10),
                 homoplasmic: Some(20),
@@ -1792,13 +1765,13 @@ mod tests {
                 hemizygous: Some(30),
                 frequency: Some(0.1),
             },
-            gnomad_mtdna: GnomadMitochondrialFrequencySettings {
+            gnomad_mtdna: MitochondrialFrequencySettings {
                 enabled: true,
                 heteroplasmic: Some(10),
                 homoplasmic: Some(20),
                 frequency: Some(0.1),
             },
-            helixmtdb: HelixMtDbFrequencySettings {
+            helixmtdb: MitochondrialFrequencySettings {
                 enabled: true,
                 heteroplasmic: Some(10),
                 homoplasmic: Some(20),
@@ -2038,8 +2011,8 @@ mod tests {
 
     #[test]
     fn test_range_from() {
-        let pb_range = pb_query::Range { start: 1, end: 2 };
-        let range = Range { start: 1, end: 2 };
+        let pb_range = pb_query::Range { start: 1, stop: 2 };
+        let range = Range { start: 1, stop: 2 };
         assert_eq!(Range::from(pb_range), range);
     }
 
@@ -2047,11 +2020,11 @@ mod tests {
     fn test_genomic_region_from() {
         let pb_genomic_region = pb_query::GenomicRegion {
             chrom: "chrom".to_string(),
-            range: Some(pb_query::Range { start: 1, end: 2 }),
+            range: Some(pb_query::Range { start: 1, stop: 2 }),
         };
         let genomic_region = GenomicRegion {
             chrom: "chrom".to_string(),
-            range: Some(Range { start: 1, end: 2 }),
+            range: Some(Range { start: 1, stop: 2 }),
         };
         assert_eq!(GenomicRegion::from(pb_genomic_region), genomic_region);
     }
@@ -2062,14 +2035,14 @@ mod tests {
             genes: vec!["gene".to_string()],
             genome_regions: vec![pb_query::GenomicRegion {
                 chrom: "chrom".to_string(),
-                range: Some(pb_query::Range { start: 1, end: 2 }),
+                range: Some(pb_query::Range { start: 1, stop: 2 }),
             }],
         };
         let query_settings_locus = QuerySettingsLocus {
             genes: vec!["gene".to_string()],
             genome_regions: vec![GenomicRegion {
                 chrom: "chrom".to_string(),
-                range: Some(Range { start: 1, end: 2 }),
+                range: Some(Range { start: 1, stop: 2 }),
             }],
         };
         assert_eq!(
@@ -2184,13 +2157,13 @@ mod tests {
                     hemizygous: Some(30),
                     frequency: Some(0.1),
                 }),
-                gnomad_mtdna: Some(pb_query::GnomadMitochondrialFrequencySettings {
+                gnomad_mtdna: Some(pb_query::MitochondrialFrequencySettings {
                     enabled: true,
                     heteroplasmic: Some(10),
                     homoplasmic: Some(20),
                     frequency: Some(0.1),
                 }),
-                helixmtdb: Some(pb_query::HelixMtDbFrequencySettings {
+                helixmtdb: Some(pb_query::MitochondrialFrequencySettings {
                     enabled: true,
                     heteroplasmic: Some(10),
                     homoplasmic: Some(20),
@@ -2231,7 +2204,7 @@ mod tests {
                 genes: vec!["gene".to_string()],
                 genome_regions: vec![pb_query::GenomicRegion {
                     chrom: "chrom".to_string(),
-                    range: Some(pb_query::Range { start: 1, end: 2 }),
+                    range: Some(pb_query::Range { start: 1, stop: 2 }),
                 }],
             }),
             clinvar: Some(pb_query::QuerySettingsClinVar {
@@ -2294,13 +2267,13 @@ mod tests {
                     hemizygous: Some(30),
                     frequency: Some(0.1),
                 },
-                gnomad_mtdna: GnomadMitochondrialFrequencySettings {
+                gnomad_mtdna: MitochondrialFrequencySettings {
                     enabled: true,
                     heteroplasmic: Some(10),
                     homoplasmic: Some(20),
                     frequency: Some(0.1),
                 },
-                helixmtdb: HelixMtDbFrequencySettings {
+                helixmtdb: MitochondrialFrequencySettings {
                     enabled: true,
                     heteroplasmic: Some(10),
                     homoplasmic: Some(20),
@@ -2338,7 +2311,7 @@ mod tests {
                 genes: vec!["gene".to_string()],
                 genome_regions: vec![GenomicRegion {
                     chrom: "chrom".to_string(),
-                    range: Some(Range { start: 1, end: 2 }),
+                    range: Some(Range { start: 1, stop: 2 }),
                 }],
             },
             clinvar: QuerySettingsClinVar {
