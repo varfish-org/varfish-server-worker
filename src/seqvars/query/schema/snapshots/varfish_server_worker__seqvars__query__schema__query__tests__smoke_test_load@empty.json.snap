@@ -10,32 +10,32 @@ quality:
 frequency:
   gnomad_exomes:
     enabled: false
-    heterozygous: ~
-    homozygous: ~
-    hemizygous: ~
-    frequency: ~
+    max_het: ~
+    max_hom: ~
+    max_hemi: ~
+    max_af: ~
   gnomad_genomes:
     enabled: false
-    heterozygous: ~
-    homozygous: ~
-    hemizygous: ~
-    frequency: ~
+    max_het: ~
+    max_hom: ~
+    max_hemi: ~
+    max_af: ~
   gnomad_mtdna:
     enabled: false
-    heteroplasmic: ~
-    homoplasmic: ~
-    frequency: ~
+    max_het: ~
+    max_hom: ~
+    max_af: ~
   helixmtdb:
     enabled: false
-    heteroplasmic: ~
-    homoplasmic: ~
-    frequency: ~
+    max_het: ~
+    max_hom: ~
+    max_af: ~
   inhouse:
     enabled: false
-    heterozygous: ~
-    homozygous: ~
-    hemizygous: ~
-    frequency: ~
+    max_het: ~
+    max_hom: ~
+    max_hemi: ~
+    max_af: ~
 consequence:
   variant_types: []
   transcript_types: []

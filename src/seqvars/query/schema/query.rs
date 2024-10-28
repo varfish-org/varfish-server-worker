@@ -498,13 +498,13 @@ pub struct NuclearFrequencySettings {
     /// Whether to enable filtration by 1000 Genomes.
     pub enabled: bool,
     /// Maximal number of in-house heterozygous carriers.
-    pub heterozygous: Option<i32>,
+    pub max_het: Option<i32>,
     /// Maximal number of in-house homozygous carriers.
-    pub homozygous: Option<i32>,
+    pub max_hom: Option<i32>,
     /// Maximal number of in-house hemizygous carriers.
-    pub hemizygous: Option<i32>,
+    pub max_hemi: Option<i32>,
     /// Maximal allele frequency.
-    pub frequency: Option<f32>,
+    pub max_af: Option<f32>,
 }
 
 impl Eq for NuclearFrequencySettings {}
@@ -513,10 +513,10 @@ impl From<pb_query::NuclearFrequencySettings> for NuclearFrequencySettings {
     fn from(value: pb_query::NuclearFrequencySettings) -> Self {
         Self {
             enabled: value.enabled,
-            heterozygous: value.heterozygous,
-            homozygous: value.homozygous,
-            hemizygous: value.hemizygous,
-            frequency: value.frequency,
+            max_het: value.max_het,
+            max_hom: value.max_hom,
+            max_hemi: value.max_hemi,
+            max_af: value.max_af,
         }
     }
 }
@@ -527,11 +527,11 @@ pub struct MitochondrialFrequencySettings {
     /// Whether to enable filtration by mtDB.
     pub enabled: bool,
     /// Maximal number of heterozygous carriers in HelixMtDb.
-    pub heteroplasmic: Option<i32>,
+    pub max_het: Option<i32>,
     /// Maximal number of homozygous carriers in HelixMtDb.
-    pub homoplasmic: Option<i32>,
+    pub max_hom: Option<i32>,
     /// Maximal frequency in HelixMtDb.
-    pub frequency: Option<f32>,
+    pub max_af: Option<f32>,
 }
 
 impl Eq for MitochondrialFrequencySettings {}
@@ -540,9 +540,9 @@ impl From<pb_query::MitochondrialFrequencySettings> for MitochondrialFrequencySe
     fn from(value: pb_query::MitochondrialFrequencySettings) -> Self {
         Self {
             enabled: value.enabled,
-            heteroplasmic: value.heteroplasmic,
-            homoplasmic: value.homoplasmic,
-            frequency: value.frequency,
+            max_het: value.max_het,
+            max_hom: value.max_hom,
+            max_af: value.max_af,
         }
     }
 }
@@ -1633,17 +1633,17 @@ mod tests {
     fn test_gnomad_nuclear_frequency_settings_from() {
         let pb_gnomad_nuclear_frequency_settings = pb_query::NuclearFrequencySettings {
             enabled: true,
-            heterozygous: Some(10),
-            homozygous: Some(20),
-            hemizygous: Some(30),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_hemi: Some(30),
+            max_af: Some(0.1),
         };
         let gnomad_nuclear_frequency_settings = NuclearFrequencySettings {
             enabled: true,
-            heterozygous: Some(10),
-            homozygous: Some(20),
-            hemizygous: Some(30),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_hemi: Some(30),
+            max_af: Some(0.1),
         };
         assert_eq!(
             NuclearFrequencySettings::from(pb_gnomad_nuclear_frequency_settings),
@@ -1655,15 +1655,15 @@ mod tests {
     fn test_gnomad_mitochondrial_frequency_settings_from() {
         let pb_gnomad_mitochondrial_frequency_settings = pb_query::MitochondrialFrequencySettings {
             enabled: true,
-            heteroplasmic: Some(10),
-            homoplasmic: Some(20),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_af: Some(0.1),
         };
         let gnomad_mitochondrial_frequency_settings = MitochondrialFrequencySettings {
             enabled: true,
-            heteroplasmic: Some(10),
-            homoplasmic: Some(20),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_af: Some(0.1),
         };
         assert_eq!(
             MitochondrialFrequencySettings::from(pb_gnomad_mitochondrial_frequency_settings),
@@ -1675,15 +1675,15 @@ mod tests {
     fn test_helix_mtdb_frequency_settings_from() {
         let pb_helix_mtdb_frequency_settings = pb_query::MitochondrialFrequencySettings {
             enabled: true,
-            heteroplasmic: Some(10),
-            homoplasmic: Some(20),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_af: Some(0.1),
         };
         let helix_mtdb_frequency_settings = MitochondrialFrequencySettings {
             enabled: true,
-            heteroplasmic: Some(10),
-            homoplasmic: Some(20),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_af: Some(0.1),
         };
         assert_eq!(
             MitochondrialFrequencySettings::from(pb_helix_mtdb_frequency_settings),
@@ -1695,17 +1695,17 @@ mod tests {
     fn test_inhouse_frequency_settings_from() {
         let pb_inhouse_frequency_settings = pb_query::NuclearFrequencySettings {
             enabled: true,
-            heterozygous: Some(10),
-            homozygous: Some(20),
-            hemizygous: Some(30),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_hemi: Some(30),
+            max_af: Some(0.1),
         };
         let inhouse_frequency_settings = NuclearFrequencySettings {
             enabled: true,
-            heterozygous: Some(10),
-            homozygous: Some(20),
-            hemizygous: Some(30),
-            frequency: Some(0.1),
+            max_het: Some(10),
+            max_hom: Some(20),
+            max_hemi: Some(30),
+            max_af: Some(0.1),
         };
         assert_eq!(
             NuclearFrequencySettings::from(pb_inhouse_frequency_settings),
@@ -1718,71 +1718,71 @@ mod tests {
         let pb_query_settings_frequency = pb_query::QuerySettingsFrequency {
             gnomad_exomes: Some(pb_query::NuclearFrequencySettings {
                 enabled: true,
-                heterozygous: Some(10),
-                homozygous: Some(20),
-                hemizygous: Some(30),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_hemi: Some(30),
+                max_af: Some(0.1),
             }),
             gnomad_genomes: Some(pb_query::NuclearFrequencySettings {
                 enabled: true,
-                heterozygous: Some(10),
-                homozygous: Some(20),
-                hemizygous: Some(30),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_hemi: Some(30),
+                max_af: Some(0.1),
             }),
             gnomad_mtdna: Some(pb_query::MitochondrialFrequencySettings {
                 enabled: true,
-                heteroplasmic: Some(10),
-                homoplasmic: Some(20),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_af: Some(0.1),
             }),
             helixmtdb: Some(pb_query::MitochondrialFrequencySettings {
                 enabled: true,
-                heteroplasmic: Some(10),
-                homoplasmic: Some(20),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_af: Some(0.1),
             }),
             inhouse: Some(pb_query::NuclearFrequencySettings {
                 enabled: true,
-                heterozygous: Some(10),
-                homozygous: Some(20),
-                hemizygous: Some(30),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_hemi: Some(30),
+                max_af: Some(0.1),
             }),
         };
         let query_settings_frequency = QuerySettingsFrequency {
             gnomad_exomes: NuclearFrequencySettings {
                 enabled: true,
-                heterozygous: Some(10),
-                homozygous: Some(20),
-                hemizygous: Some(30),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_hemi: Some(30),
+                max_af: Some(0.1),
             },
             gnomad_genomes: NuclearFrequencySettings {
                 enabled: true,
-                heterozygous: Some(10),
-                homozygous: Some(20),
-                hemizygous: Some(30),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_hemi: Some(30),
+                max_af: Some(0.1),
             },
             gnomad_mtdna: MitochondrialFrequencySettings {
                 enabled: true,
-                heteroplasmic: Some(10),
-                homoplasmic: Some(20),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_af: Some(0.1),
             },
             helixmtdb: MitochondrialFrequencySettings {
                 enabled: true,
-                heteroplasmic: Some(10),
-                homoplasmic: Some(20),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_af: Some(0.1),
             },
             inhouse: NuclearFrequencySettings {
                 enabled: true,
-                heterozygous: Some(10),
-                homozygous: Some(20),
-                hemizygous: Some(30),
-                frequency: Some(0.1),
+                max_het: Some(10),
+                max_hom: Some(20),
+                max_hemi: Some(30),
+                max_af: Some(0.1),
             },
         };
         assert_eq!(
@@ -2145,36 +2145,36 @@ mod tests {
             frequency: Some(pb_query::QuerySettingsFrequency {
                 gnomad_exomes: Some(pb_query::NuclearFrequencySettings {
                     enabled: true,
-                    heterozygous: Some(10),
-                    homozygous: Some(20),
-                    hemizygous: Some(30),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_hemi: Some(30),
+                    max_af: Some(0.1),
                 }),
                 gnomad_genomes: Some(pb_query::NuclearFrequencySettings {
                     enabled: true,
-                    heterozygous: Some(10),
-                    homozygous: Some(20),
-                    hemizygous: Some(30),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_hemi: Some(30),
+                    max_af: Some(0.1),
                 }),
                 gnomad_mtdna: Some(pb_query::MitochondrialFrequencySettings {
                     enabled: true,
-                    heteroplasmic: Some(10),
-                    homoplasmic: Some(20),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_af: Some(0.1),
                 }),
                 helixmtdb: Some(pb_query::MitochondrialFrequencySettings {
                     enabled: true,
-                    heteroplasmic: Some(10),
-                    homoplasmic: Some(20),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_af: Some(0.1),
                 }),
                 inhouse: Some(pb_query::NuclearFrequencySettings {
                     enabled: true,
-                    heterozygous: Some(10),
-                    homozygous: Some(20),
-                    hemizygous: Some(30),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_hemi: Some(30),
+                    max_af: Some(0.1),
                 }),
             }),
             consequence: Some(pb_query::QuerySettingsConsequence {
@@ -2255,36 +2255,36 @@ mod tests {
             frequency: QuerySettingsFrequency {
                 gnomad_exomes: NuclearFrequencySettings {
                     enabled: true,
-                    heterozygous: Some(10),
-                    homozygous: Some(20),
-                    hemizygous: Some(30),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_hemi: Some(30),
+                    max_af: Some(0.1),
                 },
                 gnomad_genomes: NuclearFrequencySettings {
                     enabled: true,
-                    heterozygous: Some(10),
-                    homozygous: Some(20),
-                    hemizygous: Some(30),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_hemi: Some(30),
+                    max_af: Some(0.1),
                 },
                 gnomad_mtdna: MitochondrialFrequencySettings {
                     enabled: true,
-                    heteroplasmic: Some(10),
-                    homoplasmic: Some(20),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_af: Some(0.1),
                 },
                 helixmtdb: MitochondrialFrequencySettings {
                     enabled: true,
-                    heteroplasmic: Some(10),
-                    homoplasmic: Some(20),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_af: Some(0.1),
                 },
                 inhouse: NuclearFrequencySettings {
                     enabled: true,
-                    heterozygous: Some(10),
-                    homozygous: Some(20),
-                    hemizygous: Some(30),
-                    frequency: Some(0.1),
+                    max_het: Some(10),
+                    max_hom: Some(20),
+                    max_hemi: Some(30),
+                    max_af: Some(0.1),
                 },
             },
             consequence: QuerySettingsConsequence {
