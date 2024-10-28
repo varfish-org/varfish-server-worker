@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.16.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.15.0...v0.16.0) (2024-10-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* adjusting max_af to max_carriers for inhouse ([#512](https://github.com/varfish-org/varfish-server-worker/issues/512))
+* more protobuf cleaning ([#511](https://github.com/varfish-org/varfish-server-worker/issues/511))
+
+### Code Refactoring
+
+* adjusting max_af to max_carriers for inhouse ([#512](https://github.com/varfish-org/varfish-server-worker/issues/512)) ([c212b44](https://github.com/varfish-org/varfish-server-worker/commit/c212b44656ee2b4f3e1eecd7f58ceb16b6577ca3))
+* consolidating protobuf definitions ([#508](https://github.com/varfish-org/varfish-server-worker/issues/508)) ([#509](https://github.com/varfish-org/varfish-server-worker/issues/509)) ([0edcf98](https://github.com/varfish-org/varfish-server-worker/commit/0edcf9875a66a881803c0f9d842fae1e95af05f2))
+* more protobuf cleaning ([#511](https://github.com/varfish-org/varfish-server-worker/issues/511)) ([06ebb8a](https://github.com/varfish-org/varfish-server-worker/commit/06ebb8a3354f22f6e0ac1f5950e5714e97fd4be3))
+
 ## [0.15.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.14.0...v0.15.0) (2024-10-24)
 
 
