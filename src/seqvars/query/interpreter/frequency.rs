@@ -10,15 +10,15 @@ pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Erro
 
     if is_mtdna {
         if frequency.helixmtdb.enabled
-            && (frequency.helixmtdb.frequency.is_some()
+            && (frequency.helixmtdb.max_af.is_some()
                 && s.population_frequencies.helixmtdb.af()
-                    > frequency.helixmtdb.frequency.expect("tested before")
-                || frequency.helixmtdb.heteroplasmic.is_some()
+                    > frequency.helixmtdb.max_af.expect("tested before")
+                || frequency.helixmtdb.max_het.is_some()
                     && s.population_frequencies.helixmtdb.het
-                        > frequency.helixmtdb.heteroplasmic.expect("tested before")
-                || frequency.helixmtdb.homoplasmic.is_some()
+                        > frequency.helixmtdb.max_het.expect("tested before")
+                || frequency.helixmtdb.max_hom.is_some()
                     && s.population_frequencies.helixmtdb.hom
-                        > frequency.helixmtdb.homoplasmic.expect("tested before"))
+                        > frequency.helixmtdb.max_hom.expect("tested before"))
         {
             tracing::trace!(
                 "variant {:?} fails HelixMtDb frequency filter {:?}",
@@ -28,15 +28,15 @@ pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Erro
             return Ok(false);
         }
         if frequency.gnomad_mtdna.enabled
-            && (frequency.gnomad_mtdna.frequency.is_some()
+            && (frequency.gnomad_mtdna.max_af.is_some()
                 && s.population_frequencies.gnomad_mtdna.af()
-                    > frequency.gnomad_mtdna.frequency.expect("tested before")
-                || frequency.gnomad_mtdna.heteroplasmic.is_some()
+                    > frequency.gnomad_mtdna.max_af.expect("tested before")
+                || frequency.gnomad_mtdna.max_het.is_some()
                     && s.population_frequencies.gnomad_mtdna.het
-                        > frequency.gnomad_mtdna.heteroplasmic.expect("tested before")
-                || frequency.gnomad_mtdna.homoplasmic.is_some()
+                        > frequency.gnomad_mtdna.max_het.expect("tested before")
+                || frequency.gnomad_mtdna.max_hom.is_some()
                     && s.population_frequencies.gnomad_mtdna.hom
-                        > frequency.gnomad_mtdna.homoplasmic.expect("tested before"))
+                        > frequency.gnomad_mtdna.max_hom.expect("tested before"))
         {
             tracing::trace!(
                 "variant {:?} fails gnomAD-MT frequency filter {:?}",
@@ -47,18 +47,18 @@ pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Erro
         }
     } else {
         if frequency.gnomad_exomes.enabled
-            && (frequency.gnomad_exomes.frequency.is_some()
+            && (frequency.gnomad_exomes.max_af.is_some()
                 && s.population_frequencies.gnomad_exomes.af()
-                    > frequency.gnomad_exomes.frequency.expect("tested before")
-                || frequency.gnomad_exomes.heterozygous.is_some()
+                    > frequency.gnomad_exomes.max_af.expect("tested before")
+                || frequency.gnomad_exomes.max_het.is_some()
                     && s.population_frequencies.gnomad_exomes.het
-                        > frequency.gnomad_exomes.heterozygous.expect("tested before")
-                || frequency.gnomad_exomes.homozygous.is_some()
+                        > frequency.gnomad_exomes.max_het.expect("tested before")
+                || frequency.gnomad_exomes.max_hom.is_some()
                     && s.population_frequencies.gnomad_exomes.hom
-                        > frequency.gnomad_exomes.homozygous.expect("tested before")
-                || frequency.gnomad_exomes.hemizygous.is_some()
+                        > frequency.gnomad_exomes.max_hom.expect("tested before")
+                || frequency.gnomad_exomes.max_hemi.is_some()
                     && s.population_frequencies.gnomad_exomes.hemi
-                        > frequency.gnomad_exomes.hemizygous.expect("tested before"))
+                        > frequency.gnomad_exomes.max_hemi.expect("tested before"))
         {
             tracing::trace!(
                 "variant {:?} fails gnomAD-exomes frequency filter {:?}",
@@ -68,21 +68,18 @@ pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Erro
             return Ok(false);
         }
         if frequency.gnomad_genomes.enabled
-            && (frequency.gnomad_genomes.frequency.is_some()
+            && (frequency.gnomad_genomes.max_af.is_some()
                 && s.population_frequencies.gnomad_genomes.af()
-                    > frequency.gnomad_genomes.frequency.expect("tested before")
-                || frequency.gnomad_genomes.heterozygous.is_some()
+                    > frequency.gnomad_genomes.max_af.expect("tested before")
+                || frequency.gnomad_genomes.max_het.is_some()
                     && s.population_frequencies.gnomad_genomes.het
-                        > frequency
-                            .gnomad_genomes
-                            .heterozygous
-                            .expect("tested before")
-                || frequency.gnomad_genomes.homozygous.is_some()
+                        > frequency.gnomad_genomes.max_het.expect("tested before")
+                || frequency.gnomad_genomes.max_hom.is_some()
                     && s.population_frequencies.gnomad_genomes.hom
-                        > frequency.gnomad_genomes.homozygous.expect("tested before")
-                || frequency.gnomad_genomes.hemizygous.is_some()
+                        > frequency.gnomad_genomes.max_hom.expect("tested before")
+                || frequency.gnomad_genomes.max_hemi.is_some()
                     && s.population_frequencies.gnomad_genomes.hemi
-                        > frequency.gnomad_genomes.hemizygous.expect("tested before"))
+                        > frequency.gnomad_genomes.max_hemi.expect("tested before"))
         {
             tracing::trace!(
                 "variant {:?} fails gnomAD-genomes frequency filter {:?}",
@@ -182,10 +179,10 @@ mod test {
             frequency: QuerySettingsFrequency {
                 gnomad_exomes: NuclearFrequencySettings {
                     enabled: query_gnomad_exomes_enabled,
-                    frequency: query_gnomad_exomes_frequency,
-                    heterozygous: query_gnomad_exomes_heterozygous,
-                    homozygous: query_gnomad_exomes_homozygous,
-                    hemizygous: query_gnomad_exomes_hemizygous,
+                    max_af: query_gnomad_exomes_frequency,
+                    max_het: query_gnomad_exomes_heterozygous,
+                    max_hom: query_gnomad_exomes_homozygous,
+                    max_hemi: query_gnomad_exomes_hemizygous,
                 },
                 ..Default::default()
             },
@@ -313,10 +310,10 @@ mod test {
             frequency: QuerySettingsFrequency {
                 gnomad_genomes: NuclearFrequencySettings {
                     enabled: query_gnomad_genomes_enabled,
-                    frequency: query_gnomad_genomes_frequency,
-                    heterozygous: query_gnomad_genomes_heterozygous,
-                    homozygous: query_gnomad_genomes_homozygous,
-                    hemizygous: query_gnomad_genomes_hemizygous,
+                    max_af: query_gnomad_genomes_frequency,
+                    max_het: query_gnomad_genomes_heterozygous,
+                    max_hom: query_gnomad_genomes_homozygous,
+                    max_hemi: query_gnomad_genomes_hemizygous,
                 },
                 ..Default::default()
             },
@@ -416,18 +413,18 @@ mod test {
         #[case] seqvar_helix_het: i32,
         #[case] seqvar_helix_hom: i32,
         #[case] query_helixmtdb_enabled: bool,
-        #[case] query_helixmtdb_frequency: Option<f32>,
-        #[case] query_helixmtdb_heteroplasmic: Option<i32>,
-        #[case] query_helixmtdb_homoplasmic: Option<i32>,
+        #[case] query_helixmtdb_af: Option<f32>,
+        #[case] query_helixmtdb_het: Option<i32>,
+        #[case] query_helixmtdb_hom: Option<i32>,
         #[case] expected_pass_all: bool,
     ) -> Result<(), anyhow::Error> {
         let query = CaseQuery {
             frequency: QuerySettingsFrequency {
                 helixmtdb: MitochondrialFrequencySettings {
                     enabled: query_helixmtdb_enabled,
-                    frequency: query_helixmtdb_frequency,
-                    heteroplasmic: query_helixmtdb_heteroplasmic,
-                    homoplasmic: query_helixmtdb_homoplasmic,
+                    max_af: query_helixmtdb_af,
+                    max_het: query_helixmtdb_het,
+                    max_hom: query_helixmtdb_hom,
                 },
                 ..Default::default()
             },
@@ -536,9 +533,9 @@ mod test {
             frequency: QuerySettingsFrequency {
                 gnomad_mtdna: MitochondrialFrequencySettings {
                     enabled: query_gnomad_mtdna_enabled,
-                    frequency: query_gnomad_mtdna_frequency,
-                    heteroplasmic: query_gnomad_mtdna_heteroplasmic,
-                    homoplasmic: query_gnomad_mtdna_homoplasmic,
+                    max_af: query_gnomad_mtdna_frequency,
+                    max_het: query_gnomad_mtdna_heteroplasmic,
+                    max_hom: query_gnomad_mtdna_homoplasmic,
                 },
                 ..Default::default()
             },

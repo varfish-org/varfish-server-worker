@@ -93,13 +93,13 @@ message NuclearFrequencySettings {
   // Whether to enable filtration by 1000 Genomes.
   bool enabled = 1;
   // Maximal number of in-house heterozygous carriers
-  optional int32 heterozygous = 2;
+  optional int32 max_het = 2;
   // Maximal number of in-house homozygous carriers
-  optional int32 homozygous = 3;
+  optional int32 max_hom = 3;
   // Maximal number of in-house hemizygous carriers
-  optional int32 hemizygous = 4;
+  optional int32 max_hemi = 4;
   // Maximal allele frequency.
-  optional float frequency = 5;
+  optional float max_af = 5;
 }
 
 // Mitochondrial filter options.
@@ -107,11 +107,11 @@ message MitochondrialFrequencySettings {
   // Whether to enable filtration by 1000 Genomes.
   bool enabled = 1;
   // Maximal number of heteroplasmic carriers.
-  optional int32 heteroplasmic = 2;
+  optional int32 max_het = 2;
   // Maximal number of homoplasmic carriers.
-  optional int32 homoplasmic = 3;
+  optional int32 max_hom = 3;
   // Maximal allele frequency.
-  optional float frequency = 4;
+  optional float max_af = 4;
 }
 
 // Population frequency filter options.
