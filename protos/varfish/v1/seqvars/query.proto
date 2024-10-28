@@ -88,15 +88,15 @@ message QuerySettingsQuality {
   repeated SampleQualitySettings sample_qualities = 1;
 }
 
-// gnomAD and In-house nuclear filter options.
+// gnomAD filter options.
 message NuclearFrequencySettings {
-  // Whether to enable filtration by 1000 Genomes.
+  // Whether to enable filtration.
   bool enabled = 1;
-  // Maximal number of in-house heterozygous carriers
+  // Maximal number of heterozygous carriers
   optional int32 max_het = 2;
-  // Maximal number of in-house homozygous carriers
+  // Maximal number of homozygous carriers
   optional int32 max_hom = 3;
-  // Maximal number of in-house hemizygous carriers
+  // Maximal number of hemizygous carriers
   optional int32 max_hemi = 4;
   // Maximal allele frequency.
   optional float max_af = 5;
@@ -104,7 +104,7 @@ message NuclearFrequencySettings {
 
 // Mitochondrial filter options.
 message MitochondrialFrequencySettings {
-  // Whether to enable filtration by 1000 Genomes.
+  // Whether to enable filtration.
   bool enabled = 1;
   // Maximal number of heteroplasmic carriers.
   optional int32 max_het = 2;
@@ -112,6 +112,20 @@ message MitochondrialFrequencySettings {
   optional int32 max_hom = 3;
   // Maximal allele frequency.
   optional float max_af = 4;
+}
+
+// In-house filter options.
+message InhouseFrequencySettings {
+  // Whether to enable filtration.
+  bool enabled = 1;
+  // Maximal number of heterozygous carriers
+  optional int32 max_het = 2;
+  // Maximal number of homozygous carriers
+  optional int32 max_hom = 3;
+  // Maximal number of hemizygous carriers
+  optional int32 max_hemi = 4;
+  // Maximal number of total carriers.
+  optional int32 max_carriers = 5;
 }
 
 // Population frequency filter options.
@@ -125,7 +139,7 @@ message QuerySettingsFrequency {
   // HelixMtDb filter
   MitochondrialFrequencySettings helixmtdb = 4;
   // In-house filter
-  NuclearFrequencySettings inhouse = 5;
+  InhouseFrequencySettings inhouse = 5;
 }
 
 // The variant types.
