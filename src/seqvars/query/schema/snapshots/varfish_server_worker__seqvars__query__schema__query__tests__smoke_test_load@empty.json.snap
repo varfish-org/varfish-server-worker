@@ -35,7 +35,7 @@ frequency:
     max_het: ~
     max_hom: ~
     max_hemi: ~
-    max_af: ~
+    max_carriers: ~
 consequence:
   variant_types: []
   transcript_types: []

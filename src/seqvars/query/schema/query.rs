@@ -547,6 +547,35 @@ impl From<pb_query::MitochondrialFrequencySettings> for MitochondrialFrequencySe
     }
 }
 
+/// gnomAD and In-house nuclear filter options.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct InhouseFrequencySettings {
+    /// Whether to enable filtration by 1000 Genomes.
+    pub enabled: bool,
+    /// Maximal number of in-house heterozygous carriers.
+    pub max_het: Option<i32>,
+    /// Maximal number of in-house homozygous carriers.
+    pub max_hom: Option<i32>,
+    /// Maximal number of in-house hemizygous carriers.
+    pub max_hemi: Option<i32>,
+    /// Maximal number of carriers.
+    pub max_carriers: Option<i32>,
+}
+
+impl Eq for InhouseFrequencySettings {}
+
+impl From<pb_query::InhouseFrequencySettings> for InhouseFrequencySettings {
+    fn from(value: pb_query::InhouseFrequencySettings) -> Self {
+        Self {
+            enabled: value.enabled,
+            max_het: value.max_het,
+            max_hom: value.max_hom,
+            max_hemi: value.max_hemi,
+            max_carriers: value.max_carriers,
+        }
+    }
+}
+
 /// Query settings for population frequencies.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct QuerySettingsFrequency {
@@ -559,7 +588,7 @@ pub struct QuerySettingsFrequency {
     /// HelixMtDb filter.
     pub helixmtdb: MitochondrialFrequencySettings,
     /// In-house filter.
-    pub inhouse: NuclearFrequencySettings,
+    pub inhouse: InhouseFrequencySettings,
 }
 
 impl From<pb_query::QuerySettingsFrequency> for QuerySettingsFrequency {
@@ -573,7 +602,7 @@ impl From<pb_query::QuerySettingsFrequency> for QuerySettingsFrequency {
                 value.gnomad_mtdna.unwrap_or_default(),
             ),
             helixmtdb: MitochondrialFrequencySettings::from(value.helixmtdb.unwrap_or_default()),
-            inhouse: NuclearFrequencySettings::from(value.inhouse.unwrap_or_default()),
+            inhouse: InhouseFrequencySettings::from(value.inhouse.unwrap_or_default()),
         }
     }
 }
@@ -1742,12 +1771,12 @@ mod tests {
                 max_hom: Some(20),
                 max_af: Some(0.1),
             }),
-            inhouse: Some(pb_query::NuclearFrequencySettings {
+            inhouse: Some(pb_query::InhouseFrequencySettings {
                 enabled: true,
                 max_het: Some(10),
                 max_hom: Some(20),
                 max_hemi: Some(30),
-                max_af: Some(0.1),
+                max_carriers: Some(10),
             }),
         };
         let query_settings_frequency = QuerySettingsFrequency {
@@ -1777,12 +1806,12 @@ mod tests {
                 max_hom: Some(20),
                 max_af: Some(0.1),
             },
-            inhouse: NuclearFrequencySettings {
+            inhouse: InhouseFrequencySettings {
                 enabled: true,
                 max_het: Some(10),
                 max_hom: Some(20),
                 max_hemi: Some(30),
-                max_af: Some(0.1),
+                max_carriers: Some(10),
             },
         };
         assert_eq!(
@@ -2169,12 +2198,12 @@ mod tests {
                     max_hom: Some(20),
                     max_af: Some(0.1),
                 }),
-                inhouse: Some(pb_query::NuclearFrequencySettings {
+                inhouse: Some(pb_query::InhouseFrequencySettings {
                     enabled: true,
                     max_het: Some(10),
                     max_hom: Some(20),
                     max_hemi: Some(30),
-                    max_af: Some(0.1),
+                    max_carriers: Some(10),
                 }),
             }),
             consequence: Some(pb_query::QuerySettingsConsequence {
@@ -2279,12 +2308,12 @@ mod tests {
                     max_hom: Some(20),
                     max_af: Some(0.1),
                 },
-                inhouse: NuclearFrequencySettings {
+                inhouse: InhouseFrequencySettings {
                     enabled: true,
                     max_het: Some(10),
                     max_hom: Some(20),
                     max_hemi: Some(30),
-                    max_af: Some(0.1),
+                    max_carriers: Some(10),
                 },
             },
             consequence: QuerySettingsConsequence {
