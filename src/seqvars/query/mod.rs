@@ -49,6 +49,9 @@ pub struct Args {
     /// Path to worker database to use for querying.
     #[arg(long)]
     pub path_db: String,
+    /// Path to inhouse rocksdb folder.
+    #[arg(long)]
+    pub path_inhouse_db: Option<String>,
     /// Path to query JSON file.
     #[arg(long)]
     pub path_query_json: String,
@@ -260,6 +263,7 @@ async fn run_query(
     pb_query: &pbs_query::CaseQuery,
     args: &Args,
     annotator: &annonars::Annotator,
+    inhouse: &Option<inhouse::Dbs>,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
     let start_time = common::now_as_pbjson_timestamp();
@@ -298,6 +302,14 @@ async fn run_query(
             let record_seqvar = VariantRecord::try_from_vcf(&record_buf, &input_header)
                 .map_err(|e| anyhow::anyhow!("could not parse VCF record: {}", e))?;
             tracing::trace!("processing record {:?}", record_seqvar);
+
+            let record_seqvar = if let Some(inhouse) = inhouse.as_ref() {
+                inhouse.annotate_seqvar(record_seqvar).map_err(|e| {
+                    anyhow::anyhow!("could not annotate record with inhouse data: {}", e)
+                })?
+            } else {
+                record_seqvar
+            };
 
             if interpreter.passes(&record_seqvar, annotator)?.pass_all {
                 stats.count_passed += 1;
@@ -545,11 +557,19 @@ fn write_header(
                 })
                 .collect::<Vec<_>>(),
         }),
-        resources: Some(pbs_output::ResourcesUsed {
-            start_time: Some(start_time),
-            end_time: Some(common::now_as_pbjson_timestamp()),
-            memory_used: common::rss_size()?,
-        }),
+        resources: if cfg!(test) {
+            Some(pbs_output::ResourcesUsed {
+                start_time: None,
+                end_time: None,
+                memory_used: 0,
+            })
+        } else {
+            Some(pbs_output::ResourcesUsed {
+                start_time: Some(start_time),
+                end_time: Some(common::now_as_pbjson_timestamp()),
+                memory_used: common::rss_size()?,
+            })
+        },
         variant_score_columns: variant_related_annotation::score_columns(),
     };
     writeln!(
@@ -1140,7 +1160,7 @@ mod variant_related_annotation {
                 het: seqvar.population_frequencies.inhouse.het,
                 homalt: seqvar.population_frequencies.inhouse.hom,
                 hemialt: seqvar.population_frequencies.inhouse.hemi,
-                af: seqvar.population_frequencies.inhouse.af(),
+                af: 0f32,
             }),
         })
     }
@@ -1593,6 +1613,173 @@ async fn create_and_write_record(
         .map_err(|e| anyhow::anyhow!("could not write record to output file: {}", e))
 }
 
+/// Code for accessing the in-house frequencies.
+pub(crate) mod inhouse {
+    use std::{path::Path, sync::Arc};
+
+    use crate::seqvars::aggregate::ds::Counts;
+
+    use super::schema::data::{InHouseFrequencies, PopulationFrequencies, VariantRecord};
+
+    /// Meta information of the database.
+    pub struct Meta {
+        /// Genome release.
+        pub genome_release: String,
+    }
+
+    /// Container for the database structures.
+    pub struct Dbs {
+        /// Inhouse frequency RocksDB handle.
+        pub inhouse_db: Arc<rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>>,
+        /// Meta information.
+        #[allow(dead_code)]
+        pub inhouse_meta: Meta,
+    }
+
+    /// Open RocksDb given path and column family name for data and metadata.
+    pub fn open_rocksdb<P: AsRef<std::path::Path>>(
+        path_rocksdb: P,
+        cf_data: &str,
+        cf_meta: &str,
+    ) -> Result<(Arc<rocksdb::DBWithThreadMode<rocksdb::MultiThreaded>>, Meta), anyhow::Error> {
+        tracing::info!("Opening RocksDB database ...");
+        let before_open = std::time::Instant::now();
+        let cf_names = &[cf_meta, cf_data];
+        let resolved_path_rocksdb = annonars::common::readlink_f(&path_rocksdb)?;
+        let db = Arc::new(rocksdb::DB::open_cf_for_read_only(
+            &rocksdb::Options::default(),
+            resolved_path_rocksdb,
+            cf_names,
+            true,
+        )?);
+        tracing::info!("  reading meta information");
+        let meta = {
+            let cf_meta = db.cf_handle(cf_meta).unwrap();
+            let meta_genome_release = String::from_utf8(
+                db.get_cf(&cf_meta, "genome-release")?
+                    .ok_or_else(|| anyhow::anyhow!("missing value meta:genome-release"))?,
+            )?;
+            Meta {
+                genome_release: meta_genome_release,
+            }
+        };
+
+        tracing::info!("  meta:genome-release = {}", &meta.genome_release);
+        tracing::info!(
+            "... opening RocksDB database took {:?}",
+            before_open.elapsed()
+        );
+
+        Ok((db, meta))
+    }
+
+    impl Dbs {
+        /// Initialize from path that contains the annonars databases.
+        pub fn with_path<P: AsRef<Path>>(
+            path: P,
+            genome_release: &str,
+        ) -> Result<Self, anyhow::Error> {
+            let (inhouse_db, inhouse_meta) =
+                open_rocksdb(&path, "counts", "meta").map_err(|e| {
+                    anyhow::anyhow!(
+                        "problem opening {} metadata at {}: {}",
+                        "counts",
+                        path.as_ref().as_os_str().to_string_lossy(),
+                        e
+                    )
+                })?;
+
+            if inhouse_meta.genome_release != genome_release {
+                anyhow::bail!(
+                    "genome release mismatch: expected {} but got {}",
+                    genome_release,
+                    inhouse_meta.genome_release
+                );
+            }
+
+            Ok(Self {
+                inhouse_db,
+                inhouse_meta,
+            })
+        }
+
+        /// Query for in-house data frequencies.
+        fn query(
+            &self,
+            key: &annonars::common::keys::Var,
+        ) -> Result<Option<Counts>, anyhow::Error> {
+            let cf_counts = self
+                .inhouse_db
+                .cf_handle("counts")
+                .expect("cannot find column family 'counts'");
+            let key: Vec<u8> = key.clone().into();
+            let res = self
+                .inhouse_db
+                .get_cf(&cf_counts, key)
+                .map_err(|e| anyhow::anyhow!("querying in-house RocksDB failed: {}", e))?;
+            Ok(res.as_ref().map(|res| Counts::from_vec(res)))
+        }
+
+        /// Annotate the given seqvars record.
+        pub fn annotate_seqvar(
+            &self,
+            record: VariantRecord,
+        ) -> Result<VariantRecord, anyhow::Error> {
+            let VariantRecord {
+                vcf_variant,
+                call_infos,
+                ann_fields,
+                population_frequencies,
+            } = record;
+            let PopulationFrequencies {
+                gnomad_exomes,
+                gnomad_genomes,
+                gnomad_mtdna,
+                helixmtdb,
+                inhouse,
+            } = population_frequencies;
+
+            let inhouse = if let Some(inhouse_counts) =
+                self.query(&annonars::common::keys::Var::from(
+                    &vcf_variant.chrom,
+                    vcf_variant.pos,
+                    &vcf_variant.ref_allele,
+                    &vcf_variant.alt_allele,
+                ))? {
+                let Counts {
+                    count_homref,
+                    count_hemiref,
+                    count_het,
+                    count_homalt,
+                    count_hemialt,
+                } = inhouse_counts;
+                InHouseFrequencies {
+                    an: (count_homref + count_hemiref + count_het + count_homalt + count_hemialt)
+                        as i32,
+                    hom: count_homalt as i32,
+                    het: count_het as i32,
+                    hemi: count_hemialt as i32,
+                }
+            } else {
+                inhouse
+            };
+
+            Ok(VariantRecord {
+                vcf_variant,
+                call_infos,
+                ann_fields,
+                population_frequencies: PopulationFrequencies {
+                    gnomad_exomes,
+                    gnomad_genomes,
+                    gnomad_mtdna,
+                    helixmtdb,
+                    inhouse,
+                },
+            })
+        }
+    }
+}
+
 /// Main entry point for `seqvars query` sub command.
 pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = Instant::now();
@@ -1633,6 +1820,11 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         )
     })?;
     let annotator = annonars::Annotator::with_path(&args.path_db, args.genome_release)?;
+    let inhouse_db = args
+        .path_inhouse_db
+        .as_ref()
+        .map(|path| inhouse::Dbs::with_path(path, &format!("{}", args.genome_release)))
+        .transpose()?;
     tracing::info!(
         "...done loading databases in {:?}",
         before_loading.elapsed()
@@ -1651,6 +1843,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         &pb_query.clone(),
         args,
         &annotator,
+        &inhouse_db,
         &mut rng,
     )
     .await?;
@@ -1768,37 +1961,57 @@ mod test {
         Ok(())
     }
 
-    // TODO: re-enable smoke test
-    // #[tracing_test::traced_test]
-    // #[rstest::rstest]
-    // #[case::case_1_ingested_vcf("tests/seqvars/query/Case_1.ingested.vcf")]
-    // #[case::dragen_ingested_vcf("tests/seqvars/query/dragen.ingested.vcf")]
-    // #[tokio::test]
-    // async fn smoke_test(#[case] path_input: &str) -> Result<(), anyhow::Error> {
-    //     mehari::common::set_snapshot_suffix!("{}", path_input.split('/').last().unwrap());
+    #[tracing_test::traced_test]
+    #[rstest::rstest]
+    #[case::case_1_ingested_vcf_with_inhouse("tests/seqvars/query/Case_1.ingested.vcf", true)]
+    #[case::dragen_ingested_vcf_no_inhouse("tests/seqvars/query/dragen.ingested.vcf", false)]
+    #[case::case_1_ingested_vcf_with_inhouse("tests/seqvars/query/Case_1.ingested.vcf", true)]
+    #[case::dragen_ingested_vcf_no_inhouse("tests/seqvars/query/dragen.ingested.vcf", false)]
+    #[tokio::test]
+    async fn smoke_test(
+        #[case] path_input: &str,
+        #[case] with_inhouse: bool,
+    ) -> Result<(), anyhow::Error> {
+        mehari::common::set_snapshot_suffix!(
+            "{}-{}",
+            path_input.split('/').last().unwrap(),
+            if with_inhouse {
+                "with_inhouse"
+            } else {
+                "no_inhouse"
+            }
+        );
 
-    //     let tmpdir = temp_testdir::TempDir::default();
-    //     let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());
-    //     let path_input: String = path_input.into();
-    //     let path_query_json = path_input.replace(".ingested.vcf", ".query.json");
+        let tmpdir = temp_testdir::TempDir::default();
+        let path_output = format!("{}/out.tsv", tmpdir.to_string_lossy());
+        let path_input: String = path_input.into();
+        let path_query_json = path_input.replace(".ingested.vcf", ".query.json");
 
-    //     let args_common = Default::default();
-    //     let args = super::Args {
-    //         genome_release: crate::common::GenomeRelease::Grch37,
-    //         path_db: "tests/seqvars/query/db".into(),
-    //         path_query_json,
-    //         path_input,
-    //         path_output,
-    //         max_results: None,
-    //         rng_seed: Some(42),
-    //         max_tad_distance: 10_000,
-    //         result_set_id: None,
-    //         case_uuid_id: None,
-    //     };
-    //     super::run(&args_common, &args).await?;
+        let args_common = Default::default();
+        let args = super::Args {
+            genome_release: crate::common::GenomeRelease::Grch37,
+            path_db: "tests/seqvars/query/db".into(),
+            path_inhouse_db: if with_inhouse {
+                Some(
+                    "tests/seqvars/query/db-dynamic/worker/seqvars/inhouse/grch37/active/rocksdb"
+                        .into(),
+                )
+            } else {
+                None
+            },
+            path_query_json,
+            path_input,
+            path_output,
+            max_results: None,
+            rng_seed: Some(42),
+            max_tad_distance: 10_000,
+            result_set_id: None,
+            case_uuid: None,
+        };
+        super::run(&args_common, &args).await?;
 
-    //     insta::assert_snapshot!(std::fs::read_to_string(args.path_output.as_str())?);
+        insta::assert_snapshot!(std::fs::read_to_string(args.path_output.as_str())?);
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 }

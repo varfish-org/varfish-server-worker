@@ -1,121 +1,106 @@
 {
-  "consequences": [
-    "chromosome_number_variation",
-    "exon_loss_variant",
-    "frameshift_variant",
-    "rare_amino_acid_variant",
-    "splice_acceptor_variant",
-    "splice_donor_variant",
-    "start_lost",
-    "stop_gained",
-    "stop_lost",
-    "transcript_ablation",
-    "3_prime_UTR_truncation",
-    "5_prime_UTR_truncation",
-    "conservative_inframe_deletion",
-    "conservative_inframe_insertion",
-    "disruptive_inframe_deletion",
-    "disruptive_inframe_insertion",
-    "missense_variant",
-    "regulatory_region_ablation",
-    "splice_region_variant",
-    "TFBS_ablation",
-    "5_prime_UTR_premature_start_codon_gain_variant",
-    "initiator_codon_variant",
-    "start_retained",
-    "stop_retained_variant",
-    "synonymous_variant",
-    "3_prime_UTR_variant",
-    "5_prime_UTR_variant",
-    "coding_sequence_variant",
-    "conserved_intergenic_variant",
-    "conserved_intron_variant",
-    "downstream_gene_variant",
-    "exon_variant",
-    "feature_elongation",
-    "feature_truncation",
-    "gene_variant",
-    "intergenic_variant",
-    "intron_variant",
-    "mature_miRNA_variant",
-    "miRNA",
-    "NMD_transcript_variant",
-    "non_coding_transcript_exon_variant",
-    "non_coding_transcript_intron_variant",
-    "regulatory_region_amplification",
-    "regulatory_region_variant",
-    "TF_binding_site_variant",
-    "TFBS_amplification",
-    "transcript_amplification",
-    "transcript_variant",
-    "upstream_gene_variant"
-  ],
-  "gnomad_exomes_enabled": false,
-  "gnomad_genomes_enabled": false,
-  "inhouse_enabled": false,
-  "helixmtdb_enabled": false,
+  "genotype": {
+    "recessiveMode": "RECESSIVE_MODE_DISABLED",
+    "sampleGenotypes": [
+      {
+        "sample": "Case_1_index-N1-DNA1-WGS1",
+        "genotype": "GENOTYPE_CHOICE_ANY",
+        "enabled": true
+      },
+      {
+        "sample": "Case_1_father-N1-DNA1-WGS1",
+        "genotype": "GENOTYPE_CHOICE_ANY",
+        "enabled": true
+      },
+      {
+        "sample": "Case_1_mother-N1-DNA1-WGS1",
+        "genotype": "GENOTYPE_CHOICE_ANY",
+        "enabled": true
+      }
+    ]
+  },
   "quality": {
-    "Case_1_index-N1-DNA1-WGS1": {
-      "dp_het": 10,
-      "dp_hom": 5,
-      "gq": 10,
-      "ab": 0.2,
-      "ad": 3,
-      "ad_max": null,
-      "filter_active": "drop-variant"
+    "sampleQualities": [
+      {
+        "sample": "Case_1_index-N1-DNA1-WGS1",
+        "filterActive": true,
+        "minDpHet": 10,
+        "minDpHom": 5,
+        "minGq": 10,
+        "minAb": 0.2,
+        "minAd": 3
+      },
+      {
+        "sample": "Case_1_father-N1-DNA1-WGS1",
+        "filterActive": true,
+        "minDpHet": 10,
+        "minDpHom": 5,
+        "minGq": 10,
+        "minAb": 0.2,
+        "minAd": 3
+      },
+      {
+        "sample": "Case_1_mother-N1-DNA1-WGS1",
+        "filterActive": true,
+        "minDpHet": 10,
+        "minDpHom": 5,
+        "minGq": 10,
+        "minAb": 0.2,
+        "minAd": 3
+      }
+    ]
+  },
+  "frequency": {
+    "gnomadExomes": {
+      "enabled": true,
+      "maxHet": 1,
+      "maxHom": 0,
+      "maxAf": 0.002
     },
-    "Case_1_father-N1-DNA1-WGS1": {
-      "dp_het": 10,
-      "dp_hom": 5,
-      "gq": 10,
-      "ab": 0.2,
-      "ad": 3,
-      "ad_max": null,
-      "filter_active": "drop-variant"
+    "gnomadGenomes": {
+      "enabled": true,
+      "maxHet": 1,
+      "maxHom": 0,
+      "maxAf": 0.002
     },
-    "Case_1_mother-N1-DNA1-WGS1": {
-      "dp_het": 10,
-      "dp_hom": 5,
-      "gq": 10,
-      "ab": 0.2,
-      "ad": 3,
-      "ad_max": null,
-      "filter_active": "drop-variant"
+    "gnomadMtdna": {},
+    "helixmtdb": {},
+    "inhouse": {
+      "enabled": true,
+      "maxCarriers": 20
     }
   },
-  "genotype": {
-    "Case_1_index-N1-DNA1-WGS1": "any",
-    "Case_1_father-N1-DNA1-WGS1": "any",
-    "Case_1_mother-N1-DNA1-WGS1": "any"
+  "consequence": {
+    "variantTypes": [
+      "VARIANT_TYPE_SNV",
+      "VARIANT_TYPE_INDEL",
+      "VARIANT_TYPE_MNV",
+      "VARIANT_TYPE_COMPLEX_SUBSTITUTION"
+    ],
+    "transcriptTypes": [
+      "TRANSCRIPT_TYPE_CODING"
+    ],
+    "consequences": [
+      "CONSEQUENCE_TRANSCRIPT_ABLATION",
+      "CONSEQUENCE_EXON_LOSS_VARIANT",
+      "CONSEQUENCE_SPLICE_ACCEPTOR_VARIANT",
+      "CONSEQUENCE_SPLICE_DONOR_VARIANT",
+      "CONSEQUENCE_STOP_GAINED",
+      "CONSEQUENCE_FRAMESHIFT_VARIANT",
+      "CONSEQUENCE_STOP_LOST",
+      "CONSEQUENCE_START_LOST",
+      "CONSEQUENCE_TRANSCRIPT_AMPLIFICATION",
+      "CONSEQUENCE_DISRUPTIVE_INFRAME_INSERTION",
+      "CONSEQUENCE_DISRUPTIVE_INFRAME_DELETION",
+      "CONSEQUENCE_CONSERVATIVE_INFRAME_INSERTION",
+      "CONSEQUENCE_CONSERVATIVE_INFRAME_DELETION",
+      "CONSEQUENCE_MISSENSE_VARIANT",
+      "CONSEQUENCE_SPLICE_DONOR_FIFTH_BASE_VARIANT",
+      "CONSEQUENCE_SPLICE_REGION_VARIANT",
+      "CONSEQUENCE_SPLICE_DONOR_REGION_VARIANT",
+      "CONSEQUENCE_SPLICE_POLYPYRIMIDINE_TRACT_VARIANT"
+    ]
   },
-  "selected_variants": null,
-  "transcripts_coding": true,
-  "transcripts_noncoding": true,
-  "var_type_snv": true,
-  "var_type_indel": true,
-  "var_type_mnv": true,
-  "max_exon_dist": 100,
-  "gene_allowlist": [],
-  "genomic_regions": null,
-  "require_in_clinvar": false,
-  "clinvar_include_benign": false,
-  "clinvar_include_pathogenic": true,
-  "clinvar_include_likely_benign": false,
-  "clinvar_include_likely_pathogenic": true,
-  "clinvar_include_uncertain_significance": false,
-  "gnomad_exomes_frequency": 0.002,
-  "gnomad_exomes_heterozygous": 20,
-  "gnomad_exomes_homozygous": 0,
-  "gnomad_exomes_hemizygous": null,
-  "gnomad_genomes_frequency": 0.002,
-  "gnomad_genomes_heterozygous": 4,
-  "gnomad_genomes_homozygous": 0,
-  "gnomad_genomes_hemizygous": null,
-  "inhouse_carriers": 20,
-  "inhouse_heterozygous": null,
-  "inhouse_homozygous": null,
-  "inhouse_hemizygous": null,
-  "helixmtdb_frequency": 0.01,
-  "helixmtdb_heterozygous": null,
-  "helixmtdb_homozygous": null
+  "locus": {},
+  "clinvar": {}
 }

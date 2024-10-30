@@ -396,6 +396,11 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
         tracing::info!("  writing meta information");
         let cf_meta = db.cf_handle("meta").unwrap();
         db.put_cf(&cf_meta, "varfish-worker-version", common::worker_version())?;
+        db.put_cf(
+            &cf_meta,
+            "genome-release",
+            args.genomebuild.name().to_lowercase(),
+        )?;
         db.put_cf(&cf_meta, "db-name", "seqvars-aggregation")?;
         tracing::info!("... done opening RocksDB");
 
