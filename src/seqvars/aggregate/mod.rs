@@ -335,26 +335,6 @@ async fn vcf_import(
                 ))
                 .map_err(|e| anyhow::anyhow!("processing VCF file {} failed: {}", path_input, e))
         })
-        // // We create a Tokio scheduler for the current file as we need it
-        // // to wait / block for the VCF import running in the current Rayon
-        // // thread.
-        // tokio::runtime::Builder::new_current_thread()
-        //     .build()
-        //     .map_err(|e| {
-        //         anyhow::anyhow!(
-        //             "building Tokio runtime for VCF file {} failed: {}",
-        //             path_input,
-        //             e
-        //         )
-        //     })?
-        //     .block_on(import_vcf(
-        //         db,
-        //         path_input,
-        //         cf_counts,
-        //         cf_carriers,
-        //         genomebuild,
-        //     ))
-        //     .map_err(|e| anyhow::anyhow!("processing VCF file {} failed: {}", path_input, e))
     })
 }
 
