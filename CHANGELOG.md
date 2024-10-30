@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.16.0...v0.16.1) (2024-10-30)
+
+
+### Bug Fixes
+
+* seqvars aggregate async runtime error ([#519](https://github.com/varfish-org/varfish-server-worker/issues/519)) ([#520](https://github.com/varfish-org/varfish-server-worker/issues/520)) ([3911afe](https://github.com/varfish-org/varfish-server-worker/commit/3911afe64aec4e38ead6ae458c2fcc69f8ee08a8))
+
 ## [0.16.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.15.0...v0.16.0) (2024-10-28)
 
 
