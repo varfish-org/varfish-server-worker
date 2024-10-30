@@ -12,7 +12,7 @@ use crate::common::{self, genotype_to_string, Chrom, Genotype};
 
 /// Command line arguments for `seqvars aggregate` subcommand.
 #[derive(Debug, clap::Parser)]
-#[command(author, version, about = "ingest sequence variant VCF", long_about = None)]
+#[command(author, version, about = "build/update seqvars inhouse dabase", long_about = None)]
 pub struct Args {
     /// The assumed genome build.
     #[clap(long)]
