@@ -100,7 +100,7 @@ async fn main() -> Result<(), anyhow::Error> {
             SeqvarsCommands::Aggregate(args) => {
                 // Note that aggregate is not async as it uses Rayon and will
                 // block internally for the read files.
-                seqvars::aggregate::run(&cli.common, args)?;
+                seqvars::aggregate::run(&cli.common, args).await?;
             }
             SeqvarsCommands::Ingest(args) => {
                 seqvars::ingest::run(&cli.common, args).await?;

@@ -315,28 +315,17 @@ async fn import_vcf(
 }
 
 /// Perform the parallel import of VCF files.
-fn vcf_import(
+async fn vcf_import(
     db: &Arc<rocksdb::TransactionDB<rocksdb::MultiThreaded>>,
     path_input: &[&str],
     cf_counts: &str,
     cf_carriers: &str,
     genomebuild: crate::common::GenomeRelease,
 ) -> Result<(), anyhow::Error> {
-    path_input
-        .par_iter()
-        .map(|path_input| {
-            // We create a Tokio scheduler for the current file as we need it
-            // to wait / block for the VCF import running in the current Rayon
-            // thread.
-            tokio::runtime::Builder::new_current_thread()
-                .build()
-                .map_err(|e| {
-                    anyhow::anyhow!(
-                        "building Tokio runtime for VCF file {} failed: {}",
-                        path_input,
-                        e
-                    )
-                })?
+    let handle = tokio::runtime::Handle::current();
+    path_input.par_iter().try_for_each(|path_input| {
+        tokio::task::block_in_place(|| {
+            handle
                 .block_on(import_vcf(
                     db,
                     path_input,
@@ -346,12 +335,11 @@ fn vcf_import(
                 ))
                 .map_err(|e| anyhow::anyhow!("processing VCF file {} failed: {}", path_input, e))
         })
-        .collect::<Result<Vec<_>, _>>()
-        .map(|_| ())
+    })
 }
 
 /// Main entry point for `seqvars aggregate` sub command.
-pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
+pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow::Error> {
     let before_anything = std::time::Instant::now();
     tracing::info!("args_common = {:#?}", &args_common);
     tracing::info!("args = {:#?}", &args);
@@ -420,7 +408,8 @@ pub fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), anyhow:
             &args.cf_counts,
             &args.cf_carriers,
             args.genomebuild,
-        )?;
+        )
+        .await?;
         tracing::info!(
             "... done importing VCF files in {:?}",
             before_import.elapsed()
