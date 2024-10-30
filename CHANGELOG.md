@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.16.1...v0.17.0) (2024-10-30)
+
+
+### Features
+
+* inhouse freqs useable in seqvars query ([#232](https://github.com/varfish-org/varfish-server-worker/issues/232)) ([#522](https://github.com/varfish-org/varfish-server-worker/issues/522)) ([45bec0c](https://github.com/varfish-org/varfish-server-worker/commit/45bec0c23389644f2446767d4dcba25a36d4ab9c))
+
 ## [0.16.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.16.0...v0.16.1) (2024-10-30)
 
 
