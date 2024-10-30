@@ -557,11 +557,19 @@ fn write_header(
                 })
                 .collect::<Vec<_>>(),
         }),
-        resources: Some(pbs_output::ResourcesUsed {
-            start_time: Some(start_time),
-            end_time: Some(common::now_as_pbjson_timestamp()),
-            memory_used: common::rss_size()?,
-        }),
+        resources: if cfg!(test) {
+            Some(pbs_output::ResourcesUsed {
+                start_time: None,
+                end_time: None,
+                memory_used: 0,
+            })
+        } else {
+            Some(pbs_output::ResourcesUsed {
+                start_time: Some(start_time),
+                end_time: Some(common::now_as_pbjson_timestamp()),
+                memory_used: common::rss_size()?,
+            })
+        },
         variant_score_columns: variant_related_annotation::score_columns(),
     };
     writeln!(
