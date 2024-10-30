@@ -45,6 +45,23 @@ pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Erro
             );
             return Ok(false);
         }
+        // Note that allele frequency cannot be calculated from inhouse data as of yet
+        // as we cannot differentiate between "no coverage" and "hom. ref." yet.
+        if frequency.inhouse.enabled
+            && (frequency.inhouse.max_het.is_some()
+                && s.population_frequencies.inhouse.het
+                    > frequency.inhouse.max_het.expect("tested before")
+                || frequency.inhouse.max_hom.is_some()
+                    && s.population_frequencies.inhouse.hom
+                        > frequency.inhouse.max_hom.expect("tested before"))
+        {
+            tracing::trace!(
+                "variant {:?} fails in-house frequency filter {:?}",
+                s,
+                &frequency.inhouse
+            );
+            return Ok(false);
+        }
     } else {
         if frequency.gnomad_exomes.enabled
             && (frequency.gnomad_exomes.max_af.is_some()
@@ -85,6 +102,26 @@ pub fn passes(query: &CaseQuery, s: &VariantRecord) -> Result<bool, anyhow::Erro
                 "variant {:?} fails gnomAD-genomes frequency filter {:?}",
                 s,
                 &frequency.gnomad_genomes
+            );
+            return Ok(false);
+        }
+        // Note that allele frequency cannot be calculated from inhouse data as of yet
+        // as we cannot differentiate between "no coverage" and "hom. ref." yet.
+        if frequency.inhouse.enabled
+            && (frequency.inhouse.max_het.is_some()
+                && s.population_frequencies.inhouse.het
+                    > frequency.inhouse.max_het.expect("tested before")
+                || frequency.inhouse.max_hom.is_some()
+                    && s.population_frequencies.inhouse.hom
+                        > frequency.inhouse.max_hom.expect("tested before")
+                || frequency.inhouse.max_hemi.is_some()
+                    && s.population_frequencies.inhouse.hemi
+                        > frequency.inhouse.max_hemi.expect("tested before"))
+        {
+            tracing::trace!(
+                "variant {:?} fails in-house frequency filter {:?}",
+                s,
+                &frequency.inhouse
             );
             return Ok(false);
         }
