@@ -12,7 +12,7 @@ rust-version = "1.70.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-annonars = "0.41"
+annonars = "0.42"
 anyhow = "1.0"
 async-compression = { version = "0.4", features = ["tokio", "gzip"] }
 aws-config = { version = "1.5", features = ["behavior-version-latest"] }
@@ -39,7 +39,7 @@ hgvs = "0.17.3"
 indexmap = { version = "2.7", features = ["serde"] }
 itertools = "0.13"
 log = "0.4"
-mehari = "0.29.6"
+mehari = "0.30.1"
 multimap = "0.10"
 pbjson = "0.7"
 pbjson-types = "0.7"
