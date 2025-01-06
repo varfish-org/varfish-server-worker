@@ -57,7 +57,7 @@ serde_with = { version = "3.12", features = ["indexmap_2"] }
 shellexpand = "3.0"
 strum_macros = "0.26"
 strum = { version = "0.26", features = ["derive"] }
-tempfile = "3.14.0"
+tempfile = "3.15.0"
 thiserror = "2.0"
 thousands = "0.2"
 tokio = { version = "1.42", features = ["full"] }
