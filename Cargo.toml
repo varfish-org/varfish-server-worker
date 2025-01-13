@@ -37,7 +37,7 @@ flate2 = "1.0"
 futures = "0.3.31"
 hgvs = "0.17.3"
 indexmap = { version = "2.7", features = ["serde"] }
-itertools = "0.13"
+itertools = "0.14"
 log = "0.4"
 mehari = "0.29.6"
 multimap = "0.10"
