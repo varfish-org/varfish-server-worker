@@ -55,7 +55,7 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["serde_derive"] }
 serde_with = { version = "3.12", features = ["indexmap_2"] }
 shellexpand = "3.0"
-strum_macros = "0.26"
+strum_macros = "0.27"
 strum = { version = "0.26", features = ["derive"] }
 tempfile = "3.15.0"
 thiserror = "2.0"
