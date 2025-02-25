@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.17.0...v0.17.1) (2025-02-25)
+
+
+### Bug Fixes
+
+* genotype choice any filtering out variants with gt ./. ([#590](https://github.com/varfish-org/varfish-server-worker/issues/590)) ([#591](https://github.com/varfish-org/varfish-server-worker/issues/591)) ([e581c58](https://github.com/varfish-org/varfish-server-worker/commit/e581c58a9f1277bd8de920f020a0da749d49ad82))
+
 ## [0.17.0](https://github.com/varfish-org/varfish-server-worker/compare/v0.16.1...v0.17.0) (2024-10-30)
 
 
