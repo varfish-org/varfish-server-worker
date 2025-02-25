@@ -654,7 +654,7 @@ impl GenotypeCriteria {
     /// Note that this only check the genotype and quality criteria.  Whether
     /// the `GenotypeCriteria` is applicable to the `CallInfo` has to be
     /// checked independently.
-    pub fn is_call_info_pass(&self, call_info: &CallInfo) -> bool {
+    pub fn is_call_info_pass(&self, call_info: &CallInfo, query_genotype: GenotypeChoice) -> bool {
         // The pattern below is always the same: if the constraint in self is
         // None then pass regardlessly of what `call_info` has.  Otherwise
         // fail if the corresponding value of `call_info` has not been set.
@@ -667,7 +667,7 @@ impl GenotypeCriteria {
                 .genotype
                 .as_ref()
                 .map_or(self.missing_gt_ok, |gt| gt_one_of.contains(gt))
-        });
+        }) || query_genotype == GenotypeChoice::Any;
 
         // gq -- genotype quality
 
@@ -1846,6 +1846,8 @@ mod tests {
 
     #[test]
     fn test_genotype_criteria_is_call_info_pass() {
+        let genotype_choice = GenotypeChoice::Het;
+
         let crit = GenotypeCriteria {
             gt_one_of: Some(vec!["0/1".to_owned()]),
             min_gq: Some(10.0),
@@ -1871,7 +1873,7 @@ mod tests {
             max_rd_dev: Some(1.5),
             min_amq: Some(60.0),
             max_amq: Some(70.0),
-            ..GenotypeCriteria::new(GenotypeChoice::Het)
+            ..GenotypeCriteria::new(genotype_choice)
         };
 
         let pass_info = CallInfo {
@@ -1888,11 +1890,13 @@ mod tests {
             ..Default::default()
         };
 
-        assert!(crit.is_call_info_pass(&pass_info));
+        assert!(crit.is_call_info_pass(&pass_info, genotype_choice));
     }
 
     #[test]
     fn test_genotype_criteria_is_call_info_fail() {
+        let genotype_choice = GenotypeChoice::Het;
+
         let crit = GenotypeCriteria {
             gt_one_of: Some(vec!["0/1".to_owned()]),
             min_gq: Some(10.0),
@@ -1902,7 +1906,7 @@ mod tests {
             min_sr_var: Some(10),
             min_rd_dev: Some(0.5),
             min_amq: Some(60.0),
-            ..GenotypeCriteria::new(GenotypeChoice::Het)
+            ..GenotypeCriteria::new(genotype_choice)
         };
 
         let fail_info = CallInfo {
@@ -1919,42 +1923,125 @@ mod tests {
             ..Default::default()
         };
 
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            genotype: Some("1/1".to_owned()),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            quality: Some(9.9),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            paired_end_cov: Some(9),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            paired_end_var: Some(9),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            split_read_cov: Some(9),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            split_read_var: Some(9),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            average_normalized_cov: Some(0.6),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            average_normalized_cov: Some(1.4),
-            ..fail_info.clone()
-        }));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            average_mapping_quality: Some(59.0),
-            ..fail_info
-        }));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                genotype: Some("1/1".to_owned()),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                genotype: Some("./.".to_owned()),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                quality: Some(9.9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                paired_end_cov: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                paired_end_var: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                split_read_cov: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                split_read_var: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                average_normalized_cov: Some(0.6),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                average_normalized_cov: Some(1.4),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                average_mapping_quality: Some(59.0),
+                ..fail_info
+            },
+            genotype_choice
+        ));
+    }
+
+    #[test]
+    fn test_genotype_criteria_is_call_info_pass_gt_dot_dot() {
+        let genotype_choice = GenotypeChoice::Any;
+
+        let crit = GenotypeCriteria {
+            gt_one_of: Some(vec!["0/1".to_owned()]),
+            min_gq: Some(10.0),
+            min_pr_cov: Some(10),
+            max_pr_cov: Some(20),
+            min_pr_ref: Some(10),
+            max_pr_ref: Some(20),
+            min_pr_var: Some(10),
+            max_pr_var: Some(20),
+            min_sr_cov: Some(10),
+            max_sr_cov: Some(20),
+            min_sr_var: Some(10),
+            max_sr_var: Some(20),
+            min_sr_ref: Some(10),
+            max_sr_ref: Some(20),
+            min_srpr_cov: Some(20),
+            max_srpr_cov: Some(50),
+            min_srpr_var: Some(20),
+            max_srpr_var: Some(50),
+            min_srpr_ref: Some(20),
+            max_srpr_ref: Some(50),
+            min_rd_dev: Some(0.5),
+            max_rd_dev: Some(1.5),
+            min_amq: Some(60.0),
+            max_amq: Some(70.0),
+            ..GenotypeCriteria::new(genotype_choice)
+        };
+
+        let pass_info = CallInfo {
+            genotype: Some("./.".to_owned()),
+            quality: Some(10.0),
+            paired_end_cov: Some(20),
+            paired_end_var: Some(10),
+            split_read_cov: Some(20),
+            split_read_var: Some(10),
+            copy_number: Some(1),
+            average_normalized_cov: Some(0.491),
+            point_count: Some(5),
+            average_mapping_quality: Some(60.0),
+            ..Default::default()
+        };
+
+        assert!(crit.is_call_info_pass(&pass_info, genotype_choice));
     }
 
     #[test]

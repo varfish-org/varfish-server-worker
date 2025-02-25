@@ -108,7 +108,7 @@ impl QueryInterpreter {
             let mut pass_one_criteria = false;
             for criteria in &self.query.genotype_criteria {
                 if criteria.is_applicable_to(query_genotype, sv.sv_sub_type, sv.size())
-                    && criteria.is_call_info_pass(call_info)
+                    && criteria.is_call_info_pass(call_info, query_genotype)
                     && criteria.is_masked_pass(masked_count)
                 {
                     // Translate genotype from criteria to one for output as effective or
@@ -151,6 +151,10 @@ impl QueryInterpreter {
             result.pass_all = result.pass_all && pass_one_criteria;
         }
 
+        trace!(
+            "does SV pass genotype criteria? pass_all={}",
+            result.pass_all
+        );
         Ok(result)
     }
 
