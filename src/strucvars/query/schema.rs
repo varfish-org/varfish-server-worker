@@ -1923,46 +1923,76 @@ mod tests {
             ..Default::default()
         };
 
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            genotype: Some("1/1".to_owned()),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            genotype: Some("./.".to_owned()),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            quality: Some(9.9),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            paired_end_cov: Some(9),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            paired_end_var: Some(9),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            split_read_cov: Some(9),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            split_read_var: Some(9),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            average_normalized_cov: Some(0.6),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            average_normalized_cov: Some(1.4),
-            ..fail_info.clone()
-        }, genotype_choice));
-        assert!(!crit.is_call_info_pass(&CallInfo {
-            average_mapping_quality: Some(59.0),
-            ..fail_info
-        }, genotype_choice));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                genotype: Some("1/1".to_owned()),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                genotype: Some("./.".to_owned()),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                quality: Some(9.9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                paired_end_cov: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                paired_end_var: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                split_read_cov: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                split_read_var: Some(9),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                average_normalized_cov: Some(0.6),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                average_normalized_cov: Some(1.4),
+                ..fail_info.clone()
+            },
+            genotype_choice
+        ));
+        assert!(!crit.is_call_info_pass(
+            &CallInfo {
+                average_mapping_quality: Some(59.0),
+                ..fail_info
+            },
+            genotype_choice
+        ));
     }
 
     #[test]

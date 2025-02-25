@@ -151,7 +151,10 @@ impl QueryInterpreter {
             result.pass_all = result.pass_all && pass_one_criteria;
         }
 
-        trace!("does SV pass genotype criteria? pass_all={}", result.pass_all);
+        trace!(
+            "does SV pass genotype criteria? pass_all={}",
+            result.pass_all
+        );
         Ok(result)
     }
 
