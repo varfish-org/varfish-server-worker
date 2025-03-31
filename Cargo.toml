@@ -82,7 +82,7 @@ float-cmp = "0.10"
 hxdmp = "0.2.1"
 insta = { version = "1.42", features = ["yaml"] }
 pretty_assertions = "1.4"
-rstest = "0.24.0"
+rstest = "0.25.0"
 serde_test = "1.0"
 temp_testdir = "0.2"
 tracing-test = "0.2"
