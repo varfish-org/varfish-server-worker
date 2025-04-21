@@ -314,7 +314,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "serde_yaml",
- "strum",
+ "strum 0.26.3",
  "thiserror 1.0.69",
  "tracing",
  "tracing-subscriber",
@@ -1055,7 +1055,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "statrs",
- "strum",
+ "strum 0.26.3",
  "strum_macros 0.26.4",
  "thiserror 1.0.69",
  "triple_accel",
@@ -3214,7 +3214,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "serde_yaml",
- "strum",
+ "strum 0.26.3",
  "tempfile",
  "thousands",
  "tokio",
@@ -5295,6 +5295,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "strum"
+version = "0.27.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f64def088c51c9510a8579e3c5d67c65349dcf755e5479ad3d010aa6454e2c32"
+dependencies = [
+ "strum_macros 0.27.1",
+]
+
+[[package]]
 name = "strum_macros"
 version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5956,7 +5965,7 @@ dependencies = [
  "serde_test",
  "serde_with",
  "shellexpand",
- "strum",
+ "strum 0.27.1",
  "strum_macros 0.27.1",
  "temp_testdir",
  "tempfile",
