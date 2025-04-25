@@ -856,7 +856,12 @@ pub fn translate_genes(genes: &Vec<String>, dbs: &InMemoryDbs) -> HashSet<String
         let gene = gene.trim();
         if re_entrez.is_match(gene) {
             if let Ok(gene_id) = numeric_gene_id(gene) {
-                if let Some(record_ids) = dbs.genes.xlink.from_ensembl.get_vec(&gene_id) {
+                if let Some(record_ids) = dbs
+                    .genes
+                    .xlink
+                    .from_entrez
+                    .get_vec(&u32::try_from(gene_id).expect("entrez id should fit in u32"))
+                {
                     for record_id in record_ids {
                         result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }
@@ -867,7 +872,7 @@ pub fn translate_genes(genes: &Vec<String>, dbs: &InMemoryDbs) -> HashSet<String
             }
         } else if re_ensembl.is_match(gene) {
             if let Ok(gene_id) = numeric_gene_id(gene) {
-                if let Some(record_ids) = dbs.genes.xlink.from_entrez.get_vec(&gene_id) {
+                if let Some(record_ids) = dbs.genes.xlink.from_ensembl.get_vec(&gene_id) {
                     for record_id in record_ids {
                         result.insert(dbs.genes.xlink.records[*record_id as usize].hgnc_id.clone());
                     }

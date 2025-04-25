@@ -99,8 +99,8 @@ pub fn reciprocal_overlap(lhs: Range<i32>, rhs: Range<i32>) -> f32 {
     }
 }
 
-/// Helper to convert ENSEMBL and RefSeq gene ID to u32.
-pub fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
+/// Helper to convert ENSEMBL and RefSeq gene ID to u64.
+pub fn numeric_gene_id(raw_id: &str) -> Result<u64, anyhow::Error> {
     let clean_id = if raw_id.starts_with("ENSG") {
         // Strip "ENSG" prefix and as many zeroes as follow
         raw_id
@@ -113,7 +113,7 @@ pub fn numeric_gene_id(raw_id: &str) -> Result<u32, anyhow::Error> {
     };
 
     clean_id
-        .parse::<u32>()
+        .parse::<u64>()
         .map_err(|e| anyhow::anyhow!("could not parse gene id {:?}: {}", &clean_id, &e))
 }
 
@@ -694,7 +694,7 @@ mod test {
     #[rstest::rstest]
     #[case("ENSG0000000142", 142)]
     #[case("42", 42)]
-    fn numeric_gene_id(#[case] raw_id: &str, #[case] expected: u32) {
+    fn numeric_gene_id(#[case] raw_id: &str, #[case] expected: u64) {
         let actual = super::numeric_gene_id(raw_id).unwrap();
         assert_eq!(expected, actual);
     }

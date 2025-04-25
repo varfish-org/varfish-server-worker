@@ -67,7 +67,7 @@ message XlinkRecord {
   // Entrez gene ID.
   uint32 entrez_id = 3;
   // Ensembl gene ID.
-  uint32 ensembl_id = 4;
+  uint64 ensembl_id = 4;
 }
 
 // Gene cross-link database.

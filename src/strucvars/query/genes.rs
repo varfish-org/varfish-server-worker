@@ -13,7 +13,7 @@ use crate::{common::GenomeRelease, pbs};
 #[derive(Default, Debug)]
 pub struct XlinkDbRecord {
     pub entrez_id: u32,
-    pub ensembl_gene_id: u32,
+    pub ensembl_gene_id: u64,
     pub symbol: String,
     pub hgnc_id: String,
 }
@@ -26,7 +26,7 @@ pub struct XlinkDb {
     /// Link from entrez ID to indices in records.
     pub from_entrez: multimap::MultiMap<u32, u32>,
     /// Link from ensembl ID to indices in records.
-    pub from_ensembl: multimap::MultiMap<u32, u32>,
+    pub from_ensembl: multimap::MultiMap<u64, u32>,
     /// Link from HGNC ID to indices in records.
     pub from_hgnc: multimap::MultiMap<String, u32>,
 }
