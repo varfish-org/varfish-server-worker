@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.2](https://github.com/varfish-org/varfish-server-worker/compare/v0.17.1...v0.17.2) (2025-04-25)
+
+
+### Bug Fixes
+
+* Ensembl ID converstion must be u64 ([#618](https://github.com/varfish-org/varfish-server-worker/issues/618)) ([636f004](https://github.com/varfish-org/varfish-server-worker/commit/636f004e0c0be81e3c96f9b0ae5d67a6f7fe2ccf))
+
 ## [0.17.1](https://github.com/varfish-org/varfish-server-worker/compare/v0.17.0...v0.17.1) (2025-02-25)
 
 
