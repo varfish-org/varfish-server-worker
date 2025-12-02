@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.17.3](https://github.com/varfish-org/varfish-server-worker/compare/v0.17.2...v0.17.3) (2025-12-02)
+
+
+### Bug Fixes
+
+* broken genomic region filter for grch38 ([#629](https://github.com/varfish-org/varfish-server-worker/issues/629)) ([39246ac](https://github.com/varfish-org/varfish-server-worker/commit/39246acf0efc935d8c0e105ab473b869ef1b76e4))
+
 ## [0.17.2](https://github.com/varfish-org/varfish-server-worker/compare/v0.17.1...v0.17.2) (2025-04-25)
 
 
