@@ -1531,7 +1531,7 @@ impl WithSeqvarAndAnnotator for pbs_output::CallRelatedAnnotation {
         _annotator: &Annotator,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            call_infos: seqvar
+            call_info: seqvar
                 .call_infos
                 .iter()
                 .map(|(sample, call_info)| pbs_output::SampleCallInfo {
