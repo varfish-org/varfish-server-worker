@@ -431,7 +431,7 @@ message ScoreEntry {
 // Store call-related annotation.
 message CallRelatedAnnotation {
   // Store call information for each sample.
-  repeated SampleCallInfo call_infos = 1;
+  repeated SampleCallInfo call_info = 1;
 }
 
 // Store call information for one sample.

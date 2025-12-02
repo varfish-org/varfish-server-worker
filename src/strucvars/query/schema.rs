@@ -1191,11 +1191,6 @@ where
             .filter_map(|token| {
                 if let Some(caps) = re.captures(token) {
                     let chrom = caps.name("chrom").unwrap().as_str().to_string();
-                    let chrom = if let Some(chrom) = chrom.strip_prefix("chr") {
-                        chrom.to_string()
-                    } else {
-                        chrom
-                    };
                     let range = if let (Some(start), Some(stop)) =
                         (caps.name("start"), caps.name("stop"))
                     {
@@ -2168,5 +2163,85 @@ mod tests {
         assert_eq!(SvSubType::InsMeAlu.is_del(), false);
         assert_eq!(SvSubType::Bnd.is_del(), false);
         assert_eq!(SvSubType::Cnv.is_del(), false);
+    }
+
+    #[test]
+    fn test_deserialize_genomic_region_grch38() {
+        // Test that chromosome names with "chr" prefix are preserved (GRCh38)
+        // This simulates how the Python client sends genomic regions
+        let json = r#"{
+            "svdb_dgv_enabled": false,
+            "svdb_dgv_gs_enabled": false,
+            "svdb_gnomad_genomes_enabled": false,
+            "svdb_gnomad_exomes_enabled": false,
+            "svdb_dbvar_enabled": false,
+            "svdb_g1k_enabled": false,
+            "svdb_inhouse_enabled": false,
+            "sv_types": [],
+            "sv_sub_types": [],
+            "tx_effects": [],
+            "genomic_region": ["chr1", "chr1:100-200", "chrX"],
+            "regulatory_overlap": 100,
+            "regulatory_custom_configs": [],
+            "genotype": {},
+            "genotype_criteria": []
+        }"#;
+
+        let query: CaseQuery = serde_json::from_str(json).unwrap();
+        let regions = query.genomic_region.unwrap();
+
+        assert_eq!(regions.len(), 3);
+        assert_eq!(regions[0].chrom, "chr1");
+        assert_eq!(regions[0].range, None);
+        assert_eq!(regions[1].chrom, "chr1");
+        assert_eq!(
+            regions[1].range,
+            Some(Range {
+                start: 100,
+                end: 200
+            })
+        );
+        assert_eq!(regions[2].chrom, "chrX");
+        assert_eq!(regions[2].range, None);
+    }
+
+    #[test]
+    fn test_deserialize_genomic_region_grch37() {
+        // Test that chromosome names without "chr" prefix are preserved (GRCh37)
+        // This simulates how the Python client sends genomic regions
+        let json = r#"{
+            "svdb_dgv_enabled": false,
+            "svdb_dgv_gs_enabled": false,
+            "svdb_gnomad_genomes_enabled": false,
+            "svdb_gnomad_exomes_enabled": false,
+            "svdb_dbvar_enabled": false,
+            "svdb_g1k_enabled": false,
+            "svdb_inhouse_enabled": false,
+            "sv_types": [],
+            "sv_sub_types": [],
+            "tx_effects": [],
+            "genomic_region": ["1", "1:100-200", "X"],
+            "regulatory_overlap": 100,
+            "regulatory_custom_configs": [],
+            "genotype": {},
+            "genotype_criteria": []
+        }"#;
+
+        let query: CaseQuery = serde_json::from_str(json).unwrap();
+        let regions = query.genomic_region.unwrap();
+
+        assert_eq!(regions.len(), 3);
+        assert_eq!(regions[0].chrom, "1");
+        assert_eq!(regions[0].range, None);
+        assert_eq!(regions[1].chrom, "1");
+        assert_eq!(
+            regions[1].range,
+            Some(Range {
+                start: 100,
+                end: 200
+            })
+        );
+        assert_eq!(regions[2].chrom, "X");
+        assert_eq!(regions[2].range, None);
     }
 }

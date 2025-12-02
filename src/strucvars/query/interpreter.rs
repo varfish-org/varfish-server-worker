@@ -25,6 +25,19 @@ pub fn overlaps(s1: i32, e1: i32, s2: i32, e2: i32) -> bool {
     s1 < e2 && e1 > s2
 }
 
+/// Normalize chromosome name for comparison by stripping "chr" prefix if present.
+/// This allows matching between GRCh37 ("1", "X") and GRCh38 ("chr1", "chrX") formats.
+/// Returns the normalized chromosome name in uppercase for case-insensitive comparison.
+fn normalize_chrom(chrom: &str) -> String {
+    chrom.strip_prefix("chr").unwrap_or(chrom).to_uppercase()
+}
+
+/// Compare two chromosome names after normalization.
+/// Handles differences between GRCh37 and GRCh38 naming conventions.
+fn chroms_match(chrom1: &str, chrom2: &str) -> bool {
+    normalize_chrom(chrom1) == normalize_chrom(chrom2)
+}
+
 /// Hold data structures that support the interpretation of one `CaseQuery`
 /// to multiple `StructuralVariant` records.
 #[derive(Debug)]
@@ -207,7 +220,8 @@ impl QueryInterpreter {
                             overlaps(start - 1, end, sv.pos - INS_SLACK, sv.pos + INS_SLACK)
                         }
                     };
-                    any_match = any_match || (region.chrom.eq(&sv.chrom) && range_matches);
+                    any_match =
+                        any_match || (chroms_match(&region.chrom, &sv.chrom) && range_matches);
                 }
             } else if sv.sv_type == SvType::Bnd || sv.sv_sub_type == SvSubType::Bnd {
                 // for break-ends, test both ends and use `BND_SLACK`
@@ -232,11 +246,11 @@ impl QueryInterpreter {
                         ),
                     };
                     any_match = any_match
-                        || (region.chrom.eq(&sv.chrom) && range_matches_chrom)
+                        || (chroms_match(&region.chrom, &sv.chrom) && range_matches_chrom)
                         || (sv
                             .chrom2
                             .as_ref()
-                            .map_or(false, |chrom2| chrom2.eq(&region.chrom))
+                            .map_or(false, |chrom2| chroms_match(&region.chrom, chrom2))
                             && range_matches_chrom2);
                 }
             } else {
@@ -252,7 +266,8 @@ impl QueryInterpreter {
                             sv.end,
                         ),
                     };
-                    any_match = any_match || (region.chrom.eq(&sv.chrom) && range_matches);
+                    any_match =
+                        any_match || (chroms_match(&region.chrom, &sv.chrom) && range_matches);
                 }
             }
 
@@ -1248,5 +1263,215 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    // Tests for cross-format chromosome name matching (GRCh37 vs GRCh38)
+
+    #[test]
+    fn test_normalize_chrom() {
+        assert_eq!(normalize_chrom("chr1"), "1");
+        assert_eq!(normalize_chrom("1"), "1");
+        assert_eq!(normalize_chrom("chrX"), "X");
+        assert_eq!(normalize_chrom("X"), "X");
+        assert_eq!(normalize_chrom("chrMT"), "MT");
+        assert_eq!(normalize_chrom("MT"), "MT");
+        assert_eq!(normalize_chrom("chr22"), "22");
+        assert_eq!(normalize_chrom("22"), "22");
+    }
+
+    #[test]
+    fn test_chroms_match() {
+        // Same format
+        assert!(chroms_match("chr1", "chr1"));
+        assert!(chroms_match("1", "1"));
+
+        // Cross-format (GRCh37 vs GRCh38)
+        assert!(chroms_match("chr1", "1"));
+        assert!(chroms_match("1", "chr1"));
+        assert!(chroms_match("chrX", "X"));
+        assert!(chroms_match("X", "chrX"));
+        assert!(chroms_match("chrMT", "MT"));
+        assert!(chroms_match("MT", "chrMT"));
+
+        // Case insensitive
+        assert!(chroms_match("chrx", "X"));
+        assert!(chroms_match("x", "chrX"));
+
+        // Different chromosomes should not match
+        assert!(!chroms_match("chr1", "chr2"));
+        assert!(!chroms_match("1", "2"));
+        assert!(!chroms_match("chr1", "2"));
+        assert!(!chroms_match("X", "Y"));
+    }
+
+    #[test]
+    fn test_genomic_region_cross_format_linear_grch37_query_grch38_vcf() {
+        // Query uses GRCh37 format ("1"), VCF uses GRCh38 format ("chr1")
+        let query = CaseQuery {
+            genomic_region: Some(vec![GenomicRegion::whole_chrom("1")]),
+            ..CaseQuery::default()
+        };
+        let interpreter = QueryInterpreter::new(query, None);
+
+        let sv = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            call_info: IndexMap::new(),
+        };
+
+        assert!(interpreter.passes_genomic_region(&sv));
+    }
+
+    #[test]
+    fn test_genomic_region_cross_format_linear_grch38_query_grch37_vcf() {
+        // Query uses GRCh38 format ("chr1"), VCF uses GRCh37 format ("1")
+        let query = CaseQuery {
+            genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
+            ..CaseQuery::default()
+        };
+        let interpreter = QueryInterpreter::new(query, None);
+
+        let sv = StructuralVariant {
+            chrom: "1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            call_info: IndexMap::new(),
+        };
+
+        assert!(interpreter.passes_genomic_region(&sv));
+    }
+
+    #[test]
+    fn test_genomic_region_cross_format_with_range() {
+        // Query uses GRCh37 format with range, VCF uses GRCh38 format
+        let query = CaseQuery {
+            genomic_region: Some(vec![GenomicRegion::new("1", 50, 150)]),
+            ..CaseQuery::default()
+        };
+        let interpreter = QueryInterpreter::new(query, None);
+
+        let sv = StructuralVariant {
+            chrom: "chr1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            call_info: IndexMap::new(),
+        };
+
+        assert!(interpreter.passes_genomic_region(&sv));
+    }
+
+    #[test]
+    fn test_genomic_region_cross_format_insertion() {
+        // Query uses GRCh37 format, VCF uses GRCh38 format for insertion
+        let query = CaseQuery {
+            genomic_region: Some(vec![GenomicRegion::whole_chrom("X")]),
+            ..CaseQuery::default()
+        };
+        let interpreter = QueryInterpreter::new(query, None);
+
+        let sv = StructuralVariant {
+            chrom: "chrX".to_owned(),
+            pos: 1000,
+            sv_type: SvType::Ins,
+            sv_sub_type: SvSubType::Ins,
+            chrom2: None,
+            end: 1000,
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::NotApplicable,
+            call_info: IndexMap::new(),
+        };
+
+        assert!(interpreter.passes_genomic_region(&sv));
+    }
+
+    #[test]
+    fn test_genomic_region_cross_format_bnd() {
+        // Query uses GRCh38 format, VCF uses GRCh37 format for BND
+        let query = CaseQuery {
+            genomic_region: Some(vec![
+                GenomicRegion::whole_chrom("chr1"),
+                GenomicRegion::whole_chrom("chr2"),
+            ]),
+            ..CaseQuery::default()
+        };
+        let interpreter = QueryInterpreter::new(query, None);
+
+        let sv = StructuralVariant {
+            chrom: "1".to_owned(),
+            pos: 100,
+            sv_type: SvType::Bnd,
+            sv_sub_type: SvSubType::Bnd,
+            chrom2: Some("2".to_owned()),
+            end: 200,
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            call_info: IndexMap::new(),
+        };
+
+        assert!(interpreter.passes_genomic_region(&sv));
+    }
+
+    #[test]
+    fn test_genomic_region_cross_format_case_insensitive() {
+        // Test case insensitive matching
+        let query = CaseQuery {
+            genomic_region: Some(vec![GenomicRegion::whole_chrom("chrx")]),
+            ..CaseQuery::default()
+        };
+        let interpreter = QueryInterpreter::new(query, None);
+
+        let sv = StructuralVariant {
+            chrom: "X".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            call_info: IndexMap::new(),
+        };
+
+        assert!(interpreter.passes_genomic_region(&sv));
+    }
+
+    #[test]
+    fn test_genomic_region_cross_format_mismatch() {
+        // Different chromosomes should not match even with normalization
+        let query = CaseQuery {
+            genomic_region: Some(vec![GenomicRegion::whole_chrom("chr1")]),
+            ..CaseQuery::default()
+        };
+        let interpreter = QueryInterpreter::new(query, None);
+
+        let sv = StructuralVariant {
+            chrom: "2".to_owned(),
+            pos: 100,
+            sv_type: SvType::Del,
+            sv_sub_type: SvSubType::Del,
+            chrom2: None,
+            end: 200,
+            callers: Vec::new(),
+            strand_orientation: StrandOrientation::ThreeToFive,
+            call_info: IndexMap::new(),
+        };
+
+        assert!(!interpreter.passes_genomic_region(&sv));
     }
 }
