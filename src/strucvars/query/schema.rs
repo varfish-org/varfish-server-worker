@@ -2186,15 +2186,21 @@ mod tests {
             "genotype": {},
             "genotype_criteria": []
         }"#;
-        
+
         let query: CaseQuery = serde_json::from_str(json).unwrap();
         let regions = query.genomic_region.unwrap();
-        
+
         assert_eq!(regions.len(), 3);
         assert_eq!(regions[0].chrom, "chr1");
         assert_eq!(regions[0].range, None);
         assert_eq!(regions[1].chrom, "chr1");
-        assert_eq!(regions[1].range, Some(Range { start: 100, end: 200 }));
+        assert_eq!(
+            regions[1].range,
+            Some(Range {
+                start: 100,
+                end: 200
+            })
+        );
         assert_eq!(regions[2].chrom, "chrX");
         assert_eq!(regions[2].range, None);
     }
@@ -2220,15 +2226,21 @@ mod tests {
             "genotype": {},
             "genotype_criteria": []
         }"#;
-        
+
         let query: CaseQuery = serde_json::from_str(json).unwrap();
         let regions = query.genomic_region.unwrap();
-        
+
         assert_eq!(regions.len(), 3);
         assert_eq!(regions[0].chrom, "1");
         assert_eq!(regions[0].range, None);
         assert_eq!(regions[1].chrom, "1");
-        assert_eq!(regions[1].range, Some(Range { start: 100, end: 200 }));
+        assert_eq!(
+            regions[1].range,
+            Some(Range {
+                start: 100,
+                end: 200
+            })
+        );
         assert_eq!(regions[2].chrom, "X");
         assert_eq!(regions[2].range, None);
     }
