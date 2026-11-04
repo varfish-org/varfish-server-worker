@@ -1,6 +1,8 @@
 //! Common functionality.
 
+use std::collections::{HashMap, HashSet};
 use std::ops::Range;
+use std::sync::LazyLock;
 
 use ::noodles::vcf;
 use biocommons_bioutils::assemblies::Assembly;
@@ -11,6 +13,44 @@ use indexmap::IndexMap;
 
 pub mod noodles;
 pub mod s3;
+
+/// Names of the mitochondrial chromosome.
+pub static CHROM_MT: LazyLock<HashSet<&'static str>> =
+    LazyLock::new(|| HashSet::from_iter(["M", "MT", "chrM", "chrMT"]));
+
+/// Names of the gonosomes.
+pub static CHROM_XY: LazyLock<HashSet<&'static str>> =
+    LazyLock::new(|| HashSet::from_iter(["X", "Y", "chrX", "chrY"]));
+
+/// Names of the autosomes.
+pub static CHROM_AUTO: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
+    HashSet::from_iter([
+        "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
+        "17", "18", "19", "20", "21", "22", "chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "chr7",
+        "chr8", "chr9", "chr10", "chr11", "chr12", "chr13", "chr14", "chr15", "chr16", "chr17",
+        "chr18", "chr19", "chr20", "chr21", "chr22",
+    ])
+});
+
+/// Mapping from chromosome name to chromosome number.
+pub static CHROM_TO_CHROM_NO: LazyLock<HashMap<String, u32>> = LazyLock::new(|| {
+    let mut m = HashMap::new();
+
+    for i in 1..=22 {
+        m.insert(format!("chr{}", i), i);
+        m.insert(format!("{}", i), i);
+    }
+    m.insert(String::from("X"), 23);
+    m.insert(String::from("chrX"), 23);
+    m.insert(String::from("Y"), 24);
+    m.insert(String::from("chrY"), 24);
+    m.insert(String::from("M"), 25);
+    m.insert(String::from("chrM"), 25);
+    m.insert(String::from("MT"), 25);
+    m.insert(String::from("chrMT"), 25);
+
+    m
+});
 
 /// Commonly used command line arguments.
 #[derive(Parser, Debug)]

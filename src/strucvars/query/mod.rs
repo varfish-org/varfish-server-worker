@@ -20,10 +20,7 @@ use clap::{command, Parser};
 use indexmap::IndexMap;
 use log::warn;
 use mehari::{
-    annotate::{
-        seqvars::{provider::TxIntervalTrees, CHROM_TO_CHROM_NO},
-        strucvars::csq::interface::StrandOrientation,
-    },
+    annotate::{seqvars::provider::TxIntervalTrees, strucvars::csq::interface::StrandOrientation},
     common::noodles::open_vcf_reader,
     pbs::txs::{Strand, Transcript, TxSeqDatabase},
 };
@@ -222,7 +219,7 @@ async fn run_query(
     chrom_to_acc: &HashMap<String, String>,
     rng: &mut rand::rngs::StdRng,
 ) -> Result<QueryStats, anyhow::Error> {
-    let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
+    let chrom_to_chrom_no = &crate::common::CHROM_TO_CHROM_NO;
     let chrom_map = build_chrom_map();
     let mut stats = QueryStats::default();
 
@@ -965,7 +962,7 @@ pub async fn run(args_common: &crate::common::Args, args: &Args) -> Result<(), a
     );
     tracing::info!("Building mehari index data structures...");
     let before_building = Instant::now();
-    let mehari_tx_idx = TxIntervalTrees::new(&mehari_tx_db, args.genome_release.into());
+    let mehari_tx_idx = TxIntervalTrees::new(&mehari_tx_db);
     let chrom_to_acc = ASSEMBLY_INFOS[args.genome_release.into()]
         .sequences
         .iter()

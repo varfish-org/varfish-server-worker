@@ -16,7 +16,6 @@ use ext_sort::{ExternalSorter, ExternalSorterBuilder};
 
 use futures::TryStreamExt as _;
 use itertools::Itertools as _;
-use mehari::annotate::seqvars::CHROM_TO_CHROM_NO;
 use mehari::common::noodles::NoodlesVariantReader as _;
 use rand_core::{RngCore, SeedableRng};
 use schema::data::{TryFromVcf as _, VariantRecord};
@@ -269,7 +268,7 @@ async fn run_query(
     let start_time = common::now_as_pbjson_timestamp();
     let tmp_dir = tempfile::TempDir::new()?;
 
-    let chrom_to_chrom_no = &CHROM_TO_CHROM_NO;
+    let chrom_to_chrom_no = &crate::common::CHROM_TO_CHROM_NO;
     let mut stats = QueryStats::default();
 
     // Buffer for generating UUIDs.

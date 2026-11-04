@@ -18,7 +18,7 @@ FROM ubuntu:noble AS builder
 
 # Install Rust toolchain and dependencies for compilation of C code (e.g., rocksdb)
 RUN apt-get update && \
-    apt-get install -y unzip wget curl build-essential clang librocksdb-dev libsqlite3-dev && \
+    apt-get install -y unzip wget curl build-essential clang libsqlite3-dev && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
     . $HOME/.cargo/env && \
     rustup component add rustfmt
@@ -62,7 +62,7 @@ FROM ubuntu:noble AS runtime
 
 # Install dependencies (and cleanup afterward)
 RUN apt-get update && \
-    apt-get install -y librocksdb8.9 libsqlite3-0 && \
+    apt-get install -y libsqlite3-0 && \
     apt-get clean autoclean && \
     apt-get autoremove --yes && \
     rm -rf /var/lib/{apt,dpkg,cache,log}
@@ -71,6 +71,9 @@ RUN apt-get update && \
 COPY --from=builder \
     /usr/src/varfish-server-worker/target/release/varfish-server-worker \
     /usr/local/bin
+# Fail the build if the binary links a system RocksDB, which may be too old to read
+# databases written by the bundled one.
+RUN ! ldd /usr/local/bin/varfish-server-worker | grep -q librocksdb
 
 # Copy the entrypoint script and make it executable.
 COPY utils/docker/entrypoint.sh /
