@@ -291,6 +291,13 @@ async fn process_variants(
     id_mapping: &Option<indexmap::IndexMap<String, String>>,
     args: &Args,
 ) -> Result<(), anyhow::Error> {
+    let assembly = if args.genomebuild == GenomeRelease::Grch37 {
+        biocommons_bioutils::assemblies::Assembly::Grch37p10
+    } else {
+        biocommons_bioutils::assemblies::Assembly::Grch38
+    };
+    let contig_manager = Arc::new(mehari::common::contig::ContigManager::new(assembly));
+
     // Open the frequency RocksDB database in read only mode.
     tracing::info!("Opening frequency database");
     let rocksdb_path = format!(
@@ -306,7 +313,8 @@ async fn process_variants(
         ["meta", "autosomal", "gonosomal", "mitochondrial"],
         false,
     )?;
-    let freq_anno = mehari::annotate::seqvars::FrequencyAnnotator::new(db_freq);
+    let freq_anno =
+        mehari::annotate::seqvars::FrequencyAnnotator::new(db_freq, contig_manager.clone());
 
     // Open the ClinVar RocksDB database in read only mode.
     tracing::info!("Opening ClinVar database");
@@ -319,7 +327,7 @@ async fn process_variants(
     let options = rocksdb::Options::default();
     let db_clinvar =
         rocksdb::DB::open_cf_for_read_only(&options, &rocksdb_path, ["meta", "clinvar"], false)?;
-    let clinvar_anno = mehari::annotate::seqvars::ClinvarAnnotator::new(db_clinvar);
+    let clinvar_anno = mehari::annotate::seqvars::ClinvarAnnotator::new(db_clinvar, contig_manager);
 
     // Open the serialized transcripts.
     tracing::info!("Opening transcript database");
@@ -329,17 +337,14 @@ async fn process_variants(
         path_component(args.genomebuild)
     ))?;
     tracing::info!("Building transcript interval trees ...");
-    let assembly = if args.genomebuild == GenomeRelease::Grch37 {
-        biocommons_bioutils::assemblies::Assembly::Grch37p10
-    } else {
-        biocommons_bioutils::assemblies::Assembly::Grch38
-    };
-    let provider = Arc::new(MehariProvider::new(tx_db, assembly, Default::default()));
-    let predictor = mehari::annotate::seqvars::csq::ConsequencePredictor::new(
-        provider,
-        assembly,
+    let provider = Arc::new(MehariProvider::new(
+        tx_db,
+        None::<&str>,
+        false,
         Default::default(),
-    );
+    ));
+    let predictor =
+        mehari::annotate::seqvars::csq::ConsequencePredictor::new(provider, Default::default());
     tracing::info!("... done building transcript interval trees");
 
     // Build mapping from output sample index to input sample index.
@@ -415,11 +420,11 @@ async fn process_variants(
                 let key: Vec<u8> = vcf_var.clone().into();
 
                 // Annotate with frequency.
-                if mehari::annotate::seqvars::CHROM_AUTO.contains(vcf_var.chrom.as_str()) {
+                if crate::common::CHROM_AUTO.contains(vcf_var.chrom.as_str()) {
                     freq_anno.annotate_record_auto(&key, &mut output_record)?;
-                } else if mehari::annotate::seqvars::CHROM_XY.contains(vcf_var.chrom.as_str()) {
+                } else if crate::common::CHROM_XY.contains(vcf_var.chrom.as_str()) {
                     freq_anno.annotate_record_xy(&key, &mut output_record)?;
-                } else if mehari::annotate::seqvars::CHROM_MT.contains(vcf_var.chrom.as_str()) {
+                } else if crate::common::CHROM_MT.contains(vcf_var.chrom.as_str()) {
                     freq_anno.annotate_record_mt(&key, &mut output_record)?;
                 } else {
                     tracing::debug!(
@@ -749,6 +754,30 @@ mod test {
         super::run(&args_common, &args).await?;
 
         insta::assert_snapshot!(std::fs::read_to_string(&args.path_out)?);
+
+        Ok(())
+    }
+
+    /// Databases written by RocksDB >= 11 use table format version 7 by default (e.g., the
+    /// annonars and mehari databases from varfish-db-downloader) and must be readable.
+    #[test]
+    fn read_rocksdb_table_format_version_7() -> Result<(), anyhow::Error> {
+        let tmp = temp_testdir::TempDir::default();
+
+        let mut block_opts = rocksdb::BlockBasedOptions::default();
+        block_opts.set_format_version(7);
+        let mut options = rocksdb::Options::default();
+        options.create_if_missing(true);
+        options.set_block_based_table_factory(&block_opts);
+        {
+            let db = rocksdb::DB::open(&options, tmp.as_ref())?;
+            db.put(b"key", b"value")?;
+            db.flush()?;
+        }
+
+        let db =
+            rocksdb::DB::open_for_read_only(&rocksdb::Options::default(), tmp.as_ref(), false)?;
+        assert_eq!(db.get(b"key")?, Some(b"value".to_vec()));
 
         Ok(())
     }
